@@ -1,0 +1,14 @@
+{
+  "name": "@camporee-conductor/scoring",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure scoring and ranking logic. No I/O. (ADR-0008, ADR-0019)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}
