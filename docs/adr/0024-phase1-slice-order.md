@@ -2,8 +2,11 @@
 created: 2026-10-25T12:38
 updated: 2026-10-25T12:38
 ---
+
 # ADR-0024 — Phase 1 slice order (Program Guide moved up)
+
 Date: 2026-10-25 · Status: Accepted
+
 1. Repo, CI, docs moved in
 2. Domain schemas (v4) + v1 cartridge importer (Circus 2026 as fixture)
 3. Scoring package (conversions, rankings, common fields), test-first against real Circus scores
