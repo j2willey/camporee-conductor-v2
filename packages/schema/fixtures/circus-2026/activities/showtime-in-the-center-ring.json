@@ -30,7 +30,10 @@
         "kind": "info",
         "audience": "judge",
         "sortOrder": 900,
-        "weight": 1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
       },
       {
         "id": "approx_length_in_minutes",
@@ -39,7 +42,10 @@
         "kind": "info",
         "audience": "judge",
         "sortOrder": 900,
-        "weight": 1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
       },
       {
         "id": "points",
@@ -48,7 +54,10 @@
         "kind": "points",
         "audience": "judge",
         "sortOrder": 900,
-        "weight": 1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
       }
     ]
   },

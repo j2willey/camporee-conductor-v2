@@ -71,6 +71,9 @@
           "max": 10,
           "placeholder": "Compare received message to original",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -83,6 +86,9 @@
         "weight": 1,
         "config": {
           "defaultValue": false
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -92,7 +98,10 @@
         "kind": "metric",
         "audience": "judge",
         "sortOrder": 30,
-        "weight": 0.1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 0.1
+        }
       },
       {
         "id": "original_message",
@@ -101,9 +110,12 @@
         "kind": "info",
         "audience": "judge",
         "sortOrder": 40,
-        "weight": 0,
+        "weight": 1,
         "config": {
           "placeholder": "Record which message was used for this patrol"
+        },
+        "legacy": {
+          "v1Weight": 0
         }
       }
     ]

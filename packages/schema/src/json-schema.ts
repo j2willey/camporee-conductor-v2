@@ -17,12 +17,19 @@ export const DOCUMENT_SCHEMAS = {
  * JSON Schema (draft 2020-12) for each document type, generated from the Zod schemas.
  * Custom checks (`refine`, `superRefine`) can't be expressed in JSON Schema, so Zod
  * remains the full validator; these files describe the shape for other tools.
+ * They describe documents as stored (`io: "input"`), so a field with a default may be left out.
  */
 export function buildJsonSchemas(): Record<string, Record<string, unknown>> {
   return Object.fromEntries(
     Object.entries(DOCUMENT_SCHEMAS).map(([name, schema]) => [
       name,
-      { title: name, ...z.toJSONSchema(schema, { target: "draft-2020-12" }) },
+      {
+        title: name,
+        ...z.toJSONSchema(schema, {
+          target: "draft-2020-12",
+          io: "input",
+        }),
+      },
     ]),
   );
 }

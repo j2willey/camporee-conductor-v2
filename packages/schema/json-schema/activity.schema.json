@@ -173,6 +173,7 @@
                 "maximum": 9007199254740991
               },
               "weight": {
+                "default": 1,
                 "type": "number",
                 "minimum": 0
               },
@@ -206,6 +207,15 @@
                   }
                 },
                 "additionalProperties": false
+              },
+              "legacy": {
+                "type": "object",
+                "properties": {
+                  "v1Weight": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
               }
             },
             "required": [
@@ -214,8 +224,7 @@
               "type",
               "kind",
               "audience",
-              "sortOrder",
-              "weight"
+              "sortOrder"
             ],
             "additionalProperties": false
           }

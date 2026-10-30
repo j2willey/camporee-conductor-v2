@@ -97,6 +97,9 @@
           "min": 0,
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -111,6 +114,9 @@
           "min": 0,
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -125,6 +131,9 @@
           "min": 0,
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -139,6 +148,9 @@
           "min": 0,
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -152,6 +164,9 @@
         "config": {
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -166,6 +181,9 @@
           "min": 0,
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       }
     ]

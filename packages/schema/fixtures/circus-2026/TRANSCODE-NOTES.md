@@ -36,6 +36,13 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 
 ## Fixed or normalized
 
+- **Weights set to 1; v1 values kept in `legacy.v1Weight`.** v1 stored a `weight` on every field but
+  never applied it: only `public/js/core/schema.js` passes it through, and no total or ranking reads it.
+  So Circus 2026's announced results used an effective weight of 1. Every field (34 Activities and the
+  Common Field set) now has `weight: 1`, with the original v1 number in the field's `legacy.v1Weight`
+  (v1 had 0, 0.1, 0.5, 1, 2, 3, 5 and 10). This lets #3 (scoring) reproduce the results announced in May.
+- **`p_flag` placeholder.** v1 said "0-10 Points", but `max` is 5 and judges scored 0–5. Corrected to
+  "0-5 Points"; `max` stays 5.
 - **v1 bug: `{{ten_essentials_item}}`.** The `ten_ess` preset label and placeholder used
   `{{ten_essentials_item}}`, but all 18 Patrol Games define the variable `ten_essentials`. v1 substitutes
   `'___'` for an unknown variable, so v1 would have shown "10 Essentials: \_\_\_". v4 uses `{{ten_essentials}}`,
@@ -82,7 +89,4 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
   aggregate score; no ranking among them"). It's kept as a ranked Activity so the counts match v1. Under
   ADR-0019, overall awards come from the pipeline, so #3 (scoring) should decide whether it stays an
   Activity.
-- **`p_flag` (Patrol Flag)**: placeholder says "0-10 Points" but `max` is 5, with `weight` 10.
-- **v1 weights** are kept exactly (e.g. `0.1` on elapsed time in `ducks-in-a-row` and `telephone`, `0` on
-  info fields and on `patrol_size`).
 - No Event dates: v1 `meta` has only `year: 2026`.

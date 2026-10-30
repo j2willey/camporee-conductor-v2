@@ -125,4 +125,33 @@ describe("Circus 2026 fixtures: content and references", () => {
     }
     expect(missing).toEqual([]);
   });
+
+  it("sets every weight to 1 and keeps v1's weight in legacy (v1 never applied weight)", () => {
+    const v1Weights = (inputs: { weight: number }[]) =>
+      inputs.map((i) => i.weight);
+    for (const activity of activities) {
+      const v1 = readJson(`v1-source/games/${activity.slug}.json`) as {
+        scoring_model: { inputs: { weight: number }[] };
+      };
+      const fields = activity.scoring.fields;
+      expect(fields.map((f) => f.weight)).toEqual(fields.map(() => 1));
+      expect(fields.map((f) => f.legacy?.v1Weight)).toEqual(
+        v1Weights(v1.scoring_model.inputs),
+      );
+    }
+    const presets = readJson("v1-source/presets.json") as {
+      id: string;
+      weight: number;
+    }[];
+    const presetWeight = new Map(presets.map((p) => [p.id, p.weight]));
+    for (const field of set.fields) {
+      expect(field.weight).toBe(1);
+      expect(field.legacy?.v1Weight).toBe(presetWeight.get(field.id));
+    }
+  });
+
+  it("corrects the Patrol Flag placeholder to its real 0-5 range", () => {
+    const flag = set.fields.find((f) => f.id === "p_flag");
+    expect(flag?.config).toMatchObject({ max: 5, placeholder: "0-5 Points" });
+  });
 });

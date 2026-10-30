@@ -146,6 +146,9 @@
           "min": 0,
           "max": 16,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -160,6 +163,9 @@
           "min": 0,
           "max": 4,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -174,6 +180,9 @@
           "min": 0,
           "max": 20,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -188,6 +197,9 @@
           "min": 0,
           "max": 20,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -202,6 +214,9 @@
           "min": 0,
           "max": 20,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -216,6 +231,9 @@
           "min": 0,
           "max": 20,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -230,6 +248,9 @@
           "min": -10,
           "max": 10,
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -239,9 +260,12 @@
         "kind": "info",
         "audience": "judge",
         "sortOrder": 90,
-        "weight": 0,
+        "weight": 1,
         "config": {
           "placeholder": "Note triage order, hazards identified/missed, victim treatment observations, leadership quality"
+        },
+        "legacy": {
+          "v1Weight": 0
         }
       }
     ]

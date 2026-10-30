@@ -26,7 +26,8 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 (see below)
 
 "`weight` dropped" was wrong. **`weight` is a per-field multiplier.**
 
-- The Activity carries a **design default** (1 = no change). Circus 2026 values carry over in the transcode.
+- The Activity carries a **design default** (1 = no change; 1 if left out). v1 never applied weight;
+  transcoded Circus 2026 defaults are 1, with v1 values preserved in `legacy`.
 - Officials' event-day changes to a weight are **stored separately on the Collator and logged**. They never
   overwrite the design document.
 - Applying weights is scoring logic, so it lives only in `packages/scoring`.

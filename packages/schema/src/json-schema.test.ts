@@ -31,4 +31,13 @@ describe("generated JSON Schema files", () => {
       additionalProperties: false,
     });
   });
+
+  it("describes stored documents, so fields with a default (weight) are optional", () => {
+    const fields = generated["activity"]?.["properties"] as {
+      scoring: { properties: { fields: { items: { required: string[] } } } };
+    };
+    const required = fields.scoring.properties.fields.items.required;
+    expect(required).toContain("id");
+    expect(required).not.toContain("weight");
+  });
 });

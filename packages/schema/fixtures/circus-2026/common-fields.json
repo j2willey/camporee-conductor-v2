@@ -12,11 +12,14 @@
       "kind": "points",
       "audience": "judge",
       "sortOrder": 10,
-      "weight": 10,
+      "weight": 1,
       "config": {
         "min": 0,
         "max": 5,
-        "placeholder": "0-10 Points"
+        "placeholder": "0-5 Points"
+      },
+      "legacy": {
+        "v1Weight": 10
       }
     },
     {
@@ -26,11 +29,14 @@
       "kind": "points",
       "audience": "judge",
       "sortOrder": 20,
-      "weight": 5,
+      "weight": 1,
       "config": {
         "min": 0,
         "max": 5,
         "placeholder": "0-5 Points"
+      },
+      "legacy": {
+        "v1Weight": 5
       }
     },
     {
@@ -40,11 +46,14 @@
       "kind": "points",
       "audience": "judge",
       "sortOrder": 30,
-      "weight": 10,
+      "weight": 1,
       "config": {
         "min": 0,
         "max": 10,
         "placeholder": "0-10 Points"
+      },
+      "legacy": {
+        "v1Weight": 10
       }
     },
     {
@@ -54,11 +63,14 @@
       "kind": "points",
       "audience": "judge",
       "sortOrder": 40,
-      "weight": 5,
+      "weight": 1,
       "config": {
         "min": 0,
         "max": 5,
         "placeholder": "Does the patrol have {{ten_essentials}}?"
+      },
+      "legacy": {
+        "v1Weight": 5
       }
     },
     {
@@ -73,6 +85,9 @@
         "min": 0,
         "max": 20,
         "placeholder": "Points deducted (0-20)"
+      },
+      "legacy": {
+        "v1Weight": 1
       }
     },
     {
@@ -82,9 +97,12 @@
       "kind": "info",
       "audience": "judge",
       "sortOrder": 20,
-      "weight": 0,
+      "weight": 1,
       "config": {
         "placeholder": "Issues, tie-breakers, etc."
+      },
+      "legacy": {
+        "v1Weight": 0
       }
     }
   ],

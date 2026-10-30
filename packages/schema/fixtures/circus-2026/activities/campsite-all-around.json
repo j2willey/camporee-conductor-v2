@@ -60,6 +60,9 @@
           "max": 20,
           "placeholder": "Logical, tidy, well-planned",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -75,6 +78,9 @@
           "max": 20,
           "placeholder": "Site, cooking area, latrine",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -90,6 +96,9 @@
           "max": 20,
           "placeholder": "Fire ring, ax yard, food storage",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -105,6 +114,9 @@
           "max": 20,
           "placeholder": "Knots, lashings, tools, signage",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -120,6 +132,9 @@
           "max": 20,
           "placeholder": "Pride, teamwork, hospitality",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       }
     ]

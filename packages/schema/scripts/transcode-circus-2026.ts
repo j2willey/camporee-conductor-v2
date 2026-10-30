@@ -157,7 +157,10 @@ function toField(input: V1Input, index: number): ScoringField {
     audience: input.audience === "admin" ? "official" : "judge",
     // Some v1 inputs have no sortOrder; v1 used array position.
     sortOrder: input.sortOrder ?? (index + 1) * 10,
-    weight: input.weight,
+    // v1 never applied weight in any total or ranking, so Circus 2026's real results used 1.
+    // Keep v1's value for reference only.
+    weight: 1,
+    legacy: { v1Weight: input.weight },
   };
   if (input.required !== undefined) field.required = input.required;
   if (Object.keys(config).length > 0) field.config = config;
@@ -244,6 +247,10 @@ function toCommonFieldSet(presets: V1Input[]): CommonFieldSet {
           "{{ten_essentials_item}}",
           "{{ten_essentials}}",
         );
+      }
+      // v1 placeholder said "0-10 Points", but judges scored with max 5.
+      if (field.id === "p_flag" && field.config) {
+        field.config.placeholder = "0-5 Points";
       }
       return field;
     });

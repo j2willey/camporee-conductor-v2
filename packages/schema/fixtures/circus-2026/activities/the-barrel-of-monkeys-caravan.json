@@ -56,7 +56,10 @@
         "kind": "metric",
         "audience": "judge",
         "sortOrder": 10,
-        "weight": 1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
       },
       {
         "id": "barrel_drops",
@@ -71,6 +74,9 @@
           "max": 20,
           "placeholder": "Each drop = +10 sec",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       }
     ]

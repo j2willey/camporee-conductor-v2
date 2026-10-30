@@ -66,6 +66,9 @@
           "max": 100,
           "placeholder": "Fewer turns = better score",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -75,7 +78,10 @@
         "kind": "metric",
         "audience": "judge",
         "sortOrder": 20,
-        "weight": 0.1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 0.1
+        }
       }
     ]
   },

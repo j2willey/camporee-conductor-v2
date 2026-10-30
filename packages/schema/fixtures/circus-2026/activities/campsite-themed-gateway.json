@@ -58,6 +58,9 @@
           "max": 30,
           "placeholder": "Originality, visual impact",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -73,6 +76,9 @@
           "max": 30,
           "placeholder": "Lashing quality, structural soundness",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -88,6 +94,9 @@
           "max": 25,
           "placeholder": "Clearly circus-themed",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -103,6 +112,9 @@
           "max": 15,
           "placeholder": "Freestanding, no hazards",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       }
     ]

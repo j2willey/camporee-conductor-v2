@@ -44,8 +44,11 @@ export const ScoringFieldSchema = z
     kind: z.enum(FIELD_KINDS),
     audience: z.enum(["judge", "official"]),
     sortOrder: z.int(),
-    /** Per-field multiplier; 1 = no change. Design default only; event-day changes live on the Collator (ADR-0019). */
-    weight: z.number().min(0),
+    /**
+     * Per-field multiplier; 1 = no change, 0 = recorded but not scored. Defaults to 1 when left
+     * out. Design default only; event-day changes live on the Collator (ADR-0019).
+     */
+    weight: z.number().min(0).default(1),
     required: z.boolean().optional(),
     config: z
       .strictObject({
@@ -56,6 +59,8 @@ export const ScoringFieldSchema = z
         options: z.array(NonEmptyText).optional(),
       })
       .optional(),
+    /** Values from v1 that v4 doesn't use. v1 stored a weight but never applied it. */
+    legacy: z.strictObject({ v1Weight: z.number().optional() }).optional(),
   })
   .superRefine((field, ctx) => {
     const config = field.config ?? {};

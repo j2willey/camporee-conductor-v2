@@ -68,6 +68,9 @@
           "max": 9,
           "placeholder": "# of scouts on garbage can Lid",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -77,12 +80,15 @@
         "kind": "points",
         "audience": "judge",
         "sortOrder": 20,
-        "weight": 3,
+        "weight": 1,
         "config": {
           "min": 4,
           "max": 12,
           "placeholder": "Number of scouts on 5 gal lid",
           "defaultValue": 6
+        },
+        "legacy": {
+          "v1Weight": 3
         }
       },
       {
@@ -92,12 +98,15 @@
         "kind": "points",
         "audience": "judge",
         "sortOrder": 30,
-        "weight": 5,
+        "weight": 1,
         "config": {
           "min": 0,
           "max": 60,
           "placeholder": "Number of scouts on 7 inch lid",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 5
         }
       },
       {
@@ -112,6 +121,9 @@
           "min": 0,
           "max": 10,
           "placeholder": ""
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       }
     ]

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { z } from "zod";
 import { ScoringFieldSchema, type ScoringField } from "./field.ts";
 import { issuesOf } from "./test-support.ts";
 
@@ -25,6 +26,26 @@ describe("ScoringFieldSchema", () => {
     expect(
       ScoringFieldSchema.safeParse({ ...numberField(), weight: 0 }).success,
     ).toBe(true);
+  });
+
+  it("defaults weight to 1 when it's left out", () => {
+    const input: z.input<typeof ScoringFieldSchema> = { ...numberField() };
+    delete input.weight;
+    expect(ScoringFieldSchema.parse(input).weight).toBe(1);
+  });
+
+  it("still rejects a negative weight", () => {
+    expect(
+      issuesOf(ScoringFieldSchema, { ...numberField(), weight: -1 }),
+    ).toContain("weight: Too small: expected number to be >=0");
+  });
+
+  it("keeps the original v1 weight in legacy", () => {
+    const field = { ...numberField(), weight: 1, legacy: { v1Weight: 10 } };
+    expect(ScoringFieldSchema.parse(field)).toEqual(field);
+    expect(
+      issuesOf(ScoringFieldSchema, { ...field, legacy: { v1Wieght: 10 } }),
+    ).toContain('legacy: Unrecognized key: "v1Wieght"');
   });
 
   it("uses generic audiences: judge or official (v1 'admin' is rejected)", () => {

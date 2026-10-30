@@ -43,7 +43,10 @@
         "kind": "metric",
         "audience": "judge",
         "sortOrder": 10,
-        "weight": 1
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
       },
       {
         "id": "hand_breaks",
@@ -58,6 +61,9 @@
           "max": 20,
           "placeholder": "Each break = +15 sec",
           "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
         }
       },
       {
@@ -67,12 +73,15 @@
         "kind": "info",
         "audience": "judge",
         "sortOrder": 30,
-        "weight": 0,
+        "weight": 1,
         "config": {
           "min": 4,
           "max": 12,
           "placeholder": "For officials reference when converting to points",
           "defaultValue": 6
+        },
+        "legacy": {
+          "v1Weight": 0
         }
       }
     ]
