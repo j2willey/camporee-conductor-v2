@@ -9,6 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "export-circus": "node scripts/export-circus-2026-results.ts"
   }
 }

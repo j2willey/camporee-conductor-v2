@@ -1,0 +1,3898 @@
+[
+  {
+    "uuid": "baed6176-6899-414f-98dd-6467c02c46d1",
+    "game_id": "clown-car",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "10",
+      "scouts_balanced": "8",
+      "patrol_size": "3",
+      "hold_seconds": "3",
+      "field_1778199810679 ": "",
+      "unscout": "",
+      "off_notes": "[redacted]",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778949188041,
+    "judge_id": 1
+  },
+  {
+    "uuid": "31b9f519-dd35-4cc6-8cb5-26e6fac85784",
+    "game_id": "jugglers",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "",
+      "ten_ess": "10",
+      "max_balls": "2",
+      "circuits_at_max": "2",
+      "patrol_size": "9",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778949764700,
+    "judge_id": 2
+  },
+  {
+    "uuid": "dd803335-9b34-4c64-b1b1-6830979196da",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "2",
+      "total_turns": "39",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778950264303,
+    "judge_id": 3
+  },
+  {
+    "uuid": "9f698536-4472-4cad-99c3-fcc0fd1d3a12",
+    "game_id": "clown-car",
+    "entity_id": "p4311",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "7",
+      "ten_ess": "10",
+      "scouts_balanced": "4",
+      "patrol_size": "3",
+      "hold_seconds": "2",
+      "field_1778199810679 ": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778950368635,
+    "judge_id": 1
+  },
+  {
+    "uuid": "965d1a9f-c4d6-4eae-acbb-b6cbd818eeaa",
+    "game_id": "jugglers",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "0",
+      "max_balls": "3",
+      "circuits_at_max": "3",
+      "patrol_size": "9",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778951054343,
+    "judge_id": 2
+  },
+  {
+    "uuid": "27c76907-8e34-42af-b360-acfeaae64794",
+    "game_id": "jugglers",
+    "entity_id": "p4319",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "5",
+      "circuits_at_max": "1",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778951090316,
+    "judge_id": 2
+  },
+  {
+    "uuid": "e48ac20c-2281-4b2b-8728-430cf3329736",
+    "game_id": "jugglers",
+    "entity_id": "p4324",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "",
+      "circuits_at_max": "",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778951814297,
+    "judge_id": 2
+  },
+  {
+    "uuid": "4d01cce6-622d-40c7-b773-8a0d920dd8f6",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "3",
+      "p_spirit": "10",
+      "ten_ess": "3",
+      "total_turns": "12",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778951831698,
+    "judge_id": 3
+  },
+  {
+    "uuid": "0bf8be20-bf05-43ae-ba2b-0939600cb919",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4303",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "food_quality": "10",
+      "safety": "8",
+      "teamwork": "9",
+      "theme_bonus": "",
+      "toss_success": "10",
+      "cleanup": "9",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778952037762,
+    "judge_id": 4
+  },
+  {
+    "uuid": "64042ba8-069f-44c6-a2c7-d86326a59f4d",
+    "game_id": "jugglers",
+    "entity_id": "p4321",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "4",
+      "circuits_at_max": "",
+      "patrol_size": "9",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778952432971,
+    "judge_id": 2
+  },
+  {
+    "uuid": "41d3180b-5d30-48cf-94aa-6a391aea08a4",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4303",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "2",
+      "total_turns": "21",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778952794530,
+    "judge_id": 3
+  },
+  {
+    "uuid": "511734ef-fb04-4937-b587-7630232cbbc0",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "food_quality": "7",
+      "safety": "8",
+      "teamwork": "6",
+      "theme_bonus": "5",
+      "toss_success": "10",
+      "cleanup": "9",
+      "unscout": "0",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778953159965,
+    "judge_id": 4
+  },
+  {
+    "uuid": "e15f90a1-b5a8-4fe5-9f5c-a818d6de9033",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "total_turns": "10",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778953291524,
+    "judge_id": 3
+  },
+  {
+    "uuid": "b46b15c6-b772-4862-954c-6d9a126d1453",
+    "game_id": "clown-car",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "6",
+      "ten_ess": "10",
+      "scouts_balanced": "6",
+      "patrol_size": "3",
+      "hold_seconds": "2",
+      "field_1778199810679 ": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778953611206,
+    "judge_id": 1
+  },
+  {
+    "uuid": "535c3a4c-6123-479b-af34-e5e0abdb72e0",
+    "game_id": "jugglers",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "",
+      "ten_ess": "10",
+      "max_balls": "10",
+      "circuits_at_max": "1",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778954197777,
+    "judge_id": 2
+  },
+  {
+    "uuid": "d6057713-fc7d-44cb-9036-8afadf802c96",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "3",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "total_turns": "17",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778954286327,
+    "judge_id": 3
+  },
+  {
+    "uuid": "305f1c0b-2930-41ec-ae86-dd236cefc455",
+    "game_id": "jugglers",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "3",
+      "circuits_at_max": "2",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778954666728,
+    "judge_id": 2
+  },
+  {
+    "uuid": "87e89f83-4265-4d41-8d72-9b7e1685ab8f",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "3",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "food_quality": "9",
+      "safety": "9",
+      "teamwork": "10",
+      "theme_bonus": "10",
+      "toss_success": "8",
+      "cleanup": "9",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778954700139,
+    "judge_id": 4
+  },
+  {
+    "uuid": "3e607387-ce0d-4bc5-aed7-08a2d5e07a0b",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "food_quality": "9",
+      "safety": "9",
+      "teamwork": "6",
+      "theme_bonus": "10",
+      "toss_success": "7",
+      "cleanup": "9",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778955578125,
+    "judge_id": 4
+  },
+  {
+    "uuid": "771fc244-edff-45c7-aa14-3adb9df8eb27",
+    "game_id": "jugglers",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "9",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "7",
+      "circuits_at_max": "2",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778955738718,
+    "judge_id": 2
+  },
+  {
+    "uuid": "59c89785-f7df-4570-b2ba-e320bd02de37",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "8",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "total_turns": "12",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778956956021,
+    "judge_id": 3
+  },
+  {
+    "uuid": "c09ad5d0-d222-442e-8f51-8741670448ae",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "food_quality": "9",
+      "safety": "9",
+      "teamwork": "9",
+      "theme_bonus": "9",
+      "toss_success": "10",
+      "cleanup": "9",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778957484863,
+    "judge_id": 4
+  },
+  {
+    "uuid": "99a362f8-1172-4b58-8649-06f3a2dc6b54",
+    "game_id": "jugglers",
+    "entity_id": "p4308",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "1",
+      "circuits_at_max": "",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778957496547,
+    "judge_id": 2
+  },
+  {
+    "uuid": "a47bd5de-3da6-4fa4-a3c3-08b7219b063a",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "total_turns": "13",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778957514787,
+    "judge_id": 3
+  },
+  {
+    "uuid": "c71cd02b-540b-4d31-ae6b-8fd1fb20f8f9",
+    "game_id": "clown-car",
+    "entity_id": "p4323",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "10",
+      "scouts_balanced": "6",
+      "patrol_size": "4",
+      "hold_seconds": "2",
+      "field_1778199810679 ": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778957519270,
+    "judge_id": 1
+  },
+  {
+    "uuid": "2e76628d-39e4-4f98-8fb4-80499378c098",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "20",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778958061980,
+    "judge_id": 5
+  },
+  {
+    "uuid": "bbe956d1-066f-422f-94f5-df64d178128d",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "food_quality": "9",
+      "safety": "9",
+      "teamwork": "9",
+      "theme_bonus": "9",
+      "toss_success": "10",
+      "cleanup": "9",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778958312014,
+    "judge_id": 4
+  },
+  {
+    "uuid": "54502d4b-3397-4b5e-8699-53170e6d739c",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "4",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "total_turns": "13",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778958792799,
+    "judge_id": 3
+  },
+  {
+    "uuid": "5353c108-39d4-44b9-a8fc-c90a302e9532",
+    "game_id": "jugglers",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "10",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "5",
+      "circuits_at_max": "2",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778959025342,
+    "judge_id": 2
+  },
+  {
+    "uuid": "1e6b658b-62a1-4bd9-b9b2-3754f3d5a98d",
+    "game_id": "jugglers",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "4",
+      "circuits_at_max": "1",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778959489557,
+    "judge_id": 2
+  },
+  {
+    "uuid": "647c8ff1-4e5a-48c4-a509-c266f7c491fb",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "food_quality": "9",
+      "safety": "9",
+      "teamwork": "5",
+      "theme_bonus": "9",
+      "toss_success": "10",
+      "cleanup": "6",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778959557432,
+    "judge_id": 4
+  },
+  {
+    "uuid": "6688ccc2-eb92-48d0-8fde-40f8c32907c1",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "total_turns": "19",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778960358136,
+    "judge_id": 3
+  },
+  {
+    "uuid": "ee5f6e70-8767-42fc-b30e-191eb6e04fe3",
+    "game_id": "jugglers",
+    "entity_id": "p4322",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "5",
+      "circuits_at_max": "1",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778960361165,
+    "judge_id": 2
+  },
+  {
+    "uuid": "67b8531f-221e-45e0-bcbc-ef4110984f56",
+    "game_id": "ducks-in-a-row",
+    "entity_id": "p4317",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "total_turns": "11",
+      "elapsed_time": "00:00",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778961116499,
+    "judge_id": 3
+  },
+  {
+    "uuid": "e11c94ef-9313-49c7-939b-0273c7bb2e88",
+    "game_id": "jugglers",
+    "entity_id": "p4313",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "5",
+      "circuits_at_max": "1",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778961230471,
+    "judge_id": 2
+  },
+  {
+    "uuid": "7da64e61-e785-4018-a105-b969c04b9299",
+    "game_id": "clown-car",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "scouts_balanced": "4",
+      "patrol_size": "3",
+      "hold_seconds": "2",
+      "field_1778199810679 ": "[redacted]",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778961800459,
+    "judge_id": 1
+  },
+  {
+    "uuid": "c0f1f891-7f9d-4e64-899d-4013a610fbeb",
+    "game_id": "jugglers",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "58",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "max_balls": "7",
+      "circuits_at_max": "2",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778961884456,
+    "judge_id": 2
+  },
+  {
+    "uuid": "dc71dc66-1e68-465b-83a2-fdb1b7421049",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778961903555,
+    "judge_id": 5
+  },
+  {
+    "uuid": "a15c9e3a-6547-47bf-8bb9-cbe1c68dcb3e",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4313",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:56",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778961947526,
+    "judge_id": 6
+  },
+  {
+    "uuid": "63bd87c6-8ac0-4ec0-866f-f3fc0a070801",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "2",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778961951575,
+    "judge_id": 5
+  },
+  {
+    "uuid": "45330952-a6cb-4ac2-ad00-ed318118c198",
+    "game_id": "the-a-frame-trapeze",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "3",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:30",
+      "falls": "",
+      "patrol_size": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778961961154,
+    "judge_id": 7
+  },
+  {
+    "uuid": "22d0919c-efb0-4ebb-9cb9-97418297a8b7",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "10",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "03:05",
+      "patient_ground": "1",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778961967535,
+    "judge_id": 6
+  },
+  {
+    "uuid": "3715517c-a671-4262-8fb2-fbc42199b5d3",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4317",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "00:00",
+      "patient_ground": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778961980749,
+    "judge_id": 6
+  },
+  {
+    "uuid": "b0bd3558-3dc9-4767-b3c7-f9de31d19668",
+    "game_id": "the-a-frame-trapeze",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "4",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "02:02",
+      "falls": "",
+      "patrol_size": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778961995248,
+    "judge_id": 7
+  },
+  {
+    "uuid": "afeac8ac-e2d9-45ef-8a27-58ffce2e62f2",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:32",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778961998515,
+    "judge_id": 6
+  },
+  {
+    "uuid": "342f77c3-800b-4bf5-a172-a33c2861c5d1",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4303",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "0",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962002019,
+    "judge_id": 5
+  },
+  {
+    "uuid": "cd2dedab-63e6-4969-a0d0-0a1f8e6ea1fb",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4327",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "4",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "food_quality": "4",
+      "safety": "7",
+      "teamwork": "4",
+      "theme_bonus": "0",
+      "toss_success": "0",
+      "cleanup": "0",
+      "unscout": "-10",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778962010908,
+    "judge_id": 4
+  },
+  {
+    "uuid": "3327d6f3-4699-4fd6-b5a3-193cee6a1650",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "00:58",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778962013574,
+    "judge_id": 6
+  },
+  {
+    "uuid": "c1f28a69-6724-4fe3-a674-3b0b24d37676",
+    "game_id": "the-a-frame-trapeze",
+    "entity_id": "p4323",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "",
+      "elapsed_time": "04:10",
+      "falls": "",
+      "patrol_size": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778962029349,
+    "judge_id": 7
+  },
+  {
+    "uuid": "44738939-3aad-440b-a762-564644b0bdf9",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962039350,
+    "judge_id": 5
+  },
+  {
+    "uuid": "856cb1fe-025d-4fe4-ace5-76e937dd46af",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4311",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:55",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778962048867,
+    "judge_id": 6
+  },
+  {
+    "uuid": "1622f683-0606-4b4b-8268-f022ae255110",
+    "game_id": "the-a-frame-trapeze",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "3",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "",
+      "elapsed_time": "06:05",
+      "falls": "",
+      "patrol_size": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962067618,
+    "judge_id": 7
+  },
+  {
+    "uuid": "8199ae67-c61b-4176-88a0-b6a01958c9d7",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962078651,
+    "judge_id": 5
+  },
+  {
+    "uuid": "947c3abd-d1f9-42b4-ae9f-ab8a1a053860",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:23",
+      "patient_ground": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778962078685,
+    "judge_id": 6
+  },
+  {
+    "uuid": "0a7dd761-ce9b-455a-8265-803fb63f6fa7",
+    "game_id": "the-a-frame-trapeze",
+    "entity_id": "p4325",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "",
+      "elapsed_time": "06:01",
+      "falls": "",
+      "patrol_size": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778962087552,
+    "judge_id": 7
+  },
+  {
+    "uuid": "71d66c9a-d244-4629-89fd-890e679b4e5d",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:10",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778962106411,
+    "judge_id": 6
+  },
+  {
+    "uuid": "cb0b2310-9995-4b35-9420-be6245970e40",
+    "game_id": "the-a-frame-trapeze",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "06:20",
+      "falls": "",
+      "patrol_size": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778962118799,
+    "judge_id": 7
+  },
+  {
+    "uuid": "91f4c512-3d09-4d25-b206-5d94cd0ab9df",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4317",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "16",
+      "scene_safety": "",
+      "animal_bonus": "",
+      "triage_order": "",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962126974,
+    "judge_id": 5
+  },
+  {
+    "uuid": "a75d674e-628b-408e-b3d6-708e4481e1e1",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:09",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778962136457,
+    "judge_id": 6
+  },
+  {
+    "uuid": "e7eacad4-2624-407d-9519-b0e2c8d3b20e",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4323",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "01:43",
+      "patient_ground": "0",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778962166411,
+    "judge_id": 6
+  },
+  {
+    "uuid": "96fe988a-6a08-4fb1-8a7c-7d1377711a17",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "15",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962185167,
+    "judge_id": 5
+  },
+  {
+    "uuid": "f2b33dcf-9b04-4f7c-acc7-3c511c770c54",
+    "game_id": "the-tumbled-trapeze-rescue",
+    "entity_id": "p4321",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "04:47",
+      "patient_ground": "2",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778962200789,
+    "judge_id": 6
+  },
+  {
+    "uuid": "32ce89aa-7550-47c2-978d-7f2207126264",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "0",
+      "p_spirit": "0",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "16",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962227840,
+    "judge_id": 5
+  },
+  {
+    "uuid": "f19016d2-3a07-4ca3-adbc-304a116bfed1",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "16",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962284392,
+    "judge_id": 5
+  },
+  {
+    "uuid": "6be20a0e-8e74-4ba3-9a7c-04bd5bd95a41",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "16",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962336754,
+    "judge_id": 5
+  },
+  {
+    "uuid": "52f43694-0355-48ba-bbdc-d6c00770616d",
+    "game_id": "the-big-top-goes-down",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "scene_safety": "16",
+      "animal_bonus": "",
+      "triage_order": "16",
+      "big_eddie": "",
+      "marguerite": "",
+      "pepito": "",
+      "judge_discretion": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962381189,
+    "judge_id": 5
+  },
+  {
+    "uuid": "8c7d4fcd-8ce6-472d-b597-951e4ca3482e",
+    "game_id": "clown-car",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "10",
+      "scouts_balanced": "4",
+      "patrol_size": "3",
+      "hold_seconds": "2",
+      "field_1778199810679 ": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778962413651,
+    "judge_id": 1
+  },
+  {
+    "uuid": "97ae2d0e-96ea-4293-b4c3-689408e7ac49",
+    "game_id": "the-flying-flapjacks",
+    "entity_id": "p4317",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "food_quality": "9",
+      "safety": "9",
+      "teamwork": "8",
+      "theme_bonus": "8",
+      "toss_success": "8",
+      "cleanup": "9",
+      "unscout": "",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778962553566,
+    "judge_id": 4
+  },
+  {
+    "uuid": "cbb01909-0685-4451-ad35-7ad6e044a918",
+    "game_id": "telephone",
+    "entity_id": "p4325",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "4",
+      "ten_ess": "5",
+      "words_correct": "22",
+      "exact_match": "",
+      "elapsed_time": "00:00",
+      "original_message": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778965169037,
+    "judge_id": 8
+  },
+  {
+    "uuid": "efbcdb67-5465-4ced-8548-2990fb700f78",
+    "game_id": "telephone",
+    "entity_id": "p4311",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "3",
+      "ten_ess": "0",
+      "words_correct": "35",
+      "exact_match": "2",
+      "elapsed_time": "00:00",
+      "original_message": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778965222144,
+    "judge_id": 8
+  },
+  {
+    "uuid": "f62a3f04-dcfb-4faf-a43b-f8db782faed9",
+    "game_id": "telephone",
+    "entity_id": "p4313",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "4",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "words_correct": "45",
+      "exact_match": "4",
+      "elapsed_time": "00:00",
+      "original_message": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778965250319,
+    "judge_id": 8
+  },
+  {
+    "uuid": "57fee2d6-6409-4fb9-bba3-94c9b98f58bc",
+    "game_id": "telephone",
+    "entity_id": "p4308",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "words_correct": "20",
+      "exact_match": "1",
+      "elapsed_time": "00:00",
+      "original_message": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778965319896,
+    "judge_id": 8
+  },
+  {
+    "uuid": "61a4a056-60ea-49c6-842e-d7fe6fba69fb",
+    "game_id": "telephone",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "words_correct": "30",
+      "exact_match": "",
+      "elapsed_time": "00:00",
+      "original_message": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778965361036,
+    "judge_id": 8
+  },
+  {
+    "uuid": "167e8ab5-513c-4183-9ea3-cbc00692be24",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971255169,
+    "judge_id": 9
+  },
+  {
+    "uuid": "8685e29b-04d6-4091-80da-cae5240313e6",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4323",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971275210,
+    "judge_id": 9
+  },
+  {
+    "uuid": "0c7e0152-f40f-4ae1-b1bf-f3a157283d25",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "",
+      "p_spirit": "100",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971340868,
+    "judge_id": 9
+  },
+  {
+    "uuid": "4ddd410c-df4f-4f0a-8950-deb2b315c7a6",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4321",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971363914,
+    "judge_id": 9
+  },
+  {
+    "uuid": "8030e378-0811-4fd7-a0b8-002051bdbd18",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971388640,
+    "judge_id": 9
+  },
+  {
+    "uuid": "049386a3-4e6b-4340-aa9c-7e5d60edf725",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "50",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971406695,
+    "judge_id": 9
+  },
+  {
+    "uuid": "0bbbbf66-4681-4d5b-8945-a34ab06ad806",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4310",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971425270,
+    "judge_id": 9
+  },
+  {
+    "uuid": "b940bed9-6fc2-4910-b595-cbf6547c8130",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971439070,
+    "judge_id": 9
+  },
+  {
+    "uuid": "129fc16b-7dc6-499e-8621-71a765d0a0b8",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971452017,
+    "judge_id": 9
+  },
+  {
+    "uuid": "1ceb91a6-d51d-4086-9cd7-8be6bb3e5c96",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4322",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971495815,
+    "judge_id": 9
+  },
+  {
+    "uuid": "a633792c-642b-4ed5-8c99-59304b68a606",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971508321,
+    "judge_id": 9
+  },
+  {
+    "uuid": "3ac11a5f-a1af-44b1-b614-c1f4ea15e9cf",
+    "game_id": "the-high-wire-fire-act",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "75",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "matches_used": "",
+      "base_time": "00:00",
+      "fire_extinguished": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971527084,
+    "judge_id": 9
+  },
+  {
+    "uuid": "d6678a6d-dcd3-48ab-872a-2f568d8cf432",
+    "game_id": "setting-up-the-big-top",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "21:46",
+      "inspection_attempts": "20",
+      "field_1778193741073 ": "9",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971887008,
+    "judge_id": 10
+  },
+  {
+    "uuid": "0fbcf5ab-482e-49f2-8d67-d188d19660aa",
+    "game_id": "setting-up-the-big-top",
+    "entity_id": "p4324",
+    "score_payload": {
+      "p_flag": "2",
+      "p_yell": "3",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "elapsed_time": "16:51",
+      "inspection_attempts": "15",
+      "field_1778193741073 ": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778971965601,
+    "judge_id": 10
+  },
+  {
+    "uuid": "3458df0c-7cc0-48bb-9efd-73d418ec5a91",
+    "game_id": "setting-up-the-big-top",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "2",
+      "elapsed_time": "11:08",
+      "inspection_attempts": "20",
+      "field_1778193741073 ": "9",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778972100635,
+    "judge_id": 10
+  },
+  {
+    "uuid": "76f1b8a1-6e4e-4164-8874-232c3f6a81ff",
+    "game_id": "setting-up-the-big-top",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "4",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "elapsed_time": "10:10",
+      "inspection_attempts": "18",
+      "field_1778193741073 ": "9",
+      "unscout": "1",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778972297939,
+    "judge_id": 10
+  },
+  {
+    "uuid": "c86eae5c-122e-469c-b843-6e0547b84f4a",
+    "game_id": "the-grand-entry",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "flag_on_standard": "25",
+      "flag_on_pole": "25",
+      "trivia": "15",
+      "retreat_penalty": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778972338711,
+    "judge_id": 9
+  },
+  {
+    "uuid": "8ccf83ec-4925-4a60-b6b6-12c3da704d62",
+    "game_id": "setting-up-the-big-top",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "24:31",
+      "inspection_attempts": "17",
+      "field_1778193741073 ": "9",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778972373249,
+    "judge_id": 10
+  },
+  {
+    "uuid": "6cdcbea0-3b13-4de1-8042-e26d39e732e2",
+    "game_id": "the-grand-entry",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "flag_on_standard": "30",
+      "flag_on_pole": "23",
+      "trivia": "20",
+      "retreat_penalty": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778972380243,
+    "judge_id": 9
+  },
+  {
+    "uuid": "e9e71f2f-6064-4327-bb1b-9ba12535f2a7",
+    "game_id": "the-grand-entry",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "flag_on_standard": "30",
+      "flag_on_pole": "25",
+      "trivia": "20",
+      "retreat_penalty": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778972414025,
+    "judge_id": 9
+  },
+  {
+    "uuid": "593e75a2-0546-4ad4-a451-8f9af6b94344",
+    "game_id": "the-grand-entry",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "flag_on_standard": "20",
+      "flag_on_pole": "20",
+      "trivia": "15",
+      "retreat_penalty": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778972454990,
+    "judge_id": 9
+  },
+  {
+    "uuid": "d576320c-cf45-4eec-b158-91c06ead395b",
+    "game_id": "setting-up-the-big-top",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "3",
+      "elapsed_time": "06:28",
+      "inspection_attempts": "18",
+      "field_1778193741073 ": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778972466673,
+    "judge_id": 10
+  },
+  {
+    "uuid": "e0db3a9c-ccba-4af1-ab0d-30eccea0a6fc",
+    "game_id": "the-grand-entry",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "flag_on_standard": "23",
+      "flag_on_pole": "30",
+      "trivia": "20",
+      "retreat_penalty": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778972504086,
+    "judge_id": 9
+  },
+  {
+    "uuid": "5bb7e55f-03fe-47c5-bd22-20d8296c5c37",
+    "game_id": "the-grand-entry",
+    "entity_id": "p4321",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "flag_on_standard": "25",
+      "flag_on_pole": "30",
+      "trivia": "20",
+      "retreat_penalty": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778972625491,
+    "judge_id": 9
+  },
+  {
+    "uuid": "3b849419-488d-4b60-b680-5411c293229b",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "08:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778972898598,
+    "judge_id": 9
+  },
+  {
+    "uuid": "728ba6f4-10f7-4052-968a-5af81164272f",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "08:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778972953408,
+    "judge_id": 9
+  },
+  {
+    "uuid": "6a9c5e42-3431-4e32-bc9e-c71340983487",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "10",
+      "elapsed_time": "08:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778973042994,
+    "judge_id": 9
+  },
+  {
+    "uuid": "3e93c877-8a85-42ea-a688-0360f24968dc",
+    "game_id": "circus-line",
+    "entity_id": "p4322",
+    "score_payload": {
+      "p_flag": "2",
+      "p_yell": "3",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "04:38",
+      "patrol_size": "10",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778973085659,
+    "judge_id": 10
+  },
+  {
+    "uuid": "18cc4d72-c586-4c6a-b8c2-62f9ca6fe3e6",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4313",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "06:30",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778973106124,
+    "judge_id": 9
+  },
+  {
+    "uuid": "ce53b4e1-62a7-4781-99d9-406bdba9981c",
+    "game_id": "circus-line",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "elapsed_time": "02:45",
+      "patrol_size": "9",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778973141886,
+    "judge_id": 10
+  },
+  {
+    "uuid": "67e72bf1-6d24-4365-9ce1-618ecad0c713",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "05:10",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778973150616,
+    "judge_id": 9
+  },
+  {
+    "uuid": "4ba5c2b4-b6be-4448-8f53-5639c1dfc1c9",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "10",
+      "elapsed_time": "08:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778973268578,
+    "judge_id": 9
+  },
+  {
+    "uuid": "3e8a122e-1a60-4e86-a2b3-7a868739f4c6",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "05:40",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778973322981,
+    "judge_id": 9
+  },
+  {
+    "uuid": "c8275e42-465e-4750-a056-833e7c9f8579",
+    "game_id": "circus-line",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "elapsed_time": "04:35",
+      "patrol_size": "5",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778973355246,
+    "judge_id": 10
+  },
+  {
+    "uuid": "c5107856-fba6-44da-adcb-a8e26d3be360",
+    "game_id": "circus-line",
+    "entity_id": "p4327",
+    "score_payload": {
+      "p_flag": "3",
+      "p_yell": "4",
+      "p_spirit": "2",
+      "ten_ess": "5",
+      "elapsed_time": "02:10",
+      "patrol_size": "3",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778973512924,
+    "judge_id": 10
+  },
+  {
+    "uuid": "e10bcd7c-865c-47f3-9de8-d36c3c73a2a2",
+    "game_id": "circus-line",
+    "entity_id": "p4313",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "elapsed_time": "02:30",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778973619455,
+    "judge_id": 10
+  },
+  {
+    "uuid": "5bcfc43b-59db-4560-b431-bd4d414d84bc",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "08:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778973752765,
+    "judge_id": 9
+  },
+  {
+    "uuid": "d6f7b4ad-d9f2-4af5-a647-32c2decce6d0",
+    "game_id": "circus-line",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "3",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "elapsed_time": "01:15",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778973776729,
+    "judge_id": 10
+  },
+  {
+    "uuid": "f8a257d2-5fd5-4e07-b33d-37eead84cea6",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "",
+      "ten_ess": "10",
+      "elapsed_time": "08:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778973969957,
+    "judge_id": 9
+  },
+  {
+    "uuid": "99e385c6-93dc-4c22-bf97-7829f81e101b",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4319",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "05:00",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778974005302,
+    "judge_id": 9
+  },
+  {
+    "uuid": "0cfc7f0d-c6f1-41ab-b224-478a84add2dc",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4323",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "05:40",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778974050435,
+    "judge_id": 9
+  },
+  {
+    "uuid": "1e9e2d3c-2331-4094-b414-881b0dbc7d06",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4322",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "05:40",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778974101827,
+    "judge_id": 9
+  },
+  {
+    "uuid": "32cfd182-004a-424b-be73-b0f3c1be697f",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4327",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "06:13",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778974151268,
+    "judge_id": 9
+  },
+  {
+    "uuid": "66aa970f-589b-4694-b623-0eb69fa70678",
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "entity_id": "p4326",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "10",
+      "elapsed_time": "04:11",
+      "barrel_drops": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974187555,
+    "judge_id": 9
+  },
+  {
+    "uuid": "f320adb9-73d3-479f-ad64-6db6ff9c7c0f",
+    "game_id": "trapeze-swing-assembly",
+    "entity_id": "p4313",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "lashing_quality": "10",
+      "structure_match": "8",
+      "load_test": "10",
+      "craftsmanship": "24:37",
+      "required_lashings": "5",
+      "field_1778197726672 ": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974545782,
+    "judge_id": 11
+  },
+  {
+    "uuid": "81067998-75ba-4eb8-9b51-3a383952b6d0",
+    "game_id": "trapeze-swing-assembly",
+    "entity_id": "p4308",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "lashing_quality": "10",
+      "structure_match": "8",
+      "load_test": "10",
+      "craftsmanship": "23:18",
+      "required_lashings": "5",
+      "field_1778197726672 ": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974554450,
+    "judge_id": 11
+  },
+  {
+    "uuid": "25f4e862-b427-4c20-a91a-c3b507a13053",
+    "game_id": "circus-line",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "4",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "elapsed_time": "02:22",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778974559716,
+    "judge_id": 10
+  },
+  {
+    "uuid": "89c158e1-4f2f-45c7-9753-22fa1939bea3",
+    "game_id": "trapeze-swing-assembly",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "lashing_quality": "20",
+      "structure_match": "10",
+      "load_test": "10",
+      "craftsmanship": "13:34",
+      "required_lashings": "10",
+      "field_1778197726672 ": "10",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778974563198,
+    "judge_id": 11
+  },
+  {
+    "uuid": "933702e0-2619-4ccc-88ff-b44dde6f6c94",
+    "game_id": "trapeze-swing-assembly",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "lashing_quality": "20",
+      "structure_match": "10",
+      "load_test": "10",
+      "craftsmanship": "09:41",
+      "required_lashings": "10",
+      "field_1778197726672 ": "10",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778974608363,
+    "judge_id": 11
+  },
+  {
+    "uuid": "655c1882-2e21-4d87-9b0b-20c53eabb3e0",
+    "game_id": "trapeze-swing-assembly",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "lashing_quality": "20",
+      "structure_match": "10",
+      "load_test": "18",
+      "craftsmanship": "07:47",
+      "required_lashings": "10",
+      "field_1778197726672 ": "",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778974647564,
+    "judge_id": 11
+  },
+  {
+    "uuid": "b60cfd1b-7038-46b2-9f4b-3082ed34497d",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "3",
+      "p_spirit": "9",
+      "ten_ess": "2",
+      "circus_spirit": "15",
+      "creativity": "16",
+      "teamwork": "9",
+      "performance_quality": "10",
+      "instrument_count": "7",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974764194,
+    "judge_id": 11
+  },
+  {
+    "uuid": "e1be2b3a-8abc-4987-8077-492567bac2fe",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "circus_spirit": "15",
+      "creativity": "17",
+      "teamwork": "10",
+      "performance_quality": "8",
+      "instrument_count": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974792253,
+    "judge_id": 11
+  },
+  {
+    "uuid": "3ac6cc43-90c5-4504-a5b9-f7f52a2cbb76",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "circus_spirit": "15",
+      "creativity": "15",
+      "teamwork": "9",
+      "performance_quality": "8",
+      "instrument_count": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974816316,
+    "judge_id": 11
+  },
+  {
+    "uuid": "c64ee776-bb55-4d2c-afe6-7b881580d6f0",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4321",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "2",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "circus_spirit": "12",
+      "creativity": "18",
+      "teamwork": "10",
+      "performance_quality": "9",
+      "instrument_count": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974845880,
+    "judge_id": 11
+  },
+  {
+    "uuid": "792ca90c-4e1f-48e3-9816-a7fda08abc03",
+    "game_id": "circus-line",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "3",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "elapsed_time": "02:37",
+      "patrol_size": "5",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778974847885,
+    "judge_id": 10
+  },
+  {
+    "uuid": "b9d4ed12-8b98-4b59-b99e-14acb859cc44",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "circus_spirit": "10",
+      "creativity": "14",
+      "teamwork": "8",
+      "performance_quality": "8",
+      "instrument_count": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974878611,
+    "judge_id": 11
+  },
+  {
+    "uuid": "9b1f5063-62d8-468e-ad25-04741b3fdb86",
+    "game_id": "circus-line",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "elapsed_time": "03:12",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778974900662,
+    "judge_id": 10
+  },
+  {
+    "uuid": "195f8761-a9c0-4fb0-b5f7-5d7024cb3cd7",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4325",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "circus_spirit": "11",
+      "creativity": "12",
+      "teamwork": "10",
+      "performance_quality": "9",
+      "instrument_count": "5",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974910481,
+    "judge_id": 11
+  },
+  {
+    "uuid": "696d9436-6509-461f-b542-40d58d6d34e4",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "circus_spirit": "19",
+      "creativity": "20",
+      "teamwork": "10",
+      "performance_quality": "10",
+      "instrument_count": "6",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778974940488,
+    "judge_id": 11
+  },
+  {
+    "uuid": "e559daff-805c-4ca7-af43-2c3f83389841",
+    "game_id": "circus-line",
+    "entity_id": "p4319",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "03:45",
+      "patrol_size": "5",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778974949428,
+    "judge_id": 10
+  },
+  {
+    "uuid": "7e6bc55a-19e7-49f8-87ac-a39cfdf64307",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "circus_spirit": "15",
+      "creativity": "17",
+      "teamwork": "10",
+      "performance_quality": "8",
+      "instrument_count": "6",
+      "unscout": "3",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778974995194,
+    "judge_id": 11
+  },
+  {
+    "uuid": "00ac19b6-7c95-43c7-b067-589f0647bc13",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "circus_spirit": "15",
+      "creativity": "17",
+      "teamwork": "10",
+      "performance_quality": "10",
+      "instrument_count": "5",
+      "unscout": "1",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778975028838,
+    "judge_id": 11
+  },
+  {
+    "uuid": "eae02fd1-3896-4108-9f9d-48e85ad54b22",
+    "game_id": "circus-line",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "3",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "elapsed_time": "01:54",
+      "patrol_size": "7",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "1"
+    },
+    "timestamp": 1778975066690,
+    "judge_id": 10
+  },
+  {
+    "uuid": "b4a1e705-b864-4820-a46c-68ce16e21f68",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4324",
+    "score_payload": {
+      "p_flag": "4",
+      "p_yell": "4",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "circus_spirit": "20",
+      "creativity": "10",
+      "teamwork": "10",
+      "performance_quality": "9",
+      "instrument_count": "5",
+      "unscout": "1",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778975070034,
+    "judge_id": 11
+  },
+  {
+    "uuid": "726b1727-ce5b-47c7-a4e8-92beffaa96fd",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4326",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "0",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "circus_spirit": "12",
+      "creativity": "10",
+      "teamwork": "10",
+      "performance_quality": "7",
+      "instrument_count": "6",
+      "unscout": "1",
+      "off_notes": "[redacted]"
+    },
+    "timestamp": 1778975146330,
+    "judge_id": 11
+  },
+  {
+    "uuid": "db9aa6fa-d1a8-4e95-8746-45fa7958d065",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "9",
+      "ten_ess": "5",
+      "circus_spirit": "17",
+      "creativity": "12",
+      "teamwork": "9",
+      "performance_quality": "8",
+      "instrument_count": "8",
+      "unscout": "1",
+      "off_notes": "[redacted]",
+      "manual_rank": "3",
+      "manual_points": 70
+    },
+    "timestamp": 1778975183359,
+    "judge_id": 11
+  },
+  {
+    "uuid": "141df452-b952-45be-9097-55e7a7ce4f3f",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4311",
+    "score_payload": {
+      "p_flag": "0",
+      "p_yell": "5",
+      "p_spirit": "6",
+      "ten_ess": "5",
+      "circus_spirit": "17",
+      "creativity": "10",
+      "teamwork": "5",
+      "performance_quality": "6",
+      "instrument_count": "6",
+      "unscout": "2",
+      "off_notes": "[redacted]",
+      "off_score": 1
+    },
+    "timestamp": 1778975212645,
+    "judge_id": 11
+  },
+  {
+    "uuid": "dad255da-2bc9-47ea-b45a-8e7560d6b8a7",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "6",
+      "ten_ess": "5",
+      "circus_spirit": "10",
+      "creativity": "10",
+      "teamwork": "9",
+      "performance_quality": "7",
+      "instrument_count": "7",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975241318,
+    "judge_id": 11
+  },
+  {
+    "uuid": "c418019e-2e90-4030-bef9-96c72ae82790",
+    "game_id": "the-circus-orchestra",
+    "entity_id": "p4317",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "circus_spirit": "12",
+      "creativity": "12",
+      "teamwork": "10",
+      "performance_quality": "7",
+      "instrument_count": "6",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975267009,
+    "judge_id": 11
+  },
+  {
+    "uuid": "2efd8628-c09e-4787-938c-323dd14837a1",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "4",
+      "elapsed_time": "00:48",
+      "hand_breaks": "",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778975324978,
+    "judge_id": 11
+  },
+  {
+    "uuid": "8035f1dd-03dd-4f93-9fe8-dc52a0d4b818",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4319",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "4",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "00:26",
+      "hand_breaks": "",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "2"
+    },
+    "timestamp": 1778975356146,
+    "judge_id": 11
+  },
+  {
+    "uuid": "4500f3fe-f7b4-4741-9371-35518aa45986",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4324",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "4",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "elapsed_time": "00:24",
+      "hand_breaks": "",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975379334,
+    "judge_id": 11
+  },
+  {
+    "uuid": "16878edd-3458-443a-af27-2a0395b3b7ce",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4312",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "4",
+      "elapsed_time": "00:43",
+      "hand_breaks": "",
+      "patrol_size": "9",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778975414013,
+    "judge_id": 11
+  },
+  {
+    "uuid": "42c681c6-871a-437b-86d3-59776784c55e",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "2",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "elapsed_time": "00:37",
+      "hand_breaks": "",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778975436758,
+    "judge_id": 11
+  },
+  {
+    "uuid": "0e31146d-2911-4d59-8156-d31ac06e6b3b",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4325",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "4",
+      "elapsed_time": "00:48",
+      "hand_breaks": "",
+      "patrol_size": "5",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "6"
+    },
+    "timestamp": 1778975459777,
+    "judge_id": 11
+  },
+  {
+    "uuid": "ff6a8498-34a4-4766-971e-f01b3d8df78e",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4303",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "elapsed_time": "00:50",
+      "hand_breaks": "1",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975610640,
+    "judge_id": 11
+  },
+  {
+    "uuid": "c55bf670-0056-4db2-9d00-0411ed90b67d",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4302",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "00:33",
+      "hand_breaks": "",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975658614,
+    "judge_id": 11
+  },
+  {
+    "uuid": "a492334f-d794-49a8-9ee7-ae2c769301f5",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "00:15",
+      "hand_breaks": "",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975679141,
+    "judge_id": 11
+  },
+  {
+    "uuid": "382f6e49-4ead-4ae3-8bbc-f574ae9426d2",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4308",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "00:44",
+      "hand_breaks": "",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975700511,
+    "judge_id": 11
+  },
+  {
+    "uuid": "346d107d-5ca4-4623-a7b6-cafac140847f",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "8",
+      "ten_ess": "5",
+      "elapsed_time": "00:41",
+      "hand_breaks": "",
+      "patrol_size": "9",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778975723620,
+    "judge_id": 11
+  },
+  {
+    "uuid": "a38724a1-cc92-4eb4-a757-91c2673179d5",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4320",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "5",
+      "p_spirit": "6",
+      "ten_ess": "5",
+      "elapsed_time": "00:25",
+      "hand_breaks": "",
+      "patrol_size": "5",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975748479,
+    "judge_id": 11
+  },
+  {
+    "uuid": "b50f904e-1c78-4c28-bc13-06660dc854e8",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4305",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "4",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "elapsed_time": "00:29",
+      "hand_breaks": "",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "3"
+    },
+    "timestamp": 1778975767446,
+    "judge_id": 11
+  },
+  {
+    "uuid": "87f6a3a6-5270-4d87-a791-92ab9f53e521",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4314",
+    "score_payload": {
+      "p_flag": "",
+      "p_yell": "4",
+      "p_spirit": "5",
+      "ten_ess": "5",
+      "elapsed_time": "00:28",
+      "hand_breaks": "",
+      "patrol_size": "4",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778975784537,
+    "judge_id": 11
+  },
+  {
+    "uuid": "b04eddef-f7ac-4d3c-94c2-d9d005f55549",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "elapsed_time": "00:35",
+      "hand_breaks": "",
+      "patrol_size": "6",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "5"
+    },
+    "timestamp": 1778975807157,
+    "judge_id": 11
+  },
+  {
+    "uuid": "5cf2f334-202f-495c-9069-dbdc84ea99c7",
+    "game_id": "3-ring-circus",
+    "entity_id": "p4322",
+    "score_payload": {
+      "p_flag": "2",
+      "p_yell": "5",
+      "p_spirit": "7",
+      "ten_ess": "5",
+      "elapsed_time": "00:38",
+      "hand_breaks": "",
+      "patrol_size": "8",
+      "unscout": "",
+      "off_notes": "",
+      "manual_rank": "4"
+    },
+    "timestamp": 1778976252796,
+    "judge_id": 11
+  },
+  {
+    "uuid": "f0cc34d3-094b-4348-831e-e6f2e4353a8d",
+    "game_id": "pioneering-train-design",
+    "entity_id": "t1008",
+    "score_payload": {
+      "engineering": "75",
+      "lashing": "",
+      "craftsmanship": "",
+      "theme": "",
+      "safety": "",
+      "car_type": ""
+    },
+    "timestamp": 1778977723593,
+    "judge_id": 9
+  },
+  {
+    "uuid": "7b5b7b6b-a3fb-456e-9d55-64ce773a4571",
+    "game_id": "pioneering-train-design",
+    "entity_id": "t1003",
+    "score_payload": {
+      "engineering": "50",
+      "lashing": "",
+      "craftsmanship": "",
+      "theme": "",
+      "safety": "",
+      "car_type": ""
+    },
+    "timestamp": 1778977755623,
+    "judge_id": 9
+  },
+  {
+    "uuid": "120c359d-bf7b-4aa7-a59f-f8eb9e97b961",
+    "game_id": "pioneering-train-design",
+    "entity_id": "t1011",
+    "score_payload": {
+      "engineering": "100",
+      "lashing": "",
+      "craftsmanship": "",
+      "theme": "",
+      "safety": "",
+      "car_type": ""
+    },
+    "timestamp": 1778977764914,
+    "judge_id": 9
+  },
+  {
+    "uuid": "fd1f0d42-e900-4aed-8ce3-010b2918d37c",
+    "game_id": "pioneering-train-performance",
+    "entity_id": "t1008",
+    "score_payload": {
+      "elapsed_time": "02:01",
+      "completed_course": "",
+      "showmanship": "",
+      "dnf_notes": ""
+    },
+    "timestamp": 1778978737914,
+    "judge_id": 9
+  },
+  {
+    "uuid": "0e354157-7945-4983-8c22-3bfd9789fe81",
+    "game_id": "pioneering-train-performance",
+    "entity_id": "t1003",
+    "score_payload": {
+      "elapsed_time": "03:13",
+      "completed_course": "",
+      "showmanship": "",
+      "dnf_notes": ""
+    },
+    "timestamp": 1778978752593,
+    "judge_id": 9
+  },
+  {
+    "uuid": "9d109660-4be5-4566-a48a-f86d542742de",
+    "game_id": "pioneering-train-performance",
+    "entity_id": "t1011",
+    "score_payload": {
+      "elapsed_time": "03:27",
+      "completed_course": "",
+      "showmanship": "",
+      "dnf_notes": ""
+    },
+    "timestamp": 1778978764986,
+    "judge_id": 9
+  },
+  {
+    "uuid": "04121d7e-a1da-4680-842e-10a0e75d5fb3",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1001",
+    "score_payload": {
+      "organization": "184",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778978927223,
+    "judge_id": 9
+  },
+  {
+    "uuid": "39d90a2c-34c0-4271-9b36-1b948695e895",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1000",
+    "score_payload": {
+      "organization": "184",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778978938230,
+    "judge_id": 9
+  },
+  {
+    "uuid": "e00d61e5-785a-4b6d-81a8-b51bdd3e80ca",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1011",
+    "score_payload": {
+      "organization": "228",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979354175,
+    "judge_id": 9
+  },
+  {
+    "uuid": "e3d1f2c8-dd63-46b0-a58c-d210507e1dd3",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1002",
+    "score_payload": {
+      "organization": "129",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979365486,
+    "judge_id": 9
+  },
+  {
+    "uuid": "253ff6c5-47e1-440f-bbb6-3bf6ec465dd7",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1004",
+    "score_payload": {
+      "organization": "141",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979403172,
+    "judge_id": 9
+  },
+  {
+    "uuid": "b9e3b4b1-b73d-4ccb-bd1e-2855aefb945e",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1007",
+    "score_payload": {
+      "organization": "169",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979415447,
+    "judge_id": 9
+  },
+  {
+    "uuid": "120e5b97-a4c0-4d92-8993-7f12c6c320cc",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1006",
+    "score_payload": {
+      "organization": "116",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979449356,
+    "judge_id": 9
+  },
+  {
+    "uuid": "10029383-b4d9-430f-8a6f-be33f0f3cfb4",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1008",
+    "score_payload": {
+      "organization": "155",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979461050,
+    "judge_id": 9
+  },
+  {
+    "uuid": "db1de018-4127-419e-a0e0-7c947aab0964",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1005",
+    "score_payload": {
+      "organization": "141",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979492074,
+    "judge_id": 9
+  },
+  {
+    "uuid": "c0a9cd82-08d7-4bc2-b5f8-9e2cf29a0f1b",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1012",
+    "score_payload": {
+      "organization": "141",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979521912,
+    "judge_id": 9
+  },
+  {
+    "uuid": "756d4f0e-de09-4017-a041-0ec27b374178",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1003",
+    "score_payload": {
+      "organization": "87",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979534962,
+    "judge_id": 9
+  },
+  {
+    "uuid": "ea080280-1235-4034-ba04-a581b6526e90",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1009",
+    "score_payload": {
+      "organization": "143",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979551657,
+    "judge_id": 9
+  },
+  {
+    "uuid": "34bbb7ca-cde5-44d8-87a0-76f1379ace50",
+    "game_id": "campsite-all-around",
+    "entity_id": "t1010",
+    "score_payload": {
+      "organization": "143",
+      "cleanliness": "",
+      "safety": "",
+      "scout_skills": "",
+      "spirit": ""
+    },
+    "timestamp": 1778979572943,
+    "judge_id": 9
+  },
+  {
+    "uuid": "7752a067-c0c5-4e00-91b9-ff0e430f7396",
+    "game_id": "campsite-themed-gateway",
+    "entity_id": "t1001",
+    "score_payload": {
+      "creativity": "100",
+      "construction": "",
+      "theme": "",
+      "safety": ""
+    },
+    "timestamp": 1778979665736,
+    "judge_id": 9
+  },
+  {
+    "uuid": "a780882e-b955-4ab8-8887-906dc6b763b5",
+    "game_id": "campsite-themed-gateway",
+    "entity_id": "t1000",
+    "score_payload": {
+      "creativity": "100",
+      "construction": "",
+      "theme": "",
+      "safety": ""
+    },
+    "timestamp": 1778979674436,
+    "judge_id": 9
+  },
+  {
+    "uuid": "5fe5e66f-30d3-4a8f-8a59-f70b8924f6d0",
+    "game_id": "campsite-themed-gateway",
+    "entity_id": "t1008",
+    "score_payload": {
+      "creativity": "75",
+      "construction": "",
+      "theme": "",
+      "safety": ""
+    },
+    "timestamp": 1778979700329,
+    "judge_id": 9
+  },
+  {
+    "uuid": "279a7e85-4260-42d6-a85f-86e524717cf0",
+    "game_id": "campsite-themed-gateway",
+    "entity_id": "t1007",
+    "score_payload": {
+      "creativity": "50",
+      "construction": "",
+      "theme": "",
+      "safety": ""
+    },
+    "timestamp": 1778979711961,
+    "judge_id": 9
+  },
+  {
+    "uuid": "e6e2e269-fe91-411b-8822-457c821d1ff6",
+    "game_id": "campsite-judges-choice",
+    "entity_id": "t1011",
+    "score_payload": {
+      "awarded": "",
+      "reason": "[redacted]"
+    },
+    "timestamp": 1778979769396,
+    "judge_id": 9
+  },
+  {
+    "uuid": "e54f07b7-94b5-4da8-aa16-ab9c94a1767c",
+    "game_id": "sports-tug-o-war",
+    "entity_id": "t1007",
+    "score_payload": {
+      "wins": "100",
+      "ties": "",
+      "losses": ""
+    },
+    "timestamp": 1778979894942,
+    "judge_id": 9
+  },
+  {
+    "uuid": "bcbb5b00-8068-43bf-ac3a-115a3fe83675",
+    "game_id": "sports-tug-o-war",
+    "entity_id": "t1005",
+    "score_payload": {
+      "wins": "90",
+      "ties": "",
+      "losses": ""
+    },
+    "timestamp": 1778979907563,
+    "judge_id": 9
+  },
+  {
+    "uuid": "26f7b632-9467-4bac-b62d-5da80a67d4e5",
+    "game_id": "sports-tug-o-war",
+    "entity_id": "t1012",
+    "score_payload": {
+      "wins": "80",
+      "ties": "",
+      "losses": ""
+    },
+    "timestamp": 1778979933655,
+    "judge_id": 9
+  },
+  {
+    "uuid": "b1a20a11-8438-4a62-89f7-16cc02bb89fb",
+    "game_id": "sports-tug-o-war",
+    "entity_id": "t1011",
+    "score_payload": {
+      "wins": "70",
+      "ties": "",
+      "losses": ""
+    },
+    "timestamp": 1778979948147,
+    "judge_id": 9
+  },
+  {
+    "uuid": "38352f54-0cca-4ab7-a8e1-340c62d544d1",
+    "game_id": "sports-tug-o-war",
+    "entity_id": "t1002",
+    "score_payload": {
+      "wins": "60",
+      "ties": "",
+      "losses": ""
+    },
+    "timestamp": 1778979960122,
+    "judge_id": 9
+  },
+  {
+    "uuid": "7b298323-11e4-4009-add6-8fd4a75ce2a9",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4309",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "field_1778195167953 ": "24.5",
+      "field_1778195205040 ": "9",
+      "field_1778195292154 ": "37",
+      "field_1778195322777 ": "7",
+      "scout_2": "0",
+      "scout_1": "300",
+      "notes": "[redacted]",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778986363403,
+    "judge_id": 9
+  },
+  {
+    "uuid": "a40db6fd-f92d-43ef-9a09-ca68ede0afdf",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4321",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "field_1778195167953 ": "25",
+      "field_1778195205040 ": "8",
+      "field_1778195292154 ": "31",
+      "field_1778195322777 ": "7",
+      "scout_2": "0",
+      "scout_1": "300",
+      "notes": "[redacted]",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778986679325,
+    "judge_id": 9
+  },
+  {
+    "uuid": "dbabd5ab-a56b-48bb-b318-e3999471cafb",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4316",
+    "score_payload": {
+      "p_flag": "5",
+      "p_yell": "5",
+      "p_spirit": "10",
+      "ten_ess": "5",
+      "field_1778195167953 ": "18",
+      "field_1778195205040 ": "5",
+      "field_1778195292154 ": "30",
+      "field_1778195322777 ": "5",
+      "scout_2": "0",
+      "scout_1": "300",
+      "notes": "[redacted]",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778986748468,
+    "judge_id": 9
+  },
+  {
+    "uuid": "b86989ed-d2d8-4c32-8d83-63eea948e51d",
+    "game_id": "cooking-best-entree",
+    "entity_id": "t1008",
+    "score_payload": {
+      "taste": "100",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778987873802,
+    "judge_id": 9
+  },
+  {
+    "uuid": "8d5c142b-b798-4061-bbe0-8f93c85a5eac",
+    "game_id": "cooking-best-entree",
+    "entity_id": "t1011",
+    "score_payload": {
+      "taste": "90",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778987909432,
+    "judge_id": 9
+  },
+  {
+    "uuid": "ffb9e8cd-bd21-46a0-918a-54335c80ba89",
+    "game_id": "cooking-best-entree",
+    "entity_id": "t1003",
+    "score_payload": {
+      "taste": "80",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778987923878,
+    "judge_id": 9
+  },
+  {
+    "uuid": "24a98d22-b8eb-4d25-bc3b-4699c7697b65",
+    "game_id": "cooking-best-entree",
+    "entity_id": "t1006",
+    "score_payload": {
+      "taste": "50",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778987937101,
+    "judge_id": 9
+  },
+  {
+    "uuid": "3e32c877-e73f-4500-954b-47c251cdfa26",
+    "game_id": "cooking-best-entree",
+    "entity_id": "t1005",
+    "score_payload": {
+      "taste": "50",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778987945706,
+    "judge_id": 9
+  },
+  {
+    "uuid": "408ac660-f304-494f-b0a4-4c646425fc42",
+    "game_id": "cooking-best-dessert",
+    "entity_id": "t1011",
+    "score_payload": {
+      "taste": "100",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988008252,
+    "judge_id": 9
+  },
+  {
+    "uuid": "89d2d98e-80a3-456a-98c2-048921f98db1",
+    "game_id": "cooking-best-dessert",
+    "entity_id": "t1008",
+    "score_payload": {
+      "taste": "90",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988021412,
+    "judge_id": 9
+  },
+  {
+    "uuid": "405a0b83-a68a-4d10-a0f9-8bee0d9136ce",
+    "game_id": "cooking-best-dessert",
+    "entity_id": "t1003",
+    "score_payload": {
+      "taste": "80",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988032425,
+    "judge_id": 9
+  },
+  {
+    "uuid": "7c058646-45db-4b14-9574-9bdf3bc94c95",
+    "game_id": "cooking-best-dessert",
+    "entity_id": "t1005",
+    "score_payload": {
+      "taste": "50",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988040802,
+    "judge_id": 9
+  },
+  {
+    "uuid": "f394fb51-a6fb-4be0-a614-d4bb5cc3b64d",
+    "game_id": "cooking-best-dessert",
+    "entity_id": "t1006",
+    "score_payload": {
+      "taste": "50",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "theme_creativity": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988051277,
+    "judge_id": 9
+  },
+  {
+    "uuid": "f9d24f36-8e0c-4c32-ac10-fe2289d66b21",
+    "game_id": "cooking-mystery-ingredient",
+    "entity_id": "t1008",
+    "score_payload": {
+      "ingredient_use": "100",
+      "taste": "",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "mystery_ingredient": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988090541,
+    "judge_id": 9
+  },
+  {
+    "uuid": "ad6cbc7e-6dff-4f6a-bc44-e057ac70b0cf",
+    "game_id": "cooking-mystery-ingredient",
+    "entity_id": "t1011",
+    "score_payload": {
+      "ingredient_use": "90",
+      "taste": "",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "mystery_ingredient": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988100192,
+    "judge_id": 9
+  },
+  {
+    "uuid": "b33ac544-4220-426b-ab57-b18321abdfef",
+    "game_id": "cooking-mystery-ingredient",
+    "entity_id": "t1006",
+    "score_payload": {
+      "ingredient_use": "80",
+      "taste": "",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "mystery_ingredient": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988111016,
+    "judge_id": 9
+  },
+  {
+    "uuid": "f1a7fcf1-503f-4651-b2ae-5f8d47a6f443",
+    "game_id": "cooking-mystery-ingredient",
+    "entity_id": "t1003",
+    "score_payload": {
+      "ingredient_use": "50",
+      "taste": "",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "mystery_ingredient": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988123874,
+    "judge_id": 9
+  },
+  {
+    "uuid": "12204b05-79ea-4874-b1f6-3d02ef767f69",
+    "game_id": "cooking-mystery-ingredient",
+    "entity_id": "t1005",
+    "score_payload": {
+      "ingredient_use": "50",
+      "taste": "",
+      "presentation": "",
+      "technique": "",
+      "scout_participation": "",
+      "mystery_ingredient": "",
+      "dish_name": ""
+    },
+    "timestamp": 1778988140333,
+    "judge_id": 9
+  },
+  {
+    "uuid": "45eb9110-6cdc-405f-8cd3-8f181e7168f7",
+    "game_id": "showtime-in-the-center-ring",
+    "entity_id": "p4306",
+    "score_payload": {
+      "p_flag": "100",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "skit_name": "",
+      "approx_length_in_minutes": "",
+      "points": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778997182585,
+    "judge_id": 9
+  },
+  {
+    "uuid": "0631a4ee-e18b-4fb7-97b6-3bc52be61590",
+    "game_id": "showtime-in-the-center-ring",
+    "entity_id": "p4307",
+    "score_payload": {
+      "p_flag": "75",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "skit_name": "",
+      "approx_length_in_minutes": "",
+      "points": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778997197360,
+    "judge_id": 9
+  },
+  {
+    "uuid": "f0176cf3-c54a-429a-9695-4073fd550464",
+    "game_id": "showtime-in-the-center-ring",
+    "entity_id": "p4324",
+    "score_payload": {
+      "p_flag": "50",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "skit_name": "",
+      "approx_length_in_minutes": "",
+      "points": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778997208407,
+    "judge_id": 9
+  },
+  {
+    "uuid": "5c0e70f7-7c17-49c8-9833-6cd8afc03e35",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4311",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "field_1778195167953 ": "",
+      "field_1778195205040 ": "",
+      "field_1778195292154 ": "",
+      "field_1778195322777 ": "",
+      "scout_2": "",
+      "scout_1": "",
+      "notes": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778998377481,
+    "judge_id": 9
+  },
+  {
+    "uuid": "bb5eb07d-6e87-4641-b832-b1593339c0f4",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4324",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "field_1778195167953 ": "",
+      "field_1778195205040 ": "",
+      "field_1778195292154 ": "",
+      "field_1778195322777 ": "",
+      "scout_2": "",
+      "scout_1": "",
+      "notes": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778998387239,
+    "judge_id": 9
+  },
+  {
+    "uuid": "2b58aacf-a7a0-4a41-8fec-0232b09b0bfd",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4315",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "field_1778195167953 ": "",
+      "field_1778195205040 ": "",
+      "field_1778195292154 ": "",
+      "field_1778195322777 ": "",
+      "scout_2": "",
+      "scout_1": "",
+      "notes": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778998404463,
+    "judge_id": 9
+  },
+  {
+    "uuid": "e5a29115-36ad-4b9a-80b2-f0aa73494620",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4301",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "field_1778195167953 ": "",
+      "field_1778195205040 ": "",
+      "field_1778195292154 ": "",
+      "field_1778195322777 ": "",
+      "scout_2": "",
+      "scout_1": "",
+      "notes": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778998479623,
+    "judge_id": 9
+  },
+  {
+    "uuid": "41d68453-59aa-45f6-bf20-8761882979bf",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4318",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "field_1778195167953 ": "",
+      "field_1778195205040 ": "",
+      "field_1778195292154 ": "",
+      "field_1778195322777 ": "",
+      "scout_2": "",
+      "scout_1": "",
+      "notes": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778998501955,
+    "judge_id": 9
+  },
+  {
+    "uuid": "39da074b-cd53-41f5-83b5-8759758c6c2d",
+    "game_id": "buried-bearded-ladys-jewels",
+    "entity_id": "p4322",
+    "score_payload": {
+      "p_flag": "1",
+      "p_yell": "",
+      "p_spirit": "",
+      "ten_ess": "",
+      "field_1778195167953 ": "",
+      "field_1778195205040 ": "",
+      "field_1778195292154 ": "",
+      "field_1778195322777 ": "",
+      "scout_2": "",
+      "scout_1": "",
+      "notes": "",
+      "unscout": "",
+      "off_notes": ""
+    },
+    "timestamp": 1778998558021,
+    "judge_id": 9
+  }
+]

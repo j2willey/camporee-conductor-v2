@@ -5,3 +5,8 @@ coverage/
 .env
 .env.*
 .DS_Store
+
+# Real event databases hold people's names and emails; never commit them (issue #3).
+*.db
+*.sqlite
+*.sqlite3
