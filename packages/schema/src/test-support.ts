@@ -4,7 +4,9 @@ import type { z } from "zod";
 export function issuesOf(schema: z.ZodType, value: unknown): string[] {
   const result = schema.safeParse(value);
   if (result.success) return [];
-  return result.error.issues.map(
-    (issue) => `${issue.path.join(".")}: ${issue.message}`,
+  return result.error.issues.map((issue) =>
+    issue.path.length > 0
+      ? `${issue.path.join(".")}: ${issue.message}`
+      : issue.message,
   );
 }

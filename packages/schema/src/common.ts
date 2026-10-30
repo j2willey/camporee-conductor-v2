@@ -49,17 +49,17 @@ export const documentBase = {
 export function rejectDuplicates<T>(
   items: readonly T[],
   ctx: z.RefinementCtx,
-  key: (item: T) => string,
+  key: (item: T) => string | number,
   { label, path }: { label: string; path: string },
 ): void {
-  const seen = new Set<string>();
+  const seen = new Set<string | number>();
   items.forEach((item, index) => {
     const value = key(item);
     if (seen.has(value)) {
       ctx.addIssue({
         code: "custom",
         path: [index, path],
-        message: `duplicate ${label} "${value}"`,
+        message: `duplicate ${label} ${JSON.stringify(value)}`,
       });
     }
     seen.add(value);
