@@ -1,0 +1,36 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "archery",
+  "sortOrder": 40,
+  "content": {
+    "title": "William Tell No Apple",
+    "story": "The circus sharpshooter steps to the line — calm, focused, one arrow already nocked. The crowd hushes. In the old Wild West shows, Annie Oakley could split a playing card edge-on at thirty paces. You don't have to match that today. You just have to step to the line, draw, and let the arrow find its way. The target is waiting.",
+    "challenge": "Shoot a set of arrows at an archery target and score as many points as possible. Individual achievement recognized — highest scorers recognized at the awards ceremony.",
+    "description": "Each Scout shoots a set number of arrows (typically 5–6 per round) from a standard distance, determined by the station instructor based on experience level. Arrows are scored by ring value on a standard archery target face. All BSA Archery safety guidelines apply. Station is staffed by trained BSA archery instructors. Outstanding performers (high score in a round, most bull's-eyes) may be recognized at the awards ceremony.",
+    "rules": [
+      "All BSA Archery safety guidelines apply at all times",
+      "Certified BSA archery instructor controls all range commands",
+      "Only archers on the line during shooting — all others behind the waiting line",
+      "No drawing or dry-firing bows without instructor clearance",
+      "No approaching the targets until the 'bows down, retrieve arrows' command is given",
+      "Scouts must receive a brief safety orientation from the instructor before shooting",
+      "Proper shooting form and stance demonstrated before each Scout's first shot"
+    ],
+    "time_and_scoring": "No formal competitive scoring. Exhibition only.\n\nStation staff may record scores for individual Scouts who wish to track their performance. Recognition at awards ceremony is at the discretion of the Camporee Director. Suggested award title: Top Archer, Sharpshooter.",
+    "setup": "Set up a standard BSA archery range: shooting line, 10-meter (or 15-yard) target line, lateral safety zones on both sides. Use BSA-approved recurve bows appropriate for youth. Set target faces (standard 40cm or 60cm) on hay bales or foam backstops. All range commands follow BSA Archery protocol ('Archers to the line,' 'Begin shooting,' 'Bows down,' 'Retrieve your arrows').",
+    "reset": "After all archers on the line complete their round, give the retrieve command and score arrows before next group approaches. Estimated rotation: 5–8 minutes per group.",
+    "staffing": "Minimum 2 BSA-trained archery instructors: 1 as range officer giving commands, 1 assisting Scouts with form and safety. Both must be current on BSA Archery training.",
+    "supplies_text": "Recurve bows (youth-appropriate draw weights): 4–6\nArrows (field-tip, appropriate spine): 20–30\nTarget faces (40cm or 60cm): 4–6\nHay bales or foam backstops: 4–6\nArrow puller: 2–3\nArmguards: 4–6\nFinger tabs or shooting gloves: 4–6\nFirst aid kit: 1\nBSA Archery range signs: 1 set",
+    "notes": "This is an Exhibition event — no patrol or troop points. BSA Archery requires instructors current on National Camping School Archery certification or equivalent. Confirm instructor credentials before the event. Arrange equipment sourcing in advance — Camp Chesebrough may have archery equipment available. Award title suggestions: Top Archer, Sharpshooter."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": []
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "exhibition",
+  "session": null,
+  "schemaVersion": "3.0"
+}

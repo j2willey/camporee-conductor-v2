@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-70b9-adec-220914bde573",
+  "slug": "cooking-best-dessert",
+  "title": "The Grand Finale",
+  "kind": "activity",
+  "scoringType": "ranked",
+  "content": {
+    "story": "No circus is complete without the sweetness of the midway. Cotton candy, funnel cakes, caramel corn — the aroma of something sweet is half the show. Your troop's challenge: bring that spirit to your camp kitchen. Create a dessert that would make even the most demanding trapeze artist stop mid-swing and ask for seconds.",
+    "objective": "Prepare a camp-cooked dessert using Scouting field cooking methods. Judges score on taste, presentation, technique, Scout participation, and theme creativity.",
+    "description": "Each troop prepares one dessert using camp cooking equipment (Dutch oven, camp stove, open fire, or similar field method). Scouts do the cooking — adult leaders may assist with fire safety only. Judges visit each troop's camp kitchen during the judging window, taste the dessert, and score it. Troops provide a written recipe card at the time of judging.",
+    "rules": [
+      "Scouts must do the cooking — adult assistance limited to fire safety",
+      "One dessert per troop, served to the judge panel",
+      "Must use camp cooking methods — no household appliances",
+      "Serving size: enough for all judges to taste (minimum 2 oz per judge)",
+      "Provide a written recipe card describing the dessert and cooking method",
+      "All ingredients must be food-safe and pre-prepped within camp food-handling standards",
+      "Dish must be ready and presented during the designated judging window"
+    ],
+    "timeAndScoring": "Judges visit each campsite during the designated judging window (1–2 hour block announced at check-in).\n\nScoring (100 points total):\n- Taste & Flavor: 0–30 pts\n- Presentation & Appearance: 0–20 pts\n- Camp Cooking Technique: 0–20 pts\n- Scout Participation (Scouts cooking, not adults): 0–20 pts\n- Circus / Theme Creativity: 0–10 pts\n\nTiebreaker: Judges' discretion.",
+    "setup": "Same judging window as Best Entrée, or a separate window. Judges move from campsite to campsite. Bring palate cleansers.",
+    "reset": "Judges move to next campsite. No physical reset.",
+    "staffing": "2–3 adult judges. Score independently; average or discuss at end.",
+    "supplies": [
+      {
+        "item": "Scoring sheets (1 per judge per troop)",
+        "quantity": "1 pad"
+      },
+      {
+        "item": "Pens",
+        "quantity": "1 per judge"
+      },
+      {
+        "item": "Water bottles",
+        "quantity": "1 per judge"
+      },
+      {
+        "item": "Plain crackers (palate cleansers)",
+        "quantity": "1 sleeve"
+      },
+      {
+        "item": "Clipboards",
+        "quantity": "1 per judge"
+      },
+      {
+        "item": "Summary tally sheet",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  "scoring": {
+    "direction": "higher-wins",
+    "fields": [
+      {
+        "id": "taste",
+        "label": "Taste & Flavor (0–30)",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 10,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 30,
+          "placeholder": "0–30",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "presentation",
+        "label": "Presentation & Appearance (0–20)",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 20,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "0–20",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "technique",
+        "label": "Camp Cooking Technique (0–20)",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 30,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "0–20",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "scout_participation",
+        "label": "Scout Participation — Scouts cooking (0–20)",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 40,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "0–20",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "theme_creativity",
+        "label": "Circus / Theme Creativity (0–10)",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 50,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": "0–10",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "dish_name",
+        "label": "Dessert Name / Description",
+        "type": "text",
+        "kind": "info",
+        "audience": "judge",
+        "sortOrder": 60,
+        "weight": 1,
+        "config": {
+          "placeholder": "Name of the dessert served"
+        },
+        "legacy": {
+          "v1Weight": 0
+        }
+      }
+    ]
+  },
+  "legacy": {
+    "v1Id": "cooking-best-dessert"
+  }
+}

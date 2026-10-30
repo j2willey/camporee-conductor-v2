@@ -1,0 +1,150 @@
+{
+  "library_uuid": "85fb14ce-f665-4830-9b5a-fce905d198d6",
+  "library_title": "Circus First Aid Scenarios",
+  "id": "the-big-top-goes-down",
+  "sortOrder": 30,
+  "content": {
+    "title": "The Big Top Goes Down",
+    "story": "It started with Duchess. The Coyote Creek Circus's prize elephant got spooked during a rehearsal — nobody knows exactly why, but the leading theory involves Pepito the Clown's air horn. Duchess lurched sideways, snapping the lash lines that tethered the animal pens to the main tent rigging. The tension release sent a support pole swinging into the generator shed, toppling the fuel generator — which is now sitting at an angle, engine still running, in a puddle of something that probably isn't water. The main tent sagged, then partially collapsed, dropping a section of canvas and rope onto three members of the crew who were working inside. By the time anyone realized what happened, Duchess was gone, the generator was making a sound it shouldn't, and three people were on the ground. The Ringmaster called for help. Your patrol just arrived on scene.",
+    "challenge": "Assess a multi-casualty circus accident scene for hazards, triage three victims by priority, and demonstrate or describe correct first aid for each — before anything else goes wrong.",
+    "description": "The judge briefs the patrol outside the room, describing the Duchess cascade without naming the hazards inside. The patrol then enters and must complete four steps:\n\n1. Read the scene — identify all hazards before touching any victim.\n2. Triage — determine the order in which victims need attention.\n3. Treat or describe treatment — demonstrate or correctly verbalize first aid for each victim in priority order.\n4. The judge observes throughout and scores on a running rubric. They do not prompt or redirect. Silence is the correct response if the patrol freezes.\n\nVICTIMS:\nVictim 1 — Pepito the Clown (Lowest Priority): Sitting upright, alert, loudly complaining. Sprained or possibly broken ankle; minor lacerations on both hands. Scouts should recognize he is stable and deprioritize him accordingly.\n\nVictim 2 — Marguerite the Aerialist (Medium Priority): Lying on her side, semi-conscious, responding slowly. Suspected head injury (briefly unconscious, now groggy) and neck/back pain. Spinal precautions required — do not move her without stabilization. Needs EMS.\n\nVictim 3 — \"Big Eddie\" the Rigger (Highest Priority): Flat on his back, unresponsive, no visible chest rise. Visible severe bleeding wound on forearm. Requires: establish unresponsiveness, call 911, open airway (head-tilt chin-lift), check breathing and pulse, initiate CPR, address severe bleed with direct pressure or tourniquet.",
+    "rules": [
+      "Assess the full scene for hazards before touching any victim",
+      "Triage all three victims before committing to treatment order",
+      "Demonstrate or verbally describe correct first aid for each victim in priority order",
+      "The judge observes only — no prompting, no hints, no redirection",
+      "All patrol members must participate — rotate roles between victims",
+      "If asked what to do, the judge's only answer is: 'You tell me'",
+      "Scouts with Totin' Chip or First Aid training should take the lead — all others support"
+    ],
+    "time_and_scoring": "Scoring is divided into four sections totaling 100 points, plus a 4-point bonus:\n\nSection 1 — Scene Safety (20 pts)\n  Announces scene survey / asks if scene is safe (2 pts)\n  Identifies fuel spill / generator hazard before touching victims (8 pts)\n  Identifies unstable overhead rigging (6 pts)\n  BONUS: Identifies loose animal lash line / possible returning animal (+4 pts)\n\nSection 2 — Triage Order (20 pts)\n  Correctly prioritizes Big Eddie (unresponsive) first (10 pts)\n  Correctly prioritizes Marguerite (spinal/head) second (6 pts)\n  Addresses Pepito last (4 pts)\n  Partial credit available if order is wrong but patrol verbally explains reasoning.\n\nSection 3 — Victim Treatment (60 pts, 20 per victim)\n  Big Eddie: Establish unresponsiveness (3), direct 911 call (3), open airway (4), check breathing/pulse (4), initiate CPR or rescue breathing (4), address severe bleed (2).\n  Marguerite: Tell her not to move (4), manually stabilize head/neck (6), check/monitor responsiveness (4), identify need for EMS/spinal board (4), do not move her without precautions (2).\n  Pepito: Use gloves or barrier before treating bleeding (4), clean and cover lacerations (4), identify possible fracture/sprain and do not remove boot (4), immobilize ankle (4), reassure patient and ask about allergies (4).\n\nSection 4 — Judge Discretion (±10 pts)\n  The judge may award or deduct up to 10 points based on: calm organized leadership vs. panic, clear communication within the patrol, whether the patrol split up intelligently to handle multiple victims simultaneously, and any unsafe actions (moving Marguerite carelessly, ignoring the generator, etc.).\n\nTOTAL: 100 pts + 4 bonus pts possible.",
+    "setup": "Set up the scene inside a room, tent section, or enclosed area the patrol enters as a group.\n\nHAZARD 1 — The Generator (Primary Danger, 8 pts)\nA prop generator or labeled box sits visibly tilted near the entrance. A rope or cord runs across the floor toward the victims. A 'FUEL SPILL' placard or blue tarp / tape outline marks a spill zone between the entrance and the victims. Scouts must verbally identify it and state they are avoiding/isolating it before approaching victims.\n\nHAZARD 2 — Unstable Overhead Rigging (Subtle, 6 pts)\nA length of rope or bunched canvas is draped overhead or over a doorframe, visibly under tension or poorly secured. Not immediately obvious — Scouts who do a full scene survey will catch it. They should verbalize it as an overhead hazard to be cleared or avoided.\n\nHAZARD 3 — Loose Animal Lash Line (Misdirection, +4 pts BONUS)\nA length of rope on the ground leads off toward a door or out of frame. An overturned feed bucket and a 'CAUTION — ANIMAL' sign are nearby. Duchess is gone — but Scouts who notice it should acknowledge the possibility of an animal returning. No points lost for missing this one, but bonus points awarded for identifying it.\n\nVICTIM POSITIONS:\nPepito the Clown — Sitting upright on the ground, leaning against something if possible. One leg extended with foot slightly elevated, boot still on. Both palms visible and scraped-looking (prop makeup/coloring on hands). Loud, dramatic, complaining. If Scouts try to remove his boot, he reacts: 'Ow ow ow — that hurts!' A correct Scout stops and leaves the boot on.\n\nMarguerite the Aerialist — Lying on her side on the ground. Eyes half open. Responds to voices but slowly (2–3 second delay). Quiet, confused, a little frightened. If someone tells her not to move, she attempts to shift slightly anyway — stop if they physically stabilize her head or firmly repeat the instruction.\n\nBig Eddie the Rigger — Flat on his back, arms at sides, forearm visible with heavily blood-soaked cloth or prop bandage. Eyes closed. No chest movement. Says and does nothing under almost all circumstances. If a Scout opens his airway (head-tilt chin-lift), he may take one slow quiet breath. If a Scout applies firm direct pressure to his forearm wound, he may wince slightly — just once.",
+    "reset": "Re-position all three victims to starting positions. Re-drape rigging hazard, reset fuel spill indicator, reset lash line. Re-brief all three victim volunteers on their roles and what to say/not say. Estimated reset time: 5–8 minutes. Have a 2-minute warning system so next patrol is not called until the scene is fully reset.",
+    "staffing": "Minimum 2 adults: 1 primary judge holding the scoring sheet (observes throughout, does not prompt), 1 safety monitor. Ideally 3: add 1 adult who manages the waiting queue outside. First Aid/CPR certification strongly recommended for the primary judge. Three volunteers are needed for victim roles — brief them privately before the event and give them time to read their role cards.",
+    "supplies_text": "SCENE PROPS:\nGenerator prop or large labeled box: 1\nRope or extension cord (runs from generator toward victims): 1\nBlue tarp or tape outline for fuel spill zone: 1\n'FUEL SPILL' placard or sign: 1\nRope or canvas for overhead rigging hazard: 1 section\nOverturned feed bucket: 1\n'CAUTION — ANIMAL' sign: 1\nRope section for loose lash line on floor: 1\nTent pole section (partially collapsed look): 1\n\nVICTIM PROPS:\nRed-stained cloth or prop wound bandage for Big Eddie's forearm: 1\nProp makeup or coloring for Pepito's scraped hands: 1 kit\n\nJUDGE SUPPLIES:\nPrinted judge scoring sheets: 1 per patrol + extras\nPrinted victim role cards (one per volunteer): 3\nPrinted judge briefing script: 1\nClipboard: 1\nPen/pencil: 2\n\nPATROL USE:\nProp first aid kit (available to patrol for demonstration): 1\nDisposable gloves: 1 box\nBandages, gauze, medical tape: assorted\nSAM splints or improvised splint materials: 2\nTriangular bandages/cravats: 4",
+    "notes": "JUDGE BRIEFING SCRIPT — deliver outside the room before the patrol enters. Speak slowly and clearly. Do not answer questions about what is inside — redirect with 'You'll need to assess that yourselves.'\n\n'Alright, listen up. I need your help and I need it now.\n\nAbout ten minutes ago, something set off Duchess — that's the circus elephant. She spooked, pulled hard on her lash lines, and those lines were tied into the main tent rigging. The whole thing went like dominoes. A support pole swung into the generator shed, the generator went over, and a section of the Big Top came down on top of three of our crew members who were working inside.\n\nWe've got three people down. I don't know their full condition. I got them out from under the worst of the canvas but I haven't been able to do much else — I'm not trained for this. That's why I came to get you.\n\nDuchess is gone — she ran. We don't know where.\n\nI need you to go in there, figure out what needs to happen, and take care of those people the best you can. Help is on the way but it is not here yet. You are what they've got right now.\n\nOne more thing — I want you to be careful in there. It was a mess when it happened and I haven't had time to sort it all out. Use your heads before you use your hands.\n\nAny questions before you go in?'\n\n[Pause. Answer only general questions. If asked about victim conditions or what's inside: 'I don't know — that's what I need you to find out.' If asked if it's safe to enter: 'I think so, but I'd make sure of that myself before I did anything else.']\n\n'Alright. In you go. I'll be right here watching.'\n\n[Begin scoring as patrol crosses the threshold. Note which victim they approach first.]\n\nJUDGE REMINDERS: Do not prompt. If the patrol freezes, silence is the correct response. If a Scout is about to do something genuinely physically unsafe (not scenario-unsafe), say 'Freeze — safety issue' and pause the clock. Note the exact moment and which victim the patrol approaches first — this is your triage order record.\n\nVICTIM ROLE SUMMARY:\nPepito the Clown — Loud, dramatic, complaining. Convinced he is the most injured. Yells 'Hey! Over here! My ankle — I think it's broken! And my hands!' when patrol enters. Pulls back and says 'Ow ow ow — that hurts!' if boot removal is attempted. Does NOT reveal other victims or hazards.\n\nMarguerite the Aerialist — Quiet, confused, groggy. Responds slowly. Says '...what happened? Where am I?' and 'My neck... my neck hurts.' Attempts to shift slightly when told not to move — stops when head is stabilized. Does NOT respond quickly or clearly, does NOT call for help.\n\nBig Eddie the Rigger — Completely still and unresponsive. Says and does NOTHING. May take one slow quiet breath after head-tilt chin-lift is performed. May wince once if direct pressure is applied to forearm wound. Must stay completely in character — this stillness is what teaches the most important lesson."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "scene_safety",
+        "label": "Scene Safety",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 16,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "animal_bonus",
+        "label": "Animal Bonus",
+        "audience": "judge",
+        "sortOrder": 15,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 4,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "triage_order",
+        "label": "Triage Order",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "big_eddie",
+        "label": "Big Eddie",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "marguerite",
+        "label": "Marguerite",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "pepito",
+        "label": "Pepito",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "judge_discretion",
+        "label": "Judge Discretion",
+        "audience": "judge",
+        "sortOrder": 60,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": -10,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "judge_notes",
+        "label": "Judge Notes",
+        "audience": "judge",
+        "sortOrder": 90,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Note triage order, hazards identified/missed, victim treatment observations, leadership quality"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "First Aid Kit"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

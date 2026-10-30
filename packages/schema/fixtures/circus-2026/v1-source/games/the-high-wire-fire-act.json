@@ -1,0 +1,98 @@
+{
+  "library_uuid": "06825ba0-1ce4-46d7-b762-5e1eef3d7e70",
+  "library_title": "Fire Starting Challenge",
+  "id": "the-high-wire-fire-act",
+  "sortOrder": 10,
+  "content": {
+    "title": "The High-Wire Fire Act",
+    "story": "The show must go on — but there's a crisis! The Great Acrobat is trapped above the Center Ring, hanging from the High Wire above \"ferocious flaming lions\" (your fire lay). The only way to save them is to grow your fire hot enough to snap the High Wire so they can swing to safety. Every match your crew lights costs precious seconds. The crowd is watching. The fate of the greatest show on earth rests in YOUR hands!",
+    "challenge": "Build a fire lay and ignite it by any method. The fire must burn through the High Wire (suspended twine). ",
+    "description": "On the Ringmaster's signal, your Fire Crew springs into action. Build the fire lay in the Center Ring, then ignite it using any safe method (matches, ferro rod, flint and steel, battery and steel wool, etc.).  Smart crews split up: some build the lay, others start the ember. The clock stops when the High Wire snaps letting the Great Acrobat swing to safety. Patrols that bring fire starters as their 10 Essentials earn one free match — but every match after that adds one minute to your final time, and using a lighter adds 3 minutes. Crews without 10 Essentials fire starters pay the penalty on every match from the start. No chemical accelerants — the Circus has standards. Fully extinguish the fire before the crew takes their bow.",
+    "rules": [
+      "Any ignition method is permitted: matches, lighter, ferro rod, flint and steel, battery and steel wool, bow drill, etc.",
+      "Alternative ignitions (ferro rod, flint and steel, battery and steel wool, bow drill) incur no time penalty",
+      "If at least one patrol member has a fire starter in their 10 Essentials: the patrol's first match (own or judge-provided) is free — no penalty. Each additional match after the first adds +1 minute.",
+      "If no patrol member has a 10 Essentials fire starter: every match adds +1 minute, starting with the first",
+      "Using a lighter: +3 minute flat penalty",
+      "No liquid or chemical accelerants",
+      "Natural tinder only — no paper, cardboard, or man-made materials",
+      "Fire lay must be built from scratch on site — no pre-built lays",
+      "Reference line set horizontal by judge before patrol begins",
+      "Twine must burn through and release.",
+      "Fire must be fully extinguished and fire pit cleaned before leaving station"
+    ],
+    "time_and_scoring": "Base Time: start signal to High Wire (reference line) burn-through.\n\nMatch Penalty:\n  - Patrol HAS 10 Essentials fire starters: first match free, +1 minute per additional match\n  - Patrol has NO 10 Essentials fire starters: +1 minute per match, starting with the first\n  - Alternative ignitions (ferro rod, flint and steel, battery + steel wool, etc.): no penalty\n  - Lighter used: +3 minutes flat\n\nBonus Points: Patrol Spirit (up to 5 points) + 10 Essentials (1 point per patrol member arriving with a fire starter, max 5 points. Patrols of 4 receive full 5 points if all 4 arrive with a fire starter).\n\nTotal Time = Base Time + Penalty\nFinal Score = 15 - Total Time + Bonus Points",
+    "setup": "Drive two stakes ~18 inches apart. Suspend natural twine (the High Wire) horizontally ~12–18 inches above ground. Note the height — all patrols should have the High Wire at the same height when starting the challenge. Stage alternative fire starters nearby (visible but patrol chooses). Provide water bucket for extinguishing.",
+    "reset": "Ideally the Patrol should perform the reset. If they don't reset fully, assess penalty points accordingly. Estimated reset time: 3–5 minutes.\n* Remove ash and burned material.\n* Re-stake and re-string reference line at same height.\n* Refill water bucket.\n* Restock steel wool if provided.",
+    "staffing": "Minimum  1 judge (Ringmaster). \n   Counts every match struck, \n\t starts/stops timer, \n\t verifies extinguishment and clean up.",
+    "supplies_text": "Natural fiber twine for High Wire: 1 roll\nWooden stakes: 2–4\nWaterproof matches (available to patrol): 1 box\nFlint and steel kit: 1–2\nMagnesium striker / ferro rod: 1–2\n9-volt battery + steel wool pads: 1 battery + several pads\nBow drill or hand drill (optional): 1\nWater bucket: 1\nStopwatch: 1\nMatch tally sheet for judge: 1\nFire extinguisher: 1",
+    "notes": "Do not tell patrols which method to use — the choice is part of the challenge. Count every match struck, not every box opened. Check local fire regulations. Fire extinguisher required at station.",
+    "scoring_notes": "On arrival, ask each Scout if they have a fire starter in their 10 Essentials (matches, lighter, ferro rod, etc.). Record the count — it determines bonus points AND whether the patrol earns a free first match. Announce to the patrol before starting: 'You [have / do not have] a free first match.' During the event: count every match struck and note if a lighter is used."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "matches_used",
+        "label": "Matches struck ",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 5,
+          "defaultValue": 0,
+          "placeholder": "(each = +1 min penalty)"
+        }
+      },
+      {
+        "id": "base_time",
+        "label": "Time to burn string",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 0,
+        "config": {
+          "placeholder": " (start to High Wire burn-through)"
+        }
+      },
+      {
+        "id": "fire_extinguished",
+        "label": "Fire fully extinguished & reset",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false,
+          "max": 20
+        }
+      },
+      {
+        "id": "field_1777494221037 ",
+        "label": "Time converted to points",
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "audience": "admin",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "matches, lighter, or ignition source"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

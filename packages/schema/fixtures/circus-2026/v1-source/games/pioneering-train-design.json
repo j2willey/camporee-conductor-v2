@@ -1,0 +1,122 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "pioneering-train-design",
+  "sortOrder": 70,
+  "content": {
+    "title": "The Beast Wagon",
+    "story": "The circus travels by train — a magnificent rolling parade of animals, performers, and equipment. Your troop's challenge is to design and build one car of that train using nothing but pioneering poles, rope, and Scout ingenuity. Judges want to see engineering, craftsmanship, and a healthy dose of circus flair in your design before it ever moves an inch.",
+    "challenge": "Design and construct a Circus Train Car using pioneering materials. Judges score the completed structure on engineering, lashing quality, Scout craftsmanship, circus theme, and safety — before any performance run.",
+    "description": "Each troop designs and builds a pioneering structure representing one car of a Circus Train. The car must be large enough for at least one Scout to ride or occupy during the performance event (see Best Performance of Circus Train Car). Judging of Design & Construction occurs before the performance — judges examine the completed structure at the troop's build site or at the performance starting line. Scouts explain design choices to judges.",
+    "rules": [
+      "Must be built using pioneering poles, rope, and lashing only — no nails, screws, or permanent hardware",
+      "Must be structurally sound and safe for a Scout to ride or occupy",
+      "Must incorporate a Circus Train Car theme (boxcar, flatcar, caboose, animal car, etc.)",
+      "Scouts must do the construction — adult assistance limited to safety guidance",
+      "Structure must be complete and presented before the performance judging begins",
+      "Minimum dimensions: large enough to carry one Scout"
+    ],
+    "time_and_scoring": "Judges evaluate the completed structure before the performance run.\n\nScoring (100 points total):\n- Engineering & Design (practical, functional structure): 0–25 pts\n- Lashing Quality (tight, correct, consistent technique): 0–25 pts\n- Scout Craftsmanship (finish, neatness, attention to detail): 0–20 pts\n- Circus Theme Integration (clearly a circus train car): 0–20 pts\n- Safety & Stability (safe for use, no sharp hazards): 0–10 pts",
+    "setup": "Establish a build period and a judging time before the performance run begins. Judges inspect each troop's car at the starting line or at their build site. Scouts should be present to answer questions about their design.",
+    "reset": "N/A for design judging. Judges move to next troop's car.",
+    "staffing": "2–3 judges with pioneering knowledge preferred. Score independently; average.",
+    "supplies_text": "Scoring sheets (1 per judge per troop): 1 pad\nPens: 1 per judge\nClipboards: 1 per judge\nSummary tally sheet: 1"
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "engineering",
+        "label": "Engineering & Design (0–25)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 25,
+          "defaultValue": 0,
+          "placeholder": "Practical, functional structure"
+        }
+      },
+      {
+        "id": "lashing",
+        "label": "Lashing Quality (0–25)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 25,
+          "defaultValue": 0,
+          "placeholder": "Tight, correct, consistent technique"
+        }
+      },
+      {
+        "id": "craftsmanship",
+        "label": "Scout Craftsmanship (0–20)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Finish, neatness, attention to detail"
+        }
+      },
+      {
+        "id": "theme",
+        "label": "Circus Theme Integration (0–20)",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Clearly a circus train car"
+        }
+      },
+      {
+        "id": "safety",
+        "label": "Safety & Stability (0–10)",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0,
+          "placeholder": "Safe to ride, no sharp hazards"
+        }
+      },
+      {
+        "id": "car_type",
+        "label": "Car Type / Theme Description",
+        "audience": "judge",
+        "sortOrder": 60,
+        "type": "text",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "e.g. Animal Car, Caboose, Flatcar..."
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

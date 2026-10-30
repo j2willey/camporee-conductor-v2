@@ -1,0 +1,157 @@
+[
+  {
+    "id": "p_flag",
+    "label": "Patrol Flag",
+    "type": "number",
+    "kind": "points",
+    "weight": 10,
+    "audience": "judge",
+    "position": "prefix",
+    "sortOrder": 10,
+    "config": {
+      "min": 0,
+      "max": 5,
+      "placeholder": "0-10 Points"
+    },
+    "tier": "subunit"
+  },
+  {
+    "id": "p_yell",
+    "label": "Patrol Yell",
+    "type": "number",
+    "kind": "points",
+    "weight": 5,
+    "audience": "judge",
+    "position": "prefix",
+    "sortOrder": 20,
+    "config": {
+      "min": 0,
+      "max": 5,
+      "placeholder": "0-5 Points"
+    },
+    "tier": "subunit"
+  },
+  {
+    "id": "p_spirit",
+    "label": "Scout Spirit",
+    "type": "number",
+    "kind": "points",
+    "weight": 10,
+    "audience": "judge",
+    "position": "prefix",
+    "sortOrder": 30,
+    "config": {
+      "min": 0,
+      "max": 10,
+      "placeholder": "0-10 Points"
+    },
+    "tier": "subunit"
+  },
+  {
+    "id": "ten_ess",
+    "label": "10 Essentials: {{ten_essentials_item}}",
+    "type": "number",
+    "kind": "points",
+    "weight": 5,
+    "audience": "judge",
+    "position": "prefix",
+    "sortOrder": 40,
+    "config": {
+      "min": 0,
+      "max": 5,
+      "placeholder": "Does the patrol have {{ten_essentials_item}}?"
+    },
+    "tier": "subunit"
+  },
+  {
+    "id": "unscout",
+    "label": "Unscoutlike Behavior",
+    "type": "number",
+    "kind": "penalty",
+    "weight": 1,
+    "audience": "judge",
+    "position": "suffix",
+    "sortOrder": 10,
+    "config": {
+      "min": 0,
+      "max": 20,
+      "placeholder": "Points deducted (0-20)"
+    },
+    "tier": "subunit"
+  },
+  {
+    "id": "off_notes",
+    "label": "Judges Notes",
+    "type": "textarea",
+    "kind": "info",
+    "weight": 0,
+    "audience": "judge",
+    "position": "suffix",
+    "sortOrder": 20,
+    "config": {
+      "placeholder": "Issues, tie-breakers, etc."
+    },
+    "tier": "subunit"
+  },
+  {
+    "id": "off_score",
+    "label": "Official Score",
+    "type": "number",
+    "kind": "points",
+    "weight": 1,
+    "audience": "admin",
+    "position": "suffix",
+    "sortOrder": 30,
+    "config": {
+      "placeholder": "Final Calculated Points"
+    },
+    "tier": "all"
+  },
+  {
+    "id": "final_rank",
+    "label": "Final Ranking",
+    "type": "select",
+    "kind": "info",
+    "weight": 0,
+    "audience": "admin",
+    "position": "suffix",
+    "sortOrder": 40,
+    "config": {
+      "options": [
+        "1st Place",
+        "2nd Place",
+        "3rd Place",
+        "4th Place",
+        "Participant"
+      ]
+    },
+    "tier": "all"
+  },
+  {
+    "id": "overall_points",
+    "label": "Overall Points",
+    "type": "number",
+    "kind": "points",
+    "weight": 1,
+    "audience": "admin",
+    "position": "suffix",
+    "sortOrder": 50,
+    "config": {
+      "placeholder": "e.g., 100, 90, 80..."
+    },
+    "tier": "all"
+  },
+  {
+    "id": "bracket_result",
+    "label": "Match Result",
+    "type": "text",
+    "kind": "info",
+    "weight": 0,
+    "audience": "judge",
+    "required": true,
+    "config": {
+      "placeholder": "Place:  1, 2, 3, 4....."
+    },
+    "tier": "all"
+  }
+]

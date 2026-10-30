@@ -1,0 +1,136 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "cooking-mystery-ingredient",
+  "sortOrder": 30,
+  "content": {
+    "title": "The Ringmaster's Surprise",
+    "story": "Every great circus has a secret act nobody saw coming. This is yours. At the start of cooking time, the Ringmaster reveals a Mystery Ingredient — a single item that every troop must incorporate into any dish of their choosing. It might be a can of beans. It might be an apple. It might be something weirder. Your job: make it taste like it was always meant to be there.",
+    "challenge": "Incorporate a judge-revealed Mystery Ingredient into any camp-cooked dish. Judges score on how well the ingredient is used, as well as overall taste, presentation, and technique.",
+    "description": "The Mystery Ingredient is announced at the start of the cooking period (same time for all troops). Each troop must incorporate that ingredient into any dish they choose — entrée, side, or dessert. Judges visit each campsite during the judging window, taste the dish, and score based on ingredient use, taste, presentation, and technique. Scouts do the cooking — adult leaders may assist with fire safety only.",
+    "rules": [
+      "Mystery Ingredient announced simultaneously to all troops at the start of cooking time",
+      "The Mystery Ingredient must be visibly present and clearly incorporated into the dish",
+      "Scouts must do the cooking — adult assistance limited to fire safety",
+      "One dish per troop, served to the judge panel",
+      "Must use camp cooking methods — no household appliances",
+      "Serving size: enough for all judges to taste (minimum 2 oz per judge)",
+      "Provide a written recipe card describing the dish and how the ingredient was used"
+    ],
+    "time_and_scoring": "Judges visit each campsite during the designated judging window.\n\nScoring (100 points total):\n- Mystery Ingredient Use (ingredient is clearly incorporated, not hidden): 0–30 pts\n- Taste & Flavor: 0–25 pts\n- Presentation & Appearance: 0–15 pts\n- Camp Cooking Technique: 0–15 pts\n- Scout Participation (Scouts cooking, not adults): 0–15 pts\n\nTiebreaker: Judges' discretion.",
+    "setup": "Select Mystery Ingredient before the event — keep it secret until the announcement. Choose something that can reasonably be used in multiple dish types (e.g., canned corn, apples, peanut butter, hot sauce). Announce simultaneously to all troops at the start of cooking time. Judges carry scoring sheets and move from campsite to campsite.",
+    "reset": "Judges move to next campsite. No physical reset.",
+    "staffing": "2–3 adult judges. Score independently; average or discuss at end.",
+    "supplies_text": "Mystery Ingredient (pre-selected, enough for all troops): varies\nScoring sheets (1 per judge per troop): 1 pad\nPens: 1 per judge\nWater bottles: 1 per judge\nPlain crackers (palate cleansers): 1 sleeve\nClipboards: 1 per judge\nSummary tally sheet: 1",
+    "notes": "Choose the Mystery Ingredient for surprise but not impossibility. Past good choices: canned pumpkin, instant oatmeal, hot sauce, marshmallows, raisins, canned peaches. Avoid allergen-heavy items unless you know all troop membership. Have a backup in case of allergies."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "ingredient_use",
+        "label": "Mystery Ingredient Use (0–30)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 30,
+          "defaultValue": 0,
+          "placeholder": "Clearly incorporated, not hidden"
+        }
+      },
+      {
+        "id": "taste",
+        "label": "Taste & Flavor (0–25)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 25,
+          "defaultValue": 0,
+          "placeholder": "0–25"
+        }
+      },
+      {
+        "id": "presentation",
+        "label": "Presentation & Appearance (0–15)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 15,
+          "defaultValue": 0,
+          "placeholder": "0–15"
+        }
+      },
+      {
+        "id": "technique",
+        "label": "Camp Cooking Technique (0–15)",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 15,
+          "defaultValue": 0,
+          "placeholder": "0–15"
+        }
+      },
+      {
+        "id": "scout_participation",
+        "label": "Scout Participation (0–15)",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 15,
+          "defaultValue": 0,
+          "placeholder": "Scouts cooking, not adults"
+        }
+      },
+      {
+        "id": "mystery_ingredient",
+        "label": "Mystery Ingredient Used",
+        "audience": "judge",
+        "sortOrder": 60,
+        "type": "text",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Record the revealed ingredient"
+        }
+      },
+      {
+        "id": "dish_name",
+        "label": "Dish Name / Description",
+        "audience": "judge",
+        "sortOrder": 70,
+        "type": "text",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "What did they make?"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

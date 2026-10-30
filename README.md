@@ -1,13 +1,13 @@
 # Camporee Conductor v2
 
 Camporee Conductor runs **station-based team competitions**: Teams rotate through Stations to
-attempt Challenges, volunteer Judges score them on their phones (no accounts), and scores roll up
-into Standings, Awards and an Announcer script. It also covers designing those events, sharing
-Templates, and planning artifacts such as the Program Guide and rosters
+take part in Activities (games, challenges, exhibitions), volunteer Judges score them on their phones
+(no accounts), and scores roll up into Standings, Awards and an Announcer script. It also covers
+designing those events, sharing Templates, and planning artifacts such as the Program Guide
 ([ADR-0001](docs/adr/0001-product-core-scope.md)).
 
-Code and data use a **generic vocabulary** (Event, Team, Challenge, Competition, Division, …).
-Scouting words (Camporee, Patrol, Troop, Game) come from the default **Terminology Pack**, so the
+Code and data use a **generic vocabulary** (Event, Team, Activity, Competition, Division, …).
+Scouting words (Camporee, Troop, Patrol, Scout) come from the default **Terminology Pack**, so the
 same product works for schools, camps and corporate team-building
 ([ADR-0003](docs/adr/0003-generic-vocabulary-terminology-packs.md)).
 

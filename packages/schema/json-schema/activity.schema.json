@@ -1,0 +1,315 @@
+{
+  "title": "activity",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "4.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "const": "activity"
+    },
+    "scoringType": {
+      "type": "string",
+      "enum": [
+        "ranked",
+        "exhibition"
+      ]
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "story": {
+          "type": "string"
+        },
+        "objective": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeAndScoring": {
+          "type": "string"
+        },
+        "setup": {
+          "type": "string"
+        },
+        "reset": {
+          "type": "string"
+        },
+        "staffing": {
+          "type": "string"
+        },
+        "supplies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "group": {
+                "type": "string"
+              },
+              "item": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "item"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "notes": {
+          "type": "string"
+        },
+        "customSections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "body": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "title",
+              "body"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "story",
+        "objective",
+        "description",
+        "rules",
+        "timeAndScoring",
+        "setup",
+        "reset",
+        "staffing",
+        "supplies",
+        "notes"
+      ],
+      "additionalProperties": false
+    },
+    "scoring": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "higher-wins",
+            "lower-wins"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "number",
+                  "stopwatch",
+                  "text",
+                  "textarea",
+                  "checkbox",
+                  "select"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "points",
+                  "metric",
+                  "penalty",
+                  "info"
+                ]
+              },
+              "audience": {
+                "type": "string",
+                "enum": [
+                  "judge",
+                  "official"
+                ]
+              },
+              "sortOrder": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "weight": {
+                "default": 1,
+                "type": "number",
+                "minimum": 0
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "defaultValue": {
+                    "type": [
+                      "number",
+                      "string",
+                      "boolean"
+                    ]
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "legacy": {
+                "type": "object",
+                "properties": {
+                  "v1Weight": {
+                    "type": "number"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "type",
+              "kind",
+              "audience",
+              "sortOrder"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "direction",
+        "fields"
+      ],
+      "additionalProperties": false
+    },
+    "variables": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "properties": {
+        "parentId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+        },
+        "attribution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "legacy": {
+      "type": "object",
+      "properties": {
+        "v1Id": {
+          "type": "string"
+        },
+        "v1LibraryUuid": {
+          "type": "string"
+        },
+        "v1LibraryTitle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "v1Id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "slug",
+    "title",
+    "kind",
+    "scoringType",
+    "content",
+    "scoring"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,64 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "sports-land-skis",
+  "sortOrder": 100,
+  "content": {
+    "title": "The Elephant Walk",
+    "story": "The circus parade needs all its performers moving in perfect unison. Land skis are exactly that challenge — a set of long planks with rope loops for every Scout's foot. The whole troop moves as one organism or it doesn't move at all. Coordination, communication, and trust. If one Scout breaks stride, everyone goes down. The fastest troop wins, but only if everyone crosses the finish together.",
+    "challenge": "All troop members must complete a set course on Land Skis — long planks with foot loops — as fast as possible, remaining in formation throughout.",
+    "description": "To complete 'The Elephant Walk,' the troop must move in unison on Land Skis. Each set of skis comprises two long planks (2x4 lumber, one per side), with rope loops for every Scout to place one foot on each plank. Like a synchronized elephant train, the troop lifts and moves the planks forward with coordinated steps, typically called by a lead Scout. All participants must maintain foot contact with the skis throughout the course. The official time begins at the start signal and ends when the last Scout's foot crosses the finish line.",
+    "rules": [
+      "All troop members must participate and maintain foot contact with the skis throughout the run",
+      "If a Scout falls off the skis, the team must stop, re-set that Scout, and continue — clock keeps running",
+      "Scouts may call cadence and coordinate steps — this is encouraged",
+      "Skis must not be dragged — each step must lift the plank",
+      "Scouts may not be carried on the skis — all must have both feet in the loops",
+      "Course is a straight run — defined start and finish lines",
+      "One official run per troop; a re-run may be offered at judge's discretion for equipment failure"
+    ],
+    "time_and_scoring": "Elapsed time from start signal to last Scout's foot crossing the finish line.\n\nLower time = better rank.\n\nPenalty: +10 seconds for each time a Scout falls off the skis during the run.\n\nFinal Time = Elapsed Time + (Falls × 10 seconds).",
+    "setup": "Mark start and finish lines clearly (30–50 feet recommended). Flat, firm surface. Build or source Land Skis in advance: two 2x4 planks, long enough for all Scouts in a troop to fit side by side, with rope loops every 12–18 inches. Have at least one spare set.",
+    "reset": "Ensure skis are undamaged. Re-position at start line. Estimated reset: 2–3 minutes between troops.",
+    "staffing": "1 timer/judge at finish line. 1 starter. 1 spotter to count falls.",
+    "supplies_text": "Land Skis (2 planks with loops, at least 2 sets): 1–2\nStopwatch: 1\nStart/finish markers (cones): 4\nScoring sheet: 1\nWhistle: 1",
+    "notes": "Land Skis can be built from 2×4 lumber with 1/2 inch holes drilled every 14 inches and rope threaded through. Loop size should be adjustable. Build to accommodate the largest patrol in the event. Test before the event with adults."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Elapsed Time",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "placeholder": "Start signal to last Scout crossing finish"
+        }
+      },
+      {
+        "id": "falls",
+        "label": "Number of Falls (+10 sec each)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Each fall = +10 sec penalty"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

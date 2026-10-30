@@ -1,0 +1,82 @@
+{
+  "library_uuid": "93b302d2-88ba-4bcc-a4ef-dd462754f75c",
+  "library_title": "Juggler's Circle Communication Challenge",
+  "id": "jugglers",
+  "sortOrder": 180,
+  "content": {
+    "title": "Jugglers",
+    "story": "A juggler's secret isn't throwing — it's catching. And when you have six Scouts in a circle passing tennis balls in a fixed pattern, the secret is the same: every thrower must think about the catcher, not the throw. This game starts simple and gets complicated fast, as more and more balls enter the pattern. How many can your patrol keep in the air at once without the whole thing collapsing?",
+    "challenge": "Establish a fixed passing pattern in a circle (no adjacent passes), then progressively add more tennis balls to the pattern. Score is based on the maximum number of balls kept in simultaneous motion in the correct pattern before the first drop.",
+    "description": "The patrol stands in a circle. A unique ball is introduced — the first Scout tosses it to any other Scout NOT immediately adjacent to them. That Scout passes it on, also skipping adjacent Scouts. Once all patrol members have touched the ball, the pattern is set and fixed. The patrol repeats the pattern to confirm it. Then the Ringmaster (judge) introduces a second ball into the pattern at the starting Scout. A third ball is added, then a fourth — one ball added each time the original pattern completes a full circuit with the unique ball. The game ends when any ball is dropped or the pattern breaks. Score = maximum number of balls successfully in motion simultaneously.",
+    "rules": [
+      "No adjacent passes — ball must skip at least one Scout",
+      "Pattern must be fixed before balls are added — judge confirms pattern is consistent for 2 full circuits",
+      "Additional balls introduced at the starting Scout only",
+      "All Scouts must remain in their circle positions",
+      "Dropped ball or broken pattern ends the game",
+      "Scouts must call the name or indicate the target before throwing (communication element — judge enforces)"
+    ],
+    "time_and_scoring": "⚠️ SCORING TBD — PENDING PLAYTESTING\nProposed primary: maximum number of balls in simultaneous motion before first drop (e.g., 3 balls = 30 pts, 4 balls = 40 pts)\nBonus: +5 pts per additional full circuit completed with max ball count\nAdjust for patrol size — larger patrols can sustain more balls\nConfirm scoring after playtesting.",
+    "setup": "Clear open area for patrol circle. Have 8–10 tennis balls available, with one a different color or pattern to serve as the unique ball. Use the unique ball as the first ball introduced — it makes it easy for the judge to track when the pattern has completed a full circuit. No special setup required.",
+    "reset": "Collect scattered tennis balls. Estimated reset time: under 1 minute.",
+    "staffing": "1 judge (Ringmaster). Confirms pattern, introduces additional balls, calls end on drop or pattern break, records max ball count.",
+    "supplies_text": "Tennis balls (8–10): 1 bag, with 1 a different color or pattern\nScoring sheet: 1",
+    "notes": "⚠️ UPDATE SCORING INPUTS AFTER PLAYTESTING. Judge must watch pattern carefully before adding balls — ensure the pattern is truly fixed (same path every time). Smaller patrols (4–5 Scouts) will find this harder than larger patrols. The calling requirement (announcing target before throwing) is what makes this a communication game — enforce it."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "max_balls",
+        "label": "Maximum balls in simultaneous motion before drop",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 1,
+          "max": 10,
+          "defaultValue": 1
+        }
+      },
+      {
+        "id": "circuits_at_max",
+        "label": "Full circuits completed at maximum ball count (bonus)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 0.5,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Bonus for sustaining max ball count"
+        }
+      },
+      {
+        "id": "patrol_size",
+        "label": "Patrol size",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "min": 4,
+          "max": 12,
+          "defaultValue": 6
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Pen and Paper"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

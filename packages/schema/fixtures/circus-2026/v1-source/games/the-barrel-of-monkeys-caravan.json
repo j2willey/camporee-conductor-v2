@@ -1,0 +1,65 @@
+{
+  "library_uuid": "115e9f6e-1356-40e8-a7ed-9f56bc28b161",
+  "library_title": "Rolling Raft Transport Challenge",
+  "id": "the-barrel-of-monkeys-caravan",
+  "sortOrder": 110,
+  "content": {
+    "title": "The Barrel of Monkeys Caravan",
+    "story": "The Circus train has broken down three miles from the Big Top, and the Monkey Menagerie is getting restless! The barrels of performing monkeys must be transported to the Center Ring across a treacherous stretch of midway sawdust and mud — but the only way to move them is the ancient Circus Caravan method: a rolling platform carried by the Crew themselves. As the platform rolls forward, the rear barrels must be passed hand-to-hand to the front to keep the caravan moving. If a barrel touches the ground, the monkeys \"escape\" — and the whole Circus is in chaos. Move fast. Move smart. Don't drop a monkey.",
+    "challenge": "Transport the plywood Caravan platform across the course using rolling barrels. Pass exposed rear barrels to the front continuously. Fastest time wins — but every dropped barrel costs precious seconds. Don't let the monkeys escape!",
+    "description": "Your Circus Caravan Crew boards the plywood raft (resting on barrels) and picks up their poles. On the Ringmaster's signal, the crew poles the raft forward — Scouts ride the raft the entire way and may not touch the ground except with their poles. As the raft rolls forward and a rear barrel is exposed, a crew member picks it up, passes it hand-to-hand across the raft to the front, and sets it down for the raft to continue rolling over it. Keep the caravan moving — if a barrel hits the ground during the pass, the monkeys escape and penalty time is added. All barrels and the raft must cross the finish line. The Monkey Menagerie is counting on you!",
+    "rules": [
+      "All Scouts must remain on the raft (plywood platform) for the entire course — no stepping off",
+      "Scouts may only touch the ground with their poles",
+      "Poles are used to push and propel the raft forward — no walking alongside",
+      "When a rear barrel is exposed, it must be picked up and passed hand-to-hand across the raft to the front",
+      "If a barrel is dropped to the ground during the pass ('monkey escape'): +10 second penalty per drop",
+      "All barrels must arrive at the finish line — none left behind",
+      "All Scouts must cross the finish line on the raft"
+    ],
+    "time_and_scoring": "Elapsed time from start signal to raft and all barrels crossing finish line. Penalties added to raw time. Officials convert final times to points.",
+    "setup": "Mark a straight course (30–50 feet). Stage plywood and 6–8 barrels at start line. Arrange barrels in a line under the plywood before each patrol. Ensure barrels are identical size/height for stable rolling.",
+    "reset": "Return plywood and all barrels to start position. Re-arrange barrels in line under plywood. Estimated reset time: 3–5 minutes.",
+    "staffing": "1 judge at finish line (times event, counts penalties). Optional: 1 spotter along course.",
+    "supplies_text": "Plywood sheet (4×8 ft, 3/4 inch recommended): 1\nPlastic or cardboard barrels/drums (uniform size): 6–8\nCourse markers: 4–6\nStopwatch: 1\nPenalty tally sheet: 1",
+    "notes": "Barrels should be uniform in diameter for stable rolling. Test the raft with a heavy adult before the event to verify the plywood won't crack. A shorter course (30 ft) is better for younger/smaller patrols. Mark course boundaries clearly."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Raw elapsed time",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {}
+      },
+      {
+        "id": "barrel_drops",
+        "label": "Number of monkey escapes — barrels dropped (+10 sec each)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Each drop = +10 sec"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Sun Protection/Sun Screen"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

@@ -1,0 +1,99 @@
+{
+  "library_uuid": "4766b48b-3396-4d0c-bdf7-b532bed48bcb",
+  "library_title": "Clown Car Balance Challenge",
+  "id": "clown-car",
+  "sortOrder": 120,
+  "content": {
+    "title": "Clown Car",
+    "story": "The legendary Circus of Scouting has arrived, and they're looking for new talent! Specifically, they need the most agile, balanced, and team-oriented clowns in the land. Your patrol, eager to join the ranks of the big top performers, has arrived for auditions. Your patrol's first audition involves the grand **Big Top Cruiser** – a deceptively simple clown car, a sturdy garbage can lid. Prove your worth on this, and who knows what other challenges the Ringmaster might reveal!",
+    "challenge": "Successfully balance as many patrol members as possible on progressively smaller 'clown cars' – starting with a garbage can lid – through three stages, holding each for 30, 15, and 10 seconds respectively, to earn maximum points.",
+    "description": "The game consists of three progressive stages, each with a specific setup and hold period.\n\n**Stage 1: Big Top Cruiser (garbage can lid)**\n1. The patrol gathers around a garbage can lid placed flat on the ground.\n2. On the Ringmaster's signal, the patrol has **30 seconds** to get as many members as possible onto the lid. Any part of a Scout's body may be on the lid, but no part may touch the ground.\n3. Once the patrol is set, they call \"Ready!\" or the 30 seconds expires. The Ringmaster immediately starts a **30-second hold period**.\n4. During the hold, any Scout whose body part touches the ground is no longer counted.\n5. After 30 seconds, the Ringmaster counts the number of Scouts still successfully balanced on the lid.\n\n**Stage 2: Midway Mite (5-gallon bucket lid)**\n1. The Ringmaster reveals the next challenge: the 5-gallon bucket lid, placed flat on the ground.\n2. On the Ringmaster's signal, the patrol has **15 seconds** to get as many members as possible onto the lid. No part of any Scout may touch the ground.\n3. Once the patrol is set, they call \"Ready!\" or the 15 seconds expires. The Ringmaster immediately starts a **15-second hold period**.\n4. During the hold, any Scout whose body part touches the ground is no longer counted.\n5. After 15 seconds, the Ringmaster counts the number of Scouts still successfully balanced on the 5-gallon lid.\n\n**Stage 3: Acrobat's Unicycle (7-inch disc)**\n1. The Ringmaster reveals the final test: the 7-inch disc, placed flat on the ground.\n2. On the Ringmaster's signal, the patrol has **30 seconds** to get as many members as possible onto the disc. No part of any Scout may touch the ground.\n3. Once the patrol is set, they call \"Ready!\" or the 30 seconds expires. The Ringmaster immediately starts a **10-second hold period**.\n4. During the hold, any Scout whose body part touches the ground is no longer counted.\n5. After 10 seconds, the Ringmaster counts the number of Scouts still successfully balanced on the disc.\n",
+    "rules": [
+      "All patrol members should actively attempt to participate in at least one stage.",
+      "For all stages, 'balanced' means no part of any participating Scout's body touches the ground.",
+      "For all stages, the discs must remain flat on the ground and may not be tilted or held up by Scouts.",
+      "Scouts may support each other (stacking, holding, etc.) within the rules for each stage.",
+      "Each stage consists of a specific setup period, immediately followed by a specific hold period, as detailed in the description.",
+      "Once the hold period begins, any Scout losing balance or touching the ground is no longer counted for points for that specific stage.",
+      "The Ringmaster's call signifies the start and end of each timing segment."
+    ],
+    "time_and_scoring": "The game is divided into three sequential stages. Each stage involves a specific setup period, immediately followed by a specific hold period as outlined below.\n\n**Scoring:**\n*   **Stage 1: Big Top Cruiser (garbage can lid)**: 1 point for each Scout successfully balanced for the full 30-second hold.\n*   **Stage 2: Midway Mite (5-gallon bucket lid)**: 3 points for each Scout successfully balanced for the full 15-second hold.\n*   **Stage 3: Acrobat's Unicycle (7-inch disc)**: 5 points for each Scout successfully balanced for the full 10-second hold.\n\n**Total Score:** The sum of points from all three stages.",
+    "setup": "Place the Garbage can lid flat on a clear, level surface.  Keep the 5 gallon lid and 7 inch disc hidden or inconspicuous.  explain the game with the garbage can.  Reveal the next phase by replacing the garbage can lid with the 5 gallon bucket lid.  and repeat with the 3rd and final phase",
+    "reset": "Replace discs if damaged. Estimated reset time: under 1 minute.",
+    "staffing": "1 judge (Ringmaster). Times each stage (Stage 1: 30s setup/30s hold; Stage 2: 15s setup/15s hold; Stage 3: 30s setup/10s hold). Observes ground contact/loss of balance, records result for each stage. Announce timings clearly.",
+    "supplies_text": "Garbage can lid: 1\n5-gallon bucket lid (extras in case of breakage): 2-3\n7-inch diameter disc (e.g., small frisbee, plastic plate): 2-3\nStopwatch/timer: 1\nScoring sheet: 1",
+    "notes": "⚠️ UPDATE SCORING INPUTS AFTER PLAYTESTING. Lids may crack under combined weight — have spares. Test lid durability before the event with multiple adults. The game is inherently funny and crowd-pleasing — position near the admin area if possible.",
+    "scoring_notes": "The Ringmaster must use a stopwatch to accurately time each stage:\n*   **Stage 1**: 30-second setup, 30-second hold.\n*   **Stage 2**: 15-second setup, 15-second hold.\n*   **Stage 3**: 30-second setup, 10-second hold.\n\nClearly announce the start and stop of each segment. Observe carefully for any ground contact or loss of balance during the hold period. Ensure the discs remain flat on the ground."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "scouts_balanced",
+        "label": "Big Top Cruiser Clowns",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 9,
+          "defaultValue": 0,
+          "placeholder": "# of scouts on garbage can Lid"
+        }
+      },
+      {
+        "id": "patrol_size",
+        "label": "Midway Mite",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 3,
+        "config": {
+          "min": 4,
+          "max": 12,
+          "defaultValue": 6,
+          "placeholder": "Number of scouts on 5 gal lid"
+        }
+      },
+      {
+        "id": "hold_seconds",
+        "label": "Acrobats Unicycle",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 5,
+        "config": {
+          "min": 0,
+          "max": 60,
+          "defaultValue": 0,
+          "placeholder": "Number of scouts on 7 inch lid"
+        }
+      },
+      {
+        "id": "field_1778199810679 ",
+        "label": "Judges Notes",
+        "type": "textarea",
+        "kind": "info",
+        "weight": 1,
+        "audience": "judge",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Buddy"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

@@ -1,0 +1,131 @@
+{
+  "library_uuid": "fca1d6df-82f3-404a-9191-a92617189a90",
+  "library_title": "Compass Line Navigation Challenge",
+  "id": "buried-bearded-ladys-jewels",
+  "sortOrder": 60,
+  "content": {
+    "title": "Buried Bearded Lady's Jewels",
+    "story": "In 1887, Madame Zelda — the world-famous Bearded Lady of the Coyote Creek Traveling Circus — buried her entire fortune of jewels at this campsite in a series of caches to protect them from highwaymen. She never returned. This morning, workers discovered an old popcorn tin with cryptic bearings inside. Each Scout in your patrol holds clues to a different cache of jewels. Follow your bearings precisely — the jewels and the glory of discovery await!",
+    "challenge": "Using your personal Popcorn Tin Clue Card, navigate three compass bearing-and-distance legs to locate the stake marking Madame Zelda's hidden cache. The closer you land to the correct stake, the more of the fortune you claim for the Circus.",
+    "description": "Each Scout receives their own \"Popcorn Tin Clue Card\" with three bearing-and-distance courses. The course is 20 numbered stakes spaced 5 feet apart in a straight East–West line (100 feet total). Calibrate your pace first, then follow your bearings precisely. Record the nearest stake number at each destination. The Ringmaster (judge) reveals correct destinations and calculates each Scout's share of the fortune. The patrol's combined score determines the total treasure claimed.",
+    "rules": [
+      "Each Scout completes their own card independently",
+      "Cards are staggered — no two Scouts share the same starting stake",
+      "Each Scout paces their own steps — no following others",
+      "Calibrate pace length on the measured course before starting (2 ft, 2.5 ft, or 3 ft per step recommended)",
+      "Compass must be used for every bearing",
+      "Scout records the nearest stake number at each destination",
+      "Judge scores using answer sheet after completion"
+    ],
+    "time_and_scoring": "Per course: 100 points if correct destination reached. Deduct 1 point per foot of error OR 5 points per stake away from correct. Three courses per card = maximum 300 points per Scout. Patrol score = combined scores of all patrol members.",
+    "setup": "Measure and mark 100-foot East–West baseline. Drive 20 numbered stakes 5 feet apart. Prepare 'Popcorn Tin Clue Cards' (20 staggered-start cards). Prepare answer sheet: SP1→7, SP2→19, SP3→2, SP4→8, SP5→16, SP6→8, SP7→8, SP8→9, SP9→15, SP10→19, SP11→10, SP12→13, SP13→12, SP14→13, SP15→13, SP16→10, SP17→6, SP18→10, SP19→12, SP20→16. Brief all Scouts on pace calibration before starting.",
+    "reset": "Collect and redistribute Clue Cards. Re-stake any disturbed markers. Estimated reset time: 2–3 minutes (all Scouts run simultaneously).",
+    "staffing": "1–2 judges (Ringmasters). One briefs and starts, one collects cards and scores.",
+    "supplies_text": "Stakes (20), numbered 1–20: 1 set\nMallet: 1\nMeasuring tape (100 ft): 1\nPopcorn Tin Clue Cards (20 different starting-point cards): 1 full set\nAnswer sheet with correct destinations: 1\nPencils: 6–8\nCompasses (patrol brings own or provided): 6–8\nDecorative 'Popcorn Tin' container for card storage (optional): 1\nSmall themed tokens as 'jewels' for atmosphere (optional): 1 bag",
+    "references": "BSA Orienteering Merit Badge Pamphlet. Original Compass Line game source PDF on file with Camporee Director.",
+    "notes": "Course must be oriented true East–West — verify with compass before driving stakes. Pre-measure course the day before if possible. Staggered cards mean no two Scouts navigate the same course from the same stake simultaneously — reduces confusion and clustering."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "field_1778195167953 ",
+        "label": "Flag Pole Measurement",
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "audience": "judge",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      },
+      {
+        "id": "field_1778195205040 ",
+        "label": "Flag Pole Measurement Points",
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "audience": "judge",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      },
+      {
+        "id": "field_1778195292154 ",
+        "label": "Sand Pit Measurement",
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "audience": "judge",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      },
+      {
+        "id": "field_1778195322777 ",
+        "label": "Sand Pit Measurement Points",
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "audience": "judge",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      },
+      {
+        "id": "scout_2",
+        "label": "Distance from Jewels",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 300,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "scout_1",
+        "label": "Distance from Jewels Points",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 300,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "notes",
+        "label": "Notes (patrol size, missing scores, etc.)",
+        "audience": "judge",
+        "sortOrder": 90,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {}
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Compass"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

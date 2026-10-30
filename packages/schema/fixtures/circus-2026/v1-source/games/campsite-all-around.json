@@ -1,0 +1,109 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "campsite-all-around",
+  "sortOrder": 40,
+  "content": {
+    "title": "The Ringmaster's Inspection",
+    "story": "Behind every great circus is a backstage that runs like clockwork. The performers know their props are ready, their costumes are pressed, and their space is safe. A well-run troop campsite is the same — organized, clean, safe, and alive with Scout spirit. Judges are coming to your backstage. Show them what a well-run circus camp looks like.",
+    "challenge": "Present the best-kept, most Scout-appropriate campsite at the Camporee. Judges evaluate layout, cleanliness, safety, Scout skills on display, and overall troop spirit.",
+    "description": "Judges walk a circuit of all troop campsites during the designated judging window and score each site. Scores are based on organization, cleanliness, safety practices, visible Scout skills, and troop spirit and atmosphere. Troops should have their campsite in presentation condition during the judging window.",
+    "rules": [
+      "Campsite must be in presentation-ready condition during the judging window",
+      "Scouts should be present and engaged in camp activities — judges may ask questions",
+      "No adults may clean or organize the site during the judging window (prep before, not during)",
+      "Safety hazards visible during judging count against the score",
+      "Ax yard, fire ring, and food storage must meet BSA guidelines"
+    ],
+    "time_and_scoring": "Judges visit each campsite during the designated judging window (announced at check-in).\n\nScoring (100 points total):\n- Organization & Layout (logical, tidy, well-planned): 0–20 pts\n- Cleanliness & Sanitation (site, cooking area, latrine): 0–20 pts\n- Safety (fire ring, ax yard, food storage, no hazards): 0–20 pts\n- Scout Skills on Display (knots, lashings, tools, signage): 0–20 pts\n- Scout Spirit & Atmosphere (Pride, teamwork, hospitality): 0–20 pts\n\nTiebreaker: Judges' discretion.",
+    "setup": "Announce judging window at check-in. Judges travel together as a panel, evaluating each site in sequence. Carry clipboards, scoring sheets, and a checklist of BSA safety standards.",
+    "reset": "Judges move to next site. No physical reset.",
+    "staffing": "2–3 adult judges. Score independently and average. One judge acts as timekeeper.",
+    "supplies_text": "Scoring sheets (1 per judge per troop): 1 pad\nPens: 1 per judge\nBSA campsite safety checklist: 1 per judge\nClipboards: 1 per judge\nSummary tally sheet: 1"
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "organization",
+        "label": "Organization & Layout (0–20)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Logical, tidy, well-planned"
+        }
+      },
+      {
+        "id": "cleanliness",
+        "label": "Cleanliness & Sanitation (0–20)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Site, cooking area, latrine"
+        }
+      },
+      {
+        "id": "safety",
+        "label": "Safety (0–20)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Fire ring, ax yard, food storage"
+        }
+      },
+      {
+        "id": "scout_skills",
+        "label": "Scout Skills on Display (0–20)",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Knots, lashings, tools, signage"
+        }
+      },
+      {
+        "id": "spirit",
+        "label": "Scout Spirit & Atmosphere (0–20)",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Pride, teamwork, hospitality"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

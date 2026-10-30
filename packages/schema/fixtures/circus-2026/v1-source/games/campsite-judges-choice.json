@@ -1,0 +1,57 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "campsite-judges-choice",
+  "sortOrder": 60,
+  "content": {
+    "title": "Judges' Choice - The Spotlight",
+    "story": "Some things can't be scored on a rubric. It's the campsite that feels alive — where you stop walking because something catches your eye or your ear or your nose. Where Scouts are genuinely proud of what they built and want to tell you about it. The Judges' Choice is for that campsite. The one the judges talked about on the walk back.",
+    "challenge": "The judge panel selects one or more campsites that made an exceptional and memorable impression — beyond what the standard scoring categories capture.",
+    "description": "After completing their scored campsite circuit, the judge panel discusses and selects the campsite(s) that made the strongest overall impression. This award is not determined by rubric scoring — it is entirely at the discretion of the judges and may be awarded to multiple troops if the panel agrees. Judges document why the site was chosen.",
+    "rules": [
+      "Judges make this selection after completing all scored campsite evaluations",
+      "Award may be given to one troop or shared by multiple troops",
+      "Judges must briefly document the reason for the selection",
+      "Judges' decision is final"
+    ],
+    "time_and_scoring": "Judges make this selection after completing all scored campsite evaluations.\n\nThis is not a points-based award. The judge panel marks which troop(s) receive the award and records the reason.\n\nAward may be given to 1–3 troops at judges' discretion.",
+    "setup": "No additional setup. Judges discuss after completing the campsite scoring circuit.",
+    "reset": "N/A",
+    "staffing": "Same judge panel as other campsite events.",
+    "supplies_text": "Judges' Choice scoring sheet: 1 (to record selection and reason)"
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "awarded",
+        "label": "Judges' Choice Awarded",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "checkbox",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false
+        }
+      },
+      {
+        "id": "reason",
+        "label": "Reason for Selection",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "What stood out? Why did this site earn the Judges' Choice?"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

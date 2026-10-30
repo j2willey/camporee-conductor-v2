@@ -1,0 +1,125 @@
+{
+  "library_uuid": "657cd2f4-bf3a-4cac-8a54-e90bf48af406",
+  "library_title": "The Circus Orchestra",
+  "id": "the-circus-orchestra",
+  "sortOrder": 130,
+  "content": {
+    "title": "The Circus Orchestra",
+    "story": "The Circus Orchestra has quit. Every last one of them — tuba player, accordion, calliope operator — walked off the job this morning over a disagreement about peanuts. The show opens in 20 minutes and there is absolutely no music. The Ringmaster is panicking. Your patrol has been handed a pile of random objects and one impossible instruction: \"Make it sound like a Circus.\" Every great Circus needs music. Every great Scout makes do with what they have. Figure it out. Make some noise. Make it glorious.",
+    "challenge": "Using only improvised instruments made from provided materials, perform an original Circus-themed musical number for the judges. Score is based on creativity, performance quality, number of different improvised instruments used, and overall Circus spirit.",
+    "description": "Your patrol is given access to a collection of provided objects that can be used as improvised instruments (buckets, cans, sticks, bottles, rubber bands, combs, etc.). The patrol has 5 minutes of preparation time to create instruments and organize their performance. They then perform for the judges for a minimum of 60 seconds. The performance must have a clear Circus feel — the judges are looking for rhythm, energy, creativity, and teamwork. All patrol members must participate in some musical role.",
+    "rules": [
+      "All patrol members must participate — every Scout plays something",
+      "Minimum performance duration: 60 seconds",
+      "Only provided/improvised instruments may be used — no real instruments brought from camp",
+      "Scouts may use their voices (humming, beatboxing, sound effects)",
+      "The performance must have a recognizable Circus theme or feel",
+      "Judges score each patrol independently — no head-to-head comparison during scoring"
+    ],
+    "time_and_scoring": "Points-based, 60 points + up to 10 bonus:\n- Circus spirit and energy: 0–20 (subjective)\n- Creativity and originality: 0–20 (subjective)\n- Teamwork — all members contributing musically: 0–10\n- Performance quality — rhythm, coordination, entertainment: 0–10\n- Bonus: 1 point per distinct improvised instrument type incorporated (max 10 bonus points)",
+    "setup": "Assemble collection of improvised instrument materials at station: buckets, tin cans, wooden sticks, empty bottles, rubber bands over boxes, combs + wax paper, shakers, washboard, spoons, etc. Stage materials in a visible pile. Mark a clear performance area. Brief judges on scoring criteria before event opens.",
+    "reset": "Return all materials to the pile. Estimated reset time: 1–2 minutes.",
+    "staffing": "1–2 judges. Judges should be enthusiastic — this game feeds on energy. A stone-faced judge kills the performance. Consider recruiting a musically-inclined adult or OA member.",
+    "supplies_text": "5-gallon buckets (percussion): 2–3\nTin cans of various sizes: 6–8\nWooden dowels or sticks (striking): 6–8\nEmpty glass or plastic bottles (blowing): 4–6\nRubber bands (assorted sizes): 1 bag\nSmall cardboard boxes (rubber band guitar base): 2–3\nCombs + wax paper (kazoo): 4–6 sets\nSmall containers with rice/pebbles sealed inside (shakers): 4–6\nMetal spoons (rhythm): 4–6 pairs\nWashboard (optional): 1\nAny other interesting noise-making objects available on site",
+    "notes": "The improvised instrument BONUS scoring is what rewards preparation and creativity — a patrol that assigns each member a different instrument and practices for the full 5 minutes will score more bonus points than one that all beats buckets together. Keep the preparation time strictly timed — 5 minutes, then perform. Position this station near the main gathering area if possible — it's entertaining for the whole camp."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "circus_spirit",
+        "label": "Circus spirit and energy (0–20)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Subjective — does it feel like a Circus?"
+        }
+      },
+      {
+        "id": "creativity",
+        "label": "Creativity and originality (0–20)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Subjective — did they do something unexpected?"
+        }
+      },
+      {
+        "id": "teamwork",
+        "label": "Teamwork — all members contributing musically (0–10)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0,
+          "placeholder": "Every Scout playing something?"
+        }
+      },
+      {
+        "id": "performance_quality",
+        "label": "Performance quality — rhythm, coordination, entertainment (0–10)",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "instrument_count",
+        "label": "Number of distinct improvised instruments used (1 pt each, max 10)",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0,
+          "placeholder": "1 point per distinct instrument type, max 10"
+        }
+      },
+      {
+        "id": "judge_notes",
+        "label": "Judge notes on performance",
+        "audience": "judge",
+        "sortOrder": 90,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Describe the performance — what was memorable?"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "A Whistle (to call for help)"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

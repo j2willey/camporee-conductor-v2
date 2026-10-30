@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-71e9-8ee8-1ab25ea89965",
+  "slug": "sports-tug-o-war",
+  "title": "The Strongman Showdown",
+  "kind": "activity",
+  "scoringType": "ranked",
+  "content": {
+    "story": "The circus strongman flexes. The crowd roars. And somewhere in the back of every Scout's mind is the same thought: 'We could take those guys.' Tug-O-War is the oldest test of collective strength, timing, and teamwork. It's not just about muscle — it's about everyone pulling in the same direction at the same moment. Today, the rope decides.",
+    "objective": "Troops compete head-to-head in a round-robin Tug-O-War tournament. Score is based on wins and ties accumulated across all rounds.",
+    "description": "Troops are paired into matches and compete in a round-robin format (each troop faces every other troop once, or as many rounds as time permits). Each match: troops grip the rope, the judge signals start, and the first troop to pull the center marker past their side's boundary line wins. Best of 3 pulls per match. Record wins, losses, and ties for each troop.\n\nFinal ranking is determined by match points (Win = 2 pts, Tie = 1 pt, Loss = 0 pts).",
+    "rules": [
+      "All troop members may participate — no weight limits, no exclusions",
+      "Scouts must grip the rope with hands only — no tying or wrapping the rope around the body",
+      "Scouts must remain standing — no sitting, kneeling, or lying down to anchor",
+      "No gloves allowed",
+      "Center marker must cross the boundary line completely for a win",
+      "If a Scout falls, play continues — they may re-grip and continue",
+      "Referee's call is final",
+      "Best of 3 pulls determines the match winner"
+    ],
+    "timeAndScoring": "Round-robin format — each troop plays every other troop once (or as many rounds as time permits).\n\nMatch scoring:\n- Win: 2 match points\n- Tie (1-1 after 3 pulls): 1 match point each\n- Loss: 0 match points\n\nFinal Ranking: Total match points across all rounds. Tiebreaker: head-to-head result, then total pulls won.",
+    "setup": "Mark rope center with a flag or tape. Mark boundary lines 6–8 feet on each side of center. Ensure flat, firm ground with adequate grip (grass preferred, no mud). Have extra rope in case of breakage.",
+    "reset": "Re-center the rope marker between each pull. Estimated reset: 30 seconds between pulls, 2 minutes between matches.",
+    "staffing": "1 referee per match. 1 scorekeeper tracking all match results.",
+    "supplies": [
+      {
+        "item": "Tug-O-War rope (minimum 50 feet, marked at center)",
+        "quantity": "1"
+      },
+      {
+        "item": "Boundary line markers (cones or ground flags)",
+        "quantity": "4"
+      },
+      {
+        "item": "Scoring sheet (round-robin matrix)",
+        "quantity": "1"
+      },
+      {
+        "item": "Whistle (referee)",
+        "quantity": "1"
+      },
+      {
+        "item": "First aid kit nearby",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  "scoring": {
+    "direction": "higher-wins",
+    "fields": [
+      {
+        "id": "wins",
+        "label": "Match Wins",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 10,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "2 pts each",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 2
+        }
+      },
+      {
+        "id": "ties",
+        "label": "Match Ties",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 20,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "1 pt each",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "losses",
+        "label": "Match Losses (reference)",
+        "type": "number",
+        "kind": "info",
+        "audience": "judge",
+        "sortOrder": 30,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "0 pts — record for reference",
+          "defaultValue": 0
+        },
+        "legacy": {
+          "v1Weight": 0
+        }
+      }
+    ]
+  },
+  "legacy": {
+    "v1Id": "sports-tug-o-war"
+  }
+}

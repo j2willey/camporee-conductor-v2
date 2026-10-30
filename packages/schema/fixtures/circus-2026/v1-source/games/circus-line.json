@@ -1,0 +1,65 @@
+{
+  "library_uuid": "e38d4b40-fce3-408a-ad43-a748fb4d84f0",
+  "library_title": "Bound-Leg Patrol Race",
+  "id": "circus-line",
+  "sortOrder": 80,
+  "content": {
+    "title": "Circus Line",
+    "story": "Step right up, Scouts! The grand Circus Parade is about to begin, and your patrol has been chosen for the star act: the legendary 'Unity Line'! For generations, our parade performers have showcased incredible teamwork by moving as one magnificent unit, bound together at the ankle. It's a test of coordination, trust, and communication. The crowds are cheering, the spotlight is on, and the Center Ring awaits. Can your patrol move as one, demonstrating the true spirit of a united troupe, and make it to the finish line without a hitch? The show depends on you!",
+    "challenge": "Bound ankle-to-ankle with your patrol mates in a line, move as one unit from the Parade Start to the Center Ring (finish line). Fastest Troupe wins.",
+    "description": "1.  **Form Your Troupe:** Your entire patrol will line up shoulder-to-shoulder at the 'Parade Start' line.\n2.  **Bind for Unity:** Using the provided soft straps, Scouts will bind their adjacent *inside* ankles together. For example, Scout 1's right ankle binds to Scout 2's left ankle, Scout 2's right to Scout 3's left, and so on. Ensure bindings are secure but not too tight, allowing for comfortable movement.\n3.  **Synchronized Start:** On the 'Ringmaster's' signal, your patrol will begin to move as one cohesive unit towards the 'Center Ring' (finish line).\n4.  **Communicate and Coordinate:** The key to success is constant communication and synchronized movement. Take small, careful steps together. Call out 'left, right, left, right' or '1, 2, 3' to find your rhythm.\n5.  **Overcome Obstacles:** If a Scout stumbles or falls, the entire patrol must stop and help them up. If a binding comes undone, pause to re-secure it. The clock keeps running, so quick teamwork is essential!\n6.  **Cross the Center Ring:** Your time stops only when *every* Scout in your patrol has completely crossed the 'Center Ring' finish line. Keep that unity until the very end!",
+    "rules": [
+      "All patrol members must participate — full patrol in line",
+      "Adjacent legs must be bound before the clock starts",
+      "All Scouts must cross the finish line for time to count",
+      "If any binding breaks during the race: stop, re-bind, continue (clock keeps running)",
+      "If a Scout falls: clock keeps running, patrol must stop and help them up before continuing",
+      "No dragging fallen Scouts — all must be upright and moving",
+      "Patrol members may hold each other's shoulders for coordination"
+    ],
+    "time_and_scoring": "Elapsed time from start signal to last Scout crossing finish line. No penalty additions — the time naturally reflects falls and stops. Officials convert times to points.",
+    "setup": "Mark a straight course (30–50 feet) from Parade Start to Center Ring. Provide binding materials (bandanas or soft straps) — 1 per adjacent pair (patrol size minus 1). Clear course of tripping hazards.",
+    "reset": "Collect binding materials. Estimated reset time: 2–3 minutes.",
+    "staffing": "1 judge at finish line (Ringmaster). Optional starter at Parade Start for larger events.",
+    "supplies_text": "Bandanas or soft straps for binding (patrol size minus 1): 6–10\nCourse markers: 4\nStopwatch: 1",
+    "notes": "Bindings should be snug but not tight — comfort and safety matter. Brief patrols to practice one step together before the clock starts. Grass or soft ground preferred — falls are likely."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Elapsed time — last Scout crosses finish",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {}
+      },
+      {
+        "id": "patrol_size",
+        "label": "Number of Scouts in Parade Troupe",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "min": 4,
+          "max": 12,
+          "defaultValue": 6,
+          "placeholder": "For officials reference"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Extra Clothing"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

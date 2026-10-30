@@ -1,0 +1,64 @@
+{
+  "library_uuid": "2d1fbba0-7484-4860-b0c2-a601aedeb65b",
+  "library_title": "Improvised Stretcher Carry Race",
+  "id": "the-tumbled-trapeze-rescue",
+  "sortOrder": 90,
+  "content": {
+    "title": "The Tumbled Trapeze Rescue",
+    "story": "The Star Trapeze Artist has taken a dramatic tumble off the safety net onto the sawdust floor — conscious but theatrically dizzy, unwilling to walk to increase the drama. The crowd is watching. The Circus has a strict \"No Performer Left Behind\" policy. Grab a tarp from props storage, transfer the Artist aboard, and rush them safely to the Medical Tent before the next act begins. Do not drop the star!",
+    "challenge": "Quickly assemble a tarp-and-pole rescue litter, secure the Trapeze Artist, and carry them through the backstage course to the Medical Tent (finish line).",
+    "description": "On the Ringmaster's signal, grab the tarp and poles from prop storage. Assemble the litter by rolling the tarp around the poles, place the Trapeze Artist aboard, and carry them through the course to the Medical Tent. Time stops when the Artist is safely set down at the finish. Speed matters — but so does the Artist's safety.",
+    "rules": [
+      "Stretcher must use provided tarp and poles only",
+      "Patient (Trapeze Artist) placed and secured before transport begins",
+      "Minimum 4 Scouts must carry at all times",
+      "Patient touching ground = penalty time (+30 seconds per instance)",
+      "Carriers must walk — no running",
+      "Patient set down gently at finish",
+      "Patient's head must remain level or elevated"
+    ],
+    "time_and_scoring": "Elapsed time from start signal to Trapeze Artist safely set down at finish (Medical Tent). Penalty: +30 seconds per instance of patient touching ground. Officials convert final times to points.",
+    "setup": "Mark a 30–50 meter course from 'Prop Storage' (start) to 'Medical Tent' (finish). Stage tarp (8×10 ft or similar) and two poles at start. Brief volunteer patient on their role.",
+    "reset": "Re-fold tarp and re-stage poles at start. Estimated reset time: 2–3 minutes.",
+    "staffing": "1 judge at start/finish. Optional course spotter.",
+    "supplies_text": "Tarp (8×10 ft or similar): 1\nWooden poles or staves (6–8 ft): 2\nCourse markers (cones or flags): 6–10\nVolunteer patient (Trapeze Artist): 1\nStopwatch: 1",
+    "notes": "Tarp-and-pole method: lay tarp flat, place poles parallel lengthwise 1/3 from each edge, fold outer thirds over poles, patient lies in center. Check ground for tripping hazards before each patrol runs."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Total elapsed time (start to Artist safely set down)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {}
+      },
+      {
+        "id": "patient_ground",
+        "label": "Times patient touched ground (+30 sec each)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Rain Gear"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}
