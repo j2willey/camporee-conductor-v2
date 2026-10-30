@@ -1,0 +1,17 @@
+{
+  "name": "@camporee-conductor/schema",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design-side document schemas (Event, Activity, Common Field set, Template). Zod source of truth; JSON Schema generated. (ADR-0012)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}
