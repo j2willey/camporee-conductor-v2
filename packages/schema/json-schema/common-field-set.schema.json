@@ -1,0 +1,147 @@
+{
+  "title": "common-field-set",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "4.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "const": "common-field-set"
+    },
+    "fields": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "number",
+              "stopwatch",
+              "text",
+              "textarea",
+              "checkbox",
+              "select"
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "points",
+              "metric",
+              "penalty",
+              "info"
+            ]
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "judge",
+              "official"
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "config": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              },
+              "placeholder": {
+                "type": "string"
+              },
+              "defaultValue": {
+                "type": [
+                  "number",
+                  "string",
+                  "boolean"
+                ]
+              },
+              "options": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type",
+          "kind",
+          "audience",
+          "sortOrder",
+          "weight"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "legacy": {
+      "type": "object",
+      "properties": {
+        "v1Id": {
+          "type": "string"
+        },
+        "v1LibraryUuid": {
+          "type": "string"
+        },
+        "v1LibraryTitle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "v1Id"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "slug",
+    "title",
+    "kind",
+    "fields"
+  ],
+  "additionalProperties": false
+}

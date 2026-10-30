@@ -1,0 +1,429 @@
+{
+  "title": "event",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "4.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string"
+    },
+    "year": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "startDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "endDate": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+    },
+    "organizerName": {
+      "type": "string"
+    },
+    "terminology": {
+      "type": "object",
+      "properties": {
+        "pack": {
+          "type": "string"
+        },
+        "labels": {
+          "type": "object",
+          "properties": {
+            "group": {
+              "type": "string"
+            },
+            "team": {
+              "type": "string"
+            },
+            "participant": {
+              "type": "string"
+            },
+            "event": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "pack"
+      ],
+      "additionalProperties": false
+    },
+    "presentation": {
+      "type": "object",
+      "properties": {
+        "themeColors": {
+          "type": "object",
+          "properties": {
+            "main": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "header": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            },
+            "accent": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$"
+            }
+          },
+          "required": [
+            "main",
+            "header",
+            "accent"
+          ],
+          "additionalProperties": false
+        },
+        "awardLabel": {
+          "type": "object",
+          "properties": {
+            "line1": {
+              "type": "string"
+            },
+            "line2": {
+              "type": "string"
+            },
+            "syncFonts": {
+              "type": "boolean"
+            },
+            "styles": {
+              "type": "object",
+              "properties": {
+                "line1": {
+                  "type": "object",
+                  "properties": {
+                    "font": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "bold": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "font",
+                    "size",
+                    "bold"
+                  ],
+                  "additionalProperties": false
+                },
+                "line2": {
+                  "type": "object",
+                  "properties": {
+                    "font": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "bold": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "font",
+                    "size",
+                    "bold"
+                  ],
+                  "additionalProperties": false
+                },
+                "activityName": {
+                  "type": "object",
+                  "properties": {
+                    "font": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "bold": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "font",
+                    "size",
+                    "bold"
+                  ],
+                  "additionalProperties": false
+                },
+                "winner": {
+                  "type": "object",
+                  "properties": {
+                    "font": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "string"
+                    },
+                    "bold": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "font",
+                    "size",
+                    "bold"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "line1",
+                "line2",
+                "activityName",
+                "winner"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "line1",
+            "line2",
+            "syncFonts",
+            "styles"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "themeColors"
+      ],
+      "additionalProperties": false
+    },
+    "competitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "team",
+              "group"
+            ]
+          },
+          "registration": {
+            "type": "string",
+            "enum": [
+              "registered",
+              "open"
+            ]
+          },
+          "divisions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                },
+                "slug": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "slug",
+                "label"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "commonFields": {
+            "type": "object",
+            "properties": {
+              "setId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+              },
+              "before": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "after": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              }
+            },
+            "required": [
+              "setId",
+              "before",
+              "after"
+            ],
+            "additionalProperties": false
+          },
+          "legacy": {
+            "type": "object",
+            "properties": {
+              "v1Id": {
+                "type": "string"
+              },
+              "v1LibraryUuid": {
+                "type": "string"
+              },
+              "v1LibraryTitle": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "v1Id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "label",
+          "level",
+          "registration",
+          "divisions"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "activityId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+          },
+          "competitionId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "activityId",
+          "competitionId",
+          "sortOrder"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "properties": {
+        "parentId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+        },
+        "attribution": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "legacy": {
+      "type": "object",
+      "properties": {
+        "v1Id": {
+          "type": "string"
+        },
+        "v1LibraryUuid": {
+          "type": "string"
+        },
+        "v1LibraryTitle": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "v1Id"
+      ],
+      "additionalProperties": false
+    },
+    "kind": {
+      "type": "string",
+      "const": "event"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "slug",
+    "title",
+    "terminology",
+    "presentation",
+    "competitions",
+    "activities",
+    "kind"
+  ],
+  "additionalProperties": false
+}
