@@ -1,0 +1,250 @@
+{
+  "schemaVersion": "3.0",
+  "meta": {
+    "title": "Coyote Creek District Camporee 2026",
+    "theme": "The Circus",
+    "year": 2026,
+    "director": "Jim Willey",
+    "camporeeId": "5d5a6a80-c9e1-4551-8e15-8ef1ca93b9ca",
+    "theme_colors": {
+      "main": "#C62828",
+      "header": "#1565C0",
+      "accent": "#F9A825"
+    },
+    "awards_config": {
+      "line1": "Coyote Creek Camporee 2026",
+      "line2": "The Circus",
+      "sync": true,
+      "styles": {
+        "1": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        },
+        "2": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        },
+        "3": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        },
+        "4": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        }
+      }
+    }
+  },
+  "terminology": {
+    "unit": "Troop",
+    "subunit": "Patrol",
+    "member": "Scout",
+    "event": "Camporee",
+    "organizer": "Event Director"
+  },
+  "leagues": [
+    {
+      "id": "patrol-games",
+      "label": "Patrol Games",
+      "tier": "subunit",
+      "registration": "registered",
+      "divisions": []
+    },
+    {
+      "id": "exhibition",
+      "label": "Exhibition Events",
+      "tier": "subunit",
+      "registration": "registered",
+      "divisions": []
+    },
+    {
+      "id": "troop-challenges",
+      "label": "Troop Challenges",
+      "tier": "unit",
+      "registration": "registered",
+      "divisions": []
+    }
+  ],
+  "sessions": [],
+  "rosters": {
+    "units": [],
+    "subunits": [],
+    "individuals": []
+  },
+  "officials": [],
+  "playlist": [
+    {
+      "gameId": "cooking-best-entree",
+      "order": 1
+    },
+    {
+      "gameId": "slack-lining",
+      "order": 2
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "order": 3
+    },
+    {
+      "gameId": "climbing-wall",
+      "order": 4
+    },
+    {
+      "gameId": "cooking-best-dessert",
+      "order": 5
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "order": 6
+    },
+    {
+      "gameId": "cooking-mystery-ingredient",
+      "order": 7
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "order": 8
+    },
+    {
+      "gameId": "tomahawk-throwing",
+      "order": 9
+    },
+    {
+      "gameId": "archery",
+      "order": 10
+    },
+    {
+      "gameId": "campsite-all-around",
+      "order": 11
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "order": 12
+    },
+    {
+      "gameId": "campsite-themed-gateway",
+      "order": 13
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "order": 14
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "order": 15
+    },
+    {
+      "gameId": "campsite-judges-choice",
+      "order": 16
+    },
+    {
+      "gameId": "pioneering-train-design",
+      "order": 17
+    },
+    {
+      "gameId": "the-grand-entry",
+      "order": 18
+    },
+    {
+      "gameId": "circus-line",
+      "order": 19
+    },
+    {
+      "gameId": "pioneering-train-performance",
+      "order": 20
+    },
+    {
+      "gameId": "sports-tug-o-war",
+      "order": 21
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "order": 22
+    },
+    {
+      "gameId": "sports-land-skis",
+      "order": 23
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "order": 24
+    },
+    {
+      "gameId": "sports-human-foosball",
+      "order": 25
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "order": 26
+    },
+    {
+      "gameId": "clown-car",
+      "order": 27
+    },
+    {
+      "gameId": "top-dog",
+      "order": 28
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "order": 29
+    },
+    {
+      "gameId": "3-ring-circus",
+      "order": 30
+    },
+    {
+      "gameId": "telephone",
+      "order": 31
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "order": 32
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "order": 33
+    },
+    {
+      "gameId": "jugglers",
+      "order": 34
+    }
+  ],
+  "type_defaults": {
+    "patrol-games": {
+      "prefix": [
+        "p_flag",
+        "p_yell",
+        "p_spirit",
+        "ten_ess"
+      ],
+      "suffix": [
+        "unscout",
+        "off_notes",
+        "off_score",
+        "final_rank",
+        "overall_points"
+      ]
+    },
+    "exhibition": {
+      "prefix": [],
+      "suffix": [
+        "off_score",
+        "final_rank",
+        "overall_points"
+      ]
+    },
+    "troop-challenges": {
+      "prefix": [],
+      "suffix": [
+        "off_score",
+        "final_rank",
+        "overall_points"
+      ]
+    }
+  }
+}

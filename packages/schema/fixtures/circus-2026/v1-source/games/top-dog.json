@@ -1,0 +1,72 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "top-dog",
+  "sortOrder": 120,
+  "content": {
+    "title": "Best in Show",
+    "story": "In the circus, the top acts don't compete with each other — they're all headliners. The Top Dog award works the same way. The top 25% of troops by aggregate score all earn the title. No first place. No second place. Just Top Dog. You either are, or you aren't.",
+    "challenge": "Awarded to all troops whose aggregate score places them in the top 25% of all competing troops. All qualifying troops receive the award equally — no ranking among them.",
+    "description": "After all troop challenge events are scored and finalized, the Camporee Director calculates aggregate scores for all troops. The top 25% of troops — rounded up — receive the Top Dog award. All Top Dog recipients are equal: there is no 1st-among-Top-Dogs. Troops on the bubble should be determined by the Director before announcements.\n\nThis award is entered manually by the admin after all scores are finalized.",
+    "rules": [
+      "Eligibility is based on aggregate score across all Troop Challenge events",
+      "Top 25% of troops qualify — round up if the 25% threshold falls between whole numbers",
+      "All qualifying troops receive the award equally — no distinction of rank among Top Dog recipients",
+      "Director's determination of qualifying troops is final"
+    ],
+    "time_and_scoring": "Determined by the Camporee Director after all Troop Challenge scores are finalized.\n\nQualification threshold = top 25% of all competing troops (round up).\n\nExample: 12 troops competing → top 3 troops qualify (25% of 12 = 3).\n\nThis is an admin-entered award — not scored in real time.",
+    "setup": "No field setup. Compute qualifying threshold after all events are scored. Enter qualifying troops in the system before the awards ceremony.",
+    "reset": "N/A",
+    "staffing": "Camporee Director or designated scoring admin.",
+    "supplies_text": "Top Dog award ribbons or patches: 1 per qualifying Scout in qualifying troops\nAggregated score summary: 1 copy for director"
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "top_dog_awarded",
+        "label": "Top Dog Award Qualified",
+        "audience": "admin",
+        "sortOrder": 10,
+        "type": "checkbox",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false
+        }
+      },
+      {
+        "id": "aggregate_score",
+        "label": "Aggregate Score (reference)",
+        "audience": "admin",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "min": 0,
+          "max": 9999,
+          "defaultValue": 0,
+          "placeholder": "Total points across all troop challenges"
+        }
+      },
+      {
+        "id": "director_notes",
+        "label": "Director Notes",
+        "audience": "admin",
+        "sortOrder": 30,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Qualifying threshold, ties, any discretionary decisions"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

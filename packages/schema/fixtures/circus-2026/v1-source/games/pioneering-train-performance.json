@@ -1,0 +1,86 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "pioneering-train-performance",
+  "sortOrder": 80,
+  "content": {
+    "title": "Race to the Ring - Deliver the Beast",
+    "story": "A train car that sits still is just a pile of poles. The real test is whether it moves — with Scouts aboard, across a measured course, in the time the crowd demands. Today the Circus Train leaves the station. Your troop built it. Now drive it.",
+    "challenge": "Run your Circus Train Car across a set course as fast as possible with at least one Scout aboard. Score is based on elapsed time, with bonuses for showmanship and completion.",
+    "description": "Each troop's Circus Train Car attempts to travel a set course (distance established by organizers — typically 30–50 feet). At least one Scout must be aboard the car for the entire run. Remaining troop members may push, pull, or guide the car using ropes or poles — but may not carry it. The clock starts on the judge's signal and stops when the car (and rider) crosses the finish line. If the car breaks down before the finish, elapsed time is recorded and a structural penalty applied. Troops get one official run; a second attempt may be offered at organizer discretion.",
+    "rules": [
+      "At least one Scout must ride the car for the full course — if the rider dismounts, the run is paused until they re-board",
+      "Remaining Scouts may push, pull, or guide using the car's ropes or poles only — no carrying",
+      "Car must remain structurally intact (no lashings may be added or repaired during the run)",
+      "Car must travel under Scout power only — no motorized or wheeled add-ons",
+      "Course distance and surface established by organizers before the event",
+      "Judges may halt a run for safety reasons — no time penalty assessed"
+    ],
+    "time_and_scoring": "Score is based on elapsed time from start signal to crossing the finish line.\n\nBase Score: Elapsed time in seconds (lower = better)\nCompletion Bonus: −10 seconds if car crossed the finish without structural failure\nShowmanship Bonus: 0–5 points deducted from time (judges' discretion — circus flair, costumes, announcer, etc.)\n\nFinal Score = Elapsed Time − Completion Bonus − Showmanship Deduction\n\nLowest adjusted time wins. DNF (did not finish) scores are ranked after all finishers.",
+    "setup": "Mark start and finish lines clearly (30–50 feet recommended). Surface should be relatively flat and firm. Have a stopwatch and a safety spotter at the finish. Establish the course before any performance runs begin.",
+    "reset": "Clear the course. Re-set start/finish markers if disturbed. Estimated reset: 1–2 minutes between runs.",
+    "staffing": "1 judge/timer at finish line. 1 safety spotter. 1 starter (may double as spotter).",
+    "supplies_text": "Stopwatch: 1\nStart and finish line markers (cones or stakes): 4\nScoring sheet: 1\nWhistle (starter): 1"
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Elapsed Time (start to finish line)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "placeholder": "Start to crossing finish line"
+        }
+      },
+      {
+        "id": "completed_course",
+        "label": "Completed Course Without Structural Failure",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "checkbox",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false
+        }
+      },
+      {
+        "id": "showmanship",
+        "label": "Showmanship Bonus (0–5 pts)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 5,
+          "defaultValue": 0,
+          "placeholder": "Circus flair, costumes, style"
+        }
+      },
+      {
+        "id": "dnf_notes",
+        "label": "DNF / Incident Notes",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "text",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Note any breakdown, safety stop, or DNF"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

@@ -1,0 +1,111 @@
+{
+  "library_uuid": "2138af44-59b4-48de-9154-2841880593b4",
+  "library_title": "Step Right Up! The Grand Entry!",
+  "id": "the-grand-entry",
+  "sortOrder": 70,
+  "content": {
+    "title": "The Grand Entry!",
+    "story": "The Coyote Creek Circus is about to begin its most spectacular season opener — and every great Circus opens with a Grand Ceremony. The flags must be raised with precision, honor, and respect. The Ringmaster has asked your patrol to serve as the Official Circus Color Guard for tonight's Grand Entry. There is no script. There are no shortcuts. The audience is watching. The flags demand your best. Show the Ringmaster — and the crowd — what a Scout's best looks like.",
+    "challenge": "Perform two complete Color Guard ceremonies: one with flags on standards (marching presentation), and one raising and lowering a flag on a pole. Demonstrate knowledge of flag etiquette through trivia questions. Every Scout participates.",
+    "description": "Your patrol will perform two Color Guard presentations for the judges. First: a flag-on-standard ceremony — march the colors to the stands with correct alignment, positioning, and commands. Second: a flag-on-pole ceremony — raise and lower the flag at the correct pace, and fold it correctly. After both presentations, the judge will ask 2–3 flag trivia questions. There is no required script — but the form, respect, and precision of the ceremony will be evaluated. All patrol members must participate in some role.",
+    "rules": [
+      "All patrol members must participate — no bystanders",
+      "No hands in pockets during ceremony",
+      "US Flag must be higher than all other flags at all times",
+      "Flag must NOT be carried on the shoulder",
+      "Flag run up the pole briskly — lowered slowly and ceremoniously",
+      "The word 'Retreat' must NOT be used — penalty if spoken",
+      "Flag must be properly folded (first triangle fold to open edge)",
+      "No specific script required — judges evaluate form and respect",
+      "Judges have final say on scoring — be consistent across all patrols"
+    ],
+    "time_and_scoring": "Points-based, 100 points total:\n- Patrol Spirit and Teamwork: 20 points\n- Color Guard — flags on standard: 30 points (alignment, positioning, commands, no shoulders, US Flag highest)\n- Color Guard — flag on pole (raise/lower/fold): 30 points (brisk raise, ceremonious lower, correct fold, clear commands)\n- Flag Trivia (2–3 questions): 20 points\n\nRecommended: 2 judges, each evaluating one type of presentation for consistency across all patrols.",
+    "setup": "US Flag on standard with base. Secondary flag on standard with base. Properly folded US Flag (for pole ceremony starting position). Flagpole with halyard and carabiners. Trivia question cards (draw 2–3 per patrol from question bank). Scoring sheets (2 copies — one per judge).",
+    "reset": "Re-fold US Flag for next patrol. Reset flags to starting position. Estimated reset time: 3–5 minutes.",
+    "staffing": "2 judges strongly recommended — one evaluates flag-on-standard, one evaluates flag-on-pole. Both score spirit/teamwork. Judges should familiarize themselves with flag best practices before the event.",
+    "supplies_text": "US Flag on standard: 1\nSecondary flag (BSA, district, or troop flag) on standard: 1\nFlag standards with bases: 2\nProperly folded US Flag: 1\nFlagpole with halyard and carabiners: 1\nTrivia question cards (from approved bank): 1 set\n2 scoring sheets per patrol\nPen/pencil per judge: 2",
+    "notes": "Judges: 'Retreat' as a command for lowering the flag is incorrect and should result in a point deduction. The correct term is 'Colors' or simply giving commands without the word 'Retreat.'\n\nFLAG TRIVIA QUESTION BANK (draw 2–3 per patrol — do not share with units in advance):\n- Red color represents? → Valor and Bravery\n- White color represents? → Purity and Innocence\n- Blue color represents? → Vigilance, Perseverance, and Justice\n- How many red stripes? → 7\n- How many white stripes? → 6\n- What do the stripes represent? → The original 13 colonies\n- How many approved versions of the US Flag? → 27\n- What year was the US Flag originated? → 1777\n- How many US Flags placed on the moon? → 6\n- Why does the US Flag start on right of audience and end on left? → Flag etiquette requires it to be to its own right; once facing audience, the flag's right is the audience's left.\n- Flag in poor condition should be destroyed by burning. → True\n- Acceptable to use flag as clothing or bedding? → False\n- When at half-staff, flag is first run to top then lowered? → True\n\nTen Essentials item for this game: Scout Handbook (handled by common field injection at runtime)."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "flag_on_standard",
+        "label": "Flag on Standard ceremony (0–30)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 30,
+          "defaultValue": 0,
+          "placeholder": "Alignment, positioning, US Flag highest, no shoulders"
+        }
+      },
+      {
+        "id": "flag_on_pole",
+        "label": "Flag on Pole ceremony (0–30)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 30,
+          "defaultValue": 0,
+          "placeholder": "Brisk raise, slow lower, correct fold, clear commands"
+        }
+      },
+      {
+        "id": "trivia",
+        "label": "Flag Trivia score (0–20)",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "retreat_penalty",
+        "label": "'Retreat' used as command (penalty)",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "defaultValue": false,
+          "max": 5
+        }
+      },
+      {
+        "id": "judge_notes",
+        "label": "Judge notes on ceremony",
+        "audience": "judge",
+        "sortOrder": 90,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Note specific strengths, errors, or deductions"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Scout Handbook"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

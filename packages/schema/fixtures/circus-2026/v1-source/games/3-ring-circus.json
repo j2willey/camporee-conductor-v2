@@ -1,0 +1,79 @@
+{
+  "library_uuid": "496b88a7-7af9-4cf4-a533-3a2281ba2980",
+  "library_title": "Hula Hoop Ring Pass",
+  "id": "3-ring-circus",
+  "sortOrder": 140,
+  "content": {
+    "title": "3 Ring Circus",
+    "story": "The Ringmaster has a problem. The famous \"Three Ring Spectacular\" requires three perfect circus rings — but the prop rings keep slipping out of position! Your patrol has been recruited as the Ring Crew. You must link arms in a perfect circle and pass all three Official Circus Rings (hula hoops) around the entire crew — three times — without breaking the circle. The audience is already seated. The spotlight is on. Don't break the ring!",
+    "challenge": "Standing in a linked circle, pass the Official Circus Rings (hula hoops) around the entire Crew 3 complete times without any Crew member releasing their grip. Fastest time wins.",
+    "description": "Your Ring Crew forms a perfect circle, all hands linked. The Official Circus Rings (hula hoops) are spaced out and placed over Crew members' linked arms before the clock starts — no more than one ring may start between the same two Scouts. On the Ringmaster's signal, pass the rings around the inside of the circle — each Crew member stepping through without releasing hands. Three complete circuits. Time stops when the third pass of all 3 rings is complete. The Ringmaster watches for any break in the circle — a broken ring means penalty time.",
+    "rules": [
+      "All patrol members must join the circle — no one sits out",
+      "Hands may not be released at any time after the clock starts",
+      "The rings must travel around every Crew member in the circle each pass",
+      "If hands are released: the pass in progress does not count, re-link and continue (judge records the break)",
+      "Rings must travel in the same direction for all 3 passes",
+      "The rings are placed before the clock starts — no more than one ring between the same two Scouts at start"
+    ],
+    "time_and_scoring": "Elapsed time from Ringmaster's signal to completion of 3rd pass. Penalty: +15 seconds per hand-break instance. Officials convert final times to points.",
+    "setup": "Clear a flat open area large enough for the patrol to form a circle. Have hula hoop ready at start. No special setup required.",
+    "reset": "Essentially instant — no physical reset needed. Estimated reset time: under 1 minute.",
+    "staffing": "1 judge (Ringmaster). Watches for hand breaks, counts passes, times event.",
+    "supplies_text": "Hula hoop (standard size): 4–5\nStopwatch: 1",
+    "notes": "Judge must count passes carefully — designate a specific Crew member as the 'counter point' (the third ring passing that Scout = 1 complete pass). Announce this to the patrol before starting. Larger patrols will naturally take longer — officials should account for patrol size when converting to points."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Total elapsed time for 3 complete passes",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {}
+      },
+      {
+        "id": "hand_breaks",
+        "label": "Number of hand breaks (+15 sec each)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "Each break = +15 sec"
+        }
+      },
+      {
+        "id": "patrol_size",
+        "label": "Number of Scouts in circle",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "min": 4,
+          "max": 12,
+          "defaultValue": 6,
+          "placeholder": "For officials reference when converting to points"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Map (Camporee Guide)"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

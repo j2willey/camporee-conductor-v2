@@ -1,0 +1,79 @@
+{
+  "library_uuid": "4180ec14-afef-47f7-8ccf-ff274653ff9a",
+  "library_title": "A-Frame Stilt Walk Challenge",
+  "id": "the-a-frame-trapeze",
+  "sortOrder": 170,
+  "content": {
+    "title": "The A-Frame Trapeze",
+    "story": "The Circus Rigging Crew has built a portable trapeze rig — but it's not the kind that hangs from the ceiling. This one walks. One daring performer stands on the crossbar of a massive wooden \"A\" while their crewmates hold guide ropes to keep the whole apparatus upright. The performer shifts and lunges, walking the A-frame forward one step at a time across the Center Ring. The crew must read every shift of weight and compensate instantly — or the whole act comes crashing down. It's part engineering, part circus, and entirely dependent on trust between the performer and the crew.",
+    "challenge": "Walk the A-frame Trapeze across the Center Ring course. One Scout rides the crossbar and \"walks\" the structure forward by shifting weight. The rope crew keeps it upright. Fastest crossing wins.",
+    "description": "Your Trapeze Crew takes their positions: one daring Scout (the Performer) mounts the crossbar of the A-frame Trapeze. The rest of the crew spreads out holding the guide ropes tied to the top. On the Ringmaster's signal, the Performer begins walking the rig: shift weight to one side, swing the other leg forward, shuffle over, repeat. The rope crew must constantly adjust tension — anticipating every shift before the Performer makes it. Time stops when the A-frame crosses the Center Ring finish line with the Performer still aboard. Dismounting early is not an option — a Circus Performer finishes what they start.",
+    "rules": [
+      "One Scout (the Performer) must remain on the crossbar for the entire course",
+      "All rope-holding Scouts must maintain contact with their rope at all times",
+      "If the A-frame falls: pause clock, reset upright, Performer re-mounts, clock resumes (no penalty — the fall is its own cost)",
+      "Performer may hold the A-frame legs for balance",
+      "Rope crew may not touch the A-frame structure directly — only via their assigned rope",
+      "All Scouts must remain on their side of the A-frame",
+      "Performer must cross finish line while still on crossbar"
+    ],
+    "time_and_scoring": "Elapsed time from start signal to A-frame crossing finish line with Performer aboard. No added penalties — falls and resets are reflected in raw time. Officials convert times to points.",
+    "setup": "Pre-build A-frame from three 2×4×8 boards (two legs, one crossbar) with crossbar lashed or bolted approximately 18–24 inches from ground. Tie 4–6 ropes (15–20 ft each) to the top of the A-frame, spread in different directions. Mark a straight course (20–40 feet recommended). Ensure soft ground or grass.",
+    "reset": "Stand A-frame upright and verify ropes are untangled. Ensure A-frame connections are tight (lashings or bolts as appropriate). Estimated reset time: 2–3 minutes.",
+    "staffing": "1 judge at finish line (Ringmaster). Optional spotter alongside for safety — especially to assist if Performer falls.",
+    "supplies_text": "A-frame structure (pre-built): 1\n  (three 2×4×8 boards — two legs, one crossbar)\nRopes tied to top of A-frame (15–20 ft, 4–6 ropes): 4–6\nCourse markers: 4\nStopwatch: 1",
+    "notes": "Pre-build the A-frame before the event — do not ask patrols to build it. Crossbar height should be accessible for most Scout heights (18–24 inches). Test the structure with an adult before the event. Brief Scouts that the rope crew must actively counterbalance — passive rope-holding won't prevent falls."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "elapsed_time",
+        "label": "Elapsed time — A-frame crosses finish with Performer aboard",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {}
+      },
+      {
+        "id": "falls",
+        "label": "Number of times A-frame fell (reference only)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0,
+          "placeholder": "For reference only — not scored separately"
+        }
+      },
+      {
+        "id": "patrol_size",
+        "label": "Number of Scouts in patrol",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "min": 4,
+          "max": 12,
+          "defaultValue": 6
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Pocket Knife"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

@@ -8,6 +8,8 @@ import {
 import { ScoringFieldList } from "./field.ts";
 
 export const SupplySchema = z.strictObject({
+  /** Optional heading the item is listed under, e.g. "Scene Props" or "Option A — Tent". */
+  group: NonEmptyText.optional(),
   item: NonEmptyText,
   /** Free text: Circus 2026 has quantities like "4–5", "1 set" and "1 per judge". */
   quantity: z.string().optional(),
@@ -22,7 +24,7 @@ export const ActivityContentSchema = z.strictObject({
   /** v1 called this `challenge`. */
   objective: NonEmptyText,
   description: NonEmptyText,
-  rules: z.array(NonEmptyText).min(1, "must have at least one rule"),
+  rules: z.array(NonEmptyText),
   timeAndScoring: NonEmptyText,
   setup: z.string(),
   reset: z.string(),
@@ -42,21 +44,35 @@ export const VariablesSchema = z.record(
 );
 
 /** Anything that happens at a Station (ADR-0003, amended 2026-10-30). */
-export const ActivitySchema = z.strictObject({
-  ...documentBase,
-  kind: z.literal("activity"),
-  /** `ranked` counts toward team standings; `exhibition` is individual recognition only. */
-  scoringType: z.enum(["ranked", "exhibition"]),
-  content: ActivityContentSchema,
-  scoring: z.strictObject({
-    /** v1 `points_desc` = higher-wins, `timed_asc` = lower-wins. */
-    direction: z.enum(["higher-wins", "lower-wins"]),
-    fields: ScoringFieldList.min(1, "must have at least one scoring field"),
-  }),
-  variables: VariablesSchema.optional(),
-  tags: z.array(NonEmptyText).optional(),
-  lineage: LineageSchema.optional(),
-  legacy: LegacySchema.optional(),
-});
+export const ActivitySchema = z
+  .strictObject({
+    ...documentBase,
+    kind: z.literal("activity"),
+    /** `ranked` counts toward team standings; `exhibition` is individual recognition only. */
+    scoringType: z.enum(["ranked", "exhibition"]),
+    content: ActivityContentSchema,
+    scoring: z.strictObject({
+      /** v1 `points_desc` = higher-wins, `timed_asc` = lower-wins. */
+      direction: z.enum(["higher-wins", "lower-wins"]),
+      /** May be empty for an exhibition (v1 recorded exhibition results separately). */
+      fields: ScoringFieldList,
+    }),
+    variables: VariablesSchema.optional(),
+    tags: z.array(NonEmptyText).optional(),
+    lineage: LineageSchema.optional(),
+    legacy: LegacySchema.optional(),
+  })
+  .superRefine((activity, ctx) => {
+    if (
+      activity.scoringType === "ranked" &&
+      activity.scoring.fields.length === 0
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["scoring", "fields"],
+        message: "a ranked Activity needs at least one scoring field",
+      });
+    }
+  });
 
 export type Activity = z.infer<typeof ActivitySchema>;

@@ -43,7 +43,6 @@
           "type": "string"
         },
         "rules": {
-          "minItems": 1,
           "type": "array",
           "items": {
             "type": "string"
@@ -66,6 +65,9 @@
           "items": {
             "type": "object",
             "properties": {
+              "group": {
+                "type": "string"
+              },
               "item": {
                 "type": "string"
               },
@@ -127,7 +129,6 @@
           ]
         },
         "fields": {
-          "minItems": 1,
           "type": "array",
           "items": {
             "type": "object",

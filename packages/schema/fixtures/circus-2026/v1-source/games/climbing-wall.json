@@ -1,0 +1,35 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "climbing-wall",
+  "sortOrder": 20,
+  "content": {
+    "title": "The Human Fly",
+    "story": "The circus riggers climb first — up into the dark rafters of the Big Top to rig the trapeze, the aerial silks, the high wire. They don't think about the height. They think about the next handhold. Camp Chesebrough's climbing wall is your Big Top rafters. Find your next handhold. Keep climbing.",
+    "challenge": "Climb as high as possible on Camp Chesebrough's climbing wall under the guidance of certified climbing instructors. Individual achievement recognized — no team scoring.",
+    "description": "Camp Chesebrough's climbing wall is staffed by certified climbing instructors provided by the camp. Any Scout may attempt the wall at any time during the event period, subject to instructor capacity and wait time. All BSA climbing protocols apply. Instructors control belay, helmet and harness fitting, and route selection. Outstanding performances (highest climb, fastest ascent) may be recognized at the awards ceremony.",
+    "rules": [
+      "All BSA Climb On Safely guidelines apply",
+      "Certified climbing instructors control all belay operations — no exceptions",
+      "Helmets and harnesses required — provided at the station",
+      "Scouts with medical contraindications should not attempt the wall — consult adult leader",
+      "Follow all instructor directions at all times",
+      "Wait for instructor clearance before beginning any climb"
+    ],
+    "time_and_scoring": "No formal scoring. Exhibition only.\n\nRecognition at awards ceremony is at the discretion of the Camporee Director. Suggested award titles: Fastest Climber, Highest Climber.",
+    "setup": "Coordinate with Camp Chesebrough climbing staff before the event to confirm: available time windows, maximum participants per session, equipment provided, and any camp-specific protocols. Mark a clear waiting and staging area at the base.",
+    "reset": "Camp staff manages continuous operation and rotation.",
+    "staffing": "Camp Chesebrough provides certified climbing instructors and belay staff. Camporee provides: unit leaders to supervise waiting Scouts, 1 adult to manage queue.",
+    "supplies_text": "Camp Chesebrough provides: wall, helmets, harnesses, belay equipment\nCamporee provides: queue management volunteer (1 adult), water for station area",
+    "notes": "This is an Exhibition event — no patrol or troop points. Pre-event coordination with Camp Chesebrough climbing staff is essential. Confirm: hours of operation, maximum throughput, whether the camp needs any advance headcount. Award title suggestions: Fastest Climber, Highest Climber."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": []
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "exhibition",
+  "session": null,
+  "schemaVersion": "3.0"
+}

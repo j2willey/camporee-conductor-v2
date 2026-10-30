@@ -79,6 +79,24 @@ describe("ActivitySchema", () => {
     ).toContain("slug: must be lowercase letters, digits and single hyphens");
   });
 
+  it("accepts supplies grouped under a heading", () => {
+    const activity = validActivity();
+    const supplies = [
+      { group: "Option A — Tent", item: "Dome tent", quantity: "1" },
+      {
+        group: "Option B — Tarp",
+        item: "Tarp (8×10 or similar)",
+        quantity: "1",
+      },
+    ];
+    expect(
+      issuesOf(ActivitySchema, {
+        ...activity,
+        content: { ...activity.content, supplies },
+      }),
+    ).toEqual([]);
+  });
+
   it("rejects the v1 'challenge' content key and other unknown keys", () => {
     const activity = validActivity();
     const content = { ...activity.content, challenge: "old v1 name" };
@@ -103,14 +121,14 @@ describe("ActivitySchema", () => {
     );
   });
 
-  it("requires at least one non-empty rule", () => {
+  it("requires a rules list, which may be empty, but no empty rules", () => {
     const activity = validActivity();
     expect(
       issuesOf(ActivitySchema, {
         ...activity,
         content: { ...activity.content, rules: [] },
       }),
-    ).toContain("content.rules: must have at least one rule");
+    ).toEqual([]);
     expect(
       issuesOf(ActivitySchema, {
         ...activity,
@@ -125,6 +143,26 @@ describe("ActivitySchema", () => {
     ).toContain(
       'scoringType: Invalid option: expected one of "ranked"|"exhibition"',
     );
+  });
+
+  it("requires at least one scoring field on a ranked Activity", () => {
+    const activity = validActivity();
+    const scoring = { ...activity.scoring, fields: [] };
+    expect(issuesOf(ActivitySchema, { ...activity, scoring })).toContain(
+      "scoring.fields: a ranked Activity needs at least one scoring field",
+    );
+  });
+
+  it("allows an exhibition Activity with no scoring fields (v1 recorded these separately)", () => {
+    const activity = validActivity();
+    const scoring = { ...activity.scoring, fields: [] };
+    expect(
+      issuesOf(ActivitySchema, {
+        ...activity,
+        scoringType: "exhibition",
+        scoring,
+      }),
+    ).toEqual([]);
   });
 
   it("rejects duplicate scoring field ids", () => {

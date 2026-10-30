@@ -1,0 +1,132 @@
+{
+  "library_uuid": "7f7b9294-060a-45aa-a230-5642010f8843",
+  "library_title": "Trapeze Swing Assembly",
+  "id": "trapeze-swing-assembly",
+  "sortOrder": 100,
+  "content": {
+    "title": "Trapeze Swing Assembly",
+    "story": "The Coyote Creek Circus has a problem — and a job opening. The main rigging crew was hired to assemble the full trapeze rig, but halfway through they collected their pay and vanished into the crowd. One A-frame is up. The second is still in pieces on the ground. The Flying Fandangos go on in one hour. Your patrol shows up, assesses the situation, and tells the Ringmaster: \"We can finish this.\" Now prove it. Get the rig up — or the show is cancelled.",
+    "challenge": "One A-frame is pre-built and staked. Your patrol constructs the matching second A-frame using proper lashings, attaches the trapeze cross-pole, and passes the load test — proving you've earned the job.",
+    "description": "On the Ringmaster's signal, your crew receives spare poles and pre-cut rope. Construct a matching A-frame, position it to mirror the existing one, and lash the trapeze cross-pole between them. When complete, call for inspection. Final test: the Ringmaster suspends a weighted bucket from the trapeze bar. If it holds for a count of 10 with no crew contact, you pass the audition. Hands off — let the lashings do the work.",
+    "rules": [
+      "Required lashings: shear lashing for A-frame legs (min 1), square lashing for cross-bracing (min 1), appropriate lashing for cross-pole attachment (min 1)",
+      "No pre-tied knots — all lashings built on site",
+      "Second A-frame must match pre-built height and angle",
+      "Load test: weighted bucket holds for count of 10, no crew contact",
+      "Rope ends secured — no loose tails",
+      "All lashings properly cinched"
+    ],
+    "time_and_scoring": "Points-based (60 max): Lashing technique quality (0–20), Structure matches pre-built A-frame (0–10), Load test passed (0–20 binary), Overall craftsmanship (0–10), All required lashing types present (0–10 binary).",
+    "setup": "Pre-build one A-frame and stake it before the event opens. Stage matching poles and pre-cut rope for the second A-frame. Stage cross-pole nearby. Prepare weighted bucket (10–15 lbs) for load test. Mark build zone clearly.",
+    "reset": "Disassemble second A-frame, re-stage poles and rope. Verify pre-built frame still secure. Estimated reset time: 8–10 minutes.",
+    "staffing": "1 judge with strong lashing knowledge required. Recommended: Eagle Scout or Pioneering Merit Badge counselor.",
+    "supplies_text": "Pre-built A-frame (erected before event): 1\nSpare poles for second A-frame: 2–3\nCross-pole (trapeze bar): 1\nNatural fiber rope (pre-cut): varies\nStakes for guy lines: 4–6\nWeighted bucket (10–15 lbs): 1\nMallet: 1\nJudge inspection checklist: 1/patrol",
+    "references": "BSA Pioneering Merit Badge Pamphlet; BSA Fieldbook"
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "lashing_quality",
+        "label": "Lashing technique quality (0–20)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "structure_match",
+        "label": "Matches pre-built A-frame height and angle (0–10)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "load_test",
+        "label": "Load test passed — bucket held 10 seconds",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false,
+          "max": 10
+        }
+      },
+      {
+        "id": "craftsmanship",
+        "label": "Time to build ",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "required_lashings",
+        "label": "Correct lashings reproduced.",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false,
+          "max": 10
+        }
+      },
+      {
+        "id": "judge_notes",
+        "label": "Lashing inspection notes",
+        "audience": "judge",
+        "sortOrder": 90,
+        "type": "textarea",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Note specific lashing quality or issues"
+        }
+      },
+      {
+        "id": "field_1778197726672 ",
+        "label": "Dismantled and restored game",
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "audience": "judge",
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "p-cord/rope/string"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

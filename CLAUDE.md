@@ -48,7 +48,7 @@ Announcer script. There are three pillars (ADR-0026): the **Curator** (Template 
   `feat/…`, `fix/…`, `chore/…`, `docs/…`. Keep the PR scoped to its issue and reference it (`Closes #N`).
 - **CI must pass before merge.** `main` is protected: no direct pushes. Merges go through a PR with
   green CI.
-- **TDD for `packages/scoring` and cartridge import/export.** Write the failing test first, then the
+- **TDD for `packages/scoring`, `packages/schema` and cartridge import/export.** Write the failing test first, then the
   code. Use real Circus 2026 data as fixtures where possible.
 - Record new architectural decisions as the next-numbered ADR in `docs/adr/` and add it to the index.
 - Jim is new to this workflow. Explain each git/GitHub step in plain language, and ask before
@@ -66,6 +66,7 @@ pnpm lint         # ESLint + Prettier check
 pnpm format       # Prettier --write (fix formatting)
 pnpm test         # Vitest in every package
 pnpm --filter @camporee-conductor/scoring test -- --watch   # TDD loop for scoring
+pnpm --filter @camporee-conductor/schema generate           # regenerate json-schema/ after changing a Zod schema
 ```
 
 CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test on every PR and push to `main`.
@@ -74,6 +75,8 @@ CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test on 
 
 ```
 packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
+packages/schema/    Zod document schemas (Event, Activity, Common Field set, Template) + generated JSON Schema;
+                    fixtures/circus-2026/ is the transcoded Circus 2026 cartridge (see TRANSCODE-NOTES.md)
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```

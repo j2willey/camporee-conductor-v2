@@ -1,0 +1,97 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "campsite-themed-gateway",
+  "sortOrder": 50,
+  "content": {
+    "title": "The Grand Entrance",
+    "story": "Every circus has a grand entrance — the archway you pass through to leave the ordinary world behind. At Coyote Creek, every troop camp has a gateway, and the best one marks the entrance to something special. Build yours to announce your troop's presence at the Greatest Show on Earth. Lash it. Brand it. Make it worthy of the marquee.",
+    "challenge": "Design and build a Circus-themed gateway marking your troop's campsite entrance using pioneering materials and lashing techniques.",
+    "description": "Each troop constructs a gateway at the entrance to their campsite using pioneering poles, rope, and lashing techniques. The gateway must incorporate the Circus theme and display their troop identity. Judges visit and score on creativity, construction quality, theme integration, and safety/stability. Gateways must be standing and complete during the judging window.",
+    "rules": [
+      "Gateway must be built using pioneering poles and lashing — no nails, screws, or permanent hardware",
+      "Must be freestanding and structurally stable during judging",
+      "Must incorporate the Circus theme in design, name, or decoration",
+      "Must display the troop number or name",
+      "Gateway must mark the entrance to the troop campsite",
+      "Scouts must do the construction — adult assistance limited to safety guidance",
+      "All pioneering materials must meet BSA guidelines"
+    ],
+    "time_and_scoring": "Judges visit each campsite during the designated judging window.\n\nScoring (100 points total):\n- Creativity & Design (originality, visual impact): 0–30 pts\n- Construction Quality (lashing, structural soundness): 0–30 pts\n- Circus Theme Integration (clearly circus-themed): 0–25 pts\n- Safety & Stability (stands without support, no hazards): 0–15 pts\n\nTiebreaker: Judges' discretion.",
+    "setup": "Announce judging window at check-in. Judges travel together as a panel. Gateway must be completed before judging begins.",
+    "reset": "Judges move to next site. No physical reset.",
+    "staffing": "2–3 adult judges with pioneering knowledge preferred. Score independently; discuss and average.",
+    "supplies_text": "Scoring sheets (1 per judge per troop): 1 pad\nPens: 1 per judge\nClipboards: 1 per judge\nSummary tally sheet: 1",
+    "notes": "Gateway construction typically begins Friday evening or Saturday morning. Announce the judging window at Friday check-in so troops can plan. Gateways will be visible all weekend and contribute to overall campsite atmosphere."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "creativity",
+        "label": "Creativity & Design (0–30)",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 30,
+          "defaultValue": 0,
+          "placeholder": "Originality, visual impact"
+        }
+      },
+      {
+        "id": "construction",
+        "label": "Construction Quality (0–30)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 30,
+          "defaultValue": 0,
+          "placeholder": "Lashing quality, structural soundness"
+        }
+      },
+      {
+        "id": "theme",
+        "label": "Circus Theme Integration (0–25)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 25,
+          "defaultValue": 0,
+          "placeholder": "Clearly circus-themed"
+        }
+      },
+      {
+        "id": "safety",
+        "label": "Safety & Stability (0–15)",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 15,
+          "defaultValue": 0,
+          "placeholder": "Freestanding, no hazards"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "troop-challenges",
+  "session": null,
+  "schemaVersion": "3.0"
+}

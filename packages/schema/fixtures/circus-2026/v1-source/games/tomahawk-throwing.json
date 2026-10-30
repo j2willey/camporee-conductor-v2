@@ -1,0 +1,36 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "tomahawk-throwing",
+  "sortOrder": 30,
+  "content": {
+    "title": "The Wild West Show",
+    "story": "Before the trapeze artists and the lion tamers, the Wild West shows were the circus — trick riders, sharpshooters, and axe throwers who could bury a blade in a wooden target from twenty feet away without blinking. That tradition lives on here. Step up to the line. One throw at a time. Stick it.",
+    "challenge": "Throw a tomahawk at a wooden target and try to stick it. Individual achievement recognized — best sticks and most consistent throwers recognized at the awards ceremony.",
+    "description": "Each Scout gets a set number of throws (determined by station staff based on throughput). Scouts step to the throwing line, receive instruction from the station safety officer, and throw one tomahawk at a time. A 'stick' is a tomahawk that embeds in the target and holds without falling. Outstanding performers (most sticks in a session, clean rotation, best technique) may be recognized at the awards ceremony.",
+    "rules": [
+      "All BSA Totin' Chip and tool safety guidelines apply",
+      "Station safety officer controls all throwing — no unsupervised throws",
+      "Only one Scout at the throwing line at a time",
+      "All others stand behind the designated safety line",
+      "No throwing until the safety officer gives the clear signal",
+      "No retrieving tomahawks until the safety officer gives the all-clear",
+      "Scouts must have Totin' Chip or receive brief safety orientation from station staff before throwing"
+    ],
+    "time_and_scoring": "No formal scoring. Exhibition only.\n\nStation staff may informally track sticks per Scout. Recognition at awards ceremony is at the discretion of the Camporee Director. Suggested award title: Top Axe Thrower.",
+    "setup": "Establish a clear throwing range: throwing line, target line, and a roped-off spectator area behind and to the sides. Targets: 12–16 inch diameter logs or wooden rounds, set at an angle on a stand or staked into the ground. Standard throwing distance: 12–15 feet (adjust for rotation based on tomahawk weight). Have a certified or experienced BSA tool safety instructor lead this station.",
+    "reset": "Collect all tomahawks before Scouts approach targets. Reset targets as needed. Estimated rotation: 2–3 minutes per Scout.",
+    "staffing": "Minimum 2 adults: 1 safety officer/instructor at the throwing line, 1 to manage the queue and spectator area. Both should be experienced with tomahawk throwing and BSA tool safety.",
+    "supplies_text": "Tomahawks (balanced throwing hatchets): 3–5\nWooden targets (12–16 inch rounds): 3–4\nTarget stands or stakes: 3–4\nRope or tape for safety boundary: 50–100 ft\nFirst aid kit: 1\nTotin' Chip orientation checklist: 1",
+    "notes": "This is an Exhibition event — no patrol or troop points. BSA does not sanction unsupervised tomahawk throwing — this station requires an experienced instructor and strict safety protocols. Practice throwing technique with station staff before the event. Award title suggestion: Top Axe Thrower, Sharpshooter."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": []
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "league": "exhibition",
+  "session": null,
+  "schemaVersion": "3.0"
+}

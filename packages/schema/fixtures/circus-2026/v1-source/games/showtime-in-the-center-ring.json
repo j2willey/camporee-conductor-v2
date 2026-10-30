@@ -1,0 +1,63 @@
+{
+  "library_uuid": "",
+  "library_title": "",
+  "id": "showtime-in-the-center-ring",
+  "sortOrder": 20,
+  "content": {
+    "title": "Showtime in the Center Ring!!!",
+    "story": "The Circus is looking for new acts to add roster.  Tryouts are open to all!!",
+    "instructions": "",
+    "rules": [
+      "Must be Scout appropriate",
+      "Must be Approved by Staff Member",
+      ""
+    ],
+    "challenge": "Impress the judges with your acting or performing skills",
+    "description": "*   Audition a skit or performance for tonights Campfire\n*   Bonus points considered for inclusion or use of Underwater theme",
+    "time_and_scoring": "Bonus for Circus themed acts",
+    "scoring_notes": ""
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "skit_name",
+        "label": "Skit name",
+        "audience": "judge",
+        "sortOrder": 900,
+        "config": {},
+        "type": "number",
+        "kind": "info",
+        "weight": 1
+      },
+      {
+        "id": "approx_length_in_minutes",
+        "label": "Approx. Length in minutes",
+        "audience": "judge",
+        "sortOrder": 900,
+        "config": {},
+        "type": "number",
+        "kind": "info",
+        "weight": 1
+      },
+      {
+        "id": "points",
+        "label": "points",
+        "audience": "judge",
+        "sortOrder": 900,
+        "config": {},
+        "type": "number",
+        "kind": "points",
+        "weight": 1
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Joke for Judge/Good Attitude"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

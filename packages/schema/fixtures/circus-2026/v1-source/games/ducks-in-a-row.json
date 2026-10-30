@@ -1,0 +1,65 @@
+{
+  "library_uuid": "e1a8c350-4576-4bab-a0a6-1c73966c71e8",
+  "library_title": "Scout Law Duck Pond",
+  "id": "ducks-in-a-row",
+  "sortOrder": 160,
+  "content": {
+    "title": "Ducks in a Row",
+    "story": "The Circus Duck Pond is one of the Midway's most beloved attractions — but this morning, the Circus Duck Wrangler mixed up all the performing ducks! Each duck has a secret talent written on the bottom of their feet, and the Duck Wrangler needs them sorted back into their proper performance order before the Midway opens. Your patrol are the Honorary Duck Sorters. The ducks need to be retrieved in the exact order of their performance — which, as any good Scout knows, follows a very specific sequence. Find Trustworthy first. The rest will follow. But watch out — four of the ducks are Circus ringers with no talent at all. Pick one of those and your turn is over!",
+    "challenge": "Retrieve all 12 performing ducks from the Circus Duck Pond in correct Scout Law order — Trustworthy through Reverent — using as few total patrol turns as possible. Fewest turns wins; time breaks ties.",
+    "description": "16 rubber ducks float face-down in the Duck Pond (4×4 grid). 12 have one Scout Law point on the bottom. 4 are Circus ringers — decoys with random words. Your patrol takes turns retrieving ducks one at a time. Each turn must start with Trustworthy. Correct sequence? Keep going. Wrong duck? Return it face-down and pass to the next patrol member. The Duck Wrangler (judge) calls every turn. Done when one Scout retrieves all 12 in unbroken order. Optionally use a blue tarp as the Duck Pond surface.",
+    "rules": [
+      "First duck of any turn must be Trustworthy",
+      "Each subsequent pick must be the next point of the Scout Law in order",
+      "If wrong duck picked: return it bottom-down to its grid position, next Scout's turn",
+      "Scouts take turns in patrol rotation order — no skipping",
+      "No coaching from Scouts who are not currently taking their turn",
+      "Clock runs from start signal — used only as tiebreaker",
+      "Winning condition: one Scout picks all 12 law points in order in a single unbroken turn"
+    ],
+    "time_and_scoring": "Primary score: total number of patrol turns taken to complete. Fewer turns = better. Tiebreaker: total elapsed time (faster wins tiebreak). Officials convert turn counts to points at their discretion.",
+    "setup": "Label 12 rubber ducks on bottom with Scout Law points: Trustworthy, Loyal, Helpful, Friendly, Courteous, Kind, Obedient, Cheerful, Thrifty, Brave, Clean, Reverent. Label 4 ducks with random decoy words. Arrange 16 ducks face-down in a 4×4 grid on a flat surface (or blue tarp). Randomize duck positions between patrols.",
+    "reset": "Flip all ducks face-down. Randomize positions in grid. Estimated reset time: 1–2 minutes.",
+    "staffing": "1 judge (Duck Wrangler). Tracks turns, confirms Scout Law order, times event. Judge should know Scout Law cold.",
+    "supplies_text": "Rubber ducks (16): labeled on bottom (12 Scout Law + 4 Circus ringer decoys)\nWaterproof marker for labeling ducks: 1\nFlat surface or tray for duck grid: 1\nBlue tarp as 'Duck Pond' surface (optional): 1\nStopwatch (tiebreaker): 1\nTurn tally counter or sheet: 1",
+    "notes": "Shuffle duck positions between every patrol — if positions stay the same, word will spread and later patrols have an unfair advantage. Consider two sets of labeled ducks so you can reset faster by swapping full sets."
+  },
+  "scoring_model": {
+    "method": "timed_asc",
+    "inputs": [
+      {
+        "id": "total_turns",
+        "label": "Total patrol turns taken to complete",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "metric",
+        "weight": 1,
+        "config": {
+          "min": 1,
+          "max": 100,
+          "defaultValue": 0,
+          "placeholder": "Fewer turns = better score"
+        }
+      },
+      {
+        "id": "elapsed_time",
+        "label": "Total elapsed time (tiebreaker only)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 0.1,
+        "config": {}
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Full Water Bottle"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

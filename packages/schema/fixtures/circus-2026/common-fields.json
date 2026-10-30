@@ -1,0 +1,94 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-73ca-af13-63e7f1e6a5cc",
+  "slug": "circus-2026-common-fields",
+  "title": "Circus 2026 Common Fields",
+  "kind": "common-field-set",
+  "fields": [
+    {
+      "id": "p_flag",
+      "label": "Patrol Flag",
+      "type": "number",
+      "kind": "points",
+      "audience": "judge",
+      "sortOrder": 10,
+      "weight": 10,
+      "config": {
+        "min": 0,
+        "max": 5,
+        "placeholder": "0-10 Points"
+      }
+    },
+    {
+      "id": "p_yell",
+      "label": "Patrol Yell",
+      "type": "number",
+      "kind": "points",
+      "audience": "judge",
+      "sortOrder": 20,
+      "weight": 5,
+      "config": {
+        "min": 0,
+        "max": 5,
+        "placeholder": "0-5 Points"
+      }
+    },
+    {
+      "id": "p_spirit",
+      "label": "Scout Spirit",
+      "type": "number",
+      "kind": "points",
+      "audience": "judge",
+      "sortOrder": 30,
+      "weight": 10,
+      "config": {
+        "min": 0,
+        "max": 10,
+        "placeholder": "0-10 Points"
+      }
+    },
+    {
+      "id": "ten_ess",
+      "label": "10 Essentials: {{ten_essentials}}",
+      "type": "number",
+      "kind": "points",
+      "audience": "judge",
+      "sortOrder": 40,
+      "weight": 5,
+      "config": {
+        "min": 0,
+        "max": 5,
+        "placeholder": "Does the patrol have {{ten_essentials}}?"
+      }
+    },
+    {
+      "id": "unscout",
+      "label": "Unscoutlike Behavior",
+      "type": "number",
+      "kind": "penalty",
+      "audience": "judge",
+      "sortOrder": 10,
+      "weight": 1,
+      "config": {
+        "min": 0,
+        "max": 20,
+        "placeholder": "Points deducted (0-20)"
+      }
+    },
+    {
+      "id": "off_notes",
+      "label": "Judges Notes",
+      "type": "textarea",
+      "kind": "info",
+      "audience": "judge",
+      "sortOrder": 20,
+      "weight": 0,
+      "config": {
+        "placeholder": "Issues, tie-breakers, etc."
+      }
+    }
+  ],
+  "legacy": {
+    "v1Id": "presets.json"
+  }
+}

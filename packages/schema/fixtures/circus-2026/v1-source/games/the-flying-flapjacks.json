@@ -1,0 +1,126 @@
+{
+  "library_uuid": "45e4e31f-b86b-47e8-83c1-1c60af029e41",
+  "library_title": "Patrol Cooking Challenge — Pancakes",
+  "id": "the-flying-flapjacks",
+  "sortOrder": 50,
+  "content": {
+    "title": "The Flying Flapjacks!",
+    "story": "\"The Boulder\" Brannigan hasn't missed a performance in 22 years. He's bent iron bars, flipped wagons, and once carried an elephant — but he will not, under any circumstances, walk to the kitchen before a show. It upsets his focus. The Coyote Creek Galley Crew knows the drill: get Bruno his Power Cakes, hot and fresh, before the curtain goes up. Today, your patrol is the Galley Crew. He doesn't ask for much — just a perfectly cooked pancake, launched over your shoulder and caught on his plate. The ingredients are ready, and Bruno is already chalking his hands in the wings. The show starts in 15 minutes. Don't keep Bruno waiting.",
+    "challenge": "Assemble a camp stove, mix and cook a pancake from dry mix, then flip it blind over your shoulder to a waiting teammate — judged on speed, technique, and cleanup.",
+    "description": "Your crew must set up the camp stove from its stored condition, then mix pancake batter from dry mix and water — get the proportions right or Bruno's getting a frisbee, not a Power Cake. Cook the pancake through, then comes the signature Galley Crew move: the cook faces away from their teammate(s), and flips the pancake over their shoulder. The catcher must receive it — and eat it to confirm the delivery. Time stops when the pancake is consumed. Then the real test of a true Galley Crew begins: clean the pan, bowl, mixing utensil, and spatula, disassemble the stove, and return everything to exactly the condition it was found. Bruno doesn't perform in a messy ring, and the Ringmaster doesn't pay crews who leave a disaster behind.",
+    "rules": [
+      "The clock starts on the judge's \"Go\" and stops when the pancake has been caught and fully eaten by the receiving patrol member.",
+      "The stove must be assembled from its stored/unassembled state at the start — it may not be pre-assembled.",
+      "Batter must be mixed from dry mix and water in correct proportion — the judge will not intervene if the ratio is off.",
+      "Non-stick spray may be used on the pan.",
+      "Food must be cooked through before toss",
+      "The flip must be made over the shoulder — the cook must be facing away from the catcher at the moment of release.",
+      "Catch the Pancake on a plate",
+      "If the pancake is dropped or missed, 30 second penalty",
+      "Cleanup and stove breakdown must be completed before the event is considered finished for full scoring."
+    ],
+    "time_and_scoring": "Speed — Time from \"Go\" to pancake consumed, recorded and converted to points on a sliding scale.\nPancake Quality — Judge evaluates cook (raw, burned, or acceptable) before the flip.\nThe Flip & Catch — Successful over-the-shoulder flip caught cleanly by a teammate.\nCleanup & Strike — Pan, bowl, utensil, and spatula cleaned; stove disassembled and returned to found condition.\nBonus points for Circus Themed/shaped pancake\n",
+    "setup": "Pre-measure dry pancake mix per patrol (1 bag each). Pre-measure water portions (1 bottle each). Set up propane stove on stable level surface. Provide oil, pan, spatula, bowl, measuring tools. Set up cleanup station: soap, scrub pad, rinse water. Stage extra paper plate for the 'Strongman' catch.",
+    "reset": "Replace ingredient bag and water portion. Check propane level. Wipe down station surface. Estimated reset time: 3–5 minutes.",
+    "staffing": "1 judge comfortable with propane stove safety. Fire extinguisher required at station.",
+    "supplies_text": "Propane stove: 1\nPropane fuel canister (extras on hand): 1–2\nFrying pan: 1\nMixing bowl: 1\nSpatula: 1\nMeasuring cup and spoons: 1 set\nPre-measured dry pancake mix per patrol: 1 bag/patrol\nCooking oil: 1 small bottle\nPre-measured water per patrol: 1 bottle/patrol\nPaper plates (cook plate + catch plate): 2/patrol\nDish soap, scrub pad, rinse water: 1 station setup\nFire extinguisher: 1",
+    "notes": "Check cleanup AFTER patrol leaves — return to inspect, don't let them clean during scoring time. Check stove stability before each patrol.",
+    "scoring_notes": "A dropped pancake while cooking is a retry, not a disqualification. A raw or burned pancake should be noted and may affect quality points at the judge's discretion. The complete consumption of the pancake is the official clock-stop — partial bites don't count. But if it is dropped on the ground (during or after the toss) the judge may stop the time and add an appropriate time penalty."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "food_quality",
+        "label": "Power Cake Cooked Thoroughly",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "safety",
+        "label": "Stove safety and handling",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "teamwork",
+        "label": "Teamwork, all participating",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "theme_bonus",
+        "label": "Circus-shaped pancake bonus ",
+        "audience": "judge",
+        "sortOrder": 70,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "toss_success",
+        "label": "No-look toss, Power Cake caught ",
+        "audience": "judge",
+        "sortOrder": 60,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false,
+          "max": 10
+        }
+      },
+      {
+        "id": "cleanup",
+        "label": "Equipment cleaned & Packed.",
+        "audience": "judge",
+        "sortOrder": 50,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Trail Food"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}

@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-7748-b5af-e5c5035211c5",
+  "slug": "sports-human-foosball",
+  "title": "Trapeze Quidditch ?",
+  "kind": "activity",
+  "scoringType": "ranked",
+  "content": {
+    "story": "The circus acrobats know every move in advance — their bodies on invisible rails, reacting in an instant when the moment comes. Human Foosball is your troop's version: each Scout stands on a fixed line, moves only left and right, and relies entirely on timing and teamwork to get the ball in the net. You can't go to the ball. The ball has to come to you.",
+    "objective": "Troops compete head-to-head in a Human Foosball tournament. Score is based on match wins and goals across rounds.",
+    "description": "A Human Foosball field is set up with parallel ropes stretched across the width of the field. Each Scout stands behind a rope (their 'rod') and may only move laterally — they cannot move forward or backward past their rope. Scouts kick the ball, pass it, and try to score in the opposing team's goal. Standard soccer rules apply for scoring and out-of-bounds. Play in timed periods (5–8 minutes per match).\n\nTroops compete in a round-robin format. Match scoring: Win = 2 pts, Tie = 1 pt, Loss = 0 pts.",
+    "rules": [
+      "Each Scout must keep both feet behind their rope — no stepping over or under the rope",
+      "Scouts may move as far laterally as the rope allows but cannot change rods during a match",
+      "Scouts may kick and redirect the ball using feet only — no hands",
+      "Goalkeeper may block with hands",
+      "Ball that goes out of bounds is restarted from the nearest rod on the side that did not touch it last",
+      "No physical contact between opposing Scouts — fouls result in a free kick",
+      "Game duration: 5–8 minutes per match (organizer sets before tournament starts)",
+      "Referee's call is final"
+    ],
+    "timeAndScoring": "Round-robin format — each troop plays every other troop once (or as many rounds as time permits).\n\nMatch scoring:\n- Win: 2 match points\n- Tie: 1 match point each\n- Loss: 0 match points\n\nFinal Ranking: Total match points. Tiebreaker: total goal differential (goals scored minus goals allowed across all matches).",
+    "setup": "Set up field using parallel ropes staked into the ground (or held by stake anchors). Standard field: 4–5 ropes per side spaced evenly, each with 2–3 Scouts. Mark goal areas. Ball: soccer ball or similar. Referee position at center.\n\nField width: approximately 20–30 feet. Length: 30–40 feet.",
+    "reset": "Re-center the ball. Teams swap field sides between matches. Estimated reset: 2–3 minutes between matches.",
+    "staffing": "1 referee per match. 1 scorekeeper tracking all match results.",
+    "supplies": [
+      {
+        "item": "Ropes (4–5 per team, spanning field width, minimum 30 ft each)",
+        "quantity": "8–10"
+      },
+      {
+        "item": "Stakes or anchor posts",
+        "quantity": "16–20"
+      },
+      {
+        "item": "Soccer ball",
+        "quantity": "1–2"
+      },
+      {
+        "item": "Goal markers (cones or flags)",
+        "quantity": "4"
+      },
+      {
+        "item": "Scoring sheet (round-robin matrix)",
+        "quantity": "1"
+      },
+      {
+        "item": "Whistle",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  "scoring": {
+    "direction": "higher-wins",
+    "fields": [
+      {
+        "id": "wins",
+        "label": "Match Wins",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 10,
+        "weight": 2,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "2 pts each",
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "ties",
+        "label": "Match Ties",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 20,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "1 pt each",
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "goals_scored",
+        "label": "Total Goals Scored (tiebreaker)",
+        "type": "number",
+        "kind": "info",
+        "audience": "judge",
+        "sortOrder": 30,
+        "weight": 0,
+        "config": {
+          "min": 0,
+          "max": 100,
+          "placeholder": "Record for goal differential tiebreaker",
+          "defaultValue": 0
+        }
+      },
+      {
+        "id": "goals_allowed",
+        "label": "Total Goals Allowed (tiebreaker)",
+        "type": "number",
+        "kind": "info",
+        "audience": "judge",
+        "sortOrder": 40,
+        "weight": 0,
+        "config": {
+          "min": 0,
+          "max": 100,
+          "placeholder": "Record for goal differential tiebreaker",
+          "defaultValue": 0
+        }
+      }
+    ]
+  },
+  "legacy": {
+    "v1Id": "sports-human-foosball"
+  }
+}

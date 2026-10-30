@@ -1,0 +1,90 @@
+{
+  "library_uuid": "955504b3-02b5-4535-9430-6cd9f435598a",
+  "library_title": "Can-and-String Message Relay",
+  "id": "telephone",
+  "sortOrder": 150,
+  "content": {
+    "title": "Telephone",
+    "story": "Before radios, before cell phones, before the telegraph — there was the tin can telephone. Two cans, a length of string, and the physics of vibration. Simple. Elegant. Surprisingly unreliable when you add four more cans and four more Scouts between sender and receiver. Can your patrol get a message from one end to the other — accurately, completely, and quickly — through a chain of can-and-string nodes? Communication is only as strong as its weakest link.",
+    "challenge": "Relay a passage of text from one end of a multi-node can-and-string telephone chain to the other in two 3-minute attempts. Score is the total number of words received correctly across both attempts.",
+    "description": "The patrol spreads out in a line. Each adjacent pair of Scouts is connected by a can-and-string telephone (one can each, string taut between them). The sending Scout at one end receives a written passage card. On the Ringmaster's signal, the 3-minute clock starts — the sender reads and transmits as much of the passage as possible through the chain. The receiving Scout at the far end writes down everything they hear on their clipboard. When time is up, the judge compares the received text to the original and counts words received correctly. The patrol gets two attempts with different passages. Combined word count from both attempts is the final score.",
+    "rules": [
+      "All patrol members must be in the chain — no bystanders",
+      "String must be taut between cans during transmission — may not go slack or touch the ground",
+      "No shouting — all transmission must travel via the can-and-string only",
+      "No hand signals or other communication during transmission",
+      "Receiving Scout writes continuously as they hear text — the written sheet is the official record",
+      "Each Scout may ask their neighbor to repeat once per phrase",
+      "Sending Scout reads from the passage card — no pre-reading or memorization before the clock starts",
+      "Two attempts, 3 minutes each — a different passage is used for each attempt"
+    ],
+    "time_and_scoring": "Two attempts, 3 minutes each. A different passage card is used for each attempt.\n\nScore per attempt: judge counts the number of words received correctly by the last Scout (word-by-word comparison against the original passage).\n\nTotal Score = words correct from Attempt 1 + words correct from Attempt 2.\n\nTiebreaker: combined elapsed time from both attempts (faster wins).",
+    "setup": "Prepare can-and-string sets (1 can per Scout, string connecting adjacent pairs). Pre-stretch strings between cans. Prepare at least 6 different passage cards (50–80 words each) so no patrol hears a repeated passage. Set up writing station at the receiving end with clipboard, paper, and pen. Mark Scout spacing (8–12 feet apart recommended).",
+    "reset": "Collect receiving Scout's written sheet (keep for scoring records). Fresh paper on clipboard. Select next pair of passage cards for next patrol. Re-coil any tangled strings. Estimated reset time: 2–3 minutes.",
+    "staffing": "1 judge (Ringmaster). Holds passage cards, starts/stops timer for each attempt, scores received text against original at end of each attempt.",
+    "supplies_text": "Tin cans with string (1 per Scout, pre-strung in pairs): 6–10 sets\nPrepared passage cards (50–80 words each, 6+ different passages): 1 set\nClipboard: 1\nPaper (fresh sheet per attempt per patrol): 1 pad\nPens: 2–3\nStopwatch: 1\nScoring sheet: 1",
+    "notes": "Passage length of 50–80 words is well-suited to 3 minutes — enough to challenge but not impossible. Test can-and-string sets before the event — thin string works better than thick rope. String length between cans: 10–15 feet. Write passage cards in large, clear print so the sending Scout can read while transmitting. Sample passages should be Scout-appropriate, Circus-themed if possible — no proper nouns that are hard to transmit phonetically."
+  },
+  "scoring_model": {
+    "method": "points_desc",
+    "inputs": [
+      {
+        "id": "words_correct",
+        "label": "Number of words received correctly",
+        "audience": "judge",
+        "sortOrder": 10,
+        "type": "number",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "defaultValue": 0,
+          "placeholder": "Compare received message to original"
+        }
+      },
+      {
+        "id": "exact_match",
+        "label": "Exact message received (bonus)",
+        "audience": "judge",
+        "sortOrder": 20,
+        "type": "checkbox",
+        "kind": "points",
+        "weight": 1,
+        "config": {
+          "defaultValue": false
+        }
+      },
+      {
+        "id": "elapsed_time",
+        "label": "Elapsed time (tiebreaker)",
+        "audience": "judge",
+        "sortOrder": 30,
+        "type": "stopwatch",
+        "kind": "metric",
+        "weight": 0.1,
+        "config": {}
+      },
+      {
+        "id": "original_message",
+        "label": "Original message used",
+        "audience": "judge",
+        "sortOrder": 40,
+        "type": "text",
+        "kind": "info",
+        "weight": 0,
+        "config": {
+          "placeholder": "Record which message was used for this patrol"
+        }
+      }
+    ]
+  },
+  "bracketMode": false,
+  "match_label": "",
+  "variables": {
+    "ten_essentials": "Flashlight"
+  },
+  "league": "patrol-games",
+  "session": null,
+  "schemaVersion": "3.0"
+}
