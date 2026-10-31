@@ -21,8 +21,14 @@ import { normalizeGameDefinition } from "./v1/schema.js";
 import type { V1AppData, V1Entity, V1Game, V1Score } from "./v1/types.d.ts";
 
 const RESULTS = new URL("../fixtures/circus-2026-results/", import.meta.url);
-/** The cartridge the event laptop ran (schema 2.9). Its field kinds differ from the later v3 copy. */
-export const EVENT_DAY_CARTRIDGE = new URL("v1-event-day-cartridge/", RESULTS);
+/**
+ * The cartridge the event laptop ran (schema 2.9), kept with the as-run fixture in packages/schema.
+ * Its field kinds differ from the corrected design; see that package's TRANSCODE-NOTES.md.
+ */
+export const EVENT_DAY_CARTRIDGE = new URL(
+  "../../schema/fixtures/circus-2026-as-run/v1-source/",
+  import.meta.url,
+);
 export const GOLDEN_FILE = new URL("v1-golden.json", RESULTS);
 export const PRINTED_STICKERS_FILE = new URL("printed-stickers.json", RESULTS);
 

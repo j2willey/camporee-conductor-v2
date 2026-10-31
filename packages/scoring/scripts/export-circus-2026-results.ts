@@ -23,7 +23,10 @@ if (!dbPath) {
 
 // Field types come from the cartridge the event laptop ran, which declares every scored and recorded field.
 const OUT = new URL("../fixtures/circus-2026-results/", import.meta.url);
-const V1_SOURCE = new URL("v1-event-day-cartridge/", OUT);
+const V1_SOURCE = new URL(
+  "../../schema/fixtures/circus-2026-as-run/v1-source/",
+  import.meta.url,
+);
 
 interface V1Field {
   id: string;
