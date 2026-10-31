@@ -1,34 +1,30 @@
-// Verbatim extracts from v1 (github.com/j2willey/camporee-conductor, MIT), commit 3947fd6.
+// Verbatim extracts from v1 (github.com/j2willey/camporee-conductor, MIT) at commit 9ebffa5,
+// "Event-day fixes and awards printing": the code the event laptop ran at Circus 2026.
 // Each block between "BEGIN v1" and "END v1" is copied byte for byte from the file and lines named.
 // Only the function wrappers, imports and returns around them are new ("glue"). Do not edit the v1 blocks:
 // they are the reference that packages/scoring must match (issue #3).
 /* eslint-disable */
-import { formatGameTitle, getGameTier, getOrdinalSuffix, getPointsForRank } from './schema.js';
+import { formatGameTitle, getOrdinalSuffix, getPointsForRank } from './schema.js';
 import { calculateScoreContext } from './leaderboard.js';
 
 // ---------------------------------------------------------------------------
 // Common Field injection: the server adds preset fields to each game before the browser sees it.
-// BEGIN v1 src/servers/collator.js:298-333
-
+// BEGIN v1 src/servers/collator.js:223-253
 function applyTemplate(str, variables) {
     if (!str) return str;
     return str.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || '___');
 }
 
-function injectCommonFields(normalizedGame, presets, typeDefaults, leagues) {
-    const defaults = typeDefaults[normalizedGame.league];
+function injectCommonFields(normalizedGame, presets, typeDefaults) {
+    const defaults = typeDefaults[normalizedGame.type];
     if (!defaults || !Array.isArray(normalizedGame.fields)) return;
 
-    const tier = getGameTier(normalizedGame, { leagues: leagues || [] });
     const presetsById = Object.fromEntries(presets.map(p => [p.id, p]));
     const variables = normalizedGame.variables || {};
 
     function resolvePreset(id) {
         const p = presetsById[id];
         if (!p) return null;
-        // Tier safety check: skip presets that belong to the wrong roster tier.
-        // Presets with tier "all" are always injected.
-        if (tier && p.tier && p.tier !== 'all' && p.tier !== tier) return null;
         const { config = {}, position, sortOrder, ...rest } = p;
         return {
             ...rest,
@@ -49,11 +45,11 @@ function injectCommonFields(normalizedGame, presets, typeDefaults, leagues) {
 export { injectCommonFields };
 
 // ---------------------------------------------------------------------------
-// Per-game results on the Officials' game detail page (Final Rank and points; ribbons came from these).
-// glue: official.js:300-301 open the function with the game lookup.
+// Per-game results on the Officials' game detail page (Final Rank and points).
+// glue: official.js opens the function with the game lookup.
 export function v1OfficialGameResults(appData, gameId) {
     const game = appData.games.find(g => g.id === gameId);
-// BEGIN v1 public/js/official.js:330-425
+// BEGIN v1 public/js/official.js:315-411
     const sortOrderFn = (a, b) => (a.sortOrder ?? 900) - (b.sortOrder ?? 900);
     const allFields = [
         ...(game.fields || []),
@@ -104,15 +100,16 @@ export function v1OfficialGameResults(appData, gameId) {
     const gameScores = rawScores.map(score => {
         let total = 0;
         scoreFields.forEach(f => {
+            // Only sum if kind is "points" or "penalty"
             if (f.kind === 'points' || f.kind === 'penalty') {
                 const val = parseFloat(score.score_payload[f.id]);
                 if (!isNaN(val)) {
-                    if (f.kind === 'penalty') total -= val;
-                    else total += val;
+                    if (f.kind === 'penalty') {
+                        total -= val;
+                    } else {
+                        total += val;
+                    }
                 }
-            } else if (f.kind === 'metric') {
-                const pts = parseFloat(score.score_payload[f.id + '_pts']);
-                if (!isNaN(pts)) total += pts;
             }
         });
         return { ...score, _total: total };
@@ -158,19 +155,9 @@ export function v1OfficialGameResults(appData, gameId) {
 // The Officials' leaderboard: overall points and overall rank per patrol (or troop).
 // glue: renderMatrixNormal(table, games, patrols) without the table.
 export function v1OfficialLeaderboard(appData, games, patrols) {
-// BEGIN v1 public/js/official.js:852-892
+// BEGIN v1 public/js/official.js:766-790
     // 1. Calculate points map (points for every score)
     const pointsMap = calculateScoreContext(appData);
-
-    // Build unscoutlike lookup: entity_id -> Set of game_ids with non-zero unscout value
-    const unscoutMap = {};
-    appData.scores.forEach(s => {
-        const val = parseFloat(s.score_payload['unscout'] || s.score_payload['unscoutlike'] || 0);
-        if (val > 0) {
-            if (!unscoutMap[s.entity_id]) unscoutMap[s.entity_id] = {};
-            unscoutMap[s.entity_id][s.game_id] = val;
-        }
-    });
 
     // 2. Calculate totals per patrol
     patrols.forEach(p => {
@@ -183,13 +170,8 @@ export function v1OfficialLeaderboard(appData, games, patrols) {
         p._leaderboardTotal = total;
     });
 
-    // 3. Dense Rank — exclude patrols with overall DQ flag
-    patrols.forEach(p => {
-        p._overallExcluded = appData.flags.some(f => f.entity_id === p.id && f.game_id === 'overall' && f.dq);
-    });
-    const sortedForRank = [...patrols]
-        .filter(p => !p._overallExcluded)
-        .sort((a, b) => b._leaderboardTotal - a._leaderboardTotal);
+    // 3. Dense Rank the patrol leaderboard totals
+    const sortedForRank = [...patrols].sort((a, b) => b._leaderboardTotal - a._leaderboardTotal);
     let curRank = 0;
     let lastLT = null;
     sortedForRank.forEach(p => {
@@ -199,17 +181,163 @@ export function v1OfficialLeaderboard(appData, games, patrols) {
         }
         p._autoOverallRank = getOrdinalSuffix(curRank);
     });
-    patrols.filter(p => p._overallExcluded).forEach(p => { p._autoOverallRank = '—'; });
 // END v1
     return patrols;
 }
 
 // ---------------------------------------------------------------------------
+// The award sticker (ribbon) list: what was printed and awarded on Saturday.
+// glue: utils.js module state (appData, currentViewMode) passed in.
+export function v1WinnersRegistry(appData, currentViewMode) {
+// BEGIN v1 public/js/utils.js:380-517
+function getWinnersRegistry() {
+    const registry = [];
+    const pointsMap = calculateScoreContext(appData);
+
+    // 1. Individual Games
+    const games = appData.games.filter(g => (g.type || 'patrol') === currentViewMode);
+
+    games.forEach(game => {
+        // Calculate scores for this game
+        const gameScores = appData.scores.filter(s => s.game_id === game.id).map(score => {
+            let total = 0;
+            const fields = [...(game.fields || []), ...(appData.commonScoring || [])];
+            fields.forEach(f => {
+                if (f.kind === 'points' || f.kind === 'penalty') {
+                    const val = parseFloat(score.score_payload[f.id]);
+                    if (!isNaN(val)) {
+                        if (f.kind === 'penalty') total -= val;
+                        else total += val;
+                    }
+                }
+            });
+            return { ...score, _total: total };
+        });
+
+        // Sort
+        const sorted = [...gameScores].sort((a,b) => b._total - a._total);
+        let curRank = 0;
+        let lastT = null;
+
+        // Entry fields for this game
+        const entryFields = [...(game.fields || []), ...(appData.commonScoring || [])].filter(f => f.kind === 'entryname');
+
+        sorted.forEach(s => {
+            if (s._total !== lastT) {
+                curRank++;
+                lastT = s._total;
+            }
+            s._autoRank = getOrdinalSuffix(curRank);
+            const finalRank = s.score_payload.manual_rank || s._autoRank;
+            const rankClean = String(finalRank).toLowerCase().trim();
+            const topRanks = ['1', '1st', '2', '2nd', '3', '3rd'];
+
+            if (topRanks.includes(rankClean)) {
+                // Construct line4Text
+                let line4 = `${finalRank} Place - T${String(s.troop_number).replace(/^T/i, '')}`;
+                if (currentViewMode === 'patrol') {
+                    line4 += ` ${s.entity_name}`;
+                }
+                const entryVals = entryFields.map(f => s.score_payload[f.id]).filter(v => v).join(", ");
+                if (entryVals) line4 += `, ${entryVals}`;
+
+                // Collect entry values
+                const entryData = {};
+                entryFields.forEach(f => {
+                    entryData[f.id] = s.score_payload[f.id];
+                });
+
+                registry.push({
+                    type: 'game',
+                    gameId: game.id,
+                    gameName: formatGameTitle(game),
+                    rank: finalRank,
+                    entityName: s.entity_name,
+                    troopNumber: s.troop_number,
+                    line4Text: line4,
+                    entryData: entryData
+                });
+            }
+        });
+    });
+
+    // 2. Overall Leaderboard
+    const entities = appData.entities.filter(e => e.type === currentViewMode);
+    entities.forEach(p => {
+        let total = 0;
+        games.forEach(g => {
+            if (pointsMap[p.id] && pointsMap[p.id][g.id]) {
+                total += pointsMap[p.id][g.id];
+            }
+        });
+        p._leaderboardTotal = total;
+    });
+
+    const lbSorted = [...entities].sort((a,b) => b._leaderboardTotal - a._leaderboardTotal);
+
+    if (currentViewMode === 'troop') {
+        // Troop overall: flat award for top N% — no rank differentiation
+        const pct = parseFloat(document.getElementById('troop-overall-pct')?.value) || 25;
+        const cutoff = Math.max(1, Math.ceil(lbSorted.length * (pct / 100)));
+        const overallName = document.getElementById('troop-overall-name')?.value.trim() || 'Top Dog';
+        const awardText  = document.getElementById('troop-overall-award')?.value.trim() || 'Best in Show';
+
+        lbSorted.slice(0, cutoff).forEach(p => {
+            if (p._leaderboardTotal <= 0) return;
+            registry.push({
+                type: 'overall',
+                gameId: 'OVERALL',
+                gameName: overallName,
+                rank: awardText,
+                entityName: p.name,
+                troopNumber: p.troop_number,
+                line4Text: `${awardText} - T${String(p.troop_number).replace(/^T/i, '')}`,
+                entryData: {}
+            });
+        });
+    } else {
+        // Patrol overall: standard 1st/2nd/3rd ranking
+        let curLBRank = 0;
+        let lastLBT = null;
+
+        lbSorted.forEach(p => {
+            if (p._leaderboardTotal !== lastLBT) {
+                curLBRank++;
+                lastLBT = p._leaderboardTotal;
+            }
+            p._autoOverallRank = getOrdinalSuffix(curLBRank);
+            const finalRank = p.manual_rank || p._autoOverallRank;
+            const rankClean = String(finalRank).toLowerCase().trim();
+            const topRanks = ['1', '1st', '2', '2nd', '3', '3rd'];
+
+            if (topRanks.includes(rankClean) || (p.manual_rank && p.manual_rank.length > 0)) {
+                let line4 = `${finalRank}${topRanks.includes(rankClean) ? " Place" : ""} - T${String(p.troop_number).replace(/^T/i, '')} ${p.name}`;
+                registry.push({
+                    type: 'overall',
+                    gameId: 'OVERALL',
+                    gameName: "OVERALL",
+                    rank: finalRank,
+                    entityName: p.name,
+                    troopNumber: p.troop_number,
+                    line4Text: line4,
+                    entryData: {}
+                });
+            }
+        });
+    }
+
+    return registry;
+}
+// END v1
+    return getWinnersRegistry();
+}
+
+// ---------------------------------------------------------------------------
 // The announcer sheet's per-game top places (for comparison only; not the reference).
-// glue: renderAnnouncerSheet() up to the per-game blocks, with the view mode passed in.
+// glue: renderAnnouncerSheet() up to the per-game blocks, with the games and view mode passed in.
 export function v1AnnouncerGameBlocks(appData, games, currentViewMode) {
     const blocks = [];
-// BEGIN v1 public/js/utils.js:738-781
+// BEGIN v1 public/js/utils.js:717-753
     games.forEach(game => {
         const rawScores = appData.scores.filter(s => s.game_id === game.id);
         if (rawScores.length === 0) return;
@@ -228,9 +356,6 @@ export function v1AnnouncerGameBlocks(appData, games, currentViewMode) {
         }).sort((a, b) => b._total - a._total);
 
         // Assign ranks with tie handling
-        const topRankSet = new Set(['1', '1st', '2', '2nd', '3', '3rd']);
-        const hasManualRanks = scored.some(s =>
-            topRankSet.has(String(s.score_payload.manual_rank || '').toLowerCase().trim()));
         let curRank = 0, lastTotal = null;
         scored.forEach(s => {
             if (s._total !== lastTotal) { curRank++; lastTotal = s._total; }
@@ -238,12 +363,8 @@ export function v1AnnouncerGameBlocks(appData, games, currentViewMode) {
             s._rankLabel = s.score_payload.manual_rank || getOrdinalSuffix(curRank);
         });
 
-        // Mirror ribbon logic: if manual ranks are present, only show explicitly ranked top-3.
-        // Auto mode falls back to top-3 positions (ties included).
-        const topPlaces = hasManualRanks
-            ? scored.filter(s => s.score_payload.manual_rank &&
-                topRankSet.has(String(s.score_payload.manual_rank).toLowerCase().trim()))
-            : scored.filter(s => s._rank <= 3);
+        // Keep top 3 places (including ties)
+        const topPlaces = scored.filter(s => s._rank <= 3);
         if (topPlaces.length === 0) return;
 
         blocks.push({ title: formatGameTitle(game), entries: topPlaces.map(s => ({

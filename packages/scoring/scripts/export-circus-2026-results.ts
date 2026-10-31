@@ -21,12 +21,9 @@ if (!dbPath) {
   process.exit(1);
 }
 
-// Field types come from the v1 cartridge, which declares every scored and recorded field.
-const V1_SOURCE = new URL(
-  "../../schema/fixtures/circus-2026/v1-source/",
-  import.meta.url,
-);
+// Field types come from the cartridge the event laptop ran, which declares every scored and recorded field.
 const OUT = new URL("../fixtures/circus-2026-results/", import.meta.url);
+const V1_SOURCE = new URL("v1-event-day-cartridge/", OUT);
 
 interface V1Field {
   id: string;

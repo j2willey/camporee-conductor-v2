@@ -22,20 +22,6 @@ export const FIELD_TYPES = {
  * @param {number} [playlistOrder=0] - The sort order from the playlist manifest.
  * @returns {Object} The normalized game object.
  */
-/**
- * Returns the roster tier for a game by looking up game.league in camporee.leagues[].
- * Safe to call from both Node and browser — no platform-specific imports.
- *
- * @param {Object} game - Game definition (must have a .league property).
- * @param {Object} camporee - Camporee manifest (must have a .leagues array).
- * @returns {"unit"|"subunit"|"individual"|null}
- */
-export function getGameTier(game, camporee) {
-    if (!game?.league || !Array.isArray(camporee?.leagues)) return null;
-    const league = camporee.leagues.find(l => l.id === game.league);
-    return league?.tier ?? null;
-}
-
 export function normalizeGameDefinition(gameDef, playlistOrder = 0) {
     // Clone to avoid mutating the input
     const game = JSON.parse(JSON.stringify(gameDef));
@@ -126,11 +112,11 @@ export function formatGameTitle(game) {
     // Remove legacy 'Game X. ' prefix if it's already explicitly in the title so we don't duplicate
     let rawName = game.name.replace(/^Game\s*\d+\.\s*/i, '');
 
-    // Use league if available, otherwise fallback to guessing from ID
+    // Use type if available, otherwise fallback to guessing from ID
     let prefixLetter = 'g';
-    if (game.league === 'patrol-games') prefixLetter = 'p';
-    else if (game.league === 'troop-challenges') prefixLetter = 't';
-    else if (game.league === 'exhibition') prefixLetter = 'e';
+    if (game.type === 'patrol') prefixLetter = 'p';
+    else if (game.type === 'troop') prefixLetter = 't';
+    else if (game.type === 'exhibition') prefixLetter = 'e';
     else if (game.id?.startsWith('p')) prefixLetter = 'p';
     else if (game.id?.startsWith('t')) prefixLetter = 't';
     else if (game.id?.startsWith('e')) prefixLetter = 'e';

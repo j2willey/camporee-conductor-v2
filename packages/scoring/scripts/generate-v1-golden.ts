@@ -12,7 +12,10 @@ console.log(
   `official.js vs leaderboard.js point differences: ${c.leaderboardPointsVsOfficial.length}`,
 );
 console.log(
-  `announcer sheet differs in: ${c.announcerVsOfficial.map((d) => d.gameId).join(", ") || "none"}`,
+  `stickers differ from official.js in: ${c.stickersVsOfficial.map((d) => d.gameId).join(", ") || "none"}`,
+);
+console.log(
+  `announcer sheet differs from stickers in ${c.announcerVsStickers.length}: ${c.announcerVsStickers.map((d) => d.gameId).join(", ") || "none"}`,
 );
 console.log(
   `overall changes if summed from official.js points: ${c.overallFromOfficialPoints.length}`,

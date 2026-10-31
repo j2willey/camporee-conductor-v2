@@ -9,7 +9,8 @@ export interface V1Field {
 
 export interface V1Game {
   id: string;
-  league?: string;
+  /** Event-day (schema 2.9) competition: "patrol", "troop" or "exhibition". */
+  type?: string;
   name?: string;
   sortOrder: number;
   fields: V1Field[];

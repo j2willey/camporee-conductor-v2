@@ -4,7 +4,6 @@ export function injectCommonFields(
   normalizedGame: V1Game,
   presets: unknown[],
   typeDefaults: Record<string, unknown>,
-  leagues: unknown[],
 ): void;
 
 export function v1OfficialGameResults(
@@ -21,11 +20,20 @@ export function v1OfficialLeaderboard(
   appData: V1AppData,
   games: V1Game[],
   patrols: V1Entity[],
-): (V1Entity & {
-  _leaderboardTotal: number;
-  _autoOverallRank: string;
-  _overallExcluded: boolean;
-})[];
+): (V1Entity & { _leaderboardTotal: number; _autoOverallRank: string })[];
+
+/** One award sticker. `gameId` is "OVERALL" for overall standings. */
+export function v1WinnersRegistry(
+  appData: V1AppData,
+  currentViewMode: string,
+): {
+  type: string;
+  gameId: string;
+  rank: string;
+  entityName: string;
+  troopNumber: string;
+  line4Text: string;
+}[];
 
 export function v1AnnouncerGameBlocks(
   appData: V1AppData,
