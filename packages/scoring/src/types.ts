@@ -61,6 +61,8 @@ export interface EntryResult {
   total: number;
   /** Rank by total within the Activity, before any Official override. */
   provisionalRank: number;
+  /** The Official's rank override if one is logged, otherwise the Provisional Ranking. */
+  finalRank: number;
 }
 
 export interface ActivityResults {

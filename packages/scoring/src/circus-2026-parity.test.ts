@@ -56,4 +56,16 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
       })),
     );
   });
+
+  it("gives each entry v1's Final Rank, with the Officials' 88 rank overrides", () => {
+    expect(perGame((r) => ({ rank: r.finalRank }))).toEqual(
+      golden.games.map((g) => ({
+        gameId: g.gameId,
+        results: g.results.map(({ entityId, finalRank }) => ({
+          entityId,
+          rank: place(finalRank),
+        })),
+      })),
+    );
+  });
 });

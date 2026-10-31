@@ -1,6 +1,24 @@
 import { entryTotal, mergeCommonFields } from "./fields.ts";
 import { denseRanking } from "./ranking.ts";
-import type { ActivityResults, EventResults, ScoringInput } from "./types.ts";
+import type {
+  ActivityResults,
+  EventResults,
+  OfficialAction,
+  ScoringInput,
+} from "./types.ts";
+
+type ActionOf<T extends OfficialAction["type"]> = Extract<
+  OfficialAction,
+  { type: T }
+>;
+
+/** The latest logged action of this type, or undefined. Later actions supersede earlier ones. */
+function latest<T extends OfficialAction["type"]>(
+  actions: readonly OfficialAction[],
+  type: T,
+): ActionOf<T> | undefined {
+  return actions.findLast((a): a is ActionOf<T> => a.type === type);
+}
 
 /** Scores a whole Event. Pure: the same input always gives the same results (ADR-0019). */
 export function scoreEvent(input: ScoringInput): EventResults {
@@ -21,26 +39,38 @@ export function scoreEvent(input: ScoringInput): EventResults {
       competition,
       input.commonFieldSets,
     );
-    const actions = input.actions.filter((a) => a.activityId === activityId);
-    const adjustment = (entrantId: string): number =>
-      actions.reduce(
-        (sum, a) =>
-          a.type === "adjust-points" && a.entrantId === entrantId
-            ? sum + a.points
-            : sum,
-        0,
+    const actionsFor = (entrantId: string): OfficialAction[] =>
+      input.actions.filter(
+        (a) => a.activityId === activityId && a.entrantId === entrantId,
       );
+
     const scored = input.entries
       .filter((e) => e.activityId === activityId)
-      .map((e) => ({
-        entrantId: e.entrantId,
-        total: entryTotal(fields, e.values) + adjustment(e.entrantId),
-      }));
+      .map((e) => {
+        const actions = actionsFor(e.entrantId);
+        const adjustment = actions.reduce(
+          (sum, a) => (a.type === "adjust-points" ? sum + a.points : sum),
+          0,
+        );
+        return {
+          entrantId: e.entrantId,
+          total: entryTotal(fields, e.values) + adjustment,
+          actions,
+        };
+      });
     const rankOf = denseRanking(scored.map((e) => e.total));
     activities.push({
       activityId,
       competitionId,
-      entries: scored.map((e) => ({ ...e, provisionalRank: rankOf(e.total) })),
+      entries: scored.map(({ entrantId, total, actions }) => {
+        const provisionalRank = rankOf(total);
+        return {
+          entrantId,
+          total,
+          provisionalRank,
+          finalRank: latest(actions, "set-final-rank")?.rank ?? provisionalRank,
+        };
+      }),
     });
   }
   return { activities };
