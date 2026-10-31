@@ -1,0 +1,2000 @@
+{
+  "source": "v1 commit 9ebffa5 (event day) with the event-day cartridge: official.js (per-game), official.js + leaderboard.js (overall), utils.js getWinnersRegistry (stickers); see scripts/v1/",
+  "games": [
+    {
+      "gameId": "3-ring-circus",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 18,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4303",
+          "total": 14,
+          "autoRank": "7th",
+          "finalRank": "7th",
+          "points": 50
+        },
+        {
+          "entityId": "p4305",
+          "total": 19,
+          "autoRank": "3rd",
+          "finalRank": "3",
+          "points": 80
+        },
+        {
+          "entityId": "p4306",
+          "total": 22,
+          "autoRank": "2nd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4307",
+          "total": 22,
+          "autoRank": "2nd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4308",
+          "total": 18,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4309",
+          "total": 17,
+          "autoRank": "5th",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4312",
+          "total": 17,
+          "autoRank": "5th",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4314",
+          "total": 14,
+          "autoRank": "7th",
+          "finalRank": "7th",
+          "points": 50
+        },
+        {
+          "entityId": "p4316",
+          "total": 23,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4318",
+          "total": 23,
+          "autoRank": "1st",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4319",
+          "total": 22,
+          "autoRank": "2nd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4320",
+          "total": 16,
+          "autoRank": "6th",
+          "finalRank": "6th",
+          "points": 50
+        },
+        {
+          "entityId": "p4322",
+          "total": 19,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4324",
+          "total": 17,
+          "autoRank": "5th",
+          "finalRank": "5th",
+          "points": 60
+        },
+        {
+          "entityId": "p4325",
+          "total": 22,
+          "autoRank": "2nd",
+          "finalRank": "6",
+          "points": 50
+        }
+      ]
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 1,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4309",
+          "total": 341,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4311",
+          "total": 1,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4315",
+          "total": 1,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4316",
+          "total": 335,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4318",
+          "total": 1,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4321",
+          "total": 340,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4322",
+          "total": 1,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4324",
+          "total": 1,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        }
+      ]
+    },
+    {
+      "gameId": "circus-line",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 17,
+          "autoRank": "8th",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4309",
+          "total": 21,
+          "autoRank": "4th",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4312",
+          "total": 22,
+          "autoRank": "3rd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4313",
+          "total": 19,
+          "autoRank": "6th",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4314",
+          "total": 18,
+          "autoRank": "7th",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4316",
+          "total": 22,
+          "autoRank": "3rd",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4318",
+          "total": 24,
+          "autoRank": "1st",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4319",
+          "total": 23,
+          "autoRank": "2nd",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4320",
+          "total": 19,
+          "autoRank": "6th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4322",
+          "total": 20,
+          "autoRank": "5th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4327",
+          "total": 14,
+          "autoRank": "9th",
+          "finalRank": "3",
+          "points": 80
+        }
+      ]
+    },
+    {
+      "gameId": "clown-car",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 32,
+          "autoRank": "5th",
+          "finalRank": "5th",
+          "points": 60
+        },
+        {
+          "entityId": "p4309",
+          "total": 38,
+          "autoRank": "2nd",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4311",
+          "total": 31,
+          "autoRank": "6th",
+          "finalRank": "6th",
+          "points": 50
+        },
+        {
+          "entityId": "p4314",
+          "total": 34,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4315",
+          "total": 42,
+          "autoRank": "1st",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4323",
+          "total": 35,
+          "autoRank": "3rd",
+          "finalRank": "2",
+          "points": 90
+        }
+      ]
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 16,
+          "autoRank": "8th",
+          "finalRank": "3",
+          "points": 80
+        },
+        {
+          "entityId": "p4303",
+          "total": 14,
+          "autoRank": "9th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4307",
+          "total": 26,
+          "autoRank": "3rd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4309",
+          "total": 21,
+          "autoRank": "5th",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4312",
+          "total": 17,
+          "autoRank": "7th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4314",
+          "total": 16,
+          "autoRank": "8th",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4315",
+          "total": 25,
+          "autoRank": "4th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4317",
+          "total": 18,
+          "autoRank": "6th",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4318",
+          "total": 29,
+          "autoRank": "1st",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4320",
+          "total": 28,
+          "autoRank": "2nd",
+          "finalRank": "3",
+          "points": 80
+        }
+      ]
+    },
+    {
+      "gameId": "jugglers",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 16,
+          "autoRank": "9th",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4305",
+          "total": 42,
+          "autoRank": "2nd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4306",
+          "total": 36,
+          "autoRank": "3rd",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4307",
+          "total": 27,
+          "autoRank": "5th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4308",
+          "total": 25,
+          "autoRank": "7th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4309",
+          "total": 36,
+          "autoRank": "3rd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4312",
+          "total": 18,
+          "autoRank": "8th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4313",
+          "total": 26,
+          "autoRank": "6th",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4314",
+          "total": 27,
+          "autoRank": "5th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4316",
+          "total": 85,
+          "autoRank": "1st",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4319",
+          "total": 36,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4321",
+          "total": 25,
+          "autoRank": "7th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4322",
+          "total": 26,
+          "autoRank": "6th",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4324",
+          "total": 35,
+          "autoRank": "4th",
+          "finalRank": "6",
+          "points": 50
+        }
+      ]
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 49,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4306",
+          "total": 46,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4307",
+          "total": 48,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4309",
+          "total": 42,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4314",
+          "total": 46,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4324",
+          "total": 40,
+          "autoRank": "5th",
+          "finalRank": "5th",
+          "points": 60
+        }
+      ]
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4306",
+          "total": 100,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4307",
+          "total": 75,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4324",
+          "total": 50,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        }
+      ]
+    },
+    {
+      "gameId": "telephone",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4308",
+          "total": 36,
+          "autoRank": "5th",
+          "finalRank": "3",
+          "points": 80
+        },
+        {
+          "entityId": "p4309",
+          "total": 50,
+          "autoRank": "2nd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4311",
+          "total": 45,
+          "autoRank": "3rd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4313",
+          "total": 63,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4325",
+          "total": 41,
+          "autoRank": "4th",
+          "finalRank": "4",
+          "points": 70
+        }
+      ]
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4309",
+          "total": 23,
+          "autoRank": "2nd",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4314",
+          "total": 23,
+          "autoRank": "2nd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4315",
+          "total": 18,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4316",
+          "total": 25,
+          "autoRank": "1st",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4323",
+          "total": 20,
+          "autoRank": "3rd",
+          "finalRank": "3",
+          "points": 80
+        },
+        {
+          "entityId": "p4325",
+          "total": 20,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        }
+      ]
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 20,
+          "autoRank": "4th",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4305",
+          "total": 28,
+          "autoRank": "2nd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4306",
+          "total": 25,
+          "autoRank": "3rd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4307",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4313",
+          "total": 25,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4314",
+          "total": 25,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4316",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4318",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4319",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4320",
+          "total": 28,
+          "autoRank": "2nd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4322",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4323",
+          "total": 25,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4326",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4327",
+          "total": 30,
+          "autoRank": "1st",
+          "finalRank": "4",
+          "points": 70
+        }
+      ]
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 57,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4302",
+          "total": 28,
+          "autoRank": "10th",
+          "finalRank": "10th",
+          "points": 50
+        },
+        {
+          "entityId": "p4303",
+          "total": 31,
+          "autoRank": "9th",
+          "finalRank": "9th",
+          "points": 50
+        },
+        {
+          "entityId": "p4305",
+          "total": 47,
+          "autoRank": "5th",
+          "finalRank": "5th",
+          "points": 60
+        },
+        {
+          "entityId": "p4306",
+          "total": 42,
+          "autoRank": "7th",
+          "finalRank": "7th",
+          "points": 50
+        },
+        {
+          "entityId": "p4307",
+          "total": 41,
+          "autoRank": "8th",
+          "finalRank": "8th",
+          "points": 50
+        },
+        {
+          "entityId": "p4309",
+          "total": 51,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4312",
+          "total": 52,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4315",
+          "total": 66,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4317",
+          "total": 31,
+          "autoRank": "9th",
+          "finalRank": "9th",
+          "points": 50
+        },
+        {
+          "entityId": "p4318",
+          "total": 41,
+          "autoRank": "8th",
+          "finalRank": "8th",
+          "points": 50
+        },
+        {
+          "entityId": "p4320",
+          "total": 46,
+          "autoRank": "6th",
+          "finalRank": "6th",
+          "points": 50
+        }
+      ]
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 71,
+          "autoRank": "7th",
+          "finalRank": "7th",
+          "points": 50
+        },
+        {
+          "entityId": "p4305",
+          "total": 64,
+          "autoRank": "11th",
+          "finalRank": "11th",
+          "points": 50
+        },
+        {
+          "entityId": "p4306",
+          "total": 77,
+          "autoRank": "2nd",
+          "finalRank": "3",
+          "points": 70
+        },
+        {
+          "entityId": "p4309",
+          "total": 74,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4311",
+          "total": 59,
+          "autoRank": "13th",
+          "finalRank": "13th",
+          "points": 50
+        },
+        {
+          "entityId": "p4312",
+          "total": 67,
+          "autoRank": "10th",
+          "finalRank": "10th",
+          "points": 50
+        },
+        {
+          "entityId": "p4315",
+          "total": 77,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4316",
+          "total": 89,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4317",
+          "total": 70,
+          "autoRank": "8th",
+          "finalRank": "8th",
+          "points": 50
+        },
+        {
+          "entityId": "p4318",
+          "total": 76,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4320",
+          "total": 74,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4321",
+          "total": 72,
+          "autoRank": "6th",
+          "finalRank": "6th",
+          "points": 50
+        },
+        {
+          "entityId": "p4324",
+          "total": 73,
+          "autoRank": "5th",
+          "finalRank": "5th",
+          "points": 60
+        },
+        {
+          "entityId": "p4325",
+          "total": 69,
+          "autoRank": "9th",
+          "finalRank": "9th",
+          "points": 50
+        },
+        {
+          "entityId": "p4326",
+          "total": 61,
+          "autoRank": "12th",
+          "finalRank": "12th",
+          "points": 50
+        }
+      ]
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4302",
+          "total": 63,
+          "autoRank": "5th",
+          "finalRank": "5th",
+          "points": 60
+        },
+        {
+          "entityId": "p4303",
+          "total": 64,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4306",
+          "total": 77,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4307",
+          "total": 72,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4309",
+          "total": 77,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4314",
+          "total": 72,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4317",
+          "total": 74,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4318",
+          "total": 72,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4327",
+          "total": 44,
+          "autoRank": "6th",
+          "finalRank": "6th",
+          "points": 50
+        }
+      ]
+    },
+    {
+      "gameId": "the-grand-entry",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 80,
+          "autoRank": "4th",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4305",
+          "total": 100,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4306",
+          "total": 85,
+          "autoRank": "3rd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4309",
+          "total": 98,
+          "autoRank": "2nd",
+          "finalRank": "3",
+          "points": 80
+        },
+        {
+          "entityId": "p4316",
+          "total": 98,
+          "autoRank": "2nd",
+          "finalRank": "3",
+          "points": 80
+        },
+        {
+          "entityId": "p4321",
+          "total": 100,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        }
+      ]
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4302",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4305",
+          "total": 100,
+          "autoRank": "1st",
+          "finalRank": "1st",
+          "points": 100
+        },
+        {
+          "entityId": "p4306",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4307",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4310",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4314",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4318",
+          "total": 75,
+          "autoRank": "2nd",
+          "finalRank": "2nd",
+          "points": 90
+        },
+        {
+          "entityId": "p4320",
+          "total": 50,
+          "autoRank": "3rd",
+          "finalRank": "3rd",
+          "points": 80
+        },
+        {
+          "entityId": "p4321",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4322",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4323",
+          "total": 5,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        }
+      ]
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4301",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "4",
+          "points": 70
+        },
+        {
+          "entityId": "p4305",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "5",
+          "points": 60
+        },
+        {
+          "entityId": "p4306",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4309",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4311",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4313",
+          "total": 20,
+          "autoRank": "4th",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4315",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4317",
+          "total": 25,
+          "autoRank": "2nd",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4318",
+          "total": 29,
+          "autoRank": "1st",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4321",
+          "total": 23,
+          "autoRank": "3rd",
+          "finalRank": "6",
+          "points": 50
+        },
+        {
+          "entityId": "p4323",
+          "total": 20,
+          "autoRank": "4th",
+          "finalRank": "6",
+          "points": 50
+        }
+      ]
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "competition": "patrol",
+      "results": [
+        {
+          "entityId": "p4308",
+          "total": 61,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4309",
+          "total": 83,
+          "autoRank": "2nd",
+          "finalRank": "1",
+          "points": 100
+        },
+        {
+          "entityId": "p4312",
+          "total": 80,
+          "autoRank": "3rd",
+          "finalRank": "2",
+          "points": 90
+        },
+        {
+          "entityId": "p4313",
+          "total": 61,
+          "autoRank": "4th",
+          "finalRank": "4th",
+          "points": 70
+        },
+        {
+          "entityId": "p4318",
+          "total": 85,
+          "autoRank": "1st",
+          "finalRank": "3",
+          "points": 80
+        }
+      ]
+    }
+  ],
+  "overall": [
+    {
+      "entityId": "p4309",
+      "total": 1310,
+      "rank": "1st"
+    },
+    {
+      "entityId": "p4306",
+      "total": 800,
+      "rank": "2nd"
+    },
+    {
+      "entityId": "p4318",
+      "total": 780,
+      "rank": "3rd"
+    },
+    {
+      "entityId": "p4314",
+      "total": 710,
+      "rank": "4th"
+    },
+    {
+      "entityId": "p4302",
+      "total": 630,
+      "rank": "5th"
+    },
+    {
+      "entityId": "p4307",
+      "total": 610,
+      "rank": "6th"
+    },
+    {
+      "entityId": "p4316",
+      "total": 610,
+      "rank": "6th"
+    },
+    {
+      "entityId": "p4305",
+      "total": 580,
+      "rank": "7th"
+    },
+    {
+      "entityId": "p4315",
+      "total": 560,
+      "rank": "8th"
+    },
+    {
+      "entityId": "p4301",
+      "total": 520,
+      "rank": "9th"
+    },
+    {
+      "entityId": "p4312",
+      "total": 450,
+      "rank": "10th"
+    },
+    {
+      "entityId": "p4320",
+      "total": 440,
+      "rank": "11th"
+    },
+    {
+      "entityId": "p4313",
+      "total": 420,
+      "rank": "12th"
+    },
+    {
+      "entityId": "p4321",
+      "total": 410,
+      "rank": "13th"
+    },
+    {
+      "entityId": "p4322",
+      "total": 390,
+      "rank": "14th"
+    },
+    {
+      "entityId": "p4324",
+      "total": 380,
+      "rank": "15th"
+    },
+    {
+      "entityId": "p4323",
+      "total": 360,
+      "rank": "16th"
+    },
+    {
+      "entityId": "p4317",
+      "total": 330,
+      "rank": "17th"
+    },
+    {
+      "entityId": "p4311",
+      "total": 310,
+      "rank": "18th"
+    },
+    {
+      "entityId": "p4319",
+      "total": 300,
+      "rank": "19th"
+    },
+    {
+      "entityId": "p4308",
+      "total": 270,
+      "rank": "20th"
+    },
+    {
+      "entityId": "p4325",
+      "total": 240,
+      "rank": "21st"
+    },
+    {
+      "entityId": "p4303",
+      "total": 220,
+      "rank": "22nd"
+    },
+    {
+      "entityId": "p4327",
+      "total": 200,
+      "rank": "23rd"
+    },
+    {
+      "entityId": "p4326",
+      "total": 150,
+      "rank": "24th"
+    },
+    {
+      "entityId": "p4310",
+      "total": 70,
+      "rank": "25th"
+    },
+    {
+      "entityId": "p4300",
+      "total": 0,
+      "rank": "26th"
+    },
+    {
+      "entityId": "p4304",
+      "total": 0,
+      "rank": "26th"
+    },
+    {
+      "entityId": "p4328",
+      "total": 0,
+      "rank": "26th"
+    },
+    {
+      "entityId": "p4329",
+      "total": 0,
+      "rank": "26th"
+    }
+  ],
+  "stickers": [
+    {
+      "gameId": "3-ring-circus",
+      "rank": "1st",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "3-ring-circus",
+      "rank": "2",
+      "entityId": "p4319"
+    },
+    {
+      "gameId": "3-ring-circus",
+      "rank": "3",
+      "entityId": "p4305"
+    },
+    {
+      "gameId": "OVERALL",
+      "rank": "1st",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "OVERALL",
+      "rank": "2nd",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "OVERALL",
+      "rank": "3rd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "rank": "1st",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "rank": "2nd",
+      "entityId": "p4321"
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "rank": "3rd",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "circus-line",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "circus-line",
+      "rank": "2",
+      "entityId": "p4302"
+    },
+    {
+      "gameId": "circus-line",
+      "rank": "3",
+      "entityId": "p4327"
+    },
+    {
+      "gameId": "clown-car",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "clown-car",
+      "rank": "2",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "clown-car",
+      "rank": "2",
+      "entityId": "p4323"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "2",
+      "entityId": "p4317"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "3",
+      "entityId": "p4302"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "3",
+      "entityId": "p4320"
+    },
+    {
+      "gameId": "jugglers",
+      "rank": "1",
+      "entityId": "p4302"
+    },
+    {
+      "gameId": "jugglers",
+      "rank": "2",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "jugglers",
+      "rank": "2",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "rank": "1st",
+      "entityId": "p4301"
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "rank": "2nd",
+      "entityId": "p4307"
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "rank": "3rd",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "rank": "1st",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "rank": "2nd",
+      "entityId": "p4307"
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "rank": "3rd",
+      "entityId": "p4324"
+    },
+    {
+      "gameId": "telephone",
+      "rank": "1st",
+      "entityId": "p4313"
+    },
+    {
+      "gameId": "telephone",
+      "rank": "2",
+      "entityId": "p4311"
+    },
+    {
+      "gameId": "telephone",
+      "rank": "3",
+      "entityId": "p4308"
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "rank": "2",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "rank": "3",
+      "entityId": "p4323"
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "rank": "1st",
+      "entityId": "p4326"
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "rank": "2",
+      "entityId": "p4319"
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "rank": "3rd",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "rank": "1st",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "rank": "2nd",
+      "entityId": "p4301"
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "rank": "3rd",
+      "entityId": "p4312"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "1st",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "2nd",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "3",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "3rd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "1st",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "1st",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "2nd",
+      "entityId": "p4317"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "3rd",
+      "entityId": "p4307"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "3rd",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "3rd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "1st",
+      "entityId": "p4305"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "1st",
+      "entityId": "p4321"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "3",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "3",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "rank": "1st",
+      "entityId": "p4305"
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "rank": "2nd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "rank": "3rd",
+      "entityId": "p4320"
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "rank": "1",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "rank": "2",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "rank": "2",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "rank": "2",
+      "entityId": "p4312"
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "rank": "3",
+      "entityId": "p4318"
+    }
+  ],
+  "comparisons": {
+    "leaderboardPointsVsOfficial": [],
+    "stickersVsOfficial": [],
+    "announcerVsStickers": [
+      {
+        "gameId": "3-ring-circus",
+        "stickers": [
+          "1:p4316",
+          "2:p4319",
+          "3:p4305"
+        ],
+        "announcer": [
+          "1:p4316",
+          "2:p4318",
+          "3:p4307",
+          "4:p4319",
+          "5:p4325",
+          "6:p4306",
+          "7:p4305",
+          "8:p4322"
+        ]
+      },
+      {
+        "gameId": "circus-line",
+        "stickers": [
+          "1:p4309",
+          "2:p4302",
+          "3:p4327"
+        ],
+        "announcer": [
+          "1:p4318",
+          "2:p4319",
+          "3:p4312",
+          "4:p4316"
+        ]
+      },
+      {
+        "gameId": "clown-car",
+        "stickers": [
+          "1:p4309",
+          "2:p4315",
+          "2:p4323"
+        ],
+        "announcer": [
+          "1:p4315",
+          "2:p4309",
+          "3:p4323"
+        ]
+      },
+      {
+        "gameId": "ducks-in-a-row",
+        "stickers": [
+          "1:p4309",
+          "2:p4317",
+          "3:p4302",
+          "3:p4320"
+        ],
+        "announcer": [
+          "1:p4318",
+          "2:p4320",
+          "3:p4307"
+        ]
+      },
+      {
+        "gameId": "jugglers",
+        "stickers": [
+          "1:p4302",
+          "2:p4309",
+          "2:p4316"
+        ],
+        "announcer": [
+          "1:p4316",
+          "2:p4305",
+          "3:p4319",
+          "4:p4309",
+          "5:p4306"
+        ]
+      },
+      {
+        "gameId": "setting-up-the-big-top",
+        "stickers": [
+          "1:p4301",
+          "2:p4307",
+          "3:p4314"
+        ],
+        "announcer": [
+          "1:p4301",
+          "2:p4307",
+          "3:p4314",
+          "4:p4306"
+        ]
+      },
+      {
+        "gameId": "telephone",
+        "stickers": [
+          "1:p4313",
+          "2:p4311",
+          "3:p4308"
+        ],
+        "announcer": [
+          "1:p4313",
+          "2:p4309",
+          "3:p4311"
+        ]
+      },
+      {
+        "gameId": "the-a-frame-trapeze",
+        "stickers": [
+          "1:p4309",
+          "2:p4314",
+          "3:p4323"
+        ],
+        "announcer": [
+          "1:p4316",
+          "2:p4309",
+          "3:p4314",
+          "4:p4323",
+          "5:p4325"
+        ]
+      },
+      {
+        "gameId": "the-barrel-of-monkeys-caravan",
+        "stickers": [
+          "1:p4326",
+          "2:p4319",
+          "3:p4314"
+        ],
+        "announcer": [
+          "10:p4306",
+          "11:p4313",
+          "12:p4314",
+          "13:p4323",
+          "1:p4307",
+          "2:p4318",
+          "3:p4316",
+          "4:p4319",
+          "5:p4322",
+          "6:p4327",
+          "7:p4326",
+          "8:p4305",
+          "9:p4320"
+        ]
+      },
+      {
+        "gameId": "the-circus-orchestra",
+        "stickers": [
+          "1:p4316",
+          "2:p4315",
+          "3:p4306",
+          "3:p4318"
+        ],
+        "announcer": [
+          "1:p4316",
+          "2:p4315",
+          "3:p4306",
+          "4:p4318"
+        ]
+      },
+      {
+        "gameId": "the-flying-flapjacks",
+        "stickers": [
+          "1:p4306",
+          "1:p4309",
+          "2:p4317",
+          "3:p4307",
+          "3:p4314",
+          "3:p4318"
+        ],
+        "announcer": [
+          "1:p4309",
+          "2:p4306",
+          "3:p4317",
+          "4:p4307",
+          "5:p4314",
+          "6:p4318"
+        ]
+      },
+      {
+        "gameId": "the-grand-entry",
+        "stickers": [
+          "1:p4305",
+          "1:p4321",
+          "3:p4309",
+          "3:p4316"
+        ],
+        "announcer": [
+          "1:p4305",
+          "2:p4321",
+          "3:p4316",
+          "4:p4309",
+          "5:p4306"
+        ]
+      },
+      {
+        "gameId": "the-tumbled-trapeze-rescue",
+        "stickers": [
+          "1:p4306",
+          "2:p4309",
+          "2:p4315"
+        ],
+        "announcer": [
+          "1:p4318",
+          "2:p4317",
+          "3:p4305",
+          "4:p4306",
+          "5:p4311",
+          "6:p4301",
+          "7:p4309",
+          "8:p4315",
+          "9:p4321"
+        ]
+      },
+      {
+        "gameId": "trapeze-swing-assembly",
+        "stickers": [
+          "1:p4309",
+          "2:p4312",
+          "3:p4318"
+        ],
+        "announcer": [
+          "1:p4318",
+          "2:p4309",
+          "3:p4312"
+        ]
+      }
+    ],
+    "overallFromOfficialPoints": []
+  }
+}

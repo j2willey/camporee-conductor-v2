@@ -155,3 +155,108 @@ describe("Circus 2026 fixtures: content and references", () => {
     expect(flag?.config).toMatchObject({ max: 5, placeholder: "0-5 Points" });
   });
 });
+
+// --- As-run Circus 2026 (issue #3) ------------------------------------------
+// The design fixtures above carry Jim's post-event corrections (v1 BACKLOG 2026-06-18). The as-run
+// fixtures are the cartridge the event laptop actually ran, used only by the scoring parity tests.
+
+const AS_RUN = new URL("../fixtures/circus-2026-as-run/", import.meta.url);
+const readAsRun = (path: string): unknown =>
+  JSON.parse(readFileSync(new URL(path, AS_RUN), "utf8"));
+const asRunActivityFiles = readdirSync(new URL("activities/", AS_RUN)).filter(
+  (f) => f.endsWith(".json"),
+);
+
+describe("Circus 2026 as-run fixtures", () => {
+  const asRunEvent = EventSchema.parse(readAsRun("event.json"));
+  const asRunSet = CommonFieldSetSchema.parse(readAsRun("common-fields.json"));
+  const asRun = asRunActivityFiles.map((f) =>
+    ActivitySchema.parse(readAsRun(`activities/${f}`)),
+  );
+  const design = rawActivities.map((a) => ActivitySchema.parse(a));
+  const designBySlug = new Map(design.map((a) => [a.slug, a]));
+
+  it("has the same 34 Activities, Competitions and playlist order as the design", () => {
+    expect(asRunActivityFiles).toEqual(activityFiles);
+    const slugById = new Map(asRun.map((a) => [a.id, a.slug]));
+    const designEvent = EventSchema.parse(rawEvent);
+    const designSlugById = new Map(design.map((a) => [a.id, a.slug]));
+    const order = (e: typeof asRunEvent, slugs: Map<string, string>) =>
+      [...e.activities]
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((x) => slugs.get(x.activityId));
+    expect(order(asRunEvent, slugById)).toEqual(
+      order(designEvent, designSlugById),
+    );
+    expect(asRunEvent.competitions.map((c) => c.slug)).toEqual(
+      designEvent.competitions.map((c) => c.slug),
+    );
+  });
+
+  it("has its own ids, so the two fixtures are never mistaken for each other", () => {
+    const designIds = new Set(design.map((a) => a.id));
+    expect(asRun.filter((a) => designIds.has(a.id))).toEqual([]);
+  });
+
+  it("has the same Common Fields as the design", () => {
+    const designSet = CommonFieldSetSchema.parse(rawSet);
+    expect(asRunSet.fields).toEqual(designSet.fields);
+  });
+
+  it("differs from the design only in the documented scoring fields (TRANSCODE-NOTES)", () => {
+    const differences: string[] = [];
+    for (const a of asRun) {
+      const d = designBySlug.get(a.slug);
+      if (!d) throw new Error(`no design Activity ${a.slug}`);
+      expect(a.content, a.slug).toEqual(d.content);
+      expect(a.variables, a.slug).toEqual(d.variables);
+      expect(a.scoringType, a.slug).toBe(d.scoringType);
+      expect(a.scoring.direction, a.slug).toBe(d.scoring.direction);
+      const asRunFields = new Map(a.scoring.fields.map((f) => [f.id, f]));
+      const designFields = new Map(d.scoring.fields.map((f) => [f.id, f]));
+      for (const id of new Set([
+        ...asRunFields.keys(),
+        ...designFields.keys(),
+      ])) {
+        const x = asRunFields.get(id);
+        const y = designFields.get(id);
+        if (!x) {
+          differences.push(`${a.slug} ${id}: design only`);
+          continue;
+        }
+        if (!y) {
+          differences.push(`${a.slug} ${id}: as-run only`);
+          continue;
+        }
+        for (const key of new Set([...Object.keys(x), ...Object.keys(y)])) {
+          const xv = JSON.stringify(x[key as keyof typeof x]);
+          const yv = JSON.stringify(y[key as keyof typeof y]);
+          if (xv !== yv)
+            differences.push(
+              `${a.slug} ${id} ${key}: as-run ${xv}, design ${yv}`,
+            );
+        }
+      }
+    }
+    expect(differences.sort()).toEqual(
+      [
+        // Reclassified after the event (v1 BACKLOG 2026-06-18): 7 fields across 6 games.
+        '3-ring-circus hand_breaks kind: as-run "penalty", design "metric"',
+        'sports-land-skis falls kind: as-run "penalty", design "metric"',
+        'the-barrel-of-monkeys-caravan barrel_drops kind: as-run "penalty", design "metric"',
+        'the-grand-entry retreat_penalty kind: as-run "penalty", design "metric"',
+        'the-high-wire-fire-act fire_extinguished kind: as-run "penalty", design "points"',
+        'the-high-wire-fire-act matches_used kind: as-run "penalty", design "metric"',
+        'the-tumbled-trapeze-rescue patient_ground kind: as-run "penalty", design "metric"',
+        // Stripped from the event-day cartridge by a v1 Composer export bug, restored after (e296c7c).
+        "setting-up-the-big-top judge_notes: design only",
+        "the-big-top-goes-down judge_notes: design only",
+        "the-circus-orchestra judge_notes: design only",
+        "the-grand-entry judge_notes: design only",
+        "trapeze-swing-assembly judge_notes: design only",
+        // No v1 sortOrder, so it comes from list position, which the restored judge_notes shifts.
+        "trapeze-swing-assembly field_1778197726672 sortOrder: as-run 60, design 70",
+      ].sort(),
+    );
+  });
+});

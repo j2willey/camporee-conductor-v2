@@ -1,0 +1,276 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-711a-a217-5245b098c870",
+  "slug": "coyote-creek-camporee-2026-as-run",
+  "title": "Coyote Creek District Camporee 2026",
+  "theme": "The Circus",
+  "year": 2026,
+  "organizerName": "Jim Willey",
+  "terminology": {
+    "pack": "scouting",
+    "labels": {
+      "group": "Troop",
+      "team": "Patrol",
+      "participant": "Scout",
+      "event": "Camporee"
+    }
+  },
+  "presentation": {
+    "themeColors": {
+      "main": "#C62828",
+      "header": "#1565C0",
+      "accent": "#F9A825"
+    },
+    "awardLabel": {
+      "line1": "Coyote Creek Camporee 2026",
+      "line2": "The Circus",
+      "syncFonts": true,
+      "styles": {
+        "line1": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        },
+        "line2": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        },
+        "activityName": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        },
+        "winner": {
+          "font": "Georgia, serif",
+          "size": "10pt",
+          "bold": true
+        }
+      }
+    }
+  },
+  "competitions": [
+    {
+      "id": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "slug": "patrol-games",
+      "label": "Patrol Games",
+      "level": "team",
+      "registration": "registered",
+      "divisions": [],
+      "commonFields": {
+        "setId": "01a18a1b-3000-7cca-a24f-1bdc92710428",
+        "before": [
+          "p_flag",
+          "p_yell",
+          "p_spirit",
+          "ten_ess"
+        ],
+        "after": [
+          "unscout",
+          "off_notes"
+        ]
+      },
+      "legacy": {
+        "v1Id": "patrol-games"
+      }
+    },
+    {
+      "id": "01a18a1b-3000-7d89-9d25-2a9568876415",
+      "slug": "exhibition",
+      "label": "Exhibition Events",
+      "level": "team",
+      "registration": "registered",
+      "divisions": [],
+      "legacy": {
+        "v1Id": "exhibition"
+      }
+    },
+    {
+      "id": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "slug": "troop-challenges",
+      "label": "Troop Challenges",
+      "level": "group",
+      "registration": "registered",
+      "divisions": [],
+      "legacy": {
+        "v1Id": "troop-challenges"
+      }
+    }
+  ],
+  "activities": [
+    {
+      "activityId": "01a18a1b-3000-7073-bd58-98c6a0860794",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 1
+    },
+    {
+      "activityId": "01a18a1b-3000-7521-b2be-49391c2cae5b",
+      "competitionId": "01a18a1b-3000-7d89-9d25-2a9568876415",
+      "sortOrder": 2
+    },
+    {
+      "activityId": "01a18a1b-3000-7e7e-bb28-6d8b8a58eb7f",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 3
+    },
+    {
+      "activityId": "01a18a1b-3000-779a-ad04-7528649a549e",
+      "competitionId": "01a18a1b-3000-7d89-9d25-2a9568876415",
+      "sortOrder": 4
+    },
+    {
+      "activityId": "01a18a1b-3000-7756-8d79-18822ecac853",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 5
+    },
+    {
+      "activityId": "01a18a1b-3000-725e-92d8-2a77e729d00a",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 6
+    },
+    {
+      "activityId": "01a18a1b-3000-7d42-a10a-fb031060469d",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 7
+    },
+    {
+      "activityId": "01a18a1b-3000-735e-80d2-5214ad250463",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 8
+    },
+    {
+      "activityId": "01a18a1b-3000-7a36-a4fe-326dea863c11",
+      "competitionId": "01a18a1b-3000-7d89-9d25-2a9568876415",
+      "sortOrder": 9
+    },
+    {
+      "activityId": "01a18a1b-3000-7615-b657-a875ace45a93",
+      "competitionId": "01a18a1b-3000-7d89-9d25-2a9568876415",
+      "sortOrder": 10
+    },
+    {
+      "activityId": "01a18a1b-3000-7a64-b54d-2789e1f50aa0",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 11
+    },
+    {
+      "activityId": "01a18a1b-3000-74cd-966d-37ff6643e679",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 12
+    },
+    {
+      "activityId": "01a18a1b-3000-7d2e-bf67-a0f23174e97a",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 13
+    },
+    {
+      "activityId": "01a18a1b-3000-7f74-9862-6086c0e122db",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 14
+    },
+    {
+      "activityId": "01a18a1b-3000-7137-b553-ca31a27913c2",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 15
+    },
+    {
+      "activityId": "01a18a1b-3000-7916-bbb7-3a146bf10f2d",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 16
+    },
+    {
+      "activityId": "01a18a1b-3000-7179-a447-47f5688848a5",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 17
+    },
+    {
+      "activityId": "01a18a1b-3000-7089-8254-bb60f5f49157",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 18
+    },
+    {
+      "activityId": "01a18a1b-3000-7b5e-9e6e-fa42b122b245",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 19
+    },
+    {
+      "activityId": "01a18a1b-3000-7862-b4ed-0e4cb773cc63",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 20
+    },
+    {
+      "activityId": "01a18a1b-3000-7c75-8e5c-3833ec43e08d",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 21
+    },
+    {
+      "activityId": "01a18a1b-3000-7a7c-a5d6-ff9c3947c028",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 22
+    },
+    {
+      "activityId": "01a18a1b-3000-74f1-aad1-e18a9ee75d51",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 23
+    },
+    {
+      "activityId": "01a18a1b-3000-78c1-8760-ad7f7fd35476",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 24
+    },
+    {
+      "activityId": "01a18a1b-3000-7dd2-bc18-77c61e4236f3",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 25
+    },
+    {
+      "activityId": "01a18a1b-3000-7596-a14c-e25fe2344fa3",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 26
+    },
+    {
+      "activityId": "01a18a1b-3000-7b46-9c6f-ea3a16325768",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 27
+    },
+    {
+      "activityId": "01a18a1b-3000-7cdd-a58b-f64eaf72a813",
+      "competitionId": "01a18a1b-3000-779b-ad70-4b62e34aa42d",
+      "sortOrder": 28
+    },
+    {
+      "activityId": "01a18a1b-3000-7e7e-9c0f-f1a9dcc4b3e4",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 29
+    },
+    {
+      "activityId": "01a18a1b-3000-798e-9d59-a7f0c0ba7847",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 30
+    },
+    {
+      "activityId": "01a18a1b-3000-744f-a498-19c5baa6b85d",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 31
+    },
+    {
+      "activityId": "01a18a1b-3000-79d8-8ca3-d74ea60b93b6",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 32
+    },
+    {
+      "activityId": "01a18a1b-3000-74a9-b9da-152cfdb74e6b",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 33
+    },
+    {
+      "activityId": "01a18a1b-3000-74ca-8eb1-f447673d2ea3",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "sortOrder": 34
+    }
+  ],
+  "legacy": {
+    "v1Id": "5d5a6a80-c9e1-4551-8e15-8ef1ca93b9ca"
+  },
+  "kind": "event"
+}

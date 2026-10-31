@@ -1,3 +1,5 @@
 pnpm-lock.yaml
 packages/schema/json-schema/
 packages/schema/fixtures/
+packages/scoring/fixtures/
+packages/scoring/scripts/v1/*.js
