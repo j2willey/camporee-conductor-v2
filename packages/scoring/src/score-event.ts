@@ -1,7 +1,9 @@
+import type { Activity } from "@camporee-conductor/schema";
 import { entryTotal, mergeCommonFields } from "./fields.ts";
 import { denseRanking, placementPoints } from "./ranking.ts";
 import type {
   ActivityResults,
+  CompetitionStandings,
   EventResults,
   OfficialAction,
   ScoringInput,
@@ -78,5 +80,43 @@ export function scoreEvent(input: ScoringInput): EventResults {
       }),
     });
   }
-  return { activities };
+
+  return {
+    activities,
+    standings: input.event.competitions.map((c) =>
+      competitionStandings(c.id, input, activityById, activities),
+    ),
+  };
+}
+
+/** Each entrant's sum of placement points over the Competition's ranked Activities, dense-ranked. */
+function competitionStandings(
+  competitionId: string,
+  input: ScoringInput,
+  activityById: ReadonlyMap<string, Activity>,
+  activities: readonly ActivityResults[],
+): CompetitionStandings {
+  const ranked = activities.filter(
+    (a) =>
+      a.competitionId === competitionId &&
+      activityById.get(a.activityId)?.scoringType === "ranked",
+  );
+  const totals = input.entrants
+    .filter((e) => e.competitionId === competitionId)
+    .map(({ id }) => ({
+      entrantId: id,
+      total: ranked.reduce(
+        (sum, a) =>
+          sum +
+          a.entries
+            .filter((e) => e.entrantId === id)
+            .reduce((s, e) => s + e.points, 0),
+        0,
+      ),
+    }));
+  const rankOf = denseRanking(totals.map((t) => t.total));
+  return {
+    competitionId,
+    entrants: totals.map((t) => ({ ...t, rank: rankOf(t.total) })),
+  };
 }

@@ -80,4 +80,24 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
       })),
     );
   });
+
+  it("ranks all 30 Teams in Patrol Games overall as v1's Officials' leaderboard did", () => {
+    const competitionId = circus.competitionIdOf("patrol-games");
+    const standings = results.standings.find(
+      (s) => s.competitionId === competitionId,
+    );
+    expect(
+      (standings?.entrants ?? [])
+        .map((e) => ({ entityId: e.entrantId, total: e.total, rank: e.rank }))
+        .sort((a, b) => cmp(a.entityId, b.entityId)),
+    ).toEqual(
+      golden.overall
+        .map(({ entityId, total, rank }) => ({
+          entityId,
+          total,
+          rank: place(rank),
+        }))
+        .sort((a, b) => cmp(a.entityId, b.entityId)),
+    );
+  });
 });

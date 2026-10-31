@@ -73,6 +73,20 @@ export interface ActivityResults {
   entries: EntryResult[];
 }
 
+/** One entrant's place in a Competition overall. */
+export interface Standing {
+  entrantId: string;
+  /** Sum of placement points over the Competition's ranked Activities; no entry = 0. */
+  total: number;
+  rank: number;
+}
+
+export interface CompetitionStandings {
+  competitionId: string;
+  entrants: Standing[];
+}
+
 export interface EventResults {
   activities: ActivityResults[];
+  standings: CompetitionStandings[];
 }
