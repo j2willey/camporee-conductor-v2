@@ -68,4 +68,16 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
       })),
     );
   });
+
+  it("gives each entry v1's placement points", () => {
+    expect(perGame((r) => ({ points: r.points }))).toEqual(
+      golden.games.map((g) => ({
+        gameId: g.gameId,
+        results: g.results.map(({ entityId, points }) => ({
+          entityId,
+          points,
+        })),
+      })),
+    );
+  });
 });

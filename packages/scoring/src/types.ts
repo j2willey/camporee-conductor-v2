@@ -63,6 +63,8 @@ export interface EntryResult {
   provisionalRank: number;
   /** The Official's rank override if one is logged, otherwise the Provisional Ranking. */
   finalRank: number;
+  /** Placement points: the Official's entered points if logged, otherwise from the Final Ranking. */
+  points: number;
 }
 
 export interface ActivityResults {

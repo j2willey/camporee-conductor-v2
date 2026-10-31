@@ -1,5 +1,5 @@
 import { entryTotal, mergeCommonFields } from "./fields.ts";
-import { denseRanking } from "./ranking.ts";
+import { denseRanking, placementPoints } from "./ranking.ts";
 import type {
   ActivityResults,
   EventResults,
@@ -64,11 +64,16 @@ export function scoreEvent(input: ScoringInput): EventResults {
       competitionId,
       entries: scored.map(({ entrantId, total, actions }) => {
         const provisionalRank = rankOf(total);
+        const finalRank =
+          latest(actions, "set-final-rank")?.rank ?? provisionalRank;
         return {
           entrantId,
           total,
           provisionalRank,
-          finalRank: latest(actions, "set-final-rank")?.rank ?? provisionalRank,
+          finalRank,
+          points:
+            latest(actions, "set-placement-points")?.points ??
+            placementPoints(finalRank),
         };
       }),
     });
