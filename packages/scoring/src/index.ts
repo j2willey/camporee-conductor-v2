@@ -1,2 +1,4 @@
-// Placeholder until slice 3 (ADR-0024) adds conversions, rankings and common fields.
-export const PACKAGE_NAME = "@camporee-conductor/scoring";
+// Pure scoring and ranking (ADR-0008, ADR-0019, ADR-0020). No I/O.
+export { entryTotal, mergeCommonFields } from "./fields.ts";
+export { scoreEvent } from "./score-event.ts";
+export type * from "./types.ts";
