@@ -5,10 +5,19 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { loadCircus2026AsRun } from "../scripts/circus-2026-as-run.ts";
-import { GOLDEN_FILE, type V1Golden } from "../scripts/v1-golden.ts";
+import {
+  GOLDEN_FILE,
+  PRINTED_STICKERS_FILE,
+  type V1Golden,
+} from "../scripts/v1-golden.ts";
 import { scoreEvent, type EntryResult } from "./index.ts";
 
 const golden = JSON.parse(readFileSync(GOLDEN_FILE, "utf8")) as V1Golden;
+const printed = (
+  JSON.parse(readFileSync(PRINTED_STICKERS_FILE, "utf8")) as {
+    stickers: V1Golden["stickers"];
+  }
+).stickers;
 const circus = loadCircus2026AsRun();
 const results = scoreEvent(circus.input);
 
@@ -98,6 +107,24 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
           rank: place(rank),
         }))
         .sort((a, b) => cmp(a.entityId, b.entityId)),
+    );
+  });
+
+  it("places the same Teams 1st to 3rd as the 63 award stickers printed at the event", () => {
+    const competitionId = circus.competitionIdOf("patrol-games");
+    const perActivity = perGame((r) => ({ rank: r.finalRank })).flatMap((g) =>
+      g.results
+        .filter((r) => r.rank <= 3)
+        .map((r) => `${g.gameId} ${r.rank} ${r.entityId}`),
+    );
+    const overall = (
+      results.standings.find((s) => s.competitionId === competitionId)
+        ?.entrants ?? []
+    )
+      .filter((e) => e.rank <= 3)
+      .map((e) => `OVERALL ${e.rank} ${e.entrantId}`);
+    expect([...perActivity, ...overall].sort()).toEqual(
+      printed.map((s) => `${s.gameId} ${place(s.rank)} ${s.entityId}`).sort(),
     );
   });
 });
