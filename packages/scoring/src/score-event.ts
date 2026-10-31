@@ -1,4 +1,5 @@
 import { entryTotal, mergeCommonFields } from "./fields.ts";
+import { denseRanking } from "./ranking.ts";
 import type { ActivityResults, EventResults, ScoringInput } from "./types.ts";
 
 /** Scores a whole Event. Pure: the same input always gives the same results (ADR-0019). */
@@ -29,15 +30,17 @@ export function scoreEvent(input: ScoringInput): EventResults {
             : sum,
         0,
       );
+    const scored = input.entries
+      .filter((e) => e.activityId === activityId)
+      .map((e) => ({
+        entrantId: e.entrantId,
+        total: entryTotal(fields, e.values) + adjustment(e.entrantId),
+      }));
+    const rankOf = denseRanking(scored.map((e) => e.total));
     activities.push({
       activityId,
       competitionId,
-      entries: input.entries
-        .filter((e) => e.activityId === activityId)
-        .map((e) => ({
-          entrantId: e.entrantId,
-          total: entryTotal(fields, e.values) + adjustment(e.entrantId),
-        })),
+      entries: scored.map((e) => ({ ...e, provisionalRank: rankOf(e.total) })),
     });
   }
   return { activities };

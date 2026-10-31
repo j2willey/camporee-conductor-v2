@@ -12,6 +12,9 @@ const golden = JSON.parse(readFileSync(GOLDEN_FILE, "utf8")) as V1Golden;
 const circus = loadCircus2026AsRun();
 const results = scoreEvent(circus.input);
 
+/** v1 ranks are ordinals ("4th") or an Official's text ("3", "3 Place"); compare the number. */
+const place = (rank: string): number => Number(/\d+/.exec(rank)?.[0]);
+
 const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Each finalized game's entries, projected to the given properties, sorted by entrant. */
@@ -38,6 +41,18 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
       golden.games.map((g) => ({
         gameId: g.gameId,
         results: g.results.map(({ entityId, total }) => ({ entityId, total })),
+      })),
+    );
+  });
+
+  it("gives each entry v1's automatic rank as its Provisional Ranking", () => {
+    expect(perGame((r) => ({ rank: r.provisionalRank }))).toEqual(
+      golden.games.map((g) => ({
+        gameId: g.gameId,
+        results: g.results.map(({ entityId, autoRank }) => ({
+          entityId,
+          rank: place(autoRank),
+        })),
       })),
     );
   });

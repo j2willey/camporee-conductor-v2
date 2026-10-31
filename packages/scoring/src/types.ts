@@ -59,6 +59,8 @@ export interface ScoringInput {
 export interface EntryResult {
   entrantId: string;
   total: number;
+  /** Rank by total within the Activity, before any Official override. */
+  provisionalRank: number;
 }
 
 export interface ActivityResults {
