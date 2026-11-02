@@ -28,6 +28,7 @@ function standings(ranks: number[]): RankedStanding[] {
   return ranks.map((rank, i) => ({
     entrantId: `t${i + 1}`,
     total: 1000 - rank,
+    provisionalRank: rank,
     rank,
     disqualified: false,
   }));
