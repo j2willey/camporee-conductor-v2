@@ -53,6 +53,15 @@ export const DivisionSchema = z.strictObject({
   label: NonEmptyText,
 });
 
+/**
+ * Placement points a Final Ranking earns (ADR-0019): `places[0]` for 1st, `places[1]` for 2nd…, and
+ * `participation` for any other placement. No result in an Activity is always 0.
+ */
+export const PlacementPointsSchema = z.strictObject({
+  places: z.array(z.number().min(0)).min(1),
+  participation: z.number().min(0),
+});
+
 /** A ranking pool of Activities and entrants (ADR-0003). Its label names its Activities on screen. */
 export const CompetitionSchema = z.strictObject({
   id: Uuid7,
@@ -68,6 +77,8 @@ export const CompetitionSchema = z.strictObject({
       path: "id",
     }),
   ),
+  /** Set at design time; left out = v1's table, 100/90/80/70/60 and 50 for taking part. */
+  placementPoints: PlacementPointsSchema.optional(),
   /** Common Fields applied before and after each Activity's own fields (ADR-0020). */
   commonFields: z
     .strictObject({
@@ -211,3 +222,4 @@ export type Event = z.infer<typeof EventSchema>;
 export type Template = z.infer<typeof TemplateSchema>;
 export type Competition = z.infer<typeof CompetitionSchema>;
 export type Award = z.infer<typeof AwardSchema>;
+export type PlacementPoints = z.infer<typeof PlacementPointsSchema>;

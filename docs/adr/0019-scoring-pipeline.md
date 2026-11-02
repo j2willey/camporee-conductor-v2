@@ -96,3 +96,15 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Overall DQ:** the entrant keeps its total but is **removed before the standings are ranked**, as v1 did
   (`official.js:876-884`). It has no rank and gets no automatic Award; a manual `set-award` still works.
 - Circus 2026 had no DQs (v1 had no DQ at the event), so parity is unchanged.
+
+## Amendment 2026-11-02 (issue #3): placement points table, overall rank override
+
+- **Placement points table per Competition**, set at design time (`placementPoints` on the Competition:
+  `places` for 1st, 2nd…, and `participation` for any other placement). Left out, it's v1's table:
+  100 / 90 / 80 / 70 / 60, 50 for taking part. No result in an Activity is always 0. Not editable on
+  event day for now; that can become a logged Official action later. Circus 2026 uses the default.
+- **Overall rank override:** logged Official action `set-overall-rank` (Competition, entrant, rank, optional
+  notes); the latest per Competition and entrant wins. Other entrants are **not** re-sorted: the Official
+  owns the result. Awards use the overridden rank. An overall DQ beats an override, as for Activities. An
+  invalid effective action (a rank that isn't a whole number from 1, or an entrant not in that
+  Competition) is left out with a warning, the same as `set-award`.

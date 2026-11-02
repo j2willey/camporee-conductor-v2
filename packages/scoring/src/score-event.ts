@@ -1,7 +1,11 @@
 import type { Activity } from "@camporee-conductor/schema";
 import { awardRecipients } from "./awards.ts";
 import { entryTotal, mergeCommonFields } from "./fields.ts";
-import { placementPoints, rankingFor } from "./ranking.ts";
+import {
+  DEFAULT_PLACEMENT_POINTS,
+  placementPoints,
+  rankingFor,
+} from "./ranking.ts";
 import type {
   ActivityResults,
   CompetitionStandings,
@@ -9,6 +13,7 @@ import type {
   EventResults,
   OfficialAction,
   ScoringInput,
+  ScoringWarning,
   Standing,
 } from "./types.ts";
 
@@ -90,15 +95,26 @@ export function scoreEvent(input: ScoringInput): EventResults {
           finalRank,
           points:
             latest(actions, "set-placement-points")?.points ??
-            placementPoints(finalRank),
+            placementPoints(
+              finalRank,
+              competition.placementPoints ?? DEFAULT_PLACEMENT_POINTS,
+            ),
           disqualified: false,
         };
       }),
     });
   }
 
+  const overrides = overallRankOverrides(input);
   const standings = input.event.competitions.map((c) =>
-    competitionStandings(c.id, input, activityById, activities, ranking),
+    competitionStandings(
+      c.id,
+      input,
+      activityById,
+      activities,
+      ranking,
+      overrides.ranks,
+    ),
   );
   const awards = (input.event.awards ?? []).map((award) => ({
     awardId: award.id,
@@ -113,8 +129,58 @@ export function scoreEvent(input: ScoringInput): EventResults {
     activities,
     standings,
     awards: awards.map(({ awardId, recipients }) => ({ awardId, recipients })),
-    warnings: awards.flatMap((a) => a.warnings),
+    warnings: [...overrides.warnings, ...awards.flatMap((a) => a.warnings)],
   };
+}
+
+type SetOverallRank = Extract<OfficialAction, { type: "set-overall-rank" }>;
+
+/**
+ * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` →
+ * rank. Only the effective one is checked: an invalid one is left out with a warning, never an error,
+ * since the log is append-only (ADR-0019).
+ */
+function overallRankOverrides(input: ScoringInput): {
+  ranks: ReadonlyMap<string, number>;
+  warnings: ScoringWarning[];
+} {
+  const latestByKey = new Map<string, SetOverallRank>();
+  for (const a of input.actions) {
+    if (a.type === "set-overall-rank") {
+      latestByKey.set(`${a.competitionId} ${a.entrantId}`, a);
+    }
+  }
+  const ranks = new Map<string, number>();
+  const warnings: ScoringWarning[] = [];
+  for (const [key, action] of latestByKey) {
+    const problem = overallRankProblem(input, action);
+    if (problem) warnings.push({ action, message: problem });
+    else ranks.set(key, action.rank);
+  }
+  return { ranks, warnings };
+}
+
+function overallRankProblem(
+  input: ScoringInput,
+  { competitionId, entrantId, rank }: SetOverallRank,
+): string | undefined {
+  const competition = input.event.competitions.find(
+    (c) => c.id === competitionId,
+  );
+  if (!competition) {
+    return `set-overall-rank: no Competition ${competitionId} in the Event; left out`;
+  }
+  if (
+    !input.entrants.some(
+      (e) => e.id === entrantId && e.competitionId === competitionId,
+    )
+  ) {
+    return `set-overall-rank: ${entrantId} isn't in Competition ${competition.slug}; left out`;
+  }
+  if (!Number.isInteger(rank) || rank < 1) {
+    return `set-overall-rank: rank ${rank} for ${entrantId} isn't a whole number from 1; left out`;
+  }
+  return undefined;
 }
 
 /** Each entrant's sum of placement points over the Competition's ranked Activities, ranked by the Event's tie numbering. */
@@ -124,6 +190,7 @@ function competitionStandings(
   activityById: ReadonlyMap<string, Activity>,
   activities: readonly ActivityResults[],
   ranking: ReturnType<typeof rankingFor>,
+  overallRanks: ReadonlyMap<string, number>,
 ): CompetitionStandings {
   const ranked = activities.filter(
     (a) =>
@@ -155,12 +222,23 @@ function competitionStandings(
   const rankOf = ranking(
     totals.filter((t) => !isDisqualified(t.entrantId)).map((t) => t.total),
   );
+  // An Official's override sets only that entrant's rank; nobody else is re-sorted. A DQ beats it.
+  const rankedStanding = (
+    t: { entrantId: string; total: number },
+    provisionalRank: number,
+  ): Standing => ({
+    ...t,
+    provisionalRank,
+    rank:
+      overallRanks.get(`${competitionId} ${t.entrantId}`) ?? provisionalRank,
+    disqualified: false,
+  });
   return {
     competitionId,
     entrants: totals.map((t): Standing =>
       isDisqualified(t.entrantId)
         ? { ...t, disqualified: true }
-        : { ...t, rank: rankOf(t.total), disqualified: false },
+        : rankedStanding(t, rankOf(t.total)),
     ),
   };
 }

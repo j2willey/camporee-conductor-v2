@@ -272,6 +272,28 @@
               "additionalProperties": false
             }
           },
+          "placementPoints": {
+            "type": "object",
+            "properties": {
+              "places": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "participation": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "places",
+              "participation"
+            ],
+            "additionalProperties": false
+          },
           "commonFields": {
             "type": "object",
             "properties": {

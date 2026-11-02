@@ -58,6 +58,17 @@ export type OfficialAction =
     }
   | {
       /**
+       * Overrides an entrant's overall rank in a Competition. Nobody else is re-sorted: the Official
+       * owns the result (ADR-0019).
+       */
+      type: "set-overall-rank";
+      competitionId: string;
+      entrantId: string;
+      rank: number;
+      notes?: string;
+    }
+  | {
+      /**
        * DQ (`disqualified: true`) or reinstate (`false`) an entrant at one Activity, or overall when
        * `activityId` is left out (ADR-0019).
        */
@@ -113,6 +124,9 @@ export interface RankedStanding {
   entrantId: string;
   /** Sum of placement points over the Competition's ranked Activities; no entry = 0. */
   total: number;
+  /** Rank by total, before any Official override. */
+  provisionalRank: number;
+  /** The Official's `set-overall-rank` if one is logged, otherwise the provisional rank. Awards use it. */
   rank: number;
   disqualified: false;
 }
@@ -145,7 +159,7 @@ export interface AwardResults {
 
 /**
  * An Official action that scoring left out because it's invalid, e.g. a `set-award` place the Award
- * doesn't have. The log is append-only, so scoring never fails on one; the Collator should reject
+ * doesn't have, or a `set-overall-rank` that isn't a whole number from 1. The log is append-only, so scoring never fails on one; the Collator should reject
  * them when they're written.
  */
 export interface ScoringWarning {

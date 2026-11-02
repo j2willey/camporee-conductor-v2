@@ -3,6 +3,7 @@ import {
   EventSchema,
   type Award,
   type Event,
+  type PlacementPoints,
 } from "@camporee-conductor/schema";
 import type { OfficialAction, ScoringInput } from "./types.ts";
 
@@ -24,11 +25,13 @@ export function smallEvent({
   tieNumbering = "dense",
   awards = [],
   actions = [],
+  placementPoints,
 }: {
   scores: Record<string, number>[];
   tieNumbering?: Event["tieNumbering"];
   awards?: Award[];
   actions?: OfficialAction[];
+  placementPoints?: PlacementPoints;
 }): ScoringInput {
   const activities = scores.map((_, i) =>
     ActivitySchema.parse({
@@ -83,6 +86,7 @@ export function smallEvent({
         level: "team",
         registration: "registered",
         divisions: [],
+        ...(placementPoints && { placementPoints }),
       },
     ],
     activities: activities.map((a, i) => ({
