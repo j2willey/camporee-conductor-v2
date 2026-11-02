@@ -361,6 +361,14 @@
         "additionalProperties": false
       }
     },
+    "tieNumbering": {
+      "default": "dense",
+      "type": "string",
+      "enum": [
+        "dense",
+        "strict"
+      ]
+    },
     "lineage": {
       "type": "object",
       "properties": {

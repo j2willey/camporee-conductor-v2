@@ -46,11 +46,30 @@ const validEvent = (): Event => ({
   activities: [
     { activityId: ACTIVITY, competitionId: COMPETITION, sortOrder: 1 },
   ],
+  tieNumbering: "dense",
 });
 
 describe("EventSchema", () => {
   it("accepts a valid Event", () => {
     expect(EventSchema.parse(validEvent())).toEqual(validEvent());
+  });
+
+  it("numbers ties dense by default (ADR-0019)", () => {
+    const stored: Partial<Event> = validEvent();
+    delete stored.tieNumbering;
+    expect(EventSchema.parse(stored).tieNumbering).toBe("dense");
+  });
+
+  it("accepts strict tie numbering and rejects anything else", () => {
+    expect(
+      EventSchema.parse({ ...validEvent(), tieNumbering: "strict" })
+        .tieNumbering,
+    ).toBe("strict");
+    expect(
+      issuesOf(EventSchema, { ...validEvent(), tieNumbering: "standard" }),
+    ).toContain(
+      'tieNumbering: Invalid option: expected one of "dense"|"strict"',
+    );
   });
 
   it("does not accept rosters (ADR-0026: rosters are Collator-only)", () => {

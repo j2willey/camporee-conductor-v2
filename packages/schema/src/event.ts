@@ -118,6 +118,11 @@ const eventShape = {
       path: "sortOrder",
     });
   }),
+  /**
+   * How tied places are numbered, for every Competition in the Event (ADR-0019): `dense` (1, 1, 2)
+   * or `strict` (1, 1, 3). Defaults to dense when left out.
+   */
+  tieNumbering: z.enum(["dense", "strict"]).default("dense"),
   lineage: LineageSchema.optional(),
   legacy: LegacySchema.optional(),
 };
