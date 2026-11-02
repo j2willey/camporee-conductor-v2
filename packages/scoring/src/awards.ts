@@ -4,18 +4,22 @@ import type {
   AwardRecipient,
   OfficialAction,
   RankedStanding,
+  ScoringWarning,
   Standing,
 } from "./types.ts";
 
+type SetAward = Extract<OfficialAction, { type: "set-award" }>;
+
 /**
  * Who receives an Award, from its Competition's standings and the Officials' `set-award` actions
- * (ADR-0019 Awards amendment). DQ'd entrants never receive an automatic award.
+ * (ADR-0019 Awards amendment). DQ'd entrants never receive an automatic award. An invalid effective
+ * `set-award` is left out with a warning, so the entrant keeps the automatic result.
  */
 export function awardRecipients(
   award: Award,
   standings: readonly Standing[],
   actions: readonly OfficialAction[],
-): AwardRecipient[] {
+): { recipients: AwardRecipient[]; warnings: ScoringWarning[] } {
   if (award.scope === "division") {
     throw new Error(
       `Award ${award.slug}: Division-scoped awards aren't supported yet; they follow per-Division Activity ranking (#3)`,
@@ -27,21 +31,54 @@ export function awardRecipients(
   );
   const recipients = automatic(award.rule, eligible);
 
-  // The latest set-award for each entrant wins.
-  const decided = new Map<string, boolean>();
+  // The latest set-award for each entrant wins. Only that one is checked: the log is append-only, so
+  // a superseded mistake must never break scoring.
+  const latest = new Map<string, SetAward>();
   for (const a of actions) {
     if (a.type === "set-award" && a.awardId === award.id) {
-      decided.set(a.entrantId, a.awarded);
+      latest.set(a.entrantId, a);
     }
   }
-  const kept = recipients.filter((r) => decided.get(r.entrantId) !== false);
+  const warnings: ScoringWarning[] = [];
+  const decided = new Map<string, SetAward>();
+  for (const [entrantId, action] of latest) {
+    const problem = placeProblem(award, action.place);
+    if (problem) warnings.push({ action, message: problem });
+    else decided.set(entrantId, action);
+  }
+  const kept = recipients
+    .filter((r) => decided.get(r.entrantId)?.awarded !== false)
+    .map((r) => {
+      // A logged place replaces the automatic one.
+      const place = decided.get(r.entrantId)?.place;
+      return place === undefined ? r : { ...r, place, manual: true };
+    });
   const added = [...decided]
     .filter(
-      ([entrantId, awarded]) =>
+      ([entrantId, { awarded }]) =>
         awarded && !kept.some((r) => r.entrantId === entrantId),
     )
-    .map(([entrantId]) => ({ entrantId, manual: true }));
-  return [...kept, ...added];
+    .map(([entrantId, { place }]) =>
+      place === undefined
+        ? { entrantId, manual: true }
+        : { entrantId, place, manual: true },
+    );
+  return { recipients: [...kept, ...added], warnings };
+}
+
+/** Why a `set-award` place is invalid, or undefined if it's fine: it must be one of a named-places Award's names. */
+function placeProblem(
+  award: Award,
+  place: string | undefined,
+): string | undefined {
+  if (place === undefined) return undefined;
+  if (award.rule.type !== "places") {
+    return `set-award gives place "${place}" for Award ${award.slug}, but only a named-places Award takes a place; left out`;
+  }
+  if (!award.rule.names.includes(place)) {
+    return `"${place}" isn't a place of Award ${award.slug} (${award.rule.names.join(", ")}); left out`;
+  }
+  return undefined;
 }
 
 /** The Award's rule applied to the entrants who aren't DQ'd, best first. */

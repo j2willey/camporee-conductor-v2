@@ -52,6 +52,8 @@ export type OfficialAction =
       awardId: string;
       entrantId: string;
       awarded: boolean;
+      /** For a named-places Award: which place's name the recipient gets. Must be one of its names. */
+      place?: string;
       notes?: string;
     }
   | {
@@ -141,8 +143,19 @@ export interface AwardResults {
   recipients: AwardRecipient[];
 }
 
+/**
+ * An Official action that scoring left out because it's invalid, e.g. a `set-award` place the Award
+ * doesn't have. The log is append-only, so scoring never fails on one; the Collator should reject
+ * them when they're written.
+ */
+export interface ScoringWarning {
+  action: OfficialAction;
+  message: string;
+}
+
 export interface EventResults {
   activities: ActivityResults[];
   standings: CompetitionStandings[];
   awards: AwardResults[];
+  warnings: ScoringWarning[];
 }
