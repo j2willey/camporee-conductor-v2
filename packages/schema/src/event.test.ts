@@ -73,6 +73,40 @@ describe("EventSchema", () => {
     );
   });
 
+  describe("placement points table per Competition (ADR-0019)", () => {
+    const withTable = (placementPoints: unknown) => {
+      const event = validEvent();
+      return {
+        ...event,
+        competitions: event.competitions.map((c) => ({
+          ...c,
+          placementPoints,
+        })),
+      };
+    };
+
+    it("accepts a table and leaves it out by default (scoring uses v1's table)", () => {
+      const table = { places: [25, 15, 10], participation: 5 };
+      expect(
+        EventSchema.parse(withTable(table)).competitions[0]?.placementPoints,
+      ).toEqual(table);
+      expect(
+        EventSchema.parse(validEvent()).competitions[0]?.placementPoints,
+      ).toBeUndefined();
+    });
+
+    it("needs at least one place and no negative points", () => {
+      for (const table of [
+        { places: [], participation: 5 },
+        { places: [10, -1], participation: 5 },
+        { places: [10], participation: -5 },
+        { places: [10] },
+      ]) {
+        expect(EventSchema.safeParse(withTable(table)).success).toBe(false);
+      }
+    });
+  });
+
   describe("awards (ADR-0019 Awards amendment)", () => {
     const award = (rule: unknown, extra: object = {}) => ({
       id: AWARD,
