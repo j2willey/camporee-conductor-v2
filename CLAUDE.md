@@ -28,6 +28,8 @@ Announcer script. There are three pillars (ADR-0026): the **Curator** (Template 
    pure, with no I/O, DB, network, clock or randomness. UIs, the API and exports call it and never
    re-implement sums, conversions, sorting, tie handling or Common Field merging. (v1 duplicated this in
    four places and shipped a placement bug.)
+   Official overrides (rank, placement points, point adjustments) are **logged Official actions passed
+   into the package**, never edits to judge score entries; the latest action of a type wins (ADR-0019).
 4. **Never silently re-sort a finalized Activity** (ADR-0019). Once an Official has set a Final Ranking,
    no recompute may reorder it without an explicit, logged Official action.
 5. **JSON documents keep the cartridge shape** (ADR-0012). Events, Activities and Templates are stored in

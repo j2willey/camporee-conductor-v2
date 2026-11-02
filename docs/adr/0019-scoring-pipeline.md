@@ -1,11 +1,11 @@
 ---
 created: 2026-10-25T12:25
-updated: 2026-10-30
+updated: 2026-11-02
 ---
 
 # ADR-0019 — Scoring pipeline: raw → points (official-defined conversions) → sorted totals → Official-final rankings
 
-Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 (see below)
+Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see below)
 
 1. Judges record results at a Station.
 2. Results become **points**. Officials define **conversions** from metrics to points, e.g. matches used (1 → 10 pts, 2 → 7, 3 → 4) or time → points, with direction per Challenge (sometimes less time is better, sometimes more).
@@ -31,3 +31,17 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 (see below)
 - Officials' event-day changes to a weight are **stored separately on the Collator and logged**. They never
   overwrite the design document.
 - Applying weights is scoring logic, so it lives only in `packages/scoring`.
+
+## Amendment 2026-11-02 (issue #3): Official overrides are a log of actions
+
+- Judges' score entries are stored as entered and never edited by Officials. Everything an Official
+  decides is a **logged Official action**, passed into the scoring package with the entries. The package
+  applies them; it never stores them.
+- Actions so far:
+  - `set-final-rank`: overrides the Final Ranking.
+  - `set-placement-points`: overrides the placement points.
+  - `adjust-points`: adds points to (or, if negative, subtracts them from) an entry's total.
+- For each action type, the **latest logged action wins**.
+- `adjust-points` replaces v1's Official-only "Official Score" field (`off_score`), which v1 added to the
+  total. At Circus 2026 it was used once (+1 in `the-circus-orchestra`).
+- Still to come (#3): DQ, finalization and the overall rank override, as further actions.
