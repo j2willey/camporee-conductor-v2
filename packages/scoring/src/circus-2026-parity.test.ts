@@ -10,7 +10,7 @@ import {
   PRINTED_STICKERS_FILE,
   type V1Golden,
 } from "../scripts/v1-golden.ts";
-import { scoreEvent, type EntryResult } from "./index.ts";
+import { scoreEvent, type EntryResult, type Standing } from "./index.ts";
 
 const golden = JSON.parse(readFileSync(GOLDEN_FILE, "utf8")) as V1Golden;
 const printed = (
@@ -20,6 +20,14 @@ const printed = (
 ).stickers;
 const circus = loadCircus2026AsRun();
 const results = scoreEvent(circus.input);
+
+// v1 had no DQ at the event (it was added 2026-05-21), so every result here is ranked. A DQ would
+// have no rank and fail the comparison with the golden files.
+const provisionalRank = (r: EntryResult) =>
+  r.disqualified ? undefined : r.provisionalRank;
+const finalRank = (r: EntryResult) =>
+  r.disqualified ? undefined : r.finalRank;
+const standingRank = (s: Standing) => (s.disqualified ? undefined : s.rank);
 
 /** v1 ranks are ordinals ("4th") or an Official's text ("3", "3 Place"); compare the number. */
 const place = (rank: string): number => Number(/\d+/.exec(rank)?.[0]);
@@ -45,6 +53,19 @@ function perGame<T>(
 }
 
 describe("Circus 2026 parity with v1's Officials' results", () => {
+  it("has no DQs: v1 had no DQ at Circus 2026", () => {
+    expect(
+      results.activities
+        .flatMap((a) => a.entries)
+        .filter((e) => e.disqualified),
+    ).toEqual([]);
+    expect(
+      results.standings
+        .flatMap((c) => c.entrants)
+        .filter((e) => e.disqualified),
+    ).toEqual([]);
+  });
+
   it("gives every entry in the 18 finalized games v1's total", () => {
     expect(perGame((r) => ({ total: r.total }))).toEqual(
       golden.games.map((g) => ({
@@ -55,7 +76,7 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
   });
 
   it("gives each entry v1's automatic rank as its Provisional Ranking", () => {
-    expect(perGame((r) => ({ rank: r.provisionalRank }))).toEqual(
+    expect(perGame((r) => ({ rank: provisionalRank(r) }))).toEqual(
       golden.games.map((g) => ({
         gameId: g.gameId,
         results: g.results.map(({ entityId, autoRank }) => ({
@@ -67,7 +88,7 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
   });
 
   it("gives each entry v1's Final Rank, with the Officials' 88 rank overrides", () => {
-    expect(perGame((r) => ({ rank: r.finalRank }))).toEqual(
+    expect(perGame((r) => ({ rank: finalRank(r) }))).toEqual(
       golden.games.map((g) => ({
         gameId: g.gameId,
         results: g.results.map(({ entityId, finalRank }) => ({
@@ -97,7 +118,11 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
     );
     expect(
       (standings?.entrants ?? [])
-        .map((e) => ({ entityId: e.entrantId, total: e.total, rank: e.rank }))
+        .map((e) => ({
+          entityId: e.entrantId,
+          total: e.total,
+          rank: standingRank(e),
+        }))
         .sort((a, b) => cmp(a.entityId, b.entityId)),
     ).toEqual(
       golden.overall
@@ -112,17 +137,20 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
 
   it("places the same Teams 1st to 3rd as the 63 award stickers printed at the event", () => {
     const competitionId = circus.competitionIdOf("patrol-games");
-    const perActivity = perGame((r) => ({ rank: r.finalRank })).flatMap((g) =>
+    const perActivity = perGame((r) => ({ rank: finalRank(r) })).flatMap((g) =>
       g.results
-        .filter((r) => r.rank <= 3)
+        .filter((r) => r.rank !== undefined && r.rank <= 3)
         .map((r) => `${g.gameId} ${r.rank} ${r.entityId}`),
     );
     const overall = (
       results.standings.find((s) => s.competitionId === competitionId)
         ?.entrants ?? []
-    )
-      .filter((e) => e.rank <= 3)
-      .map((e) => `OVERALL ${e.rank} ${e.entrantId}`);
+    ).flatMap((e) => {
+      const rank = standingRank(e);
+      return rank !== undefined && rank <= 3
+        ? [`OVERALL ${rank} ${e.entrantId}`]
+        : [];
+    });
     expect([...perActivity, ...overall].sort()).toEqual(
       printed.map((s) => `${s.gameId} ${place(s.rank)} ${s.entityId}`).sort(),
     );

@@ -53,6 +53,17 @@ export type OfficialAction =
       entrantId: string;
       awarded: boolean;
       notes?: string;
+    }
+  | {
+      /**
+       * DQ (`disqualified: true`) or reinstate (`false`) an entrant at one Activity, or overall when
+       * `activityId` is left out (ADR-0019).
+       */
+      type: "disqualify";
+      activityId?: string;
+      entrantId: string;
+      disqualified: boolean;
+      notes?: string;
     };
 
 export interface ScoringInput {
@@ -64,7 +75,10 @@ export interface ScoringInput {
   actions: readonly OfficialAction[];
 }
 
-export interface EntryResult {
+/** One entrant's result at one Activity: ranked, or DQ'd (no rank, 0 placement points). */
+export type EntryResult = RankedEntry | DisqualifiedEntry;
+
+export interface RankedEntry {
   entrantId: string;
   total: number;
   /** Rank by total within the Activity, before any Official override. */
@@ -73,6 +87,15 @@ export interface EntryResult {
   finalRank: number;
   /** Placement points: the Official's entered points if logged, otherwise from the Final Ranking. */
   points: number;
+  disqualified: false;
+}
+
+/** DQ'd at this Activity: removed before ranking, so it has no rank (ADR-0019). */
+export interface DisqualifiedEntry {
+  entrantId: string;
+  total: number;
+  points: 0;
+  disqualified: true;
 }
 
 export interface ActivityResults {
@@ -81,14 +104,22 @@ export interface ActivityResults {
   entries: EntryResult[];
 }
 
-/** One entrant's place in a Competition overall. */
-export interface Standing {
+/** One entrant's place in a Competition overall: ranked, or DQ'd overall (no rank). */
+export type Standing = RankedStanding | DisqualifiedStanding;
+
+export interface RankedStanding {
   entrantId: string;
   /** Sum of placement points over the Competition's ranked Activities; no entry = 0. */
   total: number;
   rank: number;
-  /** DQ'd overall: never receives an automatic Award. Set by the overall DQ action, still to come (#3). */
-  disqualified?: boolean;
+  disqualified: false;
+}
+
+/** DQ'd overall: keeps its total, removed before ranking, no automatic Award (ADR-0019). */
+export interface DisqualifiedStanding {
+  entrantId: string;
+  total: number;
+  disqualified: true;
 }
 
 export interface CompetitionStandings {

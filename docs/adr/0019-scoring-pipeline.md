@@ -76,3 +76,17 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
   latest action wins.
 - **Scope:** `event` (the whole Competition) or `division` (each Division separately, ADR-0007). Only
   `event` is built so far; `division` follows per-Division Activity ranking.
+
+## Amendment 2026-11-02 (issue #3): DQ (disqualification)
+
+- **Logged Official action `disqualify`** (entrant, optional Activity, `disqualified` yes/no, optional notes).
+  With an Activity it's a per-Activity DQ; without one it's an overall DQ. The latest action for an entrant
+  (and Activity) wins, so `disqualified: false` reinstates.
+- **Per-Activity DQ:** the entrant is **removed before the Activity is ranked**, so everyone below moves up
+  under either tie numbering. It has no rank, scores 0 placement points for that Activity (whatever other
+  actions say), keeps its total, and is shown as DQ.
+  **Deliberate change from v1:** v1's per-game DQ (added 2026-05-21, after Circus 2026) was only a badge
+  on the Officials' screen and changed no points or ranks (`official.js:965-974`).
+- **Overall DQ:** the entrant keeps its total but is **removed before the standings are ranked**, as v1 did
+  (`official.js:876-884`). It has no rank and gets no automatic Award; a manual `set-award` still works.
+- Circus 2026 had no DQs (v1 had no DQ at the event), so parity is unchanged.

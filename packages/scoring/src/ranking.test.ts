@@ -51,7 +51,10 @@ describe("scoreEvent uses the Event's tieNumbering", () => {
     for (const activity of strict.activities) {
       const totals = activity.entries.map((e) => e.total);
       for (const entry of activity.entries) {
-        expect(entry.provisionalRank).toBe(strictRankOf(entry.total, totals));
+        expect(entry).toMatchObject({
+          disqualified: false,
+          provisionalRank: strictRankOf(entry.total, totals),
+        });
       }
       if (
         totals.some((t) => strictRankOf(t, totals) !== denseRanking(totals)(t))
@@ -65,7 +68,10 @@ describe("scoreEvent uses the Event's tieNumbering", () => {
     for (const { entrants } of strict.standings) {
       const totals = entrants.map((e) => e.total);
       for (const e of entrants) {
-        expect(e.rank).toBe(strictRankOf(e.total, totals));
+        expect(e).toMatchObject({
+          disqualified: false,
+          rank: strictRankOf(e.total, totals),
+        });
       }
     }
   });

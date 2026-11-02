@@ -1,6 +1,11 @@
 import type { Award } from "@camporee-conductor/schema";
 import { withinCutoff } from "./ranking.ts";
-import type { AwardRecipient, OfficialAction, Standing } from "./types.ts";
+import type {
+  AwardRecipient,
+  OfficialAction,
+  RankedStanding,
+  Standing,
+} from "./types.ts";
 
 /**
  * Who receives an Award, from its Competition's standings and the Officials' `set-award` actions
@@ -16,7 +21,10 @@ export function awardRecipients(
       `Award ${award.slug}: Division-scoped awards aren't supported yet; they follow per-Division Activity ranking (#3)`,
     );
   }
-  const eligible = standings.filter((s) => !s.disqualified);
+  // DQ'd entrants were removed before the standings were ranked; they get no automatic award.
+  const eligible = standings.filter(
+    (s): s is RankedStanding => !s.disqualified,
+  );
   const recipients = automatic(award.rule, eligible);
 
   // The latest set-award for each entrant wins.
@@ -39,7 +47,7 @@ export function awardRecipients(
 /** The Award's rule applied to the entrants who aren't DQ'd, best first. */
 function automatic(
   rule: Award["rule"],
-  eligible: readonly Standing[],
+  eligible: readonly RankedStanding[],
 ): AwardRecipient[] {
   switch (rule.type) {
     case "places":
