@@ -74,7 +74,12 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Manual awards and overrides** are a logged Official action, `set-award` (award, entrant, awarded
   yes/no, optional notes). It can add or remove a recipient for any Award; for each award and entrant the
   latest action wins. For a named-places Award it can also give a **place** (one of the Award's names),
-  which the recipient shows and which replaces an automatic place; a place on any other Award is rejected.
+  which the recipient shows and which replaces an automatic place.
+- **Invalid Official actions never break scoring.** The log is append-only, so a bad action (or one made
+  invalid later, e.g. by renaming a place) can't be removed. Scoring checks only the **effective** (latest)
+  action; if it's invalid (a place the Award doesn't have, or a place on an Award that isn't named places),
+  it's left out, the automatic result stands, and `scoreEvent` returns a **warning**. The Collator should
+  reject invalid actions when they're written.
 - **Scope:** `event` (the whole Competition) or `division` (each Division separately, ADR-0007). Only
   `event` is built so far; `division` follows per-Division Activity ranking.
 

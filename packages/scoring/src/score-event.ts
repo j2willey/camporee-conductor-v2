@@ -100,18 +100,20 @@ export function scoreEvent(input: ScoringInput): EventResults {
   const standings = input.event.competitions.map((c) =>
     competitionStandings(c.id, input, activityById, activities, ranking),
   );
+  const awards = (input.event.awards ?? []).map((award) => ({
+    awardId: award.id,
+    ...awardRecipients(
+      award,
+      standings.find((s) => s.competitionId === award.competitionId)
+        ?.entrants ?? [],
+      input.actions,
+    ),
+  }));
   return {
     activities,
     standings,
-    awards: (input.event.awards ?? []).map((award) => ({
-      awardId: award.id,
-      recipients: awardRecipients(
-        award,
-        standings.find((s) => s.competitionId === award.competitionId)
-          ?.entrants ?? [],
-        input.actions,
-      ),
-    })),
+    awards: awards.map(({ awardId, recipients }) => ({ awardId, recipients })),
+    warnings: awards.flatMap((a) => a.warnings),
   };
 }
 

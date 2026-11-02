@@ -33,6 +33,10 @@ function standings(ranks: number[]): RankedStanding[] {
   }));
 }
 
+/** Just the recipients, for tests that log only valid actions. */
+const recipients = (...args: Parameters<typeof awardRecipients>) =>
+  awardRecipients(...args).recipients;
+
 const dq = (entrantId: string): OfficialAction => ({
   type: "disqualify",
   entrantId,
@@ -64,7 +68,7 @@ const TOP_25 = award({ type: "top-percent", percent: 25 });
 
 describe("named places go by place number (ADR-0019 Awards amendment)", () => {
   it("dense 1, 1, 2, 3: two Gold Axes and a Silver Hatchet", () => {
-    expect(awardRecipients(AXES, standings([1, 1, 2, 3]), [])).toEqual([
+    expect(recipients(AXES, standings([1, 1, 2, 3]), [])).toEqual([
       { entrantId: "t1", place: "Gold Axe", manual: false },
       { entrantId: "t2", place: "Gold Axe", manual: false },
       { entrantId: "t3", place: "Silver Hatchet", manual: false },
@@ -72,7 +76,7 @@ describe("named places go by place number (ADR-0019 Awards amendment)", () => {
   });
 
   it("strict 1, 1, 3: two Gold Axes and no Silver Hatchet", () => {
-    expect(awardRecipients(AXES, standings([1, 1, 3]), [])).toEqual([
+    expect(recipients(AXES, standings([1, 1, 3]), [])).toEqual([
       { entrantId: "t1", place: "Gold Axe", manual: false },
       { entrantId: "t2", place: "Gold Axe", manual: false },
     ]);
@@ -83,7 +87,7 @@ describe("top-percent is a counted cutoff, ties at the line included", () => {
   it("rounds the count up: 25% of 10 entrants is 3", () => {
     const ranks = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     expect(
-      awardRecipients(TOP_25, standings(ranks), []).map((r) => r.entrantId),
+      recipients(TOP_25, standings(ranks), []).map((r) => r.entrantId),
     ).toEqual(["t1", "t2", "t3"]);
   });
 
@@ -91,11 +95,11 @@ describe("top-percent is a counted cutoff, ties at the line included", () => {
     const ranked = standings([
       1, 2, 3, 4, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     ]);
-    const recipients = awardRecipients(TOP_25, ranked, []);
-    expect(recipients.map((r) => r.entrantId)).toEqual(
+    const winners = recipients(TOP_25, ranked, []);
+    expect(winners.map((r) => r.entrantId)).toEqual(
       withinCutoff(ranked, 4).map((s) => s.entrantId),
     );
-    expect(recipients).toHaveLength(5);
+    expect(winners).toHaveLength(5);
   });
 });
 
@@ -140,13 +144,13 @@ describe("overall DQ: removed before ranking, so no automatic award (ADR-0019 DQ
 describe("manual awards and set-award overrides", () => {
   it("a manual Award has no automatic recipients", () => {
     expect(
-      awardRecipients(award({ type: "manual" }), standings([1, 2]), []),
+      recipients(award({ type: "manual" }), standings([1, 2]), []),
     ).toEqual([]);
   });
 
   it("set-award adds a recipient, marked manual", () => {
     expect(
-      awardRecipients(award({ type: "manual" }), standings([1, 2]), [
+      recipients(award({ type: "manual" }), standings([1, 2]), [
         setAward("t2", true),
       ]),
     ).toEqual([{ entrantId: "t2", manual: true }]);
@@ -154,7 +158,7 @@ describe("manual awards and set-award overrides", () => {
 
   it("set-award with awarded: false removes an automatic recipient", () => {
     expect(
-      awardRecipients(AXES, standings([1, 2, 3]), [setAward("t1", false)]).map(
+      recipients(AXES, standings([1, 2, 3]), [setAward("t1", false)]).map(
         (r) => r.entrantId,
       ),
     ).toEqual(["t2"]);
@@ -163,13 +167,13 @@ describe("manual awards and set-award overrides", () => {
   it("the latest set-award for an award and entrant wins", () => {
     const manual = award({ type: "manual" });
     expect(
-      awardRecipients(manual, standings([1, 2]), [
+      recipients(manual, standings([1, 2]), [
         setAward("t1", true),
         setAward("t1", false),
       ]),
     ).toEqual([]);
     expect(
-      awardRecipients(manual, standings([1, 2]), [
+      recipients(manual, standings([1, 2]), [
         setAward("t1", false),
         setAward("t1", true),
       ]),
@@ -178,7 +182,7 @@ describe("manual awards and set-award overrides", () => {
 
   it("ignores set-award actions for other Awards", () => {
     expect(
-      awardRecipients(award({ type: "manual" }), standings([1, 2]), [
+      recipients(award({ type: "manual" }), standings([1, 2]), [
         setAward("t1", true, "0196cfa2-4c00-7000-8000-000000000031"),
       ]),
     ).toEqual([]);
@@ -196,9 +200,7 @@ describe("set-award place: a manual recipient of a named-places Award shows the 
 
   it("gives a manually added recipient the place's name", () => {
     expect(
-      awardRecipients(AXES, standings([1, 2, 3]), [
-        withPlace("t3", "Gold Axe"),
-      ]),
+      recipients(AXES, standings([1, 2, 3]), [withPlace("t3", "Gold Axe")]),
     ).toEqual([
       { entrantId: "t1", place: "Gold Axe", manual: false },
       { entrantId: "t2", place: "Silver Hatchet", manual: false },
@@ -208,7 +210,7 @@ describe("set-award place: a manual recipient of a named-places Award shows the 
 
   it("replaces an automatic recipient's place, marked manual", () => {
     expect(
-      awardRecipients(AXES, standings([1, 2]), [withPlace("t2", "Gold Axe")]),
+      recipients(AXES, standings([1, 2]), [withPlace("t2", "Gold Axe")]),
     ).toEqual([
       { entrantId: "t1", place: "Gold Axe", manual: false },
       { entrantId: "t2", place: "Gold Axe", manual: true },
@@ -217,50 +219,88 @@ describe("set-award place: a manual recipient of a named-places Award shows the 
 
   it("the latest set-award wins, place included", () => {
     expect(
-      awardRecipients(AXES, standings([1]), [
+      recipients(AXES, standings([1]), [
         withPlace("t2", "Silver Hatchet"),
         withPlace("t2", "Gold Axe"),
       ]),
     ).toContainEqual({ entrantId: "t2", place: "Gold Axe", manual: true });
   });
 
-  it("rejects a place that isn't one of the Award's names", () => {
-    expect(() =>
-      awardRecipients(AXES, standings([1]), [withPlace("t2", "Bronze Saw")]),
-    ).toThrow(/"Bronze Saw" isn't a place of Award the-award/);
+  it("a bad action replaced by a good one scores fine, with no warning", () => {
+    const result = awardRecipients(AXES, standings([1]), [
+      withPlace("t2", "Bronze Saw"),
+      withPlace("t2", "Gold Axe"),
+    ]);
+    expect(result.recipients).toContainEqual({
+      entrantId: "t2",
+      place: "Gold Axe",
+      manual: true,
+    });
+    expect(result.warnings).toEqual([]);
   });
 
-  it("rejects a place on an Award that isn't named places", () => {
+  it("a bad effective place is left out with a warning; the automatic result stays", () => {
+    const bad = withPlace("t1", "Bronze Saw");
+    expect(awardRecipients(AXES, standings([1, 2]), [bad])).toEqual({
+      recipients: [
+        { entrantId: "t1", place: "Gold Axe", manual: false },
+        { entrantId: "t2", place: "Silver Hatchet", manual: false },
+      ],
+      warnings: [
+        {
+          action: bad,
+          message: expect.stringMatching(
+            /"Bronze Saw" isn't a place of Award the-award/,
+          ),
+        },
+      ],
+    });
+  });
+
+  it("a place on an Award that isn't named places is left out with a warning", () => {
     for (const rule of [
       { type: "top-percent", percent: 25 },
       { type: "manual" },
     ] as const) {
-      expect(() =>
-        awardRecipients(award(rule), standings([1]), [
-          withPlace("t1", "Gold Axe"),
-        ]),
-      ).toThrow(/only a named-places Award takes a place/);
+      const result = awardRecipients(award(rule), standings([1]), [
+        withPlace("t9", "Gold Axe"),
+      ]);
+      expect(result.recipients.map((r) => r.entrantId)).not.toContain("t9");
+      expect(result.warnings.map((w) => w.message)).toEqual([
+        expect.stringMatching(/only a named-places Award takes a place/),
+      ]);
     }
   });
 
-  it("rejects an invalid place even when a later action supersedes it", () => {
-    expect(() =>
-      awardRecipients(AXES, standings([1]), [
-        withPlace("t2", "Bronze Saw"),
-        withPlace("t2", "Gold Axe"),
-      ]),
-    ).toThrow(/Bronze Saw/);
+  it("scoreEvent returns the warnings and still scores the Event", () => {
+    const bad: OfficialAction = {
+      type: "set-award",
+      awardId: AWARD,
+      entrantId: "t2",
+      awarded: true,
+      place: "Bronze Saw",
+    };
+    const results = scoreEvent(
+      smallEvent({
+        scores: [{ t1: 20, t2: 10 }],
+        awards: [{ ...AXES, competitionId: COMPETITION }],
+        actions: [bad],
+      }),
+    );
+    expect(results.awards[0]?.recipients).toEqual([
+      { entrantId: "t1", place: "Gold Axe", manual: false },
+      { entrantId: "t2", place: "Silver Hatchet", manual: false },
+    ]);
+    expect(results.warnings).toEqual([
+      { action: bad, message: expect.stringMatching(/Bronze Saw/) },
+    ]);
   });
 });
 
 describe("Division scope isn't built yet", () => {
   it("rejects a Division-scoped Award with a clear not-yet error", () => {
     expect(() =>
-      awardRecipients(
-        award({ type: "manual" }, "division"),
-        standings([1]),
-        [],
-      ),
+      recipients(award({ type: "manual" }, "division"), standings([1]), []),
     ).toThrow(/Division-scoped awards aren't supported yet/);
   });
 });
