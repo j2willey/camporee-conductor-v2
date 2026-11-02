@@ -20,7 +20,7 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Final Ranking overrides:** no reason required; optional notes field. Logged (who/when).
 - **Ties:** allowed in Final Rankings. Numbering is configurable per Event by the director; default is dense (1, 2, 2, 3) — Jim's preference: give out more awards. See the 2026-11-02 tie-numbering amendment.
 - **Score change after finalization:** DEFERRED to Phase 2 session. Constraint in place now: the scoring package never silently re-sorts a finalized Challenge.
-- **Overall awards:** director chooses per Event — sum of placement points via a per-Competition placement→points table (default), or sum of converted points.
+- **Overall awards:** director chooses per Event — sum of placement points via a per-Competition placement→points table (default), or sum of converted points. See the 2026-11-02 Awards amendment.
 
 ## Amendment 2026-10-30 (issue #2): `weight` is kept
 
@@ -57,3 +57,22 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Placement points follow the place number:** two tied 1sts both get 1st-place points. Points are never split.
 - **Award cutoffs** (top-N, top-%) include every team tied at the cutoff. Officials can still override
   manually, as a logged Official action.
+
+## Amendment 2026-11-02 (issue #3): Awards
+
+- **Awards are configured per Event** (`awards` on the Event). Each Award draws from one Competition's
+  standings (sum of placement points, ranked by the Event's tie numbering) and has a **rule**:
+  - `places`: named places, e.g. Gold Axe / Silver Hatchet. **By place number:** each entrant placed
+    1st…Nth gets that place's name, so ties share a name and, with dense numbering, the next team still
+    gets the next name (1, 1, 2 → two Gold Axes and a Silver Hatchet). With strict numbering a skipped
+    place has no recipient. This is a place cutoff, not a count, so it doesn't use `withinCutoff`.
+  - `top-percent`: a **counted cutoff**: `ceil(percent × entrants)`, then `withinCutoff`, so everyone tied
+    at the line is included. Entrants are those in the Competition's standings who aren't DQ'd. Coyote
+    Creek's Top Dog is top-percent 25 over Troop Challenges.
+  - `manual`: no automatic recipients.
+- **DQ'd entrants never receive an automatic award**, only a manual one.
+- **Manual awards and overrides** are a logged Official action, `set-award` (award, entrant, awarded
+  yes/no, optional notes). It can add or remove a recipient for any Award; for each award and entrant the
+  latest action wins.
+- **Scope:** `event` (the whole Competition) or `division` (each Division separately, ADR-0007). Only
+  `event` is built so far; `division` follows per-Division Activity ranking.
