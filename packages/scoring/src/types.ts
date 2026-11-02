@@ -52,6 +52,8 @@ export type OfficialAction =
       awardId: string;
       entrantId: string;
       awarded: boolean;
+      /** For a named-places Award: which place's name the recipient gets. Must be one of its names. */
+      place?: string;
       notes?: string;
     }
   | {

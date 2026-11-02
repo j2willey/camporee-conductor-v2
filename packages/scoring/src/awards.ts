@@ -27,21 +27,50 @@ export function awardRecipients(
   );
   const recipients = automatic(award.rule, eligible);
 
-  // The latest set-award for each entrant wins.
-  const decided = new Map<string, boolean>();
+  // The latest set-award for each entrant wins. Every logged place is checked, superseded or not.
+  const decided = new Map<string, { awarded: boolean; place?: string }>();
   for (const a of actions) {
-    if (a.type === "set-award" && a.awardId === award.id) {
-      decided.set(a.entrantId, a.awarded);
-    }
+    if (a.type !== "set-award" || a.awardId !== award.id) continue;
+    if (a.place !== undefined) checkPlace(award, a.place);
+    decided.set(
+      a.entrantId,
+      a.place === undefined
+        ? { awarded: a.awarded }
+        : { awarded: a.awarded, place: a.place },
+    );
   }
-  const kept = recipients.filter((r) => decided.get(r.entrantId) !== false);
+  const kept = recipients
+    .filter((r) => decided.get(r.entrantId)?.awarded !== false)
+    .map((r) => {
+      // A logged place replaces the automatic one.
+      const place = decided.get(r.entrantId)?.place;
+      return place === undefined ? r : { ...r, place, manual: true };
+    });
   const added = [...decided]
     .filter(
-      ([entrantId, awarded]) =>
+      ([entrantId, { awarded }]) =>
         awarded && !kept.some((r) => r.entrantId === entrantId),
     )
-    .map(([entrantId]) => ({ entrantId, manual: true }));
+    .map(([entrantId, { place }]) =>
+      place === undefined
+        ? { entrantId, manual: true }
+        : { entrantId, place, manual: true },
+    );
   return [...kept, ...added];
+}
+
+/** A `set-award` place must be one of a named-places Award's names. */
+function checkPlace(award: Award, place: string): void {
+  if (award.rule.type !== "places") {
+    throw new Error(
+      `set-award gives place "${place}" for Award ${award.slug}, but only a named-places Award takes a place`,
+    );
+  }
+  if (!award.rule.names.includes(place)) {
+    throw new Error(
+      `"${place}" isn't a place of Award ${award.slug} (${award.rule.names.join(", ")})`,
+    );
+  }
 }
 
 /** The Award's rule applied to the entrants who aren't DQ'd, best first. */

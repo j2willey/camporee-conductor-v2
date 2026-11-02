@@ -185,6 +185,74 @@ describe("manual awards and set-award overrides", () => {
   });
 });
 
+describe("set-award place: a manual recipient of a named-places Award shows the name", () => {
+  const withPlace = (entrantId: string, place: string): OfficialAction => ({
+    type: "set-award",
+    awardId: AWARD,
+    entrantId,
+    awarded: true,
+    place,
+  });
+
+  it("gives a manually added recipient the place's name", () => {
+    expect(
+      awardRecipients(AXES, standings([1, 2, 3]), [
+        withPlace("t3", "Gold Axe"),
+      ]),
+    ).toEqual([
+      { entrantId: "t1", place: "Gold Axe", manual: false },
+      { entrantId: "t2", place: "Silver Hatchet", manual: false },
+      { entrantId: "t3", place: "Gold Axe", manual: true },
+    ]);
+  });
+
+  it("replaces an automatic recipient's place, marked manual", () => {
+    expect(
+      awardRecipients(AXES, standings([1, 2]), [withPlace("t2", "Gold Axe")]),
+    ).toEqual([
+      { entrantId: "t1", place: "Gold Axe", manual: false },
+      { entrantId: "t2", place: "Gold Axe", manual: true },
+    ]);
+  });
+
+  it("the latest set-award wins, place included", () => {
+    expect(
+      awardRecipients(AXES, standings([1]), [
+        withPlace("t2", "Silver Hatchet"),
+        withPlace("t2", "Gold Axe"),
+      ]),
+    ).toContainEqual({ entrantId: "t2", place: "Gold Axe", manual: true });
+  });
+
+  it("rejects a place that isn't one of the Award's names", () => {
+    expect(() =>
+      awardRecipients(AXES, standings([1]), [withPlace("t2", "Bronze Saw")]),
+    ).toThrow(/"Bronze Saw" isn't a place of Award the-award/);
+  });
+
+  it("rejects a place on an Award that isn't named places", () => {
+    for (const rule of [
+      { type: "top-percent", percent: 25 },
+      { type: "manual" },
+    ] as const) {
+      expect(() =>
+        awardRecipients(award(rule), standings([1]), [
+          withPlace("t1", "Gold Axe"),
+        ]),
+      ).toThrow(/only a named-places Award takes a place/);
+    }
+  });
+
+  it("rejects an invalid place even when a later action supersedes it", () => {
+    expect(() =>
+      awardRecipients(AXES, standings([1]), [
+        withPlace("t2", "Bronze Saw"),
+        withPlace("t2", "Gold Axe"),
+      ]),
+    ).toThrow(/Bronze Saw/);
+  });
+});
+
 describe("Division scope isn't built yet", () => {
   it("rejects a Division-scoped Award with a clear not-yet error", () => {
     expect(() =>
