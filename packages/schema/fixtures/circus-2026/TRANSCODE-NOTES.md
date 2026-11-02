@@ -109,7 +109,8 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 
 - **Presets `off_score`, `final_rank`, `overall_points`** (Official-only "Official Score", "Final Ranking",
   "Overall Points"). In v2 these are outputs of the scoring pipeline (Official-set Final Ranking, placement
-  points; ADR-0019), not form fields. As a result, Troop Challenges and Exhibition Events have no Common
+  points; ADR-0019), not form fields. Values Officials typed into `off_score` become `adjust-points`
+  Official actions (ADR-0019, amended 2026-11-02). As a result, Troop Challenges and Exhibition Events have no Common
   Fields; their v1 `type_defaults` listed only these three.
 - **Preset `bracket_result`**: bracket mode is unused (`bracketMode` is `false` in all 34 games).
 - **Preset `tier` and `position`**: the Competition now decides where a Common Field applies.
