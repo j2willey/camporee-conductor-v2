@@ -45,6 +45,14 @@ export type OfficialAction =
       entrantId: string;
       points: number;
       notes?: string;
+    }
+  | {
+      /** Gives (`awarded: true`) or takes away (`false`) an Award, overriding its rule (ADR-0019). */
+      type: "set-award";
+      awardId: string;
+      entrantId: string;
+      awarded: boolean;
+      notes?: string;
     };
 
 export interface ScoringInput {
@@ -79,6 +87,8 @@ export interface Standing {
   /** Sum of placement points over the Competition's ranked Activities; no entry = 0. */
   total: number;
   rank: number;
+  /** DQ'd overall: never receives an automatic Award. Set by the overall DQ action, still to come (#3). */
+  disqualified?: boolean;
 }
 
 export interface CompetitionStandings {
@@ -86,7 +96,22 @@ export interface CompetitionStandings {
   entrants: Standing[];
 }
 
+/** One entrant receiving an Award. */
+export interface AwardRecipient {
+  entrantId: string;
+  /** The place's name, for a named-places Award. */
+  place?: string;
+  /** Given by an Official's `set-award` action rather than the Award's rule. */
+  manual: boolean;
+}
+
+export interface AwardResults {
+  awardId: string;
+  recipients: AwardRecipient[];
+}
+
 export interface EventResults {
   activities: ActivityResults[];
   standings: CompetitionStandings[];
+  awards: AwardResults[];
 }

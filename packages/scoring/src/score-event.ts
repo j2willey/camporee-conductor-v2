@@ -1,4 +1,5 @@
 import type { Activity } from "@camporee-conductor/schema";
+import { awardRecipients } from "./awards.ts";
 import { entryTotal, mergeCommonFields } from "./fields.ts";
 import { placementPoints, rankingFor } from "./ranking.ts";
 import type {
@@ -44,7 +45,10 @@ export function scoreEvent(input: ScoringInput): EventResults {
     );
     const actionsFor = (entrantId: string): OfficialAction[] =>
       input.actions.filter(
-        (a) => a.activityId === activityId && a.entrantId === entrantId,
+        (a) =>
+          "activityId" in a &&
+          a.activityId === activityId &&
+          a.entrantId === entrantId,
       );
 
     const scored = input.entries
@@ -82,11 +86,21 @@ export function scoreEvent(input: ScoringInput): EventResults {
     });
   }
 
+  const standings = input.event.competitions.map((c) =>
+    competitionStandings(c.id, input, activityById, activities, ranking),
+  );
   return {
     activities,
-    standings: input.event.competitions.map((c) =>
-      competitionStandings(c.id, input, activityById, activities, ranking),
-    ),
+    standings,
+    awards: (input.event.awards ?? []).map((award) => ({
+      awardId: award.id,
+      recipients: awardRecipients(
+        award,
+        standings.find((s) => s.competitionId === award.competitionId)
+          ?.entrants ?? [],
+        input.actions,
+      ),
+    })),
   };
 }
 
