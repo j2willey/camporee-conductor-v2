@@ -4,6 +4,9 @@ export {
   DEFAULT_PLACEMENT_POINTS,
   denseRanking,
   placementPoints,
+  rankingFor,
+  strictRanking,
+  withinCutoff,
   type PlacementPointsTable,
 } from "./ranking.ts";
 export { scoreEvent } from "./score-event.ts";

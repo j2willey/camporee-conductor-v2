@@ -18,7 +18,7 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Conversions:** primarily set by Officials at the event after seeing the real spread of results; the Composer may hold an optional **strawman** conversion defined at design time as a starting point. All points recompute when a conversion changes; changes are logged.
 - **Judge entry:** per field — raw metrics (counts, times) that get converted, or judged points entered directly (e.g., Scout Spirit 0–10). Raw entries are stored as entered.
 - **Final Ranking overrides:** no reason required; optional notes field. Logged (who/when).
-- **Ties:** allowed in Final Rankings. Numbering is configurable per Event by the director; default is dense (1, 2, 2, 3) — Jim's preference: give out more awards.
+- **Ties:** allowed in Final Rankings. Numbering is configurable per Event by the director; default is dense (1, 2, 2, 3) — Jim's preference: give out more awards. See the 2026-11-02 tie-numbering amendment.
 - **Score change after finalization:** DEFERRED to Phase 2 session. Constraint in place now: the scoring package never silently re-sorts a finalized Challenge.
 - **Overall awards:** director chooses per Event — sum of placement points via a per-Competition placement→points table (default), or sum of converted points.
 
@@ -45,3 +45,15 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - `adjust-points` replaces v1's Official-only "Official Score" field (`off_score`), which v1 added to the
   total. At Circus 2026 it was used once (+1 in `the-circus-orchestra`).
 - Still to come (#3): DQ, finalization and the overall rank override, as further actions.
+
+## Amendment 2026-11-02 (issue #3): tie numbering
+
+- **Per-Event setting `tieNumbering`:** `dense` (1, 1, 2) or `strict` (1, 1, 3). **Default `dense`.** Per Event
+  only, with no per-Competition override. It applies to Activity rankings and overall standings.
+  Jim's reason for the default: a tie should never cost the next team a place. Coyote Creek camporees have
+  always run this way.
+- v1 used dense ranking for single games (`leaderboard.js`) and overall standings (`official.js`, `utils.js`);
+  the comment at `utils.js:505` that says "standard" is wrong. Circus 2026 stays dense, so parity is unchanged.
+- **Placement points follow the place number:** two tied 1sts both get 1st-place points. Points are never split.
+- **Award cutoffs** (top-N, top-%) include every team tied at the cutoff. Officials can still override
+  manually, as a logged Official action.
