@@ -48,7 +48,10 @@ function numberOf(value: FieldValue | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** `points` fields minus `penalty` fields. `metric` and `info` fields don't count. */
+/**
+ * `points` fields minus `penalty` fields, each times its `weight` (ADR-0019).
+ * `metric` and `info` fields don't count.
+ */
 export function entryTotal(
   fields: readonly ScoringField[],
   values: Readonly<Record<string, FieldValue>>,
@@ -58,7 +61,8 @@ export function entryTotal(
     if (field.kind !== "points" && field.kind !== "penalty") continue;
     const n = numberOf(values[field.id]);
     if (n === undefined) continue;
-    total += field.kind === "penalty" ? -n : n;
+    const weighted = n * field.weight;
+    total += field.kind === "penalty" ? -weighted : weighted;
   }
   return total;
 }
