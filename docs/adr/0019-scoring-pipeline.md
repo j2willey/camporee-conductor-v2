@@ -73,7 +73,8 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **DQ'd entrants never receive an automatic award**, only a manual one.
 - **Manual awards and overrides** are a logged Official action, `set-award` (award, entrant, awarded
   yes/no, optional notes). It can add or remove a recipient for any Award; for each award and entrant the
-  latest action wins.
+  latest action wins. For a named-places Award it can also give a **place** (one of the Award's names),
+  which the recipient shows and which replaces an automatic place; a place on any other Award is rejected.
 - **Scope:** `event` (the whole Competition) or `division` (each Division separately, ADR-0007). Only
   `event` is built so far; `division` follows per-Division Activity ranking.
 
