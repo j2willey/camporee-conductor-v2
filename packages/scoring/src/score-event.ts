@@ -1,7 +1,11 @@
 import type { Activity } from "@camporee-conductor/schema";
 import { awardRecipients } from "./awards.ts";
 import { entryTotal, mergeCommonFields } from "./fields.ts";
-import { placementPoints, rankingFor } from "./ranking.ts";
+import {
+  DEFAULT_PLACEMENT_POINTS,
+  placementPoints,
+  rankingFor,
+} from "./ranking.ts";
 import type {
   ActivityResults,
   CompetitionStandings,
@@ -90,7 +94,10 @@ export function scoreEvent(input: ScoringInput): EventResults {
           finalRank,
           points:
             latest(actions, "set-placement-points")?.points ??
-            placementPoints(finalRank),
+            placementPoints(
+              finalRank,
+              competition.placementPoints ?? DEFAULT_PLACEMENT_POINTS,
+            ),
           disqualified: false,
         };
       }),

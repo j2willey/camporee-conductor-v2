@@ -1,4 +1,4 @@
-import type { Event } from "@camporee-conductor/schema";
+import type { Event, PlacementPoints } from "@camporee-conductor/schema";
 
 /**
  * Dense ranking (1, 2, 2, 3), highest score first, the default tie numbering (ADR-0019).
@@ -37,23 +37,20 @@ export function rankingFor(
   return tieNumbering === "strict" ? strictRanking : denseRanking;
 }
 
-/** Points for a Final Ranking: `places[0]` for 1st, `places[1]` for 2nd…, `otherwise` below those. */
-export interface PlacementPointsTable {
-  places: readonly number[];
-  otherwise: number;
-}
+/** Points for a Final Ranking: `places[0]` for 1st, `places[1]` for 2nd…, `participation` below those. */
+export type PlacementPointsTable = PlacementPoints;
 
-/** v1's table, the default (issue #3): 1st 100, 2nd 90, 3rd 80, 4th 70, 5th 60, any other 50. */
+/** v1's table, used when a Competition doesn't set one: 1st 100, 2nd 90, 3rd 80, 4th 70, 5th 60, any other 50. */
 export const DEFAULT_PLACEMENT_POINTS: PlacementPointsTable = {
   places: [100, 90, 80, 70, 60],
-  otherwise: 50,
+  participation: 50,
 };
 
 export function placementPoints(
   rank: number,
   table: PlacementPointsTable = DEFAULT_PLACEMENT_POINTS,
 ): number {
-  return table.places[rank - 1] ?? table.otherwise;
+  return table.places[rank - 1] ?? table.participation;
 }
 
 /**
