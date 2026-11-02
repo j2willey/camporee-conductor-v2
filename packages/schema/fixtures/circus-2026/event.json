@@ -234,11 +234,6 @@
       "sortOrder": 27
     },
     {
-      "activityId": "01a18a1b-3000-7b6f-9f23-689408f66813",
-      "competitionId": "01a18a1b-3000-71ad-adea-1de272407f0b",
-      "sortOrder": 28
-    },
-    {
       "activityId": "01a18a1b-3000-76fe-8298-a079c90a1758",
       "competitionId": "01a18a1b-3000-73de-bf41-5a03a35033b2",
       "sortOrder": 29
@@ -270,6 +265,19 @@
     }
   ],
   "tieNumbering": "dense",
+  "awards": [
+    {
+      "id": "01a18a1b-3000-787e-aff1-9c02017f31ef",
+      "slug": "top-dog",
+      "label": "Top Dog",
+      "competitionId": "01a18a1b-3000-71ad-adea-1de272407f0b",
+      "scope": "event",
+      "rule": {
+        "type": "top-percent",
+        "percent": 25
+      }
+    }
+  ],
   "legacy": {
     "v1Id": "5d5a6a80-c9e1-4551-8e15-8ef1ca93b9ca"
   },

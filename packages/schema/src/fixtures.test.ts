@@ -48,18 +48,39 @@ describe("Circus 2026 fixtures: content and references", () => {
       .filter((a): a is Activity => a !== undefined);
   };
 
-  it("has 3 Competitions and 34 Activities: 18 ranked patrol, 12 ranked troop, 4 exhibition", () => {
+  it("has 3 Competitions and 33 Activities: 18 ranked patrol, 11 ranked troop, 4 exhibition", () => {
     expect([...competitionBySlug.keys()].sort()).toEqual([
       "exhibition",
       "patrol-games",
       "troop-challenges",
     ]);
-    expect(activities).toHaveLength(34);
+    expect(activities).toHaveLength(33);
     const summary = (slug: string) =>
       activitiesIn(slug).map((a) => a.scoringType);
     expect(summary("patrol-games")).toEqual(Array(18).fill("ranked"));
-    expect(summary("troop-challenges")).toEqual(Array(12).fill("ranked"));
+    expect(summary("troop-challenges")).toEqual(Array(11).fill("ranked"));
     expect(summary("exhibition")).toEqual(Array(4).fill("exhibition"));
+  });
+
+  it("has Top Dog as an Award (top 25% of Troop Challenges), not an Activity (#3)", () => {
+    expect(activities.map((a) => a.slug)).not.toContain("top-dog");
+    expect(
+      event.awards?.map(({ slug, label, competitionId, scope, rule }) => ({
+        slug,
+        label,
+        competitionId,
+        scope,
+        rule,
+      })),
+    ).toEqual([
+      {
+        slug: "top-dog",
+        label: "Top Dog",
+        competitionId: competitionBySlug.get("troop-challenges")?.id,
+        scope: "event",
+        rule: { type: "top-percent", percent: 25 },
+      },
+    ]);
   });
 
   it("lists each Activity file exactly once in the Event", () => {
@@ -68,7 +89,7 @@ describe("Circus 2026 fixtures: content and references", () => {
     );
   });
 
-  it("keeps v1's playlist order and v1 ids", () => {
+  it("keeps v1's playlist order and v1 ids, without top-dog (an Award)", () => {
     const v1 = readJson("v1-source/camporee.json") as {
       playlist: { gameId: string; order: number }[];
     };
@@ -77,7 +98,8 @@ describe("Circus 2026 fixtures: content and references", () => {
       .map((entry) => activityById.get(entry.activityId)?.legacy?.v1Id);
     const v1Ordered = [...v1.playlist]
       .sort((a, b) => a.order - b.order)
-      .map((p) => p.gameId);
+      .map((p) => p.gameId)
+      .filter((id) => id !== "top-dog");
     expect(ordered).toEqual(v1Ordered);
   });
 
@@ -87,6 +109,7 @@ describe("Circus 2026 fixtures: content and references", () => {
       set.id,
       ...event.competitions.map((c) => c.id),
       ...activities.map((a) => a.id),
+      ...(event.awards ?? []).map((a) => a.id),
     ];
     expect(new Set(ids).size).toBe(ids.length);
   });
@@ -176,8 +199,12 @@ describe("Circus 2026 as-run fixtures", () => {
   const design = rawActivities.map((a) => ActivitySchema.parse(a));
   const designBySlug = new Map(design.map((a) => [a.slug, a]));
 
-  it("has the same 34 Activities, Competitions and playlist order as the design", () => {
-    expect(asRunActivityFiles).toEqual(activityFiles);
+  it("has the same Activities, Competitions and playlist order as the design, except top-dog", () => {
+    // Top Dog is an Award in the design (#3); the as-run fixture keeps it as v1 ran it.
+    expect(asRunActivityFiles.filter((f) => f !== "top-dog.json")).toEqual(
+      activityFiles,
+    );
+    expect(asRunActivityFiles).toContain("top-dog.json");
     const slugById = new Map(asRun.map((a) => [a.id, a.slug]));
     const designEvent = EventSchema.parse(rawEvent);
     const designSlugById = new Map(design.map((a) => [a.id, a.slug]));
@@ -185,9 +212,9 @@ describe("Circus 2026 as-run fixtures", () => {
       [...e.activities]
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((x) => slugs.get(x.activityId));
-    expect(order(asRunEvent, slugById)).toEqual(
-      order(designEvent, designSlugById),
-    );
+    expect(
+      order(asRunEvent, slugById).filter((slug) => slug !== "top-dog"),
+    ).toEqual(order(designEvent, designSlugById));
     expect(asRunEvent.competitions.map((c) => c.slug)).toEqual(
       designEvent.competitions.map((c) => c.slug),
     );
@@ -197,6 +224,10 @@ describe("Circus 2026 as-run fixtures", () => {
     for (const raw of [rawEvent, readAsRun("event.json")]) {
       expect((raw as { tieNumbering?: string }).tieNumbering).toBe("dense");
     }
+  });
+
+  it("has no Awards: v1 ran Top Dog as a Troop Challenge", () => {
+    expect(asRunEvent.awards).toBeUndefined();
   });
 
   it("has its own ids, so the two fixtures are never mistaken for each other", () => {
@@ -212,6 +243,7 @@ describe("Circus 2026 as-run fixtures", () => {
   it("differs from the design only in the documented scoring fields (TRANSCODE-NOTES)", () => {
     const differences: string[] = [];
     for (const a of asRun) {
+      if (a.slug === "top-dog") continue; // an Award in the design (#3)
       const d = designBySlug.get(a.slug);
       if (!d) throw new Error(`no design Activity ${a.slug}`);
       expect(a.content, a.slug).toEqual(d.content);
