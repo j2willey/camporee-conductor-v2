@@ -269,6 +269,7 @@
       "sortOrder": 34
     }
   ],
+  "tieNumbering": "dense",
   "legacy": {
     "v1Id": "5d5a6a80-c9e1-4551-8e15-8ef1ca93b9ca"
   },

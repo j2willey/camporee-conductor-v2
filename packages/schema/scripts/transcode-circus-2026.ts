@@ -402,6 +402,8 @@ function toEvent(
       ),
       sortOrder: entry.order,
     })),
+    // What v1 did, recorded rather than left to the default (ADR-0019).
+    tieNumbering: "dense",
     legacy: { v1Id: meta.camporeeId },
   });
 }

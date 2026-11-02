@@ -193,6 +193,12 @@ describe("Circus 2026 as-run fixtures", () => {
     );
   });
 
+  it("records v1's dense tie numbering in both event.json files, not by default (ADR-0019)", () => {
+    for (const raw of [rawEvent, readAsRun("event.json")]) {
+      expect((raw as { tieNumbering?: string }).tieNumbering).toBe("dense");
+    }
+  });
+
   it("has its own ids, so the two fixtures are never mistaken for each other", () => {
     const designIds = new Set(design.map((a) => a.id));
     expect(asRun.filter((a) => designIds.has(a.id))).toEqual([]);
