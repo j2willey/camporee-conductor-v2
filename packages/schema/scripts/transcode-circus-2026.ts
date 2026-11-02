@@ -95,7 +95,12 @@ interface Variant {
   eventSlug: string;
   setSlug: string;
   setTitle: string;
+  /** Top Dog as an Award instead of an Activity (#3). Only the design; as run, v1 had it as a game. */
+  topDogAsAward: boolean;
 }
+
+/** v1 modelled Top Dog as a Troop Challenge; it's really an Award. */
+const TOP_DOG = "top-dog";
 
 const DESIGN: Variant = {
   dir: new URL("circus-2026/", FIXTURES),
@@ -103,6 +108,7 @@ const DESIGN: Variant = {
   eventSlug: "coyote-creek-camporee-2026",
   setSlug: "circus-2026-common-fields",
   setTitle: "Circus 2026 Common Fields",
+  topDogAsAward: true,
 };
 
 const AS_RUN: Variant = {
@@ -111,6 +117,7 @@ const AS_RUN: Variant = {
   eventSlug: "coyote-creek-camporee-2026-as-run",
   setSlug: "circus-2026-as-run-common-fields",
   setTitle: "Circus 2026 Common Fields (as run)",
+  topDogAsAward: false,
 };
 
 let variant = DESIGN;
@@ -395,13 +402,28 @@ function toEvent(
       },
     },
     competitions,
-    activities: camporee.playlist.map((entry) => ({
-      activityId: fixtureUuid7(`activity:${entry.gameId}`),
-      competitionId: competitionIdByLeague.get(
-        leagueByGame.get(entry.gameId) ?? "",
-      ),
-      sortOrder: entry.order,
-    })),
+    activities: camporee.playlist
+      .filter((entry) => !variant.topDogAsAward || entry.gameId !== TOP_DOG)
+      .map((entry) => ({
+        activityId: fixtureUuid7(`activity:${entry.gameId}`),
+        competitionId: competitionIdByLeague.get(
+          leagueByGame.get(entry.gameId) ?? "",
+        ),
+        sortOrder: entry.order,
+      })),
+    // Top Dog's own rule: "top 25% of troops by aggregate score, round up".
+    ...(variant.topDogAsAward && {
+      awards: [
+        {
+          id: fixtureUuid7(`award:${TOP_DOG}`),
+          slug: TOP_DOG,
+          label: "Top Dog",
+          competitionId: competitionIdByLeague.get("troop-challenges"),
+          scope: "event",
+          rule: { type: "top-percent", percent: 25 },
+        },
+      ],
+    }),
     // What v1 did, recorded rather than left to the default (ADR-0019).
     tieNumbering: "dense",
     legacy: { v1Id: meta.camporeeId },
@@ -420,9 +442,12 @@ for (const v of [DESIGN, AS_RUN]) {
     .filter((f) => f.endsWith(".json"))
     .sort()
     .map((f) => readJson<V1Game>(`games/${f}`));
+  const activityGames = v.topDogAsAward
+    ? games.filter((g) => g.id !== TOP_DOG)
+    : games;
 
   const set = toCommonFieldSet(presets);
-  const activities = games.map(toActivity);
+  const activities = activityGames.map(toActivity);
   const event = toEvent(camporee, games, set, design);
 
   const write = (path: string, doc: unknown): void => {

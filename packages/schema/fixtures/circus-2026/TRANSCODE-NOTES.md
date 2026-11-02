@@ -4,8 +4,10 @@ Source: `v1-source/`, the Circus 2026 cartridge (schema `3.0`), identical to v1'
 `tests/fixtures/circus`. Output: `event.json`, `common-fields.json`, `activities/*.json` (schema `4.0`).
 Produced by `scripts/transcode-circus-2026.ts`. Re-running it gives byte-identical output.
 
-Counts: 34 Activities (18 ranked in Patrol Games, 12 ranked in Troop Challenges, 4 exhibition),
-3 Competitions, 1 Common Field set. The v1 playlist has 34 entries for 34 game files, one to one.
+Counts: 33 Activities (18 ranked in Patrol Games, 11 ranked in Troop Challenges, 4 exhibition),
+3 Competitions, 1 Award (Top Dog), 1 Common Field set. The v1 playlist has 34 entries for 34 game files,
+one to one; `top-dog` became the Award (see below). The as-run fixture keeps all 34 Activities and has no
+Award.
 
 ## Design vs as run
 
@@ -35,7 +37,8 @@ Every scoring-field difference between them, and why. `src/fixtures.test.ts` fai
 
 That's 7 fields across 6 Activities reclassified (5 of them finalized Patrol Games, plus the Troop Challenge
 `sports-land-skis`), and 5 restored note fields. Nothing else differs: Activity content, variables, scoring
-direction, Common Fields, Competitions and playlist order are the same.
+direction, Common Fields, Competitions and playlist order are the same, except `top-dog`: an Activity as
+run, the Top Dog Award in the design (see "Changed: Top Dog"). The test names it as the only exception.
 
 The schema `2.9` cartridge predates v1's league model, so the as-run transcode fills three gaps:
 
@@ -75,7 +78,7 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 
 - **Weights set to 1; v1 values kept in `legacy.v1Weight`.** v1 stored a `weight` on every field but
   never applied it: only `public/js/core/schema.js` passes it through, and no total or ranking reads it.
-  So Circus 2026's announced results used an effective weight of 1. Every field (34 Activities and the
+  So Circus 2026's announced results used an effective weight of 1. Every field (all Activities and the
   Common Field set) now has `weight: 1`, with the original v1 number in the field's `legacy.v1Weight`
   (v1 had 0, 0.1, 0.5, 1, 2, 3, 5 and 10). This lets #3 (scoring) reproduce the results announced in May.
 - **`p_flag` placeholder.** v1 said "0-10 Points", but `max` is 5 and judges scored 0–5. Corrected to
@@ -116,15 +119,20 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 - **Preset `tier` and `position`**: the Competition now decides where a Common Field applies.
 - **Game `bracketMode`** (all `false`), **`match_label`** (all `""`), **`session`** (all `null`),
   **`sortOrder`**: per-league and repeated (10, 20, 30… in each league). Event order comes from the
-  v1 `playlist` instead, as `activities[].sortOrder` 1–34.
+  v1 `playlist` instead, as `activities[].sortOrder` 1–34 (the design skips 28, Top Dog's place).
 - **Terminology `organizer: "Event Director"`**: packs relabel only the participant hierarchy and the event
   name (ADR-0003, amended).
 - **`sessions`, `officials`** (both empty) and **`rosters`** (empty; rosters are Collator-only, ADR-0026).
 
+## Changed: Top Dog (#3)
+
+- **`top-dog`** was modelled in v1 as a Troop Challenge, but it's really an award ("top 25% of troops by
+  aggregate score, round up; no ranking among them"). Decided in #3: in the **design** it's an Award, not
+  an Activity: "Top Dog", Troop Challenges, `top-percent` 25, scope `event` (ADR-0019 Awards amendment).
+  Its game file and playlist entry are dropped; the other Activities keep their v1 `sortOrder`, so 28 is
+  skipped. The game's story text isn't carried over. The **as-run** fixture keeps it as an Activity, as v1
+  ran it. Top Dog had no scores at the event and isn't in the golden files, so parity is unaffected.
+
 ## Carried over as-is, but worth a look
 
-- **`top-dog`** is modelled in v1 as a Troop Challenge, but it's really an award ("top 25% of troops by
-  aggregate score; no ranking among them"). It's kept as a ranked Activity so the counts match v1. Under
-  ADR-0019, overall awards come from the pipeline, so #3 (scoring) should decide whether it stays an
-  Activity.
 - No Event dates: v1 `meta` has only `year: 2026`.

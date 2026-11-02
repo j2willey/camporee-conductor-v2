@@ -5,6 +5,7 @@ import { issuesOf } from "./test-support.ts";
 const COMPETITION = "0196cfa2-4c00-7000-8000-000000000020";
 const SET = "0196cfa2-4c00-7000-8000-000000000010";
 const ACTIVITY = "0196cfa2-4c00-7000-8000-000000000001";
+const AWARD = "0196cfa2-4c00-7000-8000-000000000030";
 
 const validEvent = (): Event => ({
   schemaVersion: "4.0",
@@ -70,6 +71,84 @@ describe("EventSchema", () => {
     ).toContain(
       'tieNumbering: Invalid option: expected one of "dense"|"strict"',
     );
+  });
+
+  describe("awards (ADR-0019 Awards amendment)", () => {
+    const award = (rule: unknown, extra: object = {}) => ({
+      id: AWARD,
+      slug: "top-dog",
+      label: "Top Dog",
+      competitionId: COMPETITION,
+      rule,
+      ...extra,
+    });
+    const withAwards = (...awards: unknown[]) => ({ ...validEvent(), awards });
+
+    it("accepts named places, top-percent and manual Awards, scope event by default", () => {
+      const parsed = EventSchema.parse(
+        withAwards(
+          award({ type: "places", names: ["Gold Axe", "Silver Hatchet"] }),
+          award(
+            { type: "top-percent", percent: 25 },
+            { id: "0196cfa2-4c00-7000-8000-000000000031", slug: "top-25" },
+          ),
+          award(
+            { type: "manual" },
+            { id: "0196cfa2-4c00-7000-8000-000000000032", slug: "spirit" },
+          ),
+        ),
+      );
+      expect(parsed.awards?.map((a) => [a.rule.type, a.scope])).toEqual([
+        ["places", "event"],
+        ["top-percent", "event"],
+        ["manual", "event"],
+      ]);
+    });
+
+    it("keeps division scope in the schema (ADR-0007)", () => {
+      expect(
+        EventSchema.safeParse(
+          withAwards(award({ type: "manual" }, { scope: "division" })),
+        ).success,
+      ).toBe(true);
+    });
+
+    it("rejects an Award whose Competition isn't in this Event", () => {
+      expect(
+        issuesOf(
+          EventSchema,
+          withAwards(
+            award(
+              { type: "manual" },
+              { competitionId: "0196cfa2-4c00-7000-8000-000000000099" },
+            ),
+          ),
+        ),
+      ).toContain(
+        "awards.0.competitionId: no Competition with this id in the Event",
+      );
+    });
+
+    it("rejects duplicate Award ids", () => {
+      expect(
+        issuesOf(
+          EventSchema,
+          withAwards(award({ type: "manual" }), award({ type: "manual" })),
+        ).some((i) => i.includes("duplicate award id")),
+      ).toBe(true);
+    });
+
+    it("needs at least one place name and a percent above 0 and at most 100", () => {
+      for (const rule of [
+        { type: "places", names: [] },
+        { type: "top-percent", percent: 0 },
+        { type: "top-percent", percent: 101 },
+      ]) {
+        expect(EventSchema.safeParse(withAwards(award(rule))).success).toBe(
+          false,
+        );
+      }
+    });
   });
 
   it("does not accept rosters (ADR-0026: rosters are Collator-only)", () => {
