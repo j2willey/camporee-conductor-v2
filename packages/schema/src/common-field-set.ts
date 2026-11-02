@@ -6,11 +6,23 @@ import { ScoringFieldList } from "./field.ts";
  * Common Fields, defined once and referenced by Competitions, which apply them to every
  * Activity at runtime (ADR-0020). Replaces v1 `presets.json`.
  */
-export const CommonFieldSetSchema = z.strictObject({
-  ...documentBase,
-  kind: z.literal("common-field-set"),
-  fields: ScoringFieldList.min(1, "must have at least one field"),
-  legacy: LegacySchema.optional(),
-});
+export const CommonFieldSetSchema = z
+  .strictObject({
+    ...documentBase,
+    kind: z.literal("common-field-set"),
+    fields: ScoringFieldList.min(1, "must have at least one field"),
+    legacy: LegacySchema.optional(),
+  })
+  .superRefine((set, ctx) => {
+    set.fields.forEach((field, index) => {
+      if (field.primary) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["fields", index, "primary"],
+          message: "a Common Field can't be a primary metric",
+        });
+      }
+    });
+  });
 
 export type CommonFieldSet = z.infer<typeof CommonFieldSetSchema>;

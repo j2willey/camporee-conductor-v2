@@ -180,6 +180,22 @@
               "required": {
                 "type": "boolean"
               },
+              "primary": {
+                "type": "object",
+                "properties": {
+                  "direction": {
+                    "type": "string",
+                    "enum": [
+                      "higher-wins",
+                      "lower-wins"
+                    ]
+                  }
+                },
+                "required": [
+                  "direction"
+                ],
+                "additionalProperties": false
+              },
               "config": {
                 "type": "object",
                 "properties": {
