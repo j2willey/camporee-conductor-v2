@@ -1,0 +1,370 @@
+[
+  {
+    "id": "p4300",
+    "name": "Grizzlies",
+    "type": "patrol",
+    "troop_number": "T251",
+    "parent_id": "t1002",
+    "manual_rank": null
+  },
+  {
+    "id": "p4301",
+    "name": "Titanium Pancakes",
+    "type": "patrol",
+    "troop_number": "T251",
+    "parent_id": "t1002",
+    "manual_rank": null
+  },
+  {
+    "id": "p4302",
+    "name": "Eggos",
+    "type": "patrol",
+    "troop_number": "T251",
+    "parent_id": "t1002",
+    "manual_rank": null
+  },
+  {
+    "id": "p4303",
+    "name": "New Patrol",
+    "type": "patrol",
+    "troop_number": "T251",
+    "parent_id": "t1002",
+    "manual_rank": null
+  },
+  {
+    "id": "p4304",
+    "name": "Ewoks",
+    "type": "patrol",
+    "troop_number": "T251",
+    "parent_id": "t1002",
+    "manual_rank": null
+  },
+  {
+    "id": "p4305",
+    "name": "Dark Dragons",
+    "type": "patrol",
+    "troop_number": "T251",
+    "parent_id": "t1002",
+    "manual_rank": null
+  },
+  {
+    "id": "p4306",
+    "name": "Creepy Clowns",
+    "type": "patrol",
+    "troop_number": "T13",
+    "parent_id": "t1003",
+    "manual_rank": null
+  },
+  {
+    "id": "p4307",
+    "name": "Dutch Crunch",
+    "type": "patrol",
+    "troop_number": "T2399",
+    "parent_id": "t1004",
+    "manual_rank": null
+  },
+  {
+    "id": "p4308",
+    "name": "Shampoo Drinkers",
+    "type": "patrol",
+    "troop_number": "T163",
+    "parent_id": "t1005",
+    "manual_rank": null
+  },
+  {
+    "id": "p4309",
+    "name": "Chunky Monkeys",
+    "type": "patrol",
+    "troop_number": "T163",
+    "parent_id": "t1005",
+    "manual_rank": null
+  },
+  {
+    "id": "p4310",
+    "name": "Troop 116 Patrol",
+    "type": "patrol",
+    "troop_number": "T116",
+    "parent_id": "t1006",
+    "manual_rank": null
+  },
+  {
+    "id": "p4311",
+    "name": "Sunny Day",
+    "type": "patrol",
+    "troop_number": "T230",
+    "parent_id": "t1007",
+    "manual_rank": null
+  },
+  {
+    "id": "p4312",
+    "name": "Tubtastic Team Patrol",
+    "type": "patrol",
+    "troop_number": "T230",
+    "parent_id": "t1007",
+    "manual_rank": null
+  },
+  {
+    "id": "p4313",
+    "name": "Ducks",
+    "type": "patrol",
+    "troop_number": "T201",
+    "parent_id": "t1008",
+    "manual_rank": null
+  },
+  {
+    "id": "p4314",
+    "name": "Otters",
+    "type": "patrol",
+    "troop_number": "T201",
+    "parent_id": "t1008",
+    "manual_rank": null
+  },
+  {
+    "id": "p4315",
+    "name": "Fearless Firebirds",
+    "type": "patrol",
+    "troop_number": "T108",
+    "parent_id": "t1009",
+    "manual_rank": null
+  },
+  {
+    "id": "p4316",
+    "name": "Pegasus",
+    "type": "patrol",
+    "troop_number": "T109",
+    "parent_id": "t1010",
+    "manual_rank": null
+  },
+  {
+    "id": "p4317",
+    "name": "Wolf Warriors",
+    "type": "patrol",
+    "troop_number": "T2019",
+    "parent_id": "t1011",
+    "manual_rank": null
+  },
+  {
+    "id": "p4318",
+    "name": "Fearless Foxes",
+    "type": "patrol",
+    "troop_number": "T2019",
+    "parent_id": "t1011",
+    "manual_rank": null
+  },
+  {
+    "id": "p4319",
+    "name": "Leaping Leapards",
+    "type": "patrol",
+    "troop_number": "T2019",
+    "parent_id": "t1011",
+    "manual_rank": null
+  },
+  {
+    "id": "p4320",
+    "name": "Krabbie Patties",
+    "type": "patrol",
+    "troop_number": "T2019",
+    "parent_id": "t1011",
+    "manual_rank": null
+  },
+  {
+    "id": "p4321",
+    "name": "Patrol 2",
+    "type": "patrol",
+    "troop_number": "T2163",
+    "parent_id": "t1012",
+    "manual_rank": null
+  },
+  {
+    "id": "p4322",
+    "name": "Patrol 1",
+    "type": "patrol",
+    "troop_number": "T2163",
+    "parent_id": "t1012",
+    "manual_rank": null
+  },
+  {
+    "id": "p4323",
+    "name": "Jerry Fishz",
+    "type": "patrol",
+    "troop_number": "T230",
+    "parent_id": "t1007",
+    "manual_rank": null
+  },
+  {
+    "id": "p4324",
+    "name": "Animals!?",
+    "type": "patrol",
+    "troop_number": "T110",
+    "parent_id": "t1001",
+    "manual_rank": null
+  },
+  {
+    "id": "p4325",
+    "name": "Minions",
+    "type": "patrol",
+    "troop_number": "T2110",
+    "parent_id": "t1000",
+    "manual_rank": null
+  },
+  {
+    "id": "p4326",
+    "name": "T170 Patrol",
+    "type": "patrol",
+    "troop_number": "T170",
+    "parent_id": "t1013",
+    "manual_rank": null
+  },
+  {
+    "id": "p4327",
+    "name": "T2170 Patrol",
+    "type": "patrol",
+    "troop_number": "T2170",
+    "parent_id": "t1014",
+    "manual_rank": null
+  },
+  {
+    "id": "p4328",
+    "name": "Not a real patrol",
+    "type": "patrol",
+    "troop_number": "0",
+    "parent_id": "t1015",
+    "manual_rank": null
+  },
+  {
+    "id": "p4329",
+    "name": "Practice Patrol",
+    "type": "patrol",
+    "troop_number": "0",
+    "parent_id": "t1015",
+    "manual_rank": null
+  },
+  {
+    "id": "t1000",
+    "name": "T2110",
+    "type": "troop",
+    "troop_number": "T2110",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1001",
+    "name": "T110",
+    "type": "troop",
+    "troop_number": "T110",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1002",
+    "name": "T251",
+    "type": "troop",
+    "troop_number": "T251",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1003",
+    "name": "T13",
+    "type": "troop",
+    "troop_number": "T13",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1004",
+    "name": "T2399",
+    "type": "troop",
+    "troop_number": "T2399",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1005",
+    "name": "T163",
+    "type": "troop",
+    "troop_number": "T163",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1006",
+    "name": "T116",
+    "type": "troop",
+    "troop_number": "T116",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1007",
+    "name": "T230",
+    "type": "troop",
+    "troop_number": "T230",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1008",
+    "name": "T201",
+    "type": "troop",
+    "troop_number": "T201",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1009",
+    "name": "T108",
+    "type": "troop",
+    "troop_number": "T108",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1010",
+    "name": "T109",
+    "type": "troop",
+    "troop_number": "T109",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1011",
+    "name": "T2019",
+    "type": "troop",
+    "troop_number": "T2019",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1012",
+    "name": "T2163",
+    "type": "troop",
+    "troop_number": "T2163",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1013",
+    "name": "T170",
+    "type": "troop",
+    "troop_number": "T170",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1014",
+    "name": "T2170 Patrol",
+    "type": "troop",
+    "troop_number": "T2170",
+    "parent_id": null,
+    "manual_rank": null
+  },
+  {
+    "id": "t1015",
+    "name": "0",
+    "type": "troop",
+    "troop_number": "0",
+    "parent_id": null,
+    "manual_rank": null
+  }
+]

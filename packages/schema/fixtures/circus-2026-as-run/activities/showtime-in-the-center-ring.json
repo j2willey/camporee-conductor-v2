@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-725e-92d8-2a77e729d00a",
+  "slug": "showtime-in-the-center-ring",
+  "title": "Showtime in the Center Ring!!!",
+  "kind": "activity",
+  "scoringType": "ranked",
+  "content": {
+    "story": "The Circus is looking for new acts to add roster.  Tryouts are open to all!!",
+    "objective": "Impress the judges with your acting or performing skills",
+    "description": "*   Audition a skit or performance for tonights Campfire\n*   Bonus points considered for inclusion or use of Underwater theme",
+    "rules": [
+      "Must be Scout appropriate",
+      "Must be Approved by Staff Member"
+    ],
+    "timeAndScoring": "Bonus for Circus themed acts",
+    "setup": "",
+    "reset": "",
+    "staffing": "",
+    "supplies": [],
+    "notes": ""
+  },
+  "scoring": {
+    "direction": "higher-wins",
+    "fields": [
+      {
+        "id": "skit_name",
+        "label": "Skit name",
+        "type": "number",
+        "kind": "info",
+        "audience": "judge",
+        "sortOrder": 900,
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "approx_length_in_minutes",
+        "label": "Approx. Length in minutes",
+        "type": "number",
+        "kind": "info",
+        "audience": "judge",
+        "sortOrder": 900,
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "points",
+        "label": "points",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 900,
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
+      }
+    ]
+  },
+  "variables": {
+    "ten_essentials": "Joke for Judge/Good Attitude"
+  },
+  "legacy": {
+    "v1Id": "showtime-in-the-center-ring"
+  }
+}

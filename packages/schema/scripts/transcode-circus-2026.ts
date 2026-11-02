@@ -1,6 +1,8 @@
-// One-time transcode of the Circus 2026 v1 cartridge (schema 3.0) into v4 documents.
-// Not a general v1 importer (issue #2). Kept so the fixtures are reproducible; see
+// One-time transcode of the Circus 2026 v1 cartridges into v4 documents (issues #2 and #3).
+// Not a general v1 importer. Kept so the fixtures are reproducible; see
 // fixtures/circus-2026/TRANSCODE-NOTES.md for everything that didn't map cleanly.
+//   fixtures/circus-2026/         design: the v3 cartridge with Jim's post-event corrections
+//   fixtures/circus-2026-as-run/  as run: the schema 2.9 cartridge the event laptop ran
 // Run: node packages/schema/scripts/transcode-circus-2026.ts
 import { createHash } from "node:crypto";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -35,7 +37,10 @@ interface V1Input {
 
 interface V1Game {
   id: string;
-  league: string;
+  /** v3 cartridges. */
+  league?: string;
+  /** Schema 2.9 cartridges (as run): "patrol", "troop" or "exhibition". */
+  type?: string;
   library_uuid: string;
   library_title: string;
   variables?: Record<string, string>;
@@ -61,8 +66,15 @@ interface V1Camporee {
       >;
     };
   };
-  terminology: { unit: string; subunit: string; member: string; event: string };
-  leagues: {
+  /** Absent from the schema 2.9 cartridge. */
+  terminology?: {
+    unit: string;
+    subunit: string;
+    member: string;
+    event: string;
+  };
+  /** Absent from the schema 2.9 cartridge. */
+  leagues?: {
     id: string;
     label: string;
     tier: "unit" | "subunit";
@@ -74,11 +86,49 @@ interface V1Camporee {
 
 // --- helpers -----------------------------------------------------------------
 
-const SOURCE = new URL("../fixtures/circus-2026/v1-source/", import.meta.url);
-const OUT = new URL("../fixtures/circus-2026/", import.meta.url);
+const FIXTURES = new URL("../fixtures/", import.meta.url);
 
-const readJson = <T>(path: string): T =>
-  JSON.parse(readFileSync(new URL(path, SOURCE), "utf8")) as T;
+/** One output fixture: where its v1 cartridge is, and the namespace that keeps its ids distinct. */
+interface Variant {
+  dir: URL;
+  idNamespace: string;
+  eventSlug: string;
+  setSlug: string;
+  setTitle: string;
+}
+
+const DESIGN: Variant = {
+  dir: new URL("circus-2026/", FIXTURES),
+  idNamespace: "circus-2026",
+  eventSlug: "coyote-creek-camporee-2026",
+  setSlug: "circus-2026-common-fields",
+  setTitle: "Circus 2026 Common Fields",
+};
+
+const AS_RUN: Variant = {
+  dir: new URL("circus-2026-as-run/", FIXTURES),
+  idNamespace: "circus-2026-as-run",
+  eventSlug: "coyote-creek-camporee-2026-as-run",
+  setSlug: "circus-2026-as-run-common-fields",
+  setTitle: "Circus 2026 Common Fields (as run)",
+};
+
+let variant = DESIGN;
+
+const readJson = <T>(path: string, dir = variant.dir): T =>
+  JSON.parse(readFileSync(new URL(`v1-source/${path}`, dir), "utf8")) as T;
+
+/**
+ * Schema 2.9 game `type` → v3 league id, the mapping v1's own schema-v3 migration used (5888d22).
+ * v3 cartridges already use league ids.
+ */
+const LEAGUE_BY_TYPE: Record<string, string> = {
+  patrol: "patrol-games",
+  troop: "troop-challenges",
+  exhibition: "exhibition",
+};
+const leagueOf = (game: V1Game): string =>
+  game.league ?? LEAGUE_BY_TYPE[game.type ?? ""] ?? "";
 
 /**
  * Deterministic UUID v7, so re-running the transcode doesn't churn ids. The timestamp is
@@ -88,7 +138,7 @@ function fixtureUuid7(key: string): string {
   const bytes = Buffer.alloc(16);
   bytes.writeUIntBE(Date.UTC(2026, 9, 30), 0, 6);
   createHash("sha256")
-    .update(`circus-2026:${key}`)
+    .update(`${variant.idNamespace}:${key}`)
     .digest()
     .copy(bytes, 6, 0, 10);
   bytes.writeUInt8((bytes.readUInt8(6) & 0x0f) | 0x70, 6); // version 7
@@ -189,7 +239,7 @@ function toActivity(game: V1Game): Activity {
     id: fixtureUuid7(`activity:${game.id}`),
     slug: game.id,
     title: text(c["title"]),
-    scoringType: game.league === "exhibition" ? "exhibition" : "ranked",
+    scoringType: leagueOf(game) === "exhibition" ? "exhibition" : "ranked",
     content: {
       story: text(c["story"]),
       objective: text(c["challenge"]),
@@ -258,8 +308,8 @@ function toCommonFieldSet(presets: V1Input[]): CommonFieldSet {
     schemaVersion: SCHEMA_VERSION,
     kind: "common-field-set",
     id: fixtureUuid7("common-field-set"),
-    slug: "circus-2026-common-fields",
-    title: "Circus 2026 Common Fields",
+    slug: variant.setSlug,
+    title: variant.setTitle,
     fields,
     legacy: { v1Id: "presets.json" },
   });
@@ -269,10 +319,22 @@ function toEvent(
   camporee: V1Camporee,
   games: V1Game[],
   set: CommonFieldSet,
+  design: V1Camporee,
 ): Event {
   const keptFieldIds = new Set(set.fields.map((f) => f.id));
-  const competitions: Competition[] = camporee.leagues.map((league) => {
-    const defaults = camporee.type_defaults[league.id] ?? {
+  // The schema 2.9 cartridge has no leagues or terminology: use the design's definitions, and key
+  // its type_defaults ("patrol") by league id ("patrol-games").
+  const leagues = camporee.leagues ?? design.leagues ?? [];
+  const terminology = camporee.terminology ?? design.terminology;
+  if (!terminology) throw new Error("no terminology in either cartridge");
+  const typeDefaults = Object.fromEntries(
+    Object.entries(camporee.type_defaults).map(([key, value]) => [
+      LEAGUE_BY_TYPE[key] && !camporee.leagues ? LEAGUE_BY_TYPE[key] : key,
+      value,
+    ]),
+  );
+  const competitions: Competition[] = leagues.map((league) => {
+    const defaults = typeDefaults[league.id] ?? {
       prefix: [],
       suffix: [],
     };
@@ -294,9 +356,9 @@ function toEvent(
   });
 
   const competitionIdByLeague = new Map(
-    camporee.leagues.map((l) => [l.id, fixtureUuid7(`competition:${l.id}`)]),
+    leagues.map((l) => [l.id, fixtureUuid7(`competition:${l.id}`)]),
   );
-  const leagueByGame = new Map(games.map((g) => [g.id, g.league]));
+  const leagueByGame = new Map(games.map((g) => [g.id, leagueOf(g)]));
   const { meta } = camporee;
   const styles = meta.awards_config.styles;
 
@@ -304,7 +366,7 @@ function toEvent(
     schemaVersion: SCHEMA_VERSION,
     kind: "event",
     id: fixtureUuid7("event"),
-    slug: "coyote-creek-camporee-2026",
+    slug: variant.eventSlug,
     title: meta.title,
     theme: meta.theme,
     year: meta.year,
@@ -312,10 +374,10 @@ function toEvent(
     terminology: {
       pack: "scouting",
       labels: {
-        group: camporee.terminology.unit,
-        team: camporee.terminology.subunit,
-        participant: camporee.terminology.member,
-        event: camporee.terminology.event,
+        group: terminology.unit,
+        team: terminology.subunit,
+        participant: terminology.member,
+        event: terminology.event,
       },
     },
     presentation: {
@@ -346,25 +408,30 @@ function toEvent(
 
 // --- main ----------------------------------------------------------------------
 
-const camporee = readJson<V1Camporee>("camporee.json");
-const presets = readJson<V1Input[]>("presets.json");
-const games = readdirSync(new URL("games/", SOURCE))
-  .filter((f) => f.endsWith(".json"))
-  .sort()
-  .map((f) => readJson<V1Game>(`games/${f}`));
+const design = readJson<V1Camporee>("camporee.json", DESIGN.dir);
 
-const set = toCommonFieldSet(presets);
-const activities = games.map(toActivity);
-const event = toEvent(camporee, games, set);
+for (const v of [DESIGN, AS_RUN]) {
+  variant = v;
+  const camporee = readJson<V1Camporee>("camporee.json");
+  const presets = readJson<V1Input[]>("presets.json");
+  const games = readdirSync(new URL("v1-source/games/", v.dir))
+    .filter((f) => f.endsWith(".json"))
+    .sort()
+    .map((f) => readJson<V1Game>(`games/${f}`));
 
-const write = (path: string, doc: unknown): void => {
-  writeFileSync(new URL(path, OUT), `${JSON.stringify(doc, null, 2)}\n`);
-};
-mkdirSync(new URL("activities/", OUT), { recursive: true });
-write("event.json", event);
-write("common-fields.json", set);
-for (const activity of activities)
-  write(`activities/${activity.slug}.json`, activity);
-console.log(
-  `wrote event, common field set and ${activities.length} activities`,
-);
+  const set = toCommonFieldSet(presets);
+  const activities = games.map(toActivity);
+  const event = toEvent(camporee, games, set, design);
+
+  const write = (path: string, doc: unknown): void => {
+    writeFileSync(new URL(path, v.dir), `${JSON.stringify(doc, null, 2)}\n`);
+  };
+  mkdirSync(new URL("activities/", v.dir), { recursive: true });
+  write("event.json", event);
+  write("common-fields.json", set);
+  for (const activity of activities)
+    write(`activities/${activity.slug}.json`, activity);
+  console.log(
+    `${v.idNamespace}: wrote event, common field set and ${activities.length} activities`,
+  );
+}

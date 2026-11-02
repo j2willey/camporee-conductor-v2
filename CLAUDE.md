@@ -76,7 +76,8 @@ CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test on 
 ```
 packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
 packages/schema/    Zod document schemas (Event, Activity, Common Field set, Template) + generated JSON Schema;
-                    fixtures/circus-2026/ is the transcoded Circus 2026 cartridge (see TRANSCODE-NOTES.md)
+                    fixtures/circus-2026/ is the transcoded Circus 2026 design; fixtures/circus-2026-as-run/ is
+                    what the event ran, for scoring parity only (see TRANSCODE-NOTES.md)
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```

@@ -1,0 +1,320 @@
+{
+  "source": "Award stickers as printed by v1 commit 9ebffa5 from the real Circus 2026 data (reprinted 2026-10-30 from the event laptop; stickers.pdf). Ranks exactly as printed: '1st' = automatic, '1' = an Official's manual rank.",
+  "stickers": [
+    {
+      "gameId": "3-ring-circus",
+      "rank": "1st",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "3-ring-circus",
+      "rank": "2",
+      "entityId": "p4319"
+    },
+    {
+      "gameId": "3-ring-circus",
+      "rank": "3",
+      "entityId": "p4305"
+    },
+    {
+      "gameId": "OVERALL",
+      "rank": "1st",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "OVERALL",
+      "rank": "2nd",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "OVERALL",
+      "rank": "3rd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "rank": "1st",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "rank": "2nd",
+      "entityId": "p4321"
+    },
+    {
+      "gameId": "buried-bearded-ladys-jewels",
+      "rank": "3rd",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "circus-line",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "circus-line",
+      "rank": "2",
+      "entityId": "p4302"
+    },
+    {
+      "gameId": "circus-line",
+      "rank": "3",
+      "entityId": "p4327"
+    },
+    {
+      "gameId": "clown-car",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "clown-car",
+      "rank": "2",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "clown-car",
+      "rank": "2",
+      "entityId": "p4323"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "2",
+      "entityId": "p4317"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "3",
+      "entityId": "p4302"
+    },
+    {
+      "gameId": "ducks-in-a-row",
+      "rank": "3",
+      "entityId": "p4320"
+    },
+    {
+      "gameId": "jugglers",
+      "rank": "1",
+      "entityId": "p4302"
+    },
+    {
+      "gameId": "jugglers",
+      "rank": "2",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "jugglers",
+      "rank": "2",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "rank": "1st",
+      "entityId": "p4301"
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "rank": "2nd",
+      "entityId": "p4307"
+    },
+    {
+      "gameId": "setting-up-the-big-top",
+      "rank": "3rd",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "rank": "1st",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "rank": "2nd",
+      "entityId": "p4307"
+    },
+    {
+      "gameId": "showtime-in-the-center-ring",
+      "rank": "3rd",
+      "entityId": "p4324"
+    },
+    {
+      "gameId": "telephone",
+      "rank": "1st",
+      "entityId": "p4313"
+    },
+    {
+      "gameId": "telephone",
+      "rank": "2",
+      "entityId": "p4311"
+    },
+    {
+      "gameId": "telephone",
+      "rank": "3",
+      "entityId": "p4308"
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "rank": "2",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "the-a-frame-trapeze",
+      "rank": "3",
+      "entityId": "p4323"
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "rank": "1st",
+      "entityId": "p4326"
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "rank": "2",
+      "entityId": "p4319"
+    },
+    {
+      "gameId": "the-barrel-of-monkeys-caravan",
+      "rank": "3rd",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "rank": "1st",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "rank": "2nd",
+      "entityId": "p4301"
+    },
+    {
+      "gameId": "the-big-top-goes-down",
+      "rank": "3rd",
+      "entityId": "p4312"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "1st",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "2nd",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "3",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "the-circus-orchestra",
+      "rank": "3rd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "1st",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "1st",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "2nd",
+      "entityId": "p4317"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "3rd",
+      "entityId": "p4307"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "3rd",
+      "entityId": "p4314"
+    },
+    {
+      "gameId": "the-flying-flapjacks",
+      "rank": "3rd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "1st",
+      "entityId": "p4305"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "1st",
+      "entityId": "p4321"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "3",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-grand-entry",
+      "rank": "3",
+      "entityId": "p4316"
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "rank": "1st",
+      "entityId": "p4305"
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "rank": "2nd",
+      "entityId": "p4318"
+    },
+    {
+      "gameId": "the-high-wire-fire-act",
+      "rank": "3rd",
+      "entityId": "p4320"
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "rank": "1",
+      "entityId": "p4306"
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "rank": "2",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "the-tumbled-trapeze-rescue",
+      "rank": "2",
+      "entityId": "p4315"
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "rank": "1",
+      "entityId": "p4309"
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "rank": "2",
+      "entityId": "p4312"
+    },
+    {
+      "gameId": "trapeze-swing-assembly",
+      "rank": "3",
+      "entityId": "p4318"
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-74cd-966d-37ff6643e679",
+  "slug": "setting-up-the-big-top",
+  "title": "Setting Up the Big Top",
+  "kind": "activity",
+  "scoringType": "ranked",
+  "content": {
+    "story": "The Coyote Creek Circus is in crisis. One hour before the matinee, the entire Roadies Union walked off the job — all of them, at once, over a dispute involving three clowns and a missing trombone. The Ringmaster is now standing in an empty field with a pile of poles, rope, and canvas, and a crowd of paying customers who expect a Big Top. Word travels fast in circus country, and your patrol just showed up at exactly the wrong — or maybe the right — moment. The Ringmaster eyes you up and down: \"You lot ever set up a tent before? Doesn't matter. You're hired. Don't embarrass me.\"",
+    "objective": "Erect a Circus Tent with proper knots and lashings, then strike and pack it — judged on speed, quality, and teamwork.",
+    "description": "Your crew has been handed the equipment and one shot to prove you belong on the Coyote Creek Circus payroll. When the judge gives the word, the clock starts — and it doesn't stop until every pole is up, every line is taut, every knot is tied, and every member of the crew has stepped back with hands clear. The Ringmaster (your judge) will then walk the structure, testing lashings, checking knots, and shaking poles. A circus tent that collapses on the acrobats is bad for business. Once the inspection is complete and the judge is satisfied, the crew will be directed to strike the tent — breaking it down and repacking everything exactly as it was found. The Ringmaster's final word on whether you get called back for the evening show depends on how well you work together from start to finish.",
+    "rules": [
+      "The clock starts on the judge's \"Go\" and stops when all knots and lashings are complete and all patrol members have stepped back with hands clear of the structure.",
+      "No patrol member may begin packing equipment until the judge gives the signal to strike.",
+      "All knots must be appropriate for their load (square knot, taut-line hitch, clove hitch, etc.) — no granny knots.",
+      "The dining fly must be free-standing and structurally sound to pass inspection.",
+      "Strike does not begin until the judge approves the erected structure.",
+      "All equipment must be returned to its original packed/coiled condition to complete the event."
+    ],
+    "timeAndScoring": "Scoring Overview\n\nSpeed — Time from \"Go\" to hands-clear is recorded and converted to points on a sliding scale.\nQuality — Judge inspects knots, lashings, tension, and structural integrity.\nTeamwork — Judge observes communication, role distribution, and whether the patrol works as a unit or a collection of individuals.\nStrike & Pack — Neatness and completeness of teardown and repacking.\n\n",
+    "setup": "Stage tent (in stuff sack, with poles and stakes) OR tarp + rope + stakes at start position. Mark a clear pitching zone (the 'Show Grounds'). Brief Ringmaster on inspection criteria before event.",
+    "reset": "Verify tent/tarp is fully repacked and ready for next patrol. Re-stage stakes if scattered. Estimated reset time: 3–5 minutes.",
+    "staffing": "1 judge (Ringmaster). Must know correct assembly for the specific shelter being used. Pre-brief judge with inspection checklist.",
+    "supplies": [
+      {
+        "group": "Option A — Tent",
+        "item": "Dome or A-frame tent (same model for all patrols)",
+        "quantity": "1"
+      },
+      {
+        "group": "Option A — Tent",
+        "item": "All poles, stakes, rainfly in stuff sack",
+        "quantity": "1 set"
+      },
+      {
+        "group": "Option B — Tarp",
+        "item": "Tarp (8×10 or similar)",
+        "quantity": "1"
+      },
+      {
+        "group": "Option B — Tarp",
+        "item": "Ridgeline rope (30–40 ft)",
+        "quantity": "1"
+      },
+      {
+        "group": "Option B — Tarp",
+        "item": "Guy lines (pre-cut)",
+        "quantity": "4–6"
+      },
+      {
+        "group": "Option B — Tarp",
+        "item": "Stakes",
+        "quantity": "6–8"
+      },
+      {
+        "group": "Option B — Tarp",
+        "item": "Two trees or poles for ridgeline anchors"
+      }
+    ],
+    "notes": "Announce shelter type to all patrols at the start of the event — all patrols do the same type on the same day. If using a tent, use the same model for every patrol for fairness. If using tarp, pre-select the two anchor points and keep them consistent."
+  },
+  "scoring": {
+    "direction": "lower-wins",
+    "fields": [
+      {
+        "id": "elapsed_time",
+        "label": "Total elapsed time (pitch + inspect + strike + pack)",
+        "type": "stopwatch",
+        "kind": "metric",
+        "audience": "judge",
+        "sortOrder": 10,
+        "weight": 1,
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "inspection_attempts",
+        "label": "Knot Quality",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 20,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 20,
+          "placeholder": "did the use the correct knots, are they tight",
+          "defaultValue": 1
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      },
+      {
+        "id": "field_1778193741073",
+        "label": "Tear down and repacked Tent",
+        "type": "number",
+        "kind": "points",
+        "audience": "judge",
+        "sortOrder": 30,
+        "weight": 1,
+        "config": {
+          "min": 0,
+          "max": 10,
+          "placeholder": ""
+        },
+        "legacy": {
+          "v1Weight": 1
+        }
+      }
+    ]
+  },
+  "variables": {
+    "ten_essentials": "Day Packs"
+  },
+  "tags": [
+    "#knots",
+    "#lashings",
+    "#pioneering"
+  ],
+  "legacy": {
+    "v1Id": "setting-up-the-big-top"
+  }
+}

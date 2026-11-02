@@ -7,6 +7,43 @@ Produced by `scripts/transcode-circus-2026.ts`. Re-running it gives byte-identic
 Counts: 34 Activities (18 ranked in Patrol Games, 12 ranked in Troop Challenges, 4 exhibition),
 3 Competitions, 1 Common Field set. The v1 playlist has 34 entries for 34 game files, one to one.
 
+## Design vs as run
+
+There are two Circus 2026 fixtures. They describe the same event at two moments, not two competing copies:
+
+| Fixture | Source | What it is | Used by |
+| --- | --- | --- | --- |
+| `circus-2026/` (this folder) | v3 cartridge (schema `3.0`) | **Design.** The Circus with Jim's post-event corrections. The future Template. | Everything |
+| `circus-2026-as-run/` | Event-day cartridge (schema `2.9`), run by v1 commit 9ebffa5 on 2026-05-16 | **As run.** What was actually scored at the event. | Only the `packages/scoring` parity tests (issue #3) |
+
+Both come from `scripts/transcode-circus-2026.ts` with the same mapping. The as-run documents have their own ids
+(namespace `circus-2026-as-run`), so neither can be mistaken for the other.
+
+Every scoring-field difference between them, and why. `src/fixtures.test.ts` fails if this list changes.
+
+| Activity | Field | As run | Design | Why |
+| --- | --- | --- | --- | --- |
+| `3-ring-circus` | `hand_breaks` ("+15 sec each") | `penalty` | `metric` | Corrected (v1 BACKLOG 2026-06-18). A time adjustment, not points to subtract. |
+| `the-barrel-of-monkeys-caravan` | `barrel_drops` ("+10 sec each") | `penalty` | `metric` | Same correction: a time adjustment. |
+| `sports-land-skis` | `falls` ("+10 sec each") | `penalty` | `metric` | Same correction: a time adjustment. |
+| `the-high-wire-fire-act` | `matches_used` ("each = +1 min penalty") | `penalty` | `metric` | Same correction: a time adjustment. |
+| `the-tumbled-trapeze-rescue` | `patient_ground` ("+30 sec each") | `penalty` | `metric` | Same correction: a time adjustment. |
+| `the-grand-entry` | `retreat_penalty` | `penalty` | `metric` | Same correction (2026-06-18). Recorded for the Official rather than subtracted. |
+| `the-high-wire-fire-act` | `fire_extinguished` ("Fire fully extinguished & reset") | `penalty` | `points` | Same correction: it's an achievement, so as a penalty it cost the patrols that did it right. |
+| `setting-up-the-big-top`, `the-big-top-goes-down`, `the-circus-orchestra`, `the-grand-entry`, `trapeze-swing-assembly` | `judge_notes` (text, `info`) | absent | present | v1's Composer stripped `judge_notes` on every cartridge export, so the event-day cartridge lost them. Fixed and restored 2026-05-21 (v1 e296c7c). Text only; never scored. |
+| `trapeze-swing-assembly` | `field_1778197726672` `sortOrder` | 60 | 70 | No v1 `sortOrder`, so it comes from list position, which the restored `judge_notes` shifts. |
+
+That's 7 fields across 6 Activities reclassified (5 of them finalized Patrol Games, plus the Troop Challenge
+`sports-land-skis`), and 5 restored note fields. Nothing else differs: Activity content, variables, scoring
+direction, Common Fields, Competitions and playlist order are the same.
+
+The schema `2.9` cartridge predates v1's league model, so the as-run transcode fills three gaps:
+
+- **Game `type` → Competition.** `patrol`, `troop` and `exhibition` map to `patrol-games`, `troop-challenges` and
+  `exhibition`. v1's own schema-v3 migration (5888d22) used the same mapping.
+- **Common Fields per Competition.** `type_defaults` is keyed by type, and is re-keyed the same way.
+- **Competitions and terminology.** The `2.9` manifest has neither, so both come from the design manifest.
+
 ## Renamed or restructured
 
 | v1                                           | v4                                                                                                                                  |

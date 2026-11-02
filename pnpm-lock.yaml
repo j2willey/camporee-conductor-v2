@@ -197,7 +197,11 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
-  packages/scoring: {}
+  packages/scoring:
+    dependencies:
+      '@camporee-conductor/schema':
+        specifier: workspace:*
+        version: link:../schema
 
 packages:
 

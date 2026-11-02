@@ -1,0 +1,74 @@
+[
+  {
+    "game_id": "3-ring-circus",
+    "status": "finalized"
+  },
+  {
+    "game_id": "buried-bearded-ladys-jewels",
+    "status": "finalized"
+  },
+  {
+    "game_id": "circus-line",
+    "status": "finalized"
+  },
+  {
+    "game_id": "clown-car",
+    "status": "finalized"
+  },
+  {
+    "game_id": "ducks-in-a-row",
+    "status": "finalized"
+  },
+  {
+    "game_id": "jugglers",
+    "status": "finalized"
+  },
+  {
+    "game_id": "setting-up-the-big-top",
+    "status": "finalized"
+  },
+  {
+    "game_id": "showtime-in-the-center-ring",
+    "status": "finalized"
+  },
+  {
+    "game_id": "telephone",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-a-frame-trapeze",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-barrel-of-monkeys-caravan",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-big-top-goes-down",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-circus-orchestra",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-flying-flapjacks",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-grand-entry",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-high-wire-fire-act",
+    "status": "finalized"
+  },
+  {
+    "game_id": "the-tumbled-trapeze-rescue",
+    "status": "finalized"
+  },
+  {
+    "game_id": "trapeze-swing-assembly",
+    "status": "finalized"
+  }
+]

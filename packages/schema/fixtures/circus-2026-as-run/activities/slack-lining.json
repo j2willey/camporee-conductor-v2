@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "4.0",
+  "id": "01a18a1b-3000-7521-b2be-49391c2cae5b",
+  "slug": "slack-lining",
+  "title": "The High Wire Act ",
+  "kind": "activity",
+  "scoringType": "exhibition",
+  "content": {
+    "story": "High above the Center Ring, the circus high-wire walker places one foot in front of the other — slow, deliberate, impossibly balanced. Today every Scout gets a turn on the wire. Crew 479 has rigged the line. All you have to do is step up, let go of what you think you know about balance, and see how far you can go.",
+    "objective": "Walk as far as possible along the slack line without stepping off. Individual achievement recognized — no team scoring.",
+    "description": "Crew 479 provides and staffs the slack line station. Any Scout may attempt the slack line at any time during the event period. Spotters are stationed on both sides of the line for safety. Attempts are not formally timed — participation and persistence are encouraged. Outstanding performances (longest walk, longest balance hold) may be recognized at the awards ceremony at the discretion of Crew 479 and the Camporee Director.",
+    "rules": [],
+    "timeAndScoring": "No formal scoring. Exhibition only.\n\nRecognition at awards ceremony is at the discretion of Crew 479 and the Camporee Director. Suggested award title: Best Slackliner.",
+    "setup": "Crew 479 handles all setup and teardown. Coordinate with Crew 479 president before Camporee to confirm arrival time, space requirements, and equipment needs. Mark a clear waiting area to prevent crowding the line.",
+    "reset": "Continuous operation. Crew 479 manages flow of participants.",
+    "staffing": "Crew 479 leads and staffs this station. Camporee provides 2–3 additional adult volunteer spotters to support safe operation. Confirm staffing with Crew 479 in advance.",
+    "supplies": [
+      {
+        "item": "Crew 479 provides",
+        "quantity": "slack line equipment, anchoring hardware"
+      },
+      {
+        "item": "Camporee provides",
+        "quantity": "volunteer spotters (2–3), water and shade for station crew"
+      }
+    ],
+    "notes": "This is an Exhibition event — no patrol or troop points. Coordinate with Crew 479 president before the event: arrival time, space needed, parking for their equipment, and what recognition (if any) they want offered at the ceremony. Award title suggestion: Best Slackliner."
+  },
+  "scoring": {
+    "direction": "higher-wins",
+    "fields": []
+  },
+  "legacy": {
+    "v1Id": "slack-lining"
+  }
+}
