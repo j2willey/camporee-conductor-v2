@@ -1,6 +1,6 @@
 import type { Activity } from "@camporee-conductor/schema";
 import { awardRecipients } from "./awards.ts";
-import { entryTotal, mergeCommonFields } from "./fields.ts";
+import { entryTotal, mergeCommonFields, metricValue } from "./fields.ts";
 import {
   DEFAULT_PLACEMENT_POINTS,
   placementPoints,
@@ -12,6 +12,7 @@ import type {
   EntryResult,
   EventResults,
   OfficialAction,
+  ScoreEntry,
   ScoringInput,
   ScoringWarning,
   Standing,
@@ -58,20 +59,21 @@ export function scoreEvent(input: ScoringInput): EventResults {
           a.entrantId === entrantId,
       );
 
-    const scored = input.entries
-      .filter((e) => e.activityId === activityId)
-      .map((e) => {
-        const actions = actionsFor(e.entrantId);
-        const adjustment = actions.reduce(
-          (sum, a) => (a.type === "adjust-points" ? sum + a.points : sum),
-          0,
-        );
-        return {
-          entrantId: e.entrantId,
-          total: entryTotal(fields, e.values) + adjustment,
-          actions,
-        };
-      });
+    const scored = listed(
+      activity,
+      input.entries.filter((e) => e.activityId === activityId),
+    ).map((e) => {
+      const actions = actionsFor(e.entrantId);
+      const adjustment = actions.reduce(
+        (sum, a) => (a.type === "adjust-points" ? sum + a.points : sum),
+        0,
+      );
+      return {
+        entrantId: e.entrantId,
+        total: entryTotal(fields, e.values) + adjustment,
+        actions,
+      };
+    });
     // DQ'd entries are removed before ranking, so everyone below moves up (ADR-0019).
     const isDisqualified = (actions: readonly OfficialAction[]): boolean =>
       latest(actions, "disqualify")?.disqualified === true;
@@ -241,4 +243,27 @@ function competitionStandings(
         : rankedStanding(t, rankOf(t.total)),
     ),
   };
+}
+
+/**
+ * An Activity's entries in listing order: by its primary metric's raw value in that metric's own
+ * direction, entries with no value last; equal values keep entry order. Without a primary metric,
+ * as entered. Listing only: ranking comes from points (ADR-0019 Measured Activities).
+ */
+function listed(
+  activity: Activity,
+  entries: readonly ScoreEntry[],
+): readonly ScoreEntry[] {
+  const primary = activity.scoring.fields.find((f) => f.primary);
+  if (!primary?.primary) return entries;
+  const sign = primary.primary.direction === "lower-wins" ? 1 : -1;
+  const value = (e: ScoreEntry) => metricValue(primary, e.values[primary.id]);
+  return [...entries].sort((a, b) => {
+    const x = value(a);
+    const y = value(b);
+    if (x === undefined || y === undefined) {
+      return (x === undefined ? 1 : 0) - (y === undefined ? 1 : 0);
+    }
+    return sign * (x - y);
+  });
 }

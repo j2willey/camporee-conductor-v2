@@ -66,3 +66,34 @@ export function entryTotal(
   }
   return total;
 }
+
+/**
+ * A stopwatch value in seconds: `m:ss` or `h:mm:ss`, with optional decimal seconds. `"00:00"`, blank
+ * or unreadable means no time: the stopwatch wasn't used (ADR-0019 Measured Activities).
+ */
+export function stopwatchSeconds(
+  value: FieldValue | undefined,
+): number | undefined {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? value : undefined;
+  }
+  if (typeof value !== "string") return undefined;
+  const match = /^(?:(\d+):)?(\d+):(\d{1,2}(?:\.\d+)?)$/.exec(value.trim());
+  if (!match) return undefined;
+  const [, hours = "0", minutes = "0", seconds = "0"] = match;
+  if (
+    Number(seconds) >= 60 ||
+    (match[1] !== undefined && Number(minutes) >= 60)
+  )
+    return undefined;
+  const total = Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+  return total > 0 ? total : undefined;
+}
+
+/** A primary metric's raw value as a number: seconds for a stopwatch, the count for a number field. */
+export function metricValue(
+  field: ScoringField,
+  value: FieldValue | undefined,
+): number | undefined {
+  return field.type === "stopwatch" ? stopwatchSeconds(value) : numberOf(value);
+}
