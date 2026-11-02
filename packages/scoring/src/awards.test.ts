@@ -6,10 +6,10 @@ import {
   scoreEvent,
   withinCutoff,
   type OfficialAction,
-  type Standing,
+  type RankedStanding,
 } from "./index.ts";
+import { COMPETITION, smallEvent } from "./test-support.ts";
 
-const COMPETITION = "0196cfa2-4c00-7000-8000-000000000020";
 const AWARD = "0196cfa2-4c00-7000-8000-000000000030";
 
 function award(rule: Award["rule"], scope: Award["scope"] = "event"): Award {
@@ -23,14 +23,34 @@ function award(rule: Award["rule"], scope: Award["scope"] = "event"): Award {
   };
 }
 
-/** Standings with these ranks, entrants t1, t2…; `dq` lists DQ'd entrants by position (1-based). */
-function standings(ranks: number[], dq: number[] = []): Standing[] {
+/** Standings with these ranks, entrants t1, t2… (DQ comes from `disqualify` actions, below). */
+function standings(ranks: number[]): RankedStanding[] {
   return ranks.map((rank, i) => ({
     entrantId: `t${i + 1}`,
     total: 1000 - rank,
     rank,
-    ...(dq.includes(i + 1) ? { disqualified: true } : {}),
+    disqualified: false,
   }));
+}
+
+const dq = (entrantId: string): OfficialAction => ({
+  type: "disqualify",
+  entrantId,
+  disqualified: true,
+});
+
+/** The Award's recipients when scoreEvent runs a small Event with one Activity scored `scores`. */
+function recipientsOf(
+  rule: Award["rule"],
+  scores: Record<string, number>,
+  actions: OfficialAction[],
+) {
+  const input = smallEvent({
+    scores: [scores],
+    awards: [{ ...award(rule), competitionId: COMPETITION }],
+    actions,
+  });
+  return scoreEvent(input).awards[0]?.recipients ?? [];
 }
 
 const setAward = (
@@ -79,26 +99,38 @@ describe("top-percent is a counted cutoff, ties at the line included", () => {
   });
 });
 
-describe("DQ'd entrants never receive an automatic award", () => {
-  it("top-percent counts only entrants who aren't DQ'd, and skips the DQ'd", () => {
-    // 9 entrants, 1 DQ'd → 25% of 8 = 2.
-    const ranked = standings([1, 2, 3, 4, 5, 6, 7, 8, 9], [1]);
-    expect(awardRecipients(TOP_25, ranked, []).map((r) => r.entrantId)).toEqual(
-      ["t2", "t3"],
-    );
+describe("overall DQ: removed before ranking, so no automatic award (ADR-0019 DQ amendment)", () => {
+  it("named places: standings 1, 2, 3 with 1st DQ'd → t2 gets the Gold Axe, t3 the Silver Hatchet", () => {
+    expect(
+      recipientsOf(AXES.rule, { t1: 30, t2: 20, t3: 10 }, [dq("t1")]),
+    ).toEqual([
+      { entrantId: "t2", place: "Gold Axe", manual: false },
+      { entrantId: "t3", place: "Silver Hatchet", manual: false },
+    ]);
   });
 
-  it("named places skip a DQ'd entrant", () => {
+  it("named places: with t1 and t2 tied 1st and t1 DQ'd, t2 is 1st alone and t3 moves up to 2nd", () => {
     expect(
-      awardRecipients(AXES, standings([1, 1, 2], [1]), []).map(
-        (r) => r.entrantId,
-      ),
+      recipientsOf(AXES.rule, { t1: 30, t2: 30, t3: 20 }, [dq("t1")]),
+    ).toEqual([
+      { entrantId: "t2", place: "Gold Axe", manual: false },
+      { entrantId: "t3", place: "Silver Hatchet", manual: false },
+    ]);
+  });
+
+  it("top-percent counts only entrants who aren't DQ'd: 9 entrants, 1 DQ'd → 25% of 8 = 2", () => {
+    const scores = Object.fromEntries(
+      [90, 80, 70, 60, 50, 40, 30, 20, 10].map((v, i) => [`t${i + 1}`, v]),
+    );
+    expect(
+      recipientsOf(TOP_25.rule, scores, [dq("t1")]).map((r) => r.entrantId),
     ).toEqual(["t2", "t3"]);
   });
 
   it("a DQ'd entrant can still get a manual set-award", () => {
     expect(
-      awardRecipients(TOP_25, standings([1, 2, 3, 4], [1]), [
+      recipientsOf(TOP_25.rule, { t1: 40, t2: 30, t3: 20, t4: 10 }, [
+        dq("t1"),
         setAward("t1", true),
       ]),
     ).toContainEqual({ entrantId: "t1", manual: true });
@@ -188,7 +220,10 @@ describe("scoreEvent: Top Dog on the real Circus 2026 Troop Challenge standings"
     expect(results.awards).toEqual([
       {
         awardId: AWARD,
-        recipients: withinCutoff(troopStandings, 4).map((s) => ({
+        recipients: withinCutoff(
+          troopStandings.flatMap((s) => (s.disqualified ? [] : [s])),
+          4,
+        ).map((s) => ({
           entrantId: s.entrantId,
           manual: false,
         })),

@@ -5,9 +5,11 @@ import { placementPoints, rankingFor } from "./ranking.ts";
 import type {
   ActivityResults,
   CompetitionStandings,
+  EntryResult,
   EventResults,
   OfficialAction,
   ScoringInput,
+  Standing,
 } from "./types.ts";
 
 type ActionOf<T extends OfficialAction["type"]> = Extract<
@@ -65,11 +67,19 @@ export function scoreEvent(input: ScoringInput): EventResults {
           actions,
         };
       });
-    const rankOf = ranking(scored.map((e) => e.total));
+    // DQ'd entries are removed before ranking, so everyone below moves up (ADR-0019).
+    const isDisqualified = (actions: readonly OfficialAction[]): boolean =>
+      latest(actions, "disqualify")?.disqualified === true;
+    const rankOf = ranking(
+      scored.filter((e) => !isDisqualified(e.actions)).map((e) => e.total),
+    );
     activities.push({
       activityId,
       competitionId,
-      entries: scored.map(({ entrantId, total, actions }) => {
+      entries: scored.map(({ entrantId, total, actions }): EntryResult => {
+        if (isDisqualified(actions)) {
+          return { entrantId, total, points: 0, disqualified: true };
+        }
         const provisionalRank = rankOf(total);
         const finalRank =
           latest(actions, "set-final-rank")?.rank ?? provisionalRank;
@@ -81,6 +91,7 @@ export function scoreEvent(input: ScoringInput): EventResults {
           points:
             latest(actions, "set-placement-points")?.points ??
             placementPoints(finalRank),
+          disqualified: false,
         };
       }),
     });
@@ -130,9 +141,24 @@ function competitionStandings(
         0,
       ),
     }));
-  const rankOf = ranking(totals.map((t) => t.total));
+  // An overall DQ is an action with no Activity; the latest one for the entrant wins.
+  const isDisqualified = (entrantId: string): boolean =>
+    latest(
+      input.actions.filter(
+        (a) => !("activityId" in a) && a.entrantId === entrantId,
+      ),
+      "disqualify",
+    )?.disqualified === true;
+  // DQ'd entrants keep their total but are removed before ranking (ADR-0019).
+  const rankOf = ranking(
+    totals.filter((t) => !isDisqualified(t.entrantId)).map((t) => t.total),
+  );
   return {
     competitionId,
-    entrants: totals.map((t) => ({ ...t, rank: rankOf(t.total) })),
+    entrants: totals.map((t): Standing =>
+      isDisqualified(t.entrantId)
+        ? { ...t, disqualified: true }
+        : { ...t, rank: rankOf(t.total), disqualified: false },
+    ),
   };
 }
