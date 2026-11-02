@@ -79,6 +79,34 @@ export const CompetitionSchema = z.strictObject({
   legacy: LegacySchema.optional(),
 });
 
+/**
+ * How an Award picks its recipients from a Competition's standings (ADR-0019 Awards amendment).
+ * `places`: by place number, 1st gets `names[0]`…; `top-percent`: a counted cutoff, ties at the line
+ * included; `manual`: only Officials' `set-award` actions.
+ */
+export const AwardRuleSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("places"),
+    names: z.array(NonEmptyText).min(1),
+  }),
+  z.strictObject({
+    type: z.literal("top-percent"),
+    percent: z.number().gt(0).max(100),
+  }),
+  z.strictObject({ type: z.literal("manual") }),
+]);
+
+/** Recognition drawn from one Competition's standings, e.g. Gold Axe or Top Dog. */
+export const AwardSchema = z.strictObject({
+  id: Uuid7,
+  slug: Slug,
+  label: NonEmptyText,
+  competitionId: Uuid7,
+  /** The whole Competition, or each Division separately (ADR-0007). */
+  scope: z.enum(["event", "division"]).default("event"),
+  rule: AwardRuleSchema,
+});
+
 /** One Activity in this Event. The list order is `sortOrder`, not array position. */
 export const EventActivitySchema = z.strictObject({
   activityId: Uuid7,
@@ -123,6 +151,15 @@ const eventShape = {
    * or `strict` (1, 1, 3). Defaults to dense when left out.
    */
   tieNumbering: z.enum(["dense", "strict"]).default("dense"),
+  awards: z
+    .array(AwardSchema)
+    .superRefine((awards, ctx) =>
+      rejectDuplicates(awards, ctx, (a) => a.id, {
+        label: "award id",
+        path: "id",
+      }),
+    )
+    .optional(),
   lineage: LineageSchema.optional(),
   legacy: LegacySchema.optional(),
 };
@@ -138,6 +175,15 @@ function checkEventReferences(
       ctx.addIssue({
         code: "custom",
         path: ["activities", index, "competitionId"],
+        message: "no Competition with this id in the Event",
+      });
+    }
+  });
+  event.awards?.forEach((award, index) => {
+    if (!competitionIds.has(award.competitionId)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["awards", index, "competitionId"],
         message: "no Competition with this id in the Event",
       });
     }
@@ -164,3 +210,4 @@ export const TemplateSchema = z
 export type Event = z.infer<typeof EventSchema>;
 export type Template = z.infer<typeof TemplateSchema>;
 export type Competition = z.infer<typeof CompetitionSchema>;
+export type Award = z.infer<typeof AwardSchema>;
