@@ -42,6 +42,32 @@ describe("ActivitySchema", () => {
     expect(ActivitySchema.parse(validActivity())).toEqual(validActivity());
   });
 
+  it("allows at most one primary metric field", () => {
+    const primary = (id: string) => ({
+      ...validActivity().scoring.fields[0],
+      id,
+      primary: { direction: "lower-wins" },
+    });
+    const activity = validActivity();
+    expect(
+      issuesOf(ActivitySchema, {
+        ...activity,
+        scoring: {
+          ...activity.scoring,
+          fields: [primary("elapsed_time"), primary("lap_time")],
+        },
+      }),
+    ).toContain(
+      "scoring.fields.1.primary: an Activity has at most one primary metric",
+    );
+    expect(
+      ActivitySchema.safeParse({
+        ...activity,
+        scoring: { ...activity.scoring, fields: [primary("elapsed_time")] },
+      }).success,
+    ).toBe(true);
+  });
+
   it("accepts an exhibition Activity with variables, tags, lineage and legacy ids", () => {
     const activity = {
       ...validActivity(),

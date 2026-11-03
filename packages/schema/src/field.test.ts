@@ -90,4 +90,50 @@ describe("ScoringFieldSchema", () => {
       "config.defaultValue: a checkbox field needs a boolean default",
     );
   });
+
+  describe("primary metric (ADR-0019 Measured Activities)", () => {
+    const metric = (type: string, extra: object = {}) => ({
+      ...numberField(),
+      id: "elapsed_time",
+      type,
+      kind: "metric",
+      config: undefined,
+      ...extra,
+    });
+
+    it("accepts primary with its own direction on a number or stopwatch metric", () => {
+      for (const type of ["number", "stopwatch"]) {
+        expect(
+          ScoringFieldSchema.parse(
+            metric(type, { primary: { direction: "lower-wins" } }),
+          ).primary,
+        ).toEqual({ direction: "lower-wins" });
+      }
+    });
+
+    it("requires a direction on primary", () => {
+      expect(
+        ScoringFieldSchema.safeParse(metric("stopwatch", { primary: {} }))
+          .success,
+      ).toBe(false);
+    });
+
+    it("rejects primary on a field that isn't a metric", () => {
+      expect(
+        issuesOf(ScoringFieldSchema, {
+          ...numberField(),
+          primary: { direction: "higher-wins" },
+        }),
+      ).toContain("primary: only a metric field can be primary");
+    });
+
+    it("rejects primary on a metric that isn't a number or stopwatch", () => {
+      expect(
+        issuesOf(
+          ScoringFieldSchema,
+          metric("text", { primary: { direction: "higher-wins" } }),
+        ),
+      ).toContain("primary: only a number or stopwatch field can be primary");
+    });
+  });
 });

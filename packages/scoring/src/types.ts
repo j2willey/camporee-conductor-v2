@@ -158,12 +158,30 @@ export interface AwardResults {
 }
 
 /**
- * An Official action that scoring left out because it's invalid, e.g. a `set-award` place the Award
- * doesn't have, or a `set-overall-rank` that isn't a whole number from 1. The log is append-only, so scoring never fails on one; the Collator should reject
- * them when they're written.
+ * Something an Official should look at. Scoring never fails on bad data or a bad action; it carries on
+ * and says so here.
  */
-export interface ScoringWarning {
+export type ScoringWarning = ActionWarning | EntryWarning;
+
+/**
+ * An Official action that scoring left out because it's invalid, e.g. a `set-award` place the Award
+ * doesn't have, or a `set-overall-rank` that isn't a whole number from 1. The log is append-only, so
+ * scoring never fails on one; the Collator should reject them when they're written.
+ */
+export interface ActionWarning {
   action: OfficialAction;
+  message: string;
+}
+
+/**
+ * An entered value scoring couldn't read, e.g. a primary stopwatch time typed as `"7.47"`. The entry
+ * is listed as if it had no value (ADR-0019 Measured Activities).
+ */
+export interface EntryWarning {
+  activityId: string;
+  entrantId: string;
+  fieldId: string;
+  value: FieldValue;
   message: string;
 }
 

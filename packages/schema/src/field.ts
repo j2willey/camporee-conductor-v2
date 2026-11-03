@@ -50,6 +50,13 @@ export const ScoringFieldSchema = z
      */
     weight: z.number().min(0).default(1),
     required: z.boolean().optional(),
+    /**
+     * The Activity's primary metric: entries are listed by its raw value in this direction, which can
+     * differ from the Activity's points direction (ADR-0019 Measured Activities). Ranking still uses points.
+     */
+    primary: z
+      .strictObject({ direction: z.enum(["higher-wins", "lower-wins"]) })
+      .optional(),
     config: z
       .strictObject({
         min: z.number().optional(),
@@ -63,6 +70,23 @@ export const ScoringFieldSchema = z
     legacy: z.strictObject({ v1Weight: z.number().optional() }).optional(),
   })
   .superRefine((field, ctx) => {
+    if (field.primary && field.kind !== "metric") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["primary"],
+        message: "only a metric field can be primary",
+      });
+    } else if (
+      field.primary &&
+      field.type !== "number" &&
+      field.type !== "stopwatch"
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["primary"],
+        message: "only a number or stopwatch field can be primary",
+      });
+    }
     const config = field.config ?? {};
     if (
       config.min !== undefined &&

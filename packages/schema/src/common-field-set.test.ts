@@ -45,4 +45,20 @@ describe("CommonFieldSetSchema", () => {
       }),
     ).toContain('fields.1.id: duplicate field id "p_yell"');
   });
+
+  it("rejects a primary metric: it belongs to one Activity (ADR-0019)", () => {
+    const set = validSet();
+    expect(
+      issuesOf(CommonFieldSetSchema, {
+        ...set,
+        fields: [
+          {
+            ...set.fields[0],
+            kind: "metric",
+            primary: { direction: "higher-wins" },
+          },
+        ],
+      }),
+    ).toContain("fields.0.primary: a Common Field can't be a primary metric");
+  });
 });

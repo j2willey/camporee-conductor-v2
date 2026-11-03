@@ -73,6 +73,18 @@ export const ActivitySchema = z
         message: "a ranked Activity needs at least one scoring field",
       });
     }
+    activity.scoring.fields.forEach((field, index) => {
+      if (
+        field.primary &&
+        activity.scoring.fields.findIndex((f) => f.primary) !== index
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["scoring", "fields", index, "primary"],
+          message: "an Activity has at most one primary metric",
+        });
+      }
+    });
   });
 
 export type Activity = z.infer<typeof ActivitySchema>;

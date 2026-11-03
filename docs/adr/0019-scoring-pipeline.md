@@ -108,3 +108,19 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
   owns the result. Awards use the overridden rank. An overall DQ beats an override, as for Activities. An
   invalid effective action (a rank that isn't a whole number from 1, or an entrant not in that
   Competition) is left out with a warning, the same as `set-award`.
+
+## Amendment 2026-11-02 (issue #3): Measured Activities
+
+- An Activity may mark **at most one** `metric` field (type `number` or `stopwatch`) as its **primary metric**,
+  with **its own direction**: `primary: { direction: "lower-wins" | "higher-wins" }`. The Activity's
+  `direction` is about its points; a metric can run the other way (Circus 2026 `trapeze-swing-assembly`:
+  points higher-wins, build time lower-wins). Common Fields can't be primary.
+- `scoreEvent` **lists** an Activity's entries by the primary metric's raw value in that direction, to help
+  the Official enter points. **Ranking still comes from points**; no conversion formulas. Time adjustments
+  ("+15 sec each") don't change the order. Activities without a primary metric are listed as entered.
+- Stopwatch values are text (`m:ss`, `h:mm:ss`, optional decimal seconds). **`"00:00"` or blank means no
+  time** (the stopwatch wasn't used, as in Circus 2026 `the-high-wire-fire-act`); entries with no value are
+  listed last, in entry order.
+- A primary stopwatch value that's entered but **can't be read** (e.g. `"7.47"`, `"7;47"`, `"1:75"`) is also
+  listed last, and `scoreEvent` returns a **warning** naming the Activity, entrant, field and raw value, so
+  the Official sees the typo. Scoring doesn't fail on it.
