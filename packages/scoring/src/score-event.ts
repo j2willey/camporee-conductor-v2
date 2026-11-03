@@ -341,9 +341,10 @@ function unreadablePrimaryTimes(
 type Finalize = ActionOf<"finalize">;
 
 /**
- * The Activities an effective (latest) `finalize` freezes, with its place in the log. Only the latest
- * `finalize` or `unfinalize` per Activity is checked: an invalid one is left out with a warning, and the
- * Activity scores as not finalized (ADR-0019).
+ * The Activities a `finalize` freezes, with its place in the log. Per Activity, only the latest
+ * `finalize` or `unfinalize` is checked. An invalid latest `finalize` gets a warning and the Activity
+ * stays frozen with the latest valid `finalize` since the last `unfinalize`, if there is one: finalized
+ * results are what's printed on ribbons, and only an explicit `unfinalize` reopens (ADR-0019).
  */
 function finalizations(
   input: ScoringInput,
@@ -352,18 +353,22 @@ function finalizations(
   finalized: ReadonlyMap<string, { action: Finalize; index: number }>;
   warnings: ScoringWarning[];
 } {
-  const latestByActivity = new Map<
+  const logByActivity = new Map<
     string,
-    { action: Finalize | ActionOf<"unfinalize">; index: number }
+    { action: Finalize | ActionOf<"unfinalize">; index: number }[]
   >();
   input.actions.forEach((action, index) => {
     if (action.type === "finalize" || action.type === "unfinalize") {
-      latestByActivity.set(action.activityId, { action, index });
+      const log = logByActivity.get(action.activityId) ?? [];
+      log.push({ action, index });
+      logByActivity.set(action.activityId, log);
     }
   });
   const finalized = new Map<string, { action: Finalize; index: number }>();
   const warnings: ScoringWarning[] = [];
-  for (const [activityId, { action, index }] of latestByActivity) {
+  for (const [activityId, log] of logByActivity) {
+    const latestAction = log.at(-1)?.action;
+    if (!latestAction) continue;
     const activity = input.event.activities.some(
       (a) => a.activityId === activityId,
     )
@@ -371,15 +376,21 @@ function finalizations(
       : undefined;
     if (!activity) {
       warnings.push({
-        action,
-        message: `${action.type}: no Activity ${activityId} in the Event; left out`,
+        action: latestAction,
+        message: `${latestAction.type}: no Activity ${activityId} in the Event; left out`,
       });
       continue;
     }
-    if (action.type === "unfinalize") continue;
-    const problem = finalizeProblem(input, activity, action);
-    if (problem) warnings.push({ action, message: problem });
-    else finalized.set(activityId, { action, index });
+    for (const [i, { action, index }] of [...log.entries()].reverse()) {
+      if (action.type === "unfinalize") break;
+      const problem = finalizeProblem(input, activity, action);
+      if (!problem) {
+        finalized.set(activityId, { action, index });
+        break;
+      }
+      // Superseded invalid finalizes are skipped silently; only the latest one warns.
+      if (i === log.length - 1) warnings.push({ action, message: problem });
+    }
   }
   return { finalized, warnings };
 }

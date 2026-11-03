@@ -381,7 +381,7 @@ describe("an invalid effective finalize is a warning, not an error", () => {
       /points -1 for t1/,
     ],
   ])(
-    "%s: left out, the Activity scores as not finalized",
+    "%s: left out; with no earlier valid finalize, the Activity scores as not finalized",
     (_label, ranking, message) => {
       const bad = finalize(ranking);
       const { entries, finalized, warnings } = scored(
@@ -406,6 +406,83 @@ describe("an invalid effective finalize is a warning, not an error", () => {
   ])("%s for an Activity not in the Event: warning", (_label, bad) => {
     expect(scored([bad]).warnings).toEqual([
       { action: bad, message: expect.stringMatching(/no Activity/) as string },
+    ]);
+  });
+
+  it("a bad finalize after a valid one: stays frozen with the valid ranking, with a warning", () => {
+    const bad = finalize([ranked("t9", 1, 100)]);
+    const { entries, finalized, warnings } = scored(
+      [finalize(AS_SCORED), bad],
+      [{ t1: 5, t2: 20, t3: 10 }],
+    );
+    expect(finalized).toBe(true);
+    expect(entries).toEqual([
+      ["t1", 1, 100],
+      ["t2", 2, 90],
+      ["t3", 3, 80],
+    ]);
+    // The bad action's warning, then the stored ranking's "recompute would differ".
+    expect(warnings).toEqual([
+      {
+        action: bad,
+        message: expect.stringMatching(/t9 has no entry/) as string,
+      },
+      expect.objectContaining({ action: finalize(AS_SCORED) }),
+    ]);
+  });
+
+  it("the fallback is the latest valid finalize; only the latest bad one warns", () => {
+    const second = [
+      ranked("t2", 1, 100),
+      ranked("t3", 2, 90),
+      ranked("t1", 3, 80),
+    ];
+    const badB = finalize([ranked("t8", 1, 100)]);
+    const badC = finalize([ranked("t9", 1, 100)]);
+    const { entries, warnings } = scored(
+      [finalize(AS_SCORED), finalize(second), badB, badC],
+      [{ t1: 5, t2: 20, t3: 10 }],
+    );
+    expect(entries.map(([id]) => id)).toEqual(["t2", "t3", "t1"]);
+    expect(warnings).toEqual([
+      {
+        action: badC,
+        message: expect.stringMatching(/t9 has no entry/) as string,
+      },
+    ]);
+  });
+
+  it("actions logged after the valid finalize stay held back past a bad one", () => {
+    const late: OfficialAction = {
+      type: "set-final-rank",
+      ...target("t3"),
+      rank: 1,
+    };
+    const bad = finalize([ranked("t9", 1, 100)]);
+    const { entries, warnings } = scored([finalize(AS_SCORED), late, bad]);
+    expect(entries).toEqual([
+      ["t1", 1, 100],
+      ["t2", 2, 90],
+      ["t3", 3, 80],
+    ]);
+    expect(warnings.map((w) => ("action" in w ? w.action : undefined))).toEqual(
+      [bad, late],
+    );
+  });
+
+  it("only an unfinalize reopens: a bad finalize after one doesn't bring back the earlier ranking", () => {
+    const bad = finalize([ranked("t9", 1, 100)]);
+    const { finalized, warnings } = scored([
+      finalize(AS_SCORED),
+      unfinalize(),
+      bad,
+    ]);
+    expect(finalized).toBe(false);
+    expect(warnings).toEqual([
+      {
+        action: bad,
+        message: expect.stringMatching(/t9 has no entry/) as string,
+      },
     ]);
   });
 

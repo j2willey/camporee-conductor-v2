@@ -142,7 +142,11 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Per Activity only.** Standings aren't finalized; they're derived from Activity results.
 - Only the effective (latest) `finalize` or `unfinalize` is checked. An invalid one (an Activity not in the
   Event; an entrant with no entry at that Activity, or listed twice; a rank that isn't a whole number from 1;
-  negative points) is **left out with a warning**, and the Activity is scored as not finalized.
+  negative points) is **left out with a warning**. The Activity **stays frozen with the latest valid
+  `finalize`** since the last `unfinalize`, if there is one: finalized results are what's printed on
+  ribbons, so staying frozen is the safe default, and **only an explicit `unfinalize` reopens**. With no
+  valid `finalize` to fall back to, the Activity is scored as not finalized. _(Changed 2026-11-02 before
+  merge, Jim: it used to unfreeze.)_
 - v1 had only a Draft/Final switch per game (`game_status`). It stored no ranking and didn't stop later
   changes: v1 recomputed every time. Freezing the ranking is a deliberate change. v1's Close Game is
   different: it's a Judge's "I'm done" handshake, not an Official's finalization.
