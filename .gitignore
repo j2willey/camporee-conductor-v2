@@ -8,5 +8,8 @@ coverage/
 
 # Real event databases hold people's names and emails; never commit them (issue #3).
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 *.sqlite
 *.sqlite3

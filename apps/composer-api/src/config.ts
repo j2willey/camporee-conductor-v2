@@ -1,3 +1,5 @@
+import { resolve } from "node:path";
+
 /** A setting that stops the server from starting. */
 export class ConfigError extends Error {
   override name = "ConfigError";
@@ -50,5 +52,16 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (!Number.isInteger(port) || port < 0) {
     throw new ConfigError(`PORT must be a whole number, not "${env["PORT"]}".`);
   }
-  return { auth, databasePath: env["DATABASE_PATH"] ?? "composer.db", port };
+  return { auth, databasePath: databasePathFrom(env), port };
+}
+
+/**
+ * DATABASE_PATH (default `composer.db`). A relative path is from where the command was typed: pnpm runs
+ * scripts in the package directory but sets INIT_CWD, so the server and the import CLI find the same file.
+ */
+export function databasePathFrom(
+  env: Record<string, string | undefined>,
+): string {
+  const path = env["DATABASE_PATH"] ?? "composer.db";
+  return path === ":memory:" ? path : resolve(env["INIT_CWD"] ?? ".", path);
 }

@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { ConfigError, loadConfig } from "./config.ts";
+import { ConfigError, databasePathFrom, loadConfig } from "./config.ts";
 
 const clerk = {
   CLERK_SECRET_KEY: "sk_test_x",
@@ -47,8 +47,12 @@ describe("loadConfig", () => {
   });
 
   it("reads the database path and port, with defaults", () => {
-    const config = loadConfig({ NODE_ENV: "test", AUTH_ADAPTER: "dev" });
-    expect(config.databasePath).toBe("composer.db");
+    const config = loadConfig({
+      NODE_ENV: "test",
+      AUTH_ADAPTER: "dev",
+      INIT_CWD: "/repo",
+    });
+    expect(config.databasePath).toBe("/repo/composer.db");
     expect(config.port).toBe(3010);
     expect(
       loadConfig({
@@ -58,6 +62,22 @@ describe("loadConfig", () => {
         PORT: "8080",
       }),
     ).toMatchObject({ databasePath: "/data/x.db", port: 8080 });
+  });
+});
+
+describe("databasePathFrom", () => {
+  it("resolves a relative path from where pnpm was run (INIT_CWD), so the server and CLI agree", () => {
+    expect(databasePathFrom({ INIT_CWD: "/repo" })).toBe("/repo/composer.db");
+    expect(
+      databasePathFrom({ INIT_CWD: "/repo", DATABASE_PATH: "data/x.db" }),
+    ).toBe("/repo/data/x.db");
+    expect(
+      databasePathFrom({ INIT_CWD: "/repo", DATABASE_PATH: "/data/x.db" }),
+    ).toBe("/data/x.db");
+  });
+
+  it("keeps :memory: as is", () => {
+    expect(databasePathFrom({ DATABASE_PATH: ":memory:" })).toBe(":memory:");
   });
 });
 
