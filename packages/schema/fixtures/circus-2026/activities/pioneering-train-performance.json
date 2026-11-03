@@ -52,6 +52,9 @@
         "audience": "judge",
         "sortOrder": 10,
         "weight": 1,
+        "primary": {
+          "direction": "lower-wins"
+        },
         "config": {
           "placeholder": "Start to crossing finish line"
         },

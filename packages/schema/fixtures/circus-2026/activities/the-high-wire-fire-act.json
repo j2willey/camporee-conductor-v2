@@ -109,6 +109,9 @@
         "audience": "judge",
         "sortOrder": 10,
         "weight": 1,
+        "primary": {
+          "direction": "lower-wins"
+        },
         "config": {
           "placeholder": " (start to High Wire burn-through)"
         },

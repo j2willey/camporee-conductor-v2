@@ -97,7 +97,41 @@ interface Variant {
   setTitle: string;
   /** Top Dog as an Award instead of an Activity (#3). Only the design; as run, v1 had it as a game. */
   topDogAsAward: boolean;
+  /** Mark `PRIMARY_METRICS` (#3). Only the design; v1 had no primary metrics. */
+  primaryMetrics: boolean;
 }
+
+/**
+ * Measured Activities: v1 game id → the field listed as its primary metric, and its direction
+ * (ADR-0019, Jim 2026-11-02). Not jugglers: its scoring is still TBD.
+ */
+const PRIMARY_METRICS: Record<
+  string,
+  { fieldId: string; direction: "lower-wins" | "higher-wins" }
+> = {
+  "3-ring-circus": { fieldId: "elapsed_time", direction: "lower-wins" },
+  "circus-line": { fieldId: "elapsed_time", direction: "lower-wins" },
+  "ducks-in-a-row": { fieldId: "total_turns", direction: "lower-wins" },
+  "pioneering-train-performance": {
+    fieldId: "elapsed_time",
+    direction: "lower-wins",
+  },
+  "setting-up-the-big-top": {
+    fieldId: "elapsed_time",
+    direction: "lower-wins",
+  },
+  "sports-land-skis": { fieldId: "elapsed_time", direction: "lower-wins" },
+  "the-a-frame-trapeze": { fieldId: "elapsed_time", direction: "lower-wins" },
+  "the-barrel-of-monkeys-caravan": {
+    fieldId: "elapsed_time",
+    direction: "lower-wins",
+  },
+  "the-high-wire-fire-act": { fieldId: "base_time", direction: "lower-wins" },
+  "the-tumbled-trapeze-rescue": {
+    fieldId: "elapsed_time",
+    direction: "lower-wins",
+  },
+};
 
 /** v1 modelled Top Dog as a Troop Challenge; it's really an Award. */
 const TOP_DOG = "top-dog";
@@ -109,6 +143,7 @@ const DESIGN: Variant = {
   setSlug: "circus-2026-common-fields",
   setTitle: "Circus 2026 Common Fields",
   topDogAsAward: true,
+  primaryMetrics: true,
 };
 
 const AS_RUN: Variant = {
@@ -118,6 +153,7 @@ const AS_RUN: Variant = {
   setSlug: "circus-2026-as-run-common-fields",
   setTitle: "Circus 2026 Common Fields (as run)",
   topDogAsAward: false,
+  primaryMetrics: false,
 };
 
 let variant = DESIGN;
@@ -266,7 +302,14 @@ function toActivity(game: V1Game): Activity {
         game.scoring_model.method === "timed_asc"
           ? "lower-wins"
           : "higher-wins",
-      fields: game.scoring_model.inputs.map(toField),
+      fields: game.scoring_model.inputs.map(toField).map((field) => {
+        const primary = variant.primaryMetrics
+          ? PRIMARY_METRICS[game.id]
+          : undefined;
+        return primary?.fieldId === field.id
+          ? { ...field, primary: { direction: primary.direction } }
+          : field;
+      }),
     },
     legacy,
   };
@@ -448,6 +491,14 @@ for (const v of [DESIGN, AS_RUN]) {
 
   const set = toCommonFieldSet(presets);
   const activities = activityGames.map(toActivity);
+  if (v.primaryMetrics) {
+    for (const [slug, { fieldId }] of Object.entries(PRIMARY_METRICS)) {
+      const a = activities.find((x) => x.slug === slug);
+      if (!a?.scoring.fields.some((f) => f.id === fieldId && f.primary)) {
+        throw new Error(`primary metric ${slug} ${fieldId} not found`);
+      }
+    }
+  }
   const event = toEvent(camporee, games, set, design);
 
   const write = (path: string, doc: unknown): void => {
