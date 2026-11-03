@@ -1,0 +1,27 @@
+{
+  "name": "@camporee-conductor/composer-api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Composer API: Organizations, memberships and design documents, behind a swappable auth module. (ADR-0009, 0012, 0014, 0021)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "start": "node src/main.ts",
+    "import-event": "node src/cli/import.ts",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@camporee-conductor/schema": "workspace:*",
+    "@clerk/backend": "3.26.0",
+    "@hono/node-server": "2.1.5",
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.13",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "drizzle-kit": "0.31.11"
+  }
+}
