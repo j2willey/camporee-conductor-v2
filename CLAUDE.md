@@ -77,9 +77,15 @@ NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer
 pnpm --filter @camporee-conductor/composer-web dev                                           # web app on :5173, proxies to the API
 pnpm --filter @camporee-conductor/composer-api import-event <org-slug> packages/schema/fixtures/circus-2026
 pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
+pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> packages/schema/fixtures/circus-2026  # owner + Org + Event
+pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
+
+# One image: the API serving the built app (Clerk keys at run time; dev sign-in refused)
+docker build -t composer . && docker run --rm -p 3010:3010 --env-file .env.local -v composer-data:/data composer
 ```
 
-CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test on every PR and push to `main`.
+CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test, the Playwright smoke test, and a Docker
+image build-and-start check on every PR and push to `main`.
 
 ## Layout
 
@@ -88,7 +94,10 @@ packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
 packages/schema/    Zod document schemas (Event, Activity, Common Field set, Template) + generated JSON Schema;
                     fixtures/circus-2026/ is the transcoded Circus 2026 design; fixtures/circus-2026-as-run/ is
                     what the event ran, for scoring parity only (see TRANSCODE-NOTES.md)
-apps/composer-api/  Composer API: Hono, SQLite/Drizzle, auth module (Clerk + dev adapter), Event import
+apps/composer-api/  Composer API: Hono, SQLite/Drizzle, auth module (Clerk + dev adapter), Event import; serves the built
+                    web app when WEB_ROOT is set
+apps/composer-web/  Composer web app: React + Vite SPA (React Router library mode), TanStack Query, Tailwind;
+                    e2e/ is the Playwright smoke test
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```
