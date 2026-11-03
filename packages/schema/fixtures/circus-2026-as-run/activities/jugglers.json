@@ -34,7 +34,6 @@
     "notes": "⚠️ UPDATE SCORING INPUTS AFTER PLAYTESTING. Judge must watch pattern carefully before adding balls — ensure the pattern is truly fixed (same path every time). Smaller patrols (4–5 Scouts) will find this harder than larger patrols. The calling requirement (announcing target before throwing) is what makes this a communication game — enforce it."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "max_balls",
@@ -94,6 +93,7 @@
     "ten_essentials": "Pen and Paper"
   },
   "legacy": {
-    "v1Id": "jugglers"
+    "v1Id": "jugglers",
+    "v1ScoringMethod": "points_desc"
   }
 }

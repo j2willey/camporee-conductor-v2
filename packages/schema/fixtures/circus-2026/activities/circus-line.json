@@ -39,7 +39,6 @@
     "notes": "Bindings should be snug but not tight — comfort and safety matter. Brief patrols to practice one step together before the clock starts. Grass or soft ground preferred — falls are likely."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -82,6 +81,7 @@
   "legacy": {
     "v1Id": "circus-line",
     "v1LibraryUuid": "e38d4b40-fce3-408a-ad43-a748fb4d84f0",
-    "v1LibraryTitle": "Bound-Leg Patrol Race"
+    "v1LibraryTitle": "Bound-Leg Patrol Race",
+    "v1ScoringMethod": "timed_asc"
   }
 }

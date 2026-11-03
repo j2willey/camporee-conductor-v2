@@ -37,13 +37,11 @@ function measured({
   listing,
   values,
   points,
-  direction = "higher-wins",
 }: {
   type: "number" | "stopwatch";
   listing: "higher-wins" | "lower-wins";
   values: Record<string, FieldValue>;
   points: Record<string, number>;
-  direction?: "higher-wins" | "lower-wins";
 }): ScoringInput {
   const input = smallEvent({ scores: [points] });
   const [activity] = input.activities;
@@ -54,7 +52,6 @@ function measured({
       ActivitySchema.parse({
         ...activity,
         scoring: {
-          direction,
           fields: [
             ...activity.scoring.fields,
             {
@@ -113,13 +110,12 @@ describe("Measured Activities: entries listed by the primary metric (ADR-0019)",
     ).toEqual(["t2", "t1", "t3", "t4"]);
   });
 
-  it("uses the metric's own direction, not the Activity's (points higher-wins, time lower-wins)", () => {
+  it("lists by the metric's own direction while points still rank highest first (trapeze-swing-assembly)", () => {
     expect(
       listed(
         measured({
           type: "stopwatch",
           listing: "lower-wins",
-          direction: "higher-wins",
           values: { t1: "24:37", t2: "07:47", t3: "13:34" },
           points: { t1: 1, t2: 1, t3: 1 },
         }),

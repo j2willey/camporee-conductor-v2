@@ -22,7 +22,6 @@ const validActivity = (): Activity => ({
     notes: "",
   },
   scoring: {
-    direction: "lower-wins",
     fields: [
       {
         id: "elapsed_time",
@@ -40,6 +39,24 @@ const validActivity = (): Activity => ({
 describe("ActivitySchema", () => {
   it("accepts a valid Activity", () => {
     expect(ActivitySchema.parse(validActivity())).toEqual(validActivity());
+  });
+
+  it("has no Activity-level direction: ranking is by points, a primary metric has its own (#28)", () => {
+    const activity = validActivity();
+    expect(
+      issuesOf(ActivitySchema, {
+        ...activity,
+        scoring: { ...activity.scoring, direction: "lower-wins" },
+      }),
+    ).toContain('scoring: Unrecognized key: "direction"');
+  });
+
+  it("keeps v1's scoring method in legacy", () => {
+    const activity = {
+      ...validActivity(),
+      legacy: { v1Id: "3-ring-circus", v1ScoringMethod: "timed_asc" },
+    };
+    expect(ActivitySchema.parse(activity)).toEqual(activity);
   });
 
   it("allows at most one primary metric field", () => {

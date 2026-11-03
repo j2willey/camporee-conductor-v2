@@ -43,7 +43,6 @@
     "notes": "Gateway construction typically begins Friday evening or Saturday morning. Announce the judging window at Friday check-in so troops can plan. Gateways will be visible all weekend and contribute to overall campsite atmosphere."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "creativity",
@@ -120,6 +119,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "campsite-themed-gateway"
+    "v1Id": "campsite-themed-gateway",
+    "v1ScoringMethod": "points_desc"
   }
 }

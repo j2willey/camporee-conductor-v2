@@ -36,8 +36,8 @@ Every scoring-field difference between them, and why. `src/fixtures.test.ts` fai
 | `trapeze-swing-assembly` | `field_1778197726672` `sortOrder` | 60 | 70 | No v1 `sortOrder`, so it comes from list position, which the restored `judge_notes` shifts. |
 
 That's 7 fields across 6 Activities reclassified (5 of them finalized Patrol Games, plus the Troop Challenge
-`sports-land-skis`), and 5 restored note fields. Nothing else differs: Activity content, variables, scoring
-direction, Common Fields, Competitions and playlist order are the same, except `top-dog`: an Activity as
+`sports-land-skis`), and 5 restored note fields. Nothing else differs: Activity content, variables, v1 scoring
+method, Common Fields, Competitions and playlist order are the same, except `top-dog`: an Activity as
 run, the Top Dog Award in the design (see "Changed: Top Dog"). The test names it as the only exception.
 The design also marks 10 primary metrics that the as-run fixture doesn't have (see "Added: primary metrics"); the
 test lists them.
@@ -60,7 +60,7 @@ The schema `2.9` cartridge predates v1's league model, so the as-run transcode f
 | `content.supplies_text` (free text)          | `content.supplies[]` of `{ group?, item, quantity? }`; see below                                                                    |
 | `content.instructions` / `scoring_notes` / `references` | `content.customSections[]`, only when non-empty (5 Activities)                                                            |
 | `content.tags`                               | `tags` (1 Activity)                                                                                                                 |
-| `scoring_model.method`                       | `scoring.direction`: `points_desc` → `higher-wins`, `timed_asc` → `lower-wins`                                                      |
+| `scoring_model.method`                       | `legacy.v1ScoringMethod`, unchanged. v4 has no Activity-level direction: ranking is by points (ADR-0019, #28) |
 | `scoring_model.inputs[]`                     | `scoring.fields[]`                                                                                                                  |
 | field `audience: "admin"`                    | `audience: "official"` (4 fields)                                                                                                   |
 | `library_uuid`, `library_title`, `id`        | `legacy.v1LibraryUuid`, `legacy.v1LibraryTitle` (17 Activities), `legacy.v1Id` (all)                                               |

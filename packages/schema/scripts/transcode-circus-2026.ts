@@ -272,7 +272,10 @@ function toActivity(game: V1Game): Activity {
     text(c[key]).trim(),
   ).map(([key, title]) => ({ title, body: text(c[key]) }));
   const tags = Array.isArray(c["tags"]) ? c["tags"] : [];
-  const legacy: NonNullable<Activity["legacy"]> = { v1Id: game.id };
+  const legacy: NonNullable<Activity["legacy"]> = {
+    v1Id: game.id,
+    v1ScoringMethod: game.scoring_model.method,
+  };
   if (game.library_uuid) legacy.v1LibraryUuid = game.library_uuid;
   if (game.library_title) legacy.v1LibraryTitle = game.library_title;
 
@@ -298,10 +301,6 @@ function toActivity(game: V1Game): Activity {
       notes: text(c["notes"]),
     },
     scoring: {
-      direction:
-        game.scoring_model.method === "timed_asc"
-          ? "lower-wins"
-          : "higher-wins",
       fields: game.scoring_model.inputs.map(toField).map((field) => {
         const primary = variant.primaryMetrics
           ? PRIMARY_METRICS[game.id]

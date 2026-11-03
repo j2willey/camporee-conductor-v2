@@ -55,7 +55,6 @@
     "notes": "Choose the Mystery Ingredient for surprise but not impossibility. Past good choices: canned pumpkin, instant oatmeal, hot sauce, marshmallows, raisins, canned peaches. Avoid allergen-heavy items unless you know all troop membership. Have a backup in case of allergies."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "ingredient_use",
@@ -180,6 +179,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "cooking-mystery-ingredient"
+    "v1Id": "cooking-mystery-ingredient",
+    "v1ScoringMethod": "points_desc"
   }
 }

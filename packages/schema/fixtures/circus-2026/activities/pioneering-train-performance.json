@@ -42,7 +42,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -113,6 +112,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "pioneering-train-performance"
+    "v1Id": "pioneering-train-performance",
+    "v1ScoringMethod": "timed_asc"
   }
 }

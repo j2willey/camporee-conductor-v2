@@ -35,6 +35,8 @@ export const LegacySchema = z.strictObject({
   v1Id: NonEmptyText,
   v1LibraryUuid: z.string().optional(),
   v1LibraryTitle: z.string().optional(),
+  /** v1 `scoring_model.method` (`points_desc`, `timed_asc`); v1 never used it in scoring (#28). */
+  v1ScoringMethod: z.string().optional(),
 });
 
 /** Fields every top-level document has. Spread into each document schema. */

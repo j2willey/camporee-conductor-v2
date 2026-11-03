@@ -34,7 +34,6 @@
     "notes": "⚠️ UPDATE SCORING INPUTS AFTER PLAYTESTING. Judge must watch pattern carefully before adding balls — ensure the pattern is truly fixed (same path every time). Smaller patrols (4–5 Scouts) will find this harder than larger patrols. The calling requirement (announcing target before throwing) is what makes this a communication game — enforce it."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "max_balls",
@@ -96,6 +95,7 @@
   "legacy": {
     "v1Id": "jugglers",
     "v1LibraryUuid": "93b302d2-88ba-4bcc-a4ef-dd462754f75c",
-    "v1LibraryTitle": "Juggler's Circle Communication Challenge"
+    "v1LibraryTitle": "Juggler's Circle Communication Challenge",
+    "v1ScoringMethod": "points_desc"
   }
 }

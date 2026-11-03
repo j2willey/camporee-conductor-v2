@@ -83,7 +83,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "food_quality",
@@ -194,6 +193,7 @@
   "legacy": {
     "v1Id": "the-flying-flapjacks",
     "v1LibraryUuid": "45e4e31f-b86b-47e8-83c1-1c60af029e41",
-    "v1LibraryTitle": "Patrol Cooking Challenge — Pancakes"
+    "v1LibraryTitle": "Patrol Cooking Challenge — Pancakes",
+    "v1ScoringMethod": "points_desc"
   }
 }

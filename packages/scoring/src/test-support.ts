@@ -54,7 +54,6 @@ export function smallEvent({
         notes: "",
       },
       scoring: {
-        direction: "higher-wins",
         fields: [
           {
             id: "score",

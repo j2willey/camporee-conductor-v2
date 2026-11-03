@@ -69,7 +69,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "field_1778195167953",
@@ -191,6 +190,7 @@
     "ten_essentials": "Compass"
   },
   "legacy": {
-    "v1Id": "buried-bearded-ladys-jewels"
+    "v1Id": "buried-bearded-ladys-jewels",
+    "v1ScoringMethod": "points_desc"
   }
 }

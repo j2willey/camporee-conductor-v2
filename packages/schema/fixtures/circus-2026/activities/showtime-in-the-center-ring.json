@@ -21,7 +21,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "skit_name",
@@ -65,6 +64,7 @@
     "ten_essentials": "Joke for Judge/Good Attitude"
   },
   "legacy": {
-    "v1Id": "showtime-in-the-center-ring"
+    "v1Id": "showtime-in-the-center-ring",
+    "v1ScoringMethod": "points_desc"
   }
 }

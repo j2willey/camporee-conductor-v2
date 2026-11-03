@@ -43,7 +43,6 @@
     "notes": "Pre-build the A-frame before the event — do not ask patrols to build it. Crossbar height should be accessible for most Scout heights (18–24 inches). Test the structure with an adult before the event. Brief Scouts that the rope crew must actively counterbalance — passive rope-holding won't prevent falls."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -103,6 +102,7 @@
   "legacy": {
     "v1Id": "the-a-frame-trapeze",
     "v1LibraryUuid": "4180ec14-afef-47f7-8ccf-ff274653ff9a",
-    "v1LibraryTitle": "A-Frame Stilt Walk Challenge"
+    "v1LibraryTitle": "A-Frame Stilt Walk Challenge",
+    "v1ScoringMethod": "timed_asc"
   }
 }

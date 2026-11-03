@@ -51,10 +51,10 @@
     "notes": "This is an Exhibition event — no patrol or troop points. BSA does not sanction unsupervised tomahawk throwing — this station requires an experienced instructor and strict safety protocols. Practice throwing technique with station staff before the event. Award title suggestion: Top Axe Thrower, Sharpshooter."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": []
   },
   "legacy": {
-    "v1Id": "tomahawk-throwing"
+    "v1Id": "tomahawk-throwing",
+    "v1ScoringMethod": "points_desc"
   }
 }

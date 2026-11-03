@@ -81,7 +81,6 @@
     ]
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "matches_used",
@@ -155,6 +154,7 @@
     "ten_essentials": "matches, lighter, or ignition source"
   },
   "legacy": {
-    "v1Id": "the-high-wire-fire-act"
+    "v1Id": "the-high-wire-fire-act",
+    "v1ScoringMethod": "timed_asc"
   }
 }

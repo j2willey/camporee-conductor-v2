@@ -51,9 +51,11 @@ export const ActivitySchema = z
     /** `ranked` counts toward team standings; `exhibition` is individual recognition only. */
     scoringType: z.enum(["ranked", "exhibition"]),
     content: ActivityContentSchema,
+    /**
+     * Ranking is always by points, highest first. There's no Activity-level direction: a primary metric
+     * carries its own (ADR-0019, #28). v1's `points_desc` / `timed_asc` is kept in `legacy.v1ScoringMethod`.
+     */
     scoring: z.strictObject({
-      /** v1 `points_desc` = higher-wins, `timed_asc` = lower-wins. */
-      direction: z.enum(["higher-wins", "lower-wins"]),
       /** May be empty for an exhibition (v1 recorded exhibition results separately). */
       fields: ScoringFieldList,
     }),

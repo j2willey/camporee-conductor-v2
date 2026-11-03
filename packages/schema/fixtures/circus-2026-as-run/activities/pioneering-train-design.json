@@ -42,7 +42,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "engineering",
@@ -152,6 +151,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "pioneering-train-design"
+    "v1Id": "pioneering-train-design",
+    "v1ScoringMethod": "points_desc"
   }
 }

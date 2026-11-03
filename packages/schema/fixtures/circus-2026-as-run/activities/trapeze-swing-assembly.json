@@ -64,7 +64,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "lashing_quality",
@@ -172,6 +171,7 @@
     "ten_essentials": "p-cord/rope/string"
   },
   "legacy": {
-    "v1Id": "trapeze-swing-assembly"
+    "v1Id": "trapeze-swing-assembly",
+    "v1ScoringMethod": "points_desc"
   }
 }
