@@ -28,3 +28,29 @@ jobs:
         run: pnpm lint
       - name: Test
         run: pnpm test
+
+  smoke:
+    name: smoke test (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --filter @camporee-conductor/composer-web exec playwright install --with-deps chromium
+      # Builds the web app, seeds a fresh database and runs it behind the API with the dev sign-in:
+      # no Clerk secrets (issue #4, D7).
+      - name: Smoke test
+        run: pnpm --filter @camporee-conductor/composer-web e2e
+      - name: Keep the trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: apps/composer-web/test-results/
+          retention-days: 7
