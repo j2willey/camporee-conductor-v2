@@ -56,6 +56,22 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
 }
 
 /**
+ * One startup line saying which sign-in is active. The Clerk instance comes from the publishable key's
+ * prefix (pk_test_ / pk_live_); no key is printed.
+ */
+export function describeAuth(auth: AuthConfig): string {
+  if (auth.adapter === "dev") {
+    return "auth: dev sign-in (x-dev-user header, development only)";
+  }
+  const instance = auth.publishableKey.startsWith("pk_live_")
+    ? "production"
+    : auth.publishableKey.startsWith("pk_test_")
+      ? "development"
+      : "unknown";
+  return `auth: clerk (${instance} instance)`;
+}
+
+/**
  * DATABASE_PATH (default `composer.db`). A relative path is from where the command was typed: pnpm runs
  * scripts in the package directory but sets INIT_CWD, so the server and the import CLI find the same file.
  */

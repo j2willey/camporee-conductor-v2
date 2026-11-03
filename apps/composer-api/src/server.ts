@@ -1,11 +1,12 @@
 import { serve, type ServerType } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { createAuth } from "./auth/index.ts";
-import type { Config } from "./config.ts";
+import { describeAuth, type Config } from "./config.ts";
 import { openDb } from "./db/open.ts";
 
 /** Opens the database and starts the API on the configured port. */
 export function start(config: Config): ServerType {
+  console.log(describeAuth(config.auth));
   const app = createApp({
     db: openDb(config.databasePath),
     auth: createAuth(config.auth),

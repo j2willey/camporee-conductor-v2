@@ -1,6 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { ConfigError, databasePathFrom, loadConfig } from "./config.ts";
+import {
+  ConfigError,
+  databasePathFrom,
+  describeAuth,
+  loadConfig,
+} from "./config.ts";
 
 const clerk = {
   CLERK_SECRET_KEY: "sk_test_x",
@@ -62,6 +67,29 @@ describe("loadConfig", () => {
         PORT: "8080",
       }),
     ).toMatchObject({ databasePath: "/data/x.db", port: 8080 });
+  });
+});
+
+describe("describeAuth", () => {
+  const clerkAuth = (publishableKey: string) =>
+    ({ adapter: "clerk", secretKey: "sk_x", publishableKey }) as const;
+
+  it("names the Clerk instance from the publishable key, never printing a key", () => {
+    expect(describeAuth(clerkAuth("pk_test_abc"))).toBe(
+      "auth: clerk (development instance)",
+    );
+    expect(describeAuth(clerkAuth("pk_live_abc"))).toBe(
+      "auth: clerk (production instance)",
+    );
+    expect(describeAuth(clerkAuth("abc"))).toBe(
+      "auth: clerk (unknown instance)",
+    );
+  });
+
+  it("says plainly when the dev sign-in is on", () => {
+    expect(describeAuth({ adapter: "dev" })).toBe(
+      "auth: dev sign-in (x-dev-user header, development only)",
+    );
   });
 });
 
