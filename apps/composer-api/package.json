@@ -4,11 +4,15 @@
   "private": true,
   "description": "Composer API: Organizations, memberships and design documents, behind a swappable auth module. (ADR-0009, 0012, 0014, 0021)",
   "type": "module",
+  "exports": {
+    "./app": "./src/app.ts"
+  },
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run",
-    "start": "node src/main.ts",
+    "start": "node --env-file-if-exists=../../.env.local src/main.ts",
     "import-event": "node src/cli/import.ts",
+    "seed-demo": "node src/cli/seed-demo.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

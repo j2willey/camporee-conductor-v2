@@ -1,8 +1,10 @@
 // Loads an Event directory (event.json, common-fields.json, activities/) into an Organization.
 // Usage: pnpm --filter @camporee-conductor/composer-api import-event <org-slug> <dir>
-// The database is DATABASE_PATH (default composer.db). Relative paths are from where pnpm was run.
+// The database is DATABASE_PATH (default composer.db), the same file the server uses (databasePathFrom).
+// Relative paths are from where pnpm was run.
 import { resolve } from "node:path";
 import { eq } from "drizzle-orm";
+import { databasePathFrom } from "../config.ts";
 import { openDb } from "../db/open.ts";
 import { organizations } from "../db/schema.ts";
 import { ImportError, importEvent } from "../import/import-event.ts";
@@ -16,7 +18,7 @@ if (!orgSlug || !dir) {
 // pnpm runs scripts in the package directory; INIT_CWD is where the command was typed.
 const from = (path: string) => resolve(process.env["INIT_CWD"] ?? ".", path);
 
-const db = openDb(from(process.env["DATABASE_PATH"] ?? "composer.db"));
+const db = openDb(databasePathFrom(process.env));
 const org = db
   .select({ id: organizations.id })
   .from(organizations)

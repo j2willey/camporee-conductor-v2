@@ -2,6 +2,8 @@
 export interface AuthUser {
   userId: string;
   email: string;
+  /** The provider has verified the email. The API refuses unverified users (issue #4). */
+  emailVerified: boolean;
 }
 
 /**

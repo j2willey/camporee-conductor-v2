@@ -1,6 +1,16 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.ts";
-import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
+import {
+  devAuth,
+  DEV_EMAIL_VERIFIED_HEADER,
+  DEV_USER_HEADER,
+} from "./auth/dev.ts";
+import type { AuthAdapter } from "./auth/index.ts";
+import { memberships, users } from "./db/schema.ts";
 import type { Db } from "./db/open.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
@@ -42,7 +52,7 @@ async function createOrg(owner: string, slug: string): Promise<string> {
 
 beforeEach(() => {
   db = testDb();
-  app = createApp({ db, auth: devAuth() });
+  app = createApp({ db, auth: devAuth(), authConfig: { adapter: "dev" } });
 });
 
 describe("signing in", () => {
@@ -50,6 +60,26 @@ describe("signing in", () => {
     expect(await call(null, "GET", "/health")).toEqual({
       status: 200,
       json: { ok: true },
+    });
+  });
+
+  it("tells the web app which sign-in to show, signed out", async () => {
+    expect(await call(null, "GET", "/auth-config")).toEqual({
+      status: 200,
+      json: { adapter: "dev" },
+    });
+    const clerkApp = createApp({
+      db,
+      auth: devAuth(),
+      authConfig: {
+        adapter: "clerk",
+        secretKey: "sk_secret",
+        publishableKey: "pk_test_x",
+      },
+    });
+    expect(await (await clerkApp.request("/auth-config")).json()).toEqual({
+      adapter: "clerk",
+      publishableKey: "pk_test_x",
     });
   });
 
@@ -67,6 +97,215 @@ describe("signing in", () => {
         organizations: [],
       },
     });
+  });
+});
+
+describe("unverified emails (second layer behind Clerk's own verification)", () => {
+  const asUnverified = (
+    who: string,
+    method: string,
+    path: string,
+    body?: unknown,
+  ) =>
+    app.request(path, {
+      method,
+      headers: {
+        [DEV_USER_HEADER]: who,
+        [DEV_EMAIL_VERIFIED_HEADER]: "false",
+        ...(body !== undefined && { "content-type": "application/json" }),
+      },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+    });
+
+  it("refuses the API with 403 and doesn't store the user", async () => {
+    const res = await asUnverified("mallory@example.com", "GET", "/api/me");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      error: "Verify your email address first.",
+    });
+    expect(db.select().from(users).all()).toEqual([]);
+  });
+
+  it("can't be added as a member, since it was never stored", async () => {
+    const org = await createOrg("ann@example.com", "coyote-creek");
+    await asUnverified("mallory@example.com", "GET", "/api/me");
+    const res = await call(
+      "ann@example.com",
+      "POST",
+      `/api/organizations/${org}/members`,
+      {
+        email: "mallory@example.com",
+        role: "editor",
+      },
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("doesn't let an unverified email take over a stored user's email", async () => {
+    await call("ann@example.com", "GET", "/api/me");
+    // Same user id, now presenting an unverified address.
+    const res = await asUnverified(
+      "ann@example.com",
+      "GET",
+      "/api/organizations",
+    );
+    expect(res.status).toBe(403);
+    expect(db.select({ email: users.email }).from(users).all()).toEqual([
+      { email: "ann@example.com" },
+    ]);
+  });
+});
+
+describe("an email that comes back under a new auth id (#32)", () => {
+  // The dev adapter derives the id from the email, so these tests present the id explicitly, as Clerk
+  // does when an account is recreated or an email moves between accounts.
+  const asId = (userId: string, email: string, path = "/api/me") =>
+    createApp({
+      db,
+      auth: idAuth(userId, email),
+      authConfig: { adapter: "dev" },
+    }).request(path);
+
+  function idAuth(userId: string, email: string): AuthAdapter {
+    return {
+      currentUser: () =>
+        Promise.resolve({ userId, email, emailVerified: true }),
+    };
+  }
+
+  const membershipsOf = (userId: string) =>
+    db
+      .select({ org: memberships.organizationId, role: memberships.role })
+      .from(memberships)
+      .where(eq(memberships.userId, userId))
+      .orderBy(memberships.organizationId)
+      .all();
+
+  it("relinks the stored user to the new id and keeps their memberships", async () => {
+    const org = await createOrg("ann@example.com", "coyote-creek");
+    const [before] = db.select().from(users).all();
+
+    const res = await asId("user_new", "ann@example.com");
+
+    expect(res.status).toBe(200);
+    expect(db.select().from(users).all()).toEqual([
+      {
+        id: "user_new",
+        email: "ann@example.com",
+        createdAt: before?.createdAt,
+      },
+    ]);
+    expect(membershipsOf("user_new")).toEqual([{ org, role: "owner" }]);
+    expect(membershipsOf("dev|ann@example.com")).toEqual([]);
+    expect(
+      (
+        (await res.json()) as { organizations: { slug: string }[] }
+      ).organizations.map((o) => o.slug),
+    ).toEqual(["coyote-creek"]);
+  });
+
+  it("merges into a new id that's already stored, keeping the higher role per Organization", async () => {
+    const shared = await createOrg("ann@example.com", "shared");
+    const annOnly = await createOrg("ann@example.com", "ann-only");
+    const bobOnly = await createOrg("bob@example.com", "bob-only");
+    await call(
+      "ann@example.com",
+      "POST",
+      `/api/organizations/${shared}/members`,
+      {
+        email: "bob@example.com",
+        role: "viewer",
+      },
+    );
+
+    // Bob's account now holds Ann's verified email.
+    const res = await asId("dev|bob@example.com", "ann@example.com");
+
+    expect(res.status).toBe(200);
+    expect(
+      db.select({ id: users.id, email: users.email }).from(users).all(),
+    ).toEqual([{ id: "dev|bob@example.com", email: "ann@example.com" }]);
+    expect(membershipsOf("dev|bob@example.com")).toEqual(
+      [
+        { org: shared, role: "owner" },
+        { org: annOnly, role: "owner" },
+        { org: bobOnly, role: "owner" },
+      ].sort((a, b) => a.org.localeCompare(b.org)),
+    );
+  });
+});
+
+describe("the built web app (one image, issue #4 D5)", () => {
+  let web: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    const webRoot = mkdtempSync(join(tmpdir(), "composer-web-"));
+    writeFileSync(
+      join(webRoot, "index.html"),
+      "<!doctype html><title>Composer</title>",
+    );
+    mkdirSync(join(webRoot, "assets"));
+    writeFileSync(join(webRoot, "assets", "app.js"), "console.log(1)");
+    web = createApp({
+      db,
+      auth: devAuth(),
+      authConfig: { adapter: "dev" },
+      webRoot,
+    });
+  });
+
+  it("serves the app's files", async () => {
+    const res = await web.request("/assets/app.js");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("console.log(1)");
+  });
+
+  it("serves index.html for the app's own routes, so a reload or shared link works", async () => {
+    for (const path of ["/", "/organizations/x", "/events/y"]) {
+      const res = await web.request(path);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain("<title>Composer</title>");
+    }
+  });
+
+  it("keeps a JSON 404 for an unknown API path, never the app's page", async () => {
+    const res = await web.request("/api/nothing-here", {
+      headers: { [DEV_USER_HEADER]: "ann@example.com" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Not found." });
+  });
+
+  it("still answers the API and /health", async () => {
+    expect((await web.request("/health")).status).toBe(200);
+    expect(
+      (
+        await web.request("/api/me", {
+          headers: { [DEV_USER_HEADER]: "ann@example.com" },
+        })
+      ).status,
+    ).toBe(200);
+  });
+
+  it("serves no page when there's no built app (development uses Vite)", async () => {
+    expect((await app.request("/")).status).toBe(404);
+  });
+});
+
+describe("unexpected errors", () => {
+  it("returns a clean 500 JSON response, with no stack trace or database message", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.run(sql`DROP TABLE memberships`);
+    db.run(sql`DROP TABLE users`); // "no such table: users" must not reach the client
+
+    const res = await call("ann@example.com", "GET", "/api/me");
+
+    expect(res).toEqual({
+      status: 500,
+      json: { error: "Something went wrong." },
+    });
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
   });
 });
 

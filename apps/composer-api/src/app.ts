@@ -1,12 +1,16 @@
 import { randomUUID } from "node:crypto";
-import { Slug } from "@camporee-conductor/schema";
+import { serveStatic } from "@hono/node-server/serve-static";
+import { Slug, type Event } from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { validator } from "hono/validator";
 import { z } from "zod";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { requireRole } from "./authz.ts";
+import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
+import { recordUser } from "./users.ts";
 import {
   documents,
   memberships,
@@ -25,20 +29,32 @@ const NewMember = z.strictObject({
   role: z.enum(ROLES),
 });
 
-/** The request body, parsed with `schema`, or 400. */
-async function body<S extends z.ZodType>(
-  request: Request,
-  schema: S,
-): Promise<z.infer<S>> {
-  const result = schema.safeParse(await request.json().catch(() => undefined));
-  if (!result.success) {
-    throw new HTTPException(400, { message: z.prettifyError(result.error) });
-  }
-  return result.data;
-}
+/** Validates the JSON body with `schema` (400 if it doesn't match); its type reaches the web client. */
+const jsonBody = <S extends z.ZodType>(schema: S) =>
+  validator("json", (value): z.infer<S> => {
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      throw new HTTPException(400, { message: z.prettifyError(result.error) });
+    }
+    return result.data;
+  });
 
-/** The Composer API (issue #4). `auth` is the swappable auth module (ADR-0014). */
-export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
+/**
+ * The Composer API (issue #4). `auth` is the swappable auth module (ADR-0014); `authConfig` tells the
+ * web app which sign-in to show (never the secret key). `webRoot`, when given, is the built web app,
+ * served from the same server so one image holds both (D5).
+ */
+export function createApp({
+  db,
+  auth,
+  authConfig,
+  webRoot = null,
+}: {
+  db: Db;
+  auth: AuthAdapter;
+  authConfig: AuthConfig;
+  webRoot?: string | null;
+}) {
   const myOrganizations = (userId: string) =>
     db
       .select({
@@ -60,11 +76,15 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
     .use(async (c, next) => {
       const user = await auth.currentUser(c.req.raw);
       if (!user) throw new HTTPException(401, { message: "Sign in first." });
+      // Second layer behind the provider's own verification: an unverified email is never stored, so
+      // it can't be matched when an owner adds a member by email.
+      if (!user.emailVerified) {
+        throw new HTTPException(403, {
+          message: "Verify your email address first.",
+        });
+      }
       // Record the user on first sight, so an owner can add them by email.
-      db.insert(users)
-        .values({ id: user.userId, email: user.email, createdAt: new Date() })
-        .onConflictDoUpdate({ target: users.id, set: { email: user.email } })
-        .run();
+      recordUser(db, user, new Date());
       c.set("user", user);
       await next();
     })
@@ -80,8 +100,8 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
 
     .get("/organizations", (c) => c.json(myOrganizations(c.var.user.userId)))
 
-    .post("/organizations", async (c) => {
-      const { name, slug } = await body(c.req.raw, NewOrganization);
+    .post("/organizations", jsonBody(NewOrganization), (c) => {
+      const { name, slug } = c.req.valid("json");
       const taken = db
         .select({ id: organizations.id })
         .from(organizations)
@@ -106,10 +126,10 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
       return c.json({ id, slug, name, role: "owner" as const }, 201);
     })
 
-    .post("/organizations/:orgId/members", async (c) => {
+    .post("/organizations/:orgId/members", jsonBody(NewMember), (c) => {
       const orgId = c.req.param("orgId");
       requireRole(db, orgId, c.var.user.userId, "owner");
-      const { email, role } = await body(c.req.raw, NewMember);
+      const { email, role } = c.req.valid("json");
       const user = db
         .select({ id: users.id })
         .from(users)
@@ -196,9 +216,8 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
         .get();
       if (!row) throw new HTTPException(404, { message: "Not found." });
       requireRole(db, row.organizationId, c.var.user.userId, "viewer");
-      const event = JSON.parse(row.json) as {
-        activities: { activityId: string }[];
-      };
+      // Validated on import (ADR-0012); stored exactly as given.
+      const event = JSON.parse(row.json) as Event;
       const ids = new Set(event.activities.map((a) => a.activityId));
       const activities = db
         .select({
@@ -218,16 +237,38 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
       return c.json({ event, activities });
     });
 
-  return new Hono()
+  const notFound = (c: Context) => c.json({ error: "Not found." }, 404);
+  const app = new Hono()
     .get("/health", (c) => c.json({ ok: true }))
+    .get("/auth-config", (c) =>
+      c.json(
+        authConfig.adapter === "clerk"
+          ? {
+              adapter: "clerk" as const,
+              publishableKey: authConfig.publishableKey,
+            }
+          : { adapter: "dev" as const },
+      ),
+    )
     .route("/api", api)
     .onError((error, c) => {
       if (error instanceof HTTPException) {
         return c.json({ error: error.message }, error.status);
       }
-      console.error(error);
+      // The details stay in the server log; the client gets a plain message, never a stack or DB error.
+      console.error(`${c.req.method} ${c.req.path} failed:`, error);
       return c.json({ error: "Something went wrong." }, 500);
-    });
+    })
+    .notFound(notFound);
+  if (webRoot) {
+    // Added after the typed routes, so the web client's types stay the API's alone.
+    app
+      .all("/api/*", notFound)
+      .get("*", serveStatic({ root: webRoot }))
+      // Any other path is one of the app's own routes (React Router): send the page and let it route.
+      .get("*", serveStatic({ root: webRoot, path: "index.html" }));
+  }
+  return app;
 }
 
 /** For the web app's typed client (PR B). */

@@ -1,0 +1,32 @@
+{
+  "name": "@camporee-conductor/composer-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Composer web app: sign-in, Organizations, Events (issue #4). React + Vite SPA, React Router in library mode (ADR-0008).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@clerk/react": "6.18.0",
+    "@tanstack/react-query": "5.104.5",
+    "hono": "4.13.13",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-router": "8.5.0"
+  },
+  "devDependencies": {
+    "@camporee-conductor/composer-api": "workspace:*",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4"
+  }
+}
