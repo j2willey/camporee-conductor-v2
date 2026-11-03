@@ -32,7 +32,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "top_dog_awarded",
@@ -85,6 +84,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "top-dog"
+    "v1Id": "top-dog",
+    "v1ScoringMethod": "points_desc"
   }
 }

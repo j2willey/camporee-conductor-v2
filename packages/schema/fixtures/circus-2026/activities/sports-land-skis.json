@@ -47,7 +47,6 @@
     "notes": "Land Skis can be built from 2×4 lumber with 1/2 inch holes drilled every 14 inches and rope threaded through. Loop size should be adjustable. Build to accommodate the largest patrol in the event. Test before the event with adults."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -88,6 +87,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "sports-land-skis"
+    "v1Id": "sports-land-skis",
+    "v1ScoringMethod": "timed_asc"
   }
 }

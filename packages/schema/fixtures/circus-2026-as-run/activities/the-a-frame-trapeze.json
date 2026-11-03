@@ -43,7 +43,6 @@
     "notes": "Pre-build the A-frame before the event — do not ask patrols to build it. Crossbar height should be accessible for most Scout heights (18–24 inches). Test the structure with an adult before the event. Brief Scouts that the rope crew must actively counterbalance — passive rope-holding won't prevent falls."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -98,6 +97,7 @@
     "ten_essentials": "Pocket Knife"
   },
   "legacy": {
-    "v1Id": "the-a-frame-trapeze"
+    "v1Id": "the-a-frame-trapeze",
+    "v1ScoringMethod": "timed_asc"
   }
 }

@@ -83,7 +83,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "food_quality",
@@ -192,6 +191,7 @@
     "ten_essentials": "Trail Food"
   },
   "legacy": {
-    "v1Id": "the-flying-flapjacks"
+    "v1Id": "the-flying-flapjacks",
+    "v1ScoringMethod": "points_desc"
   }
 }

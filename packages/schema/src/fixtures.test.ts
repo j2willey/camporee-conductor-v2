@@ -270,7 +270,7 @@ describe("Circus 2026 as-run fixtures", () => {
       expect(a.content, a.slug).toEqual(d.content);
       expect(a.variables, a.slug).toEqual(d.variables);
       expect(a.scoringType, a.slug).toBe(d.scoringType);
-      expect(a.scoring.direction, a.slug).toBe(d.scoring.direction);
+      expect(a.legacy?.v1ScoringMethod, a.slug).toBe(d.legacy?.v1ScoringMethod);
       const asRunFields = new Map(a.scoring.fields.map((f) => [f.id, f]));
       const designFields = new Map(d.scoring.fields.map((f) => [f.id, f]));
       for (const id of new Set([

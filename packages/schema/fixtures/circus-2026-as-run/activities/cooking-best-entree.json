@@ -51,7 +51,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "taste",
@@ -161,6 +160,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "cooking-best-entree"
+    "v1Id": "cooking-best-entree",
+    "v1ScoringMethod": "points_desc"
   }
 }

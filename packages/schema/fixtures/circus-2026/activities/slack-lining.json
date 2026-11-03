@@ -27,10 +27,10 @@
     "notes": "This is an Exhibition event — no patrol or troop points. Coordinate with Crew 479 president before the event: arrival time, space needed, parking for their equipment, and what recognition (if any) they want offered at the ceremony. Award title suggestion: Best Slackliner."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": []
   },
   "legacy": {
-    "v1Id": "slack-lining"
+    "v1Id": "slack-lining",
+    "v1ScoringMethod": "points_desc"
   }
 }

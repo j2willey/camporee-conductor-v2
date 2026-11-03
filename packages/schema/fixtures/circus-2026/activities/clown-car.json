@@ -53,7 +53,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "scouts_balanced",
@@ -134,6 +133,7 @@
   "legacy": {
     "v1Id": "clown-car",
     "v1LibraryUuid": "4766b48b-3396-4d0c-bdf7-b532bed48bcb",
-    "v1LibraryTitle": "Clown Car Balance Challenge"
+    "v1LibraryTitle": "Clown Car Balance Challenge",
+    "v1ScoringMethod": "points_desc"
   }
 }

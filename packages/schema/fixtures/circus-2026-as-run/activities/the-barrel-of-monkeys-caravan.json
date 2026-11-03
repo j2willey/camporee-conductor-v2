@@ -47,7 +47,6 @@
     "notes": "Barrels should be uniform in diameter for stable rolling. Test the raft with a heavy adult before the event to verify the plywood won't crack. A shorter course (30 ft) is better for younger/smaller patrols. Mark course boundaries clearly."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -85,6 +84,7 @@
     "ten_essentials": "Sun Protection/Sun Screen"
   },
   "legacy": {
-    "v1Id": "the-barrel-of-monkeys-caravan"
+    "v1Id": "the-barrel-of-monkeys-caravan",
+    "v1ScoringMethod": "timed_asc"
   }
 }

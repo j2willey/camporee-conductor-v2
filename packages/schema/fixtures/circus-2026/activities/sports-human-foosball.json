@@ -52,7 +52,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "wins",
@@ -129,6 +128,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "sports-human-foosball"
+    "v1Id": "sports-human-foosball",
+    "v1ScoringMethod": "points_desc"
   }
 }

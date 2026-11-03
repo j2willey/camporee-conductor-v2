@@ -60,7 +60,6 @@
     "notes": "Judges: 'Retreat' as a command for lowering the flag is incorrect and should result in a point deduction. The correct term is 'Colors' or simply giving commands without the word 'Retreat.'\n\nFLAG TRIVIA QUESTION BANK (draw 2–3 per patrol — do not share with units in advance):\n- Red color represents? → Valor and Bravery\n- White color represents? → Purity and Innocence\n- Blue color represents? → Vigilance, Perseverance, and Justice\n- How many red stripes? → 7\n- How many white stripes? → 6\n- What do the stripes represent? → The original 13 colonies\n- How many approved versions of the US Flag? → 27\n- What year was the US Flag originated? → 1777\n- How many US Flags placed on the moon? → 6\n- Why does the US Flag start on right of audience and end on left? → Flag etiquette requires it to be to its own right; once facing audience, the flag's right is the audience's left.\n- Flag in poor condition should be destroyed by burning. → True\n- Acceptable to use flag as clothing or bedding? → False\n- When at half-staff, flag is first run to top then lowered? → True\n\nTen Essentials item for this game: Scout Handbook (handled by common field injection at runtime)."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "flag_on_standard",
@@ -137,6 +136,7 @@
     "ten_essentials": "Scout Handbook"
   },
   "legacy": {
-    "v1Id": "the-grand-entry"
+    "v1Id": "the-grand-entry",
+    "v1ScoringMethod": "points_desc"
   }
 }

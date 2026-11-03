@@ -39,7 +39,6 @@
     "notes": "Bindings should be snug but not tight — comfort and safety matter. Brief patrols to practice one step together before the clock starts. Grass or soft ground preferred — falls are likely."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -77,6 +76,7 @@
     "ten_essentials": "Extra Clothing"
   },
   "legacy": {
-    "v1Id": "circus-line"
+    "v1Id": "circus-line",
+    "v1ScoringMethod": "timed_asc"
   }
 }

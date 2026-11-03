@@ -51,7 +51,6 @@
     "notes": "Shuffle duck positions between every patrol — if positions stay the same, word will spread and later patrols have an unfair advantage. Consider two sets of labeled ducks so you can reset faster by swapping full sets."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "total_turns",
@@ -94,6 +93,7 @@
   "legacy": {
     "v1Id": "ducks-in-a-row",
     "v1LibraryUuid": "e1a8c350-4576-4bab-a0a6-1c73966c71e8",
-    "v1LibraryTitle": "Scout Law Duck Pond"
+    "v1LibraryTitle": "Scout Law Duck Pond",
+    "v1ScoringMethod": "timed_asc"
   }
 }

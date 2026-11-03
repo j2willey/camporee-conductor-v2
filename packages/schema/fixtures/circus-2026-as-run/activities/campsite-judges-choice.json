@@ -28,7 +28,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "awarded",
@@ -63,6 +62,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "campsite-judges-choice"
+    "v1Id": "campsite-judges-choice",
+    "v1ScoringMethod": "points_desc"
   }
 }

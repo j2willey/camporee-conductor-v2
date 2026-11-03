@@ -60,7 +60,6 @@
     "notes": "Announce shelter type to all patrols at the start of the event — all patrols do the same type on the same day. If using a tent, use the same model for every patrol for fairness. If using tarp, pre-select the two anchor points and keep them consistent."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "elapsed_time",
@@ -140,6 +139,7 @@
   "legacy": {
     "v1Id": "setting-up-the-big-top",
     "v1LibraryUuid": "f8cd494a-9989-4fb2-aea7-b2c005c01e57",
-    "v1LibraryTitle": "Shelter Assembly Challenge"
+    "v1LibraryTitle": "Shelter Assembly Challenge",
+    "v1ScoringMethod": "timed_asc"
   }
 }

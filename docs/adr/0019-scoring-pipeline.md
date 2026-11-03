@@ -113,9 +113,9 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 ## Amendment 2026-11-02 (issue #3): Measured Activities
 
 - An Activity may mark **at most one** `metric` field (type `number` or `stopwatch`) as its **primary metric**,
-  with **its own direction**: `primary: { direction: "lower-wins" | "higher-wins" }`. The Activity's
-  `direction` is about its points; a metric can run the other way (Circus 2026 `trapeze-swing-assembly`:
-  points higher-wins, build time lower-wins). Common Fields can't be primary.
+  with **its own direction**: `primary: { direction: "lower-wins" | "higher-wins" }`. Points always rank
+  highest first; a metric can run the other way (Circus 2026 `trapeze-swing-assembly`: build time
+  lower-wins). (Amended 2026-11-03, #28: the Activity no longer has a `direction` of its own.) Common Fields can't be primary.
 - `scoreEvent` **lists** an Activity's entries by the primary metric's raw value in that direction, to help
   the Official enter points. **Ranking still comes from points**; no conversion formulas. Time adjustments
   ("+15 sec each") don't change the order. Activities without a primary metric are listed as entered.
@@ -151,3 +151,13 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - v1 had only a Draft/Final switch per game (`game_status`). It stored no ranking and didn't stop later
   changes: v1 recomputed every time. Freezing the ranking is a deliberate change. v1's Close Game is
   different: it's a Judge's "I'm done" handshake, not an Official's finalization.
+
+## Amendment 2026-11-03 (issue #28): no Activity-level direction
+
+- `Activity.scoring.direction` is **dropped**. Nothing read it: ranking is always by points total, highest
+  first (as in v1 9ebffa5, which also never read `timed_asc` in scoring), and listing uses the primary
+  metric's own direction.
+- v1's `scoring_model.method` (`points_desc` / `timed_asc`) is kept in `legacy.v1ScoringMethod`, as `weight` is
+  kept in `legacy.v1Weight`.
+- **Conversions** (step 2 above, not built yet) will carry a direction **per rule**, on the rule itself, not
+  on the Activity. A v1 `timed_asc` Activity can suggest a default when an Official first writes one.

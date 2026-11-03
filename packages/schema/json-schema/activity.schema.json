@@ -121,13 +121,6 @@
     "scoring": {
       "type": "object",
       "properties": {
-        "direction": {
-          "type": "string",
-          "enum": [
-            "higher-wins",
-            "lower-wins"
-          ]
-        },
         "fields": {
           "type": "array",
           "items": {
@@ -247,7 +240,6 @@
         }
       },
       "required": [
-        "direction",
         "fields"
       ],
       "additionalProperties": false
@@ -308,6 +300,9 @@
           "type": "string"
         },
         "v1LibraryTitle": {
+          "type": "string"
+        },
+        "v1ScoringMethod": {
           "type": "string"
         }
       },

@@ -69,7 +69,6 @@
     "notes": "The improvised instrument BONUS scoring is what rewards preparation and creativity — a patrol that assigns each member a different instrument and practices for the full 5 minutes will score more bonus points than one that all beats buckets together. Keep the preparation time strictly timed — 5 minutes, then perform. Position this station near the main gathering area if possible — it's entertaining for the whole camp."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "circus_spirit",
@@ -183,6 +182,7 @@
   "legacy": {
     "v1Id": "the-circus-orchestra",
     "v1LibraryUuid": "657cd2f4-bf3a-4cac-8a54-e90bf48af406",
-    "v1LibraryTitle": "The Circus Orchestra"
+    "v1LibraryTitle": "The Circus Orchestra",
+    "v1ScoringMethod": "points_desc"
   }
 }

@@ -34,10 +34,10 @@
     "notes": "This is an Exhibition event — no patrol or troop points. Pre-event coordination with Camp Chesebrough climbing staff is essential. Confirm: hours of operation, maximum throughput, whether the camp needs any advance headcount. Award title suggestions: Fastest Climber, Highest Climber."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": []
   },
   "legacy": {
-    "v1Id": "climbing-wall"
+    "v1Id": "climbing-wall",
+    "v1ScoringMethod": "points_desc"
   }
 }

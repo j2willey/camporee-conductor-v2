@@ -45,7 +45,6 @@
     "notes": ""
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "organization",
@@ -140,6 +139,7 @@
     ]
   },
   "legacy": {
-    "v1Id": "campsite-all-around"
+    "v1Id": "campsite-all-around",
+    "v1ScoringMethod": "points_desc"
   }
 }

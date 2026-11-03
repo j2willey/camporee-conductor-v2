@@ -132,7 +132,6 @@
     "notes": "JUDGE BRIEFING SCRIPT — deliver outside the room before the patrol enters. Speak slowly and clearly. Do not answer questions about what is inside — redirect with 'You'll need to assess that yourselves.'\n\n'Alright, listen up. I need your help and I need it now.\n\nAbout ten minutes ago, something set off Duchess — that's the circus elephant. She spooked, pulled hard on her lash lines, and those lines were tied into the main tent rigging. The whole thing went like dominoes. A support pole swung into the generator shed, the generator went over, and a section of the Big Top came down on top of three of our crew members who were working inside.\n\nWe've got three people down. I don't know their full condition. I got them out from under the worst of the canvas but I haven't been able to do much else — I'm not trained for this. That's why I came to get you.\n\nDuchess is gone — she ran. We don't know where.\n\nI need you to go in there, figure out what needs to happen, and take care of those people the best you can. Help is on the way but it is not here yet. You are what they've got right now.\n\nOne more thing — I want you to be careful in there. It was a mess when it happened and I haven't had time to sort it all out. Use your heads before you use your hands.\n\nAny questions before you go in?'\n\n[Pause. Answer only general questions. If asked about victim conditions or what's inside: 'I don't know — that's what I need you to find out.' If asked if it's safe to enter: 'I think so, but I'd make sure of that myself before I did anything else.']\n\n'Alright. In you go. I'll be right here watching.'\n\n[Begin scoring as patrol crosses the threshold. Note which victim they approach first.]\n\nJUDGE REMINDERS: Do not prompt. If the patrol freezes, silence is the correct response. If a Scout is about to do something genuinely physically unsafe (not scenario-unsafe), say 'Freeze — safety issue' and pause the clock. Note the exact moment and which victim the patrol approaches first — this is your triage order record.\n\nVICTIM ROLE SUMMARY:\nPepito the Clown — Loud, dramatic, complaining. Convinced he is the most injured. Yells 'Hey! Over here! My ankle — I think it's broken! And my hands!' when patrol enters. Pulls back and says 'Ow ow ow — that hurts!' if boot removal is attempted. Does NOT reveal other victims or hazards.\n\nMarguerite the Aerialist — Quiet, confused, groggy. Responds slowly. Says '...what happened? Where am I?' and 'My neck... my neck hurts.' Attempts to shift slightly when told not to move — stops when head is stabilized. Does NOT respond quickly or clearly, does NOT call for help.\n\nBig Eddie the Rigger — Completely still and unresponsive. Says and does NOTHING. May take one slow quiet breath after head-tilt chin-lift is performed. May wince once if direct pressure is applied to forearm wound. Must stay completely in character — this stillness is what teaches the most important lesson."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "scene_safety",
@@ -276,6 +275,7 @@
   "legacy": {
     "v1Id": "the-big-top-goes-down",
     "v1LibraryUuid": "85fb14ce-f665-4830-9b5a-fce905d198d6",
-    "v1LibraryTitle": "Circus First Aid Scenarios"
+    "v1LibraryTitle": "Circus First Aid Scenarios",
+    "v1ScoringMethod": "points_desc"
   }
 }

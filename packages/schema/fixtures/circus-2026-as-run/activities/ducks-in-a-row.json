@@ -51,7 +51,6 @@
     "notes": "Shuffle duck positions between every patrol — if positions stay the same, word will spread and later patrols have an unfair advantage. Consider two sets of labeled ducks so you can reset faster by swapping full sets."
   },
   "scoring": {
-    "direction": "lower-wins",
     "fields": [
       {
         "id": "total_turns",
@@ -89,6 +88,7 @@
     "ten_essentials": "Full Water Bottle"
   },
   "legacy": {
-    "v1Id": "ducks-in-a-row"
+    "v1Id": "ducks-in-a-row",
+    "v1ScoringMethod": "timed_asc"
   }
 }

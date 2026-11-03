@@ -64,7 +64,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "lashing_quality",
@@ -189,6 +188,7 @@
   "legacy": {
     "v1Id": "trapeze-swing-assembly",
     "v1LibraryUuid": "7f7b9294-060a-45aa-a230-5642010f8843",
-    "v1LibraryTitle": "Trapeze Swing Assembly"
+    "v1LibraryTitle": "Trapeze Swing Assembly",
+    "v1ScoringMethod": "points_desc"
   }
 }

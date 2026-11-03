@@ -63,10 +63,10 @@
     "notes": "This is an Exhibition event — no patrol or troop points. BSA Archery requires instructors current on National Camping School Archery certification or equivalent. Confirm instructor credentials before the event. Arrange equipment sourcing in advance — Camp Chesebrough may have archery equipment available. Award title suggestions: Top Archer, Sharpshooter."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": []
   },
   "legacy": {
-    "v1Id": "archery"
+    "v1Id": "archery",
+    "v1ScoringMethod": "points_desc"
   }
 }

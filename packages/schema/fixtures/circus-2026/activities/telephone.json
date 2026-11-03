@@ -56,7 +56,6 @@
     "notes": "Passage length of 50–80 words is well-suited to 3 minutes — enough to challenge but not impossible. Test can-and-string sets before the event — thin string works better than thick rope. String length between cans: 10–15 feet. Write passage cards in large, clear print so the sending Scout can read while transmitting. Sample passages should be Scout-appropriate, Circus-themed if possible — no proper nouns that are hard to transmit phonetically."
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "words_correct",
@@ -126,6 +125,7 @@
   "legacy": {
     "v1Id": "telephone",
     "v1LibraryUuid": "955504b3-02b5-4535-9430-6cd9f435598a",
-    "v1LibraryTitle": "Can-and-String Message Relay"
+    "v1LibraryTitle": "Can-and-String Message Relay",
+    "v1ScoringMethod": "points_desc"
   }
 }

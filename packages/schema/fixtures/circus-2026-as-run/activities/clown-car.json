@@ -53,7 +53,6 @@
     ]
   },
   "scoring": {
-    "direction": "higher-wins",
     "fields": [
       {
         "id": "scouts_balanced",
@@ -132,6 +131,7 @@
     "ten_essentials": "Buddy"
   },
   "legacy": {
-    "v1Id": "clown-car"
+    "v1Id": "clown-car",
+    "v1ScoringMethod": "points_desc"
   }
 }

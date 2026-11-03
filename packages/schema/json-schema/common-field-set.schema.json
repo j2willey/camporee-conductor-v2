@@ -152,6 +152,9 @@
         },
         "v1LibraryTitle": {
           "type": "string"
+        },
+        "v1ScoringMethod": {
+          "type": "string"
         }
       },
       "required": [
