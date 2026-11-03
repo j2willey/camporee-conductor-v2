@@ -18,8 +18,10 @@ export interface EventBundle {
 /** The bundle can't be imported; `issues` says why, one line per problem. */
 export class ImportError extends Error {
   override name = "ImportError";
-  constructor(readonly issues: string[]) {
+  readonly issues: string[];
+  constructor(issues: string[]) {
     super(`import refused:\n${issues.join("\n")}`);
+    this.issues = issues;
   }
 }
 

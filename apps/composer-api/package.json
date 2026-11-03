@@ -8,7 +8,7 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "start": "node src/main.ts",
-    "import": "node src/cli/import.ts",
+    "import-event": "node src/cli/import.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

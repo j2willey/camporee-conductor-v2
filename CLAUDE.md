@@ -69,6 +69,11 @@ pnpm format       # Prettier --write (fix formatting)
 pnpm test         # Vitest in every package
 pnpm --filter @camporee-conductor/scoring test -- --watch   # TDD loop for scoring
 pnpm --filter @camporee-conductor/schema generate           # regenerate json-schema/ after changing a Zod schema
+
+# Composer API (apps/composer-api). Dev sign-in: send header `x-dev-user: <email>`; refused in production.
+NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer-api start   # :3010, composer.db
+pnpm --filter @camporee-conductor/composer-api import-event <org-slug> packages/schema/fixtures/circus-2026
+pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
 ```
 
 CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test on every PR and push to `main`.
@@ -80,6 +85,7 @@ packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
 packages/schema/    Zod document schemas (Event, Activity, Common Field set, Template) + generated JSON Schema;
                     fixtures/circus-2026/ is the transcoded Circus 2026 design; fixtures/circus-2026-as-run/ is
                     what the event ran, for scoring parity only (see TRANSCODE-NOTES.md)
+apps/composer-api/  Composer API: Hono, SQLite/Drizzle, auth module (Clerk + dev adapter), Event import
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```
