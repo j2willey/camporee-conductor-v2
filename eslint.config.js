@@ -7,6 +7,8 @@ export default tseslint.config(
     ignores: [
       "**/dist/**",
       "**/coverage/**",
+      "**/test-results/**",
+      "**/playwright-report/**",
       "**/node_modules/**",
       // v1 code copied verbatim as the scoring reference (issue #3); kept byte-identical.
       "packages/scoring/scripts/v1/*.js",

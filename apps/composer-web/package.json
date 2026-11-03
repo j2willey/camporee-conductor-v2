@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@clerk/react": "6.18.0",
@@ -20,9 +21,12 @@
   },
   "devDependencies": {
     "@camporee-conductor/composer-api": "workspace:*",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/vite": "4.3.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
     "vite": "8.3.4"
   }
 }

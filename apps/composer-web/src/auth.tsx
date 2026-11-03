@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { client, data, setAuthHeaders } from "./api.ts";
+import { ui } from "./ui.ts";
 
 export type Session =
   | { status: "loading" }
@@ -25,8 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryFn: () => data(client["auth-config"].$get()),
     staleTime: Infinity,
   });
-  if (config.isPending) return <p>Loading…</p>;
-  if (config.isError) return <p>Can't reach the Composer API.</p>;
+  if (config.isPending) return null;
+  if (config.isError) {
+    return (
+      <p role="alert" className={`${ui.error} m-8`}>
+        Can't reach the Composer API.
+      </p>
+    );
+  }
   return config.data.adapter === "clerk" ? (
     <ClerkProvider publishableKey={config.data.publishableKey}>
       <ClerkSession>{children}</ClerkSession>
@@ -47,7 +54,14 @@ function ClerkSession({ children }: { children: ReactNode }) {
   const session: Session = !isLoaded
     ? { status: "loading" }
     : !isSignedIn
-      ? { status: "signed-out", signInView: <SignIn routing="hash" /> }
+      ? {
+          status: "signed-out",
+          signInView: (
+            <div className="flex justify-center">
+              <SignIn routing="hash" />
+            </div>
+          ),
+        }
       : {
           status: "signed-in",
           email: user?.primaryEmailAddress?.emailAddress ?? "",
@@ -112,20 +126,25 @@ function DevSignIn({ onSignIn }: { onSignIn: (email: string) => void }) {
     if (trimmed) onSignIn(trimmed);
   };
   return (
-    <form onSubmit={submit}>
-      <h1>Sign in (development)</h1>
-      <p>Dev sign-in: any email works. The API refuses this in production.</p>
-      <label>
-        Email{" "}
+    <form onSubmit={submit} className={`${ui.card} mx-auto max-w-sm space-y-4`}>
+      <h1 className={ui.h1}>Sign in (development)</h1>
+      <p className={ui.muted}>
+        Dev sign-in: any email works. The API refuses this in production.
+      </p>
+      <label className={ui.label}>
+        Email
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           autoFocus
+          className={ui.input}
         />
-      </label>{" "}
-      <button type="submit">Sign in</button>
+      </label>
+      <button type="submit" className={ui.button}>
+        Sign in
+      </button>
     </form>
   );
 }

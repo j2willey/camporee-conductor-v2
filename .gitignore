@@ -13,3 +13,7 @@ coverage/
 *.db-journal
 *.sqlite
 *.sqlite3
+
+# Playwright output
+test-results/
+playwright-report/

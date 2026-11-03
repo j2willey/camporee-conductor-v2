@@ -7,6 +7,8 @@ import { Layout } from "./pages/Layout.tsx";
 import { EventPage } from "./pages/EventPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { OrganizationsPage } from "./pages/OrganizationsPage.tsx";
+import { NotFound } from "./pages/ErrorMessage.tsx";
+import "./index.css";
 
 // React Router in library (SPA) mode, not framework mode (ADR-0008).
 const router = createBrowserRouter([
@@ -16,7 +18,7 @@ const router = createBrowserRouter([
       { path: "/", element: <OrganizationsPage /> },
       { path: "/organizations/:orgId", element: <OrganizationPage /> },
       { path: "/events/:eventId", element: <EventPage /> },
-      { path: "*", element: <p>Page not found.</p> },
+      { path: "*", element: <NotFound /> },
     ],
   },
 ]);
