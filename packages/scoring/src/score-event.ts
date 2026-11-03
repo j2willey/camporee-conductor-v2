@@ -44,8 +44,10 @@ export function scoreEvent(input: ScoringInput): EventResults {
     input.event.competitions.map((c) => [c.id, c]),
   );
 
+  const finalization = finalizations(input, activityById);
+  const finalized = finalization.finalized;
+  const warnings: ScoringWarning[] = [...finalization.warnings];
   const activities: ActivityResults[] = [];
-  const entryWarnings: ScoringWarning[] = [];
   for (const { activityId, competitionId } of input.event.activities) {
     const activity = activityById.get(activityId);
     const competition = competitionById.get(competitionId);
@@ -57,16 +59,32 @@ export function scoreEvent(input: ScoringInput): EventResults {
       competition,
       input.commonFieldSets,
     );
+    // While finalized, actions logged after the `finalize` that would change this Activity wait for
+    // `unfinalize` (ADR-0019).
+    const frozen = finalized.get(activityId);
+    const forThisActivity = input.actions.flatMap((a, index) =>
+      "activityId" in a && "entrantId" in a && a.activityId === activityId
+        ? [{ action: a, index }]
+        : [],
+    );
+    for (const { action, index } of forThisActivity) {
+      if (frozen && index > frozen.index) {
+        warnings.push({
+          action,
+          message: `${activity.slug} is finalized; this ${action.type} won't apply until it's unfinalized`,
+        });
+      }
+    }
     const actionsFor = (entrantId: string): OfficialAction[] =>
-      input.actions.filter(
-        (a) =>
-          "activityId" in a &&
-          a.activityId === activityId &&
-          a.entrantId === entrantId,
-      );
+      forThisActivity
+        .filter(
+          ({ action, index }) =>
+            action.entrantId === entrantId && (!frozen || index < frozen.index),
+        )
+        .map(({ action }) => action);
 
     const entries = input.entries.filter((e) => e.activityId === activityId);
-    entryWarnings.push(...unreadablePrimaryTimes(activity, entries));
+    warnings.push(...unreadablePrimaryTimes(activity, entries));
     const scored = listed(activity, entries).map((e) => {
       const actions = actionsFor(e.entrantId);
       const adjustment = actions.reduce(
@@ -85,10 +103,8 @@ export function scoreEvent(input: ScoringInput): EventResults {
     const rankOf = ranking(
       scored.filter((e) => !isDisqualified(e.actions)).map((e) => e.total),
     );
-    activities.push({
-      activityId,
-      competitionId,
-      entries: scored.map(({ entrantId, total, actions }): EntryResult => {
+    const recomputed = scored.map(
+      ({ entrantId, total, actions }): EntryResult => {
         if (isDisqualified(actions)) {
           return { entrantId, total, points: 0, disqualified: true };
         }
@@ -108,7 +124,30 @@ export function scoreEvent(input: ScoringInput): EventResults {
             ),
           disqualified: false,
         };
-      }),
+      },
+    );
+    if (!frozen) {
+      activities.push({
+        activityId,
+        competitionId,
+        finalized: false,
+        entries: recomputed,
+      });
+      continue;
+    }
+    const stored = storedResults(frozen.action, scored, ranking);
+    const differ = differences(stored, recomputed);
+    if (differ.length > 0) {
+      warnings.push({
+        action: frozen.action,
+        message: `${activity.slug} is finalized, but recomputing from the current scores and actions would differ for ${differ.join(", ")}; the finalized ranking stands`,
+      });
+    }
+    activities.push({
+      activityId,
+      competitionId,
+      finalized: true,
+      entries: stored,
     });
   }
 
@@ -137,7 +176,7 @@ export function scoreEvent(input: ScoringInput): EventResults {
     standings,
     awards: awards.map(({ awardId, recipients }) => ({ awardId, recipients })),
     warnings: [
-      ...entryWarnings,
+      ...warnings,
       ...overrides.warnings,
       ...awards.flatMap((a) => a.warnings),
     ],
@@ -297,4 +336,126 @@ function unreadablePrimaryTimes(
       },
     ];
   });
+}
+
+type Finalize = ActionOf<"finalize">;
+
+/**
+ * The Activities an effective (latest) `finalize` freezes, with its place in the log. Only the latest
+ * `finalize` or `unfinalize` per Activity is checked: an invalid one is left out with a warning, and the
+ * Activity scores as not finalized (ADR-0019).
+ */
+function finalizations(
+  input: ScoringInput,
+  activityById: ReadonlyMap<string, Activity>,
+): {
+  finalized: ReadonlyMap<string, { action: Finalize; index: number }>;
+  warnings: ScoringWarning[];
+} {
+  const latestByActivity = new Map<
+    string,
+    { action: Finalize | ActionOf<"unfinalize">; index: number }
+  >();
+  input.actions.forEach((action, index) => {
+    if (action.type === "finalize" || action.type === "unfinalize") {
+      latestByActivity.set(action.activityId, { action, index });
+    }
+  });
+  const finalized = new Map<string, { action: Finalize; index: number }>();
+  const warnings: ScoringWarning[] = [];
+  for (const [activityId, { action, index }] of latestByActivity) {
+    const activity = input.event.activities.some(
+      (a) => a.activityId === activityId,
+    )
+      ? activityById.get(activityId)
+      : undefined;
+    if (!activity) {
+      warnings.push({
+        action,
+        message: `${action.type}: no Activity ${activityId} in the Event; left out`,
+      });
+      continue;
+    }
+    if (action.type === "unfinalize") continue;
+    const problem = finalizeProblem(input, activity, action);
+    if (problem) warnings.push({ action, message: problem });
+    else finalized.set(activityId, { action, index });
+  }
+  return { finalized, warnings };
+}
+
+function finalizeProblem(
+  input: ScoringInput,
+  activity: Activity,
+  { ranking }: Finalize,
+): string | undefined {
+  const seen = new Set<string>();
+  for (const r of ranking) {
+    const who = r.entrantId;
+    if (
+      !input.entries.some(
+        (e) => e.activityId === activity.id && e.entrantId === who,
+      )
+    ) {
+      return `finalize: ${who} has no entry at ${activity.slug}; left out`;
+    }
+    if (seen.has(who)) {
+      return `finalize: ${who} is listed twice at ${activity.slug}; left out`;
+    }
+    seen.add(who);
+    if (r.disqualified) continue;
+    if (!Number.isInteger(r.rank) || r.rank < 1) {
+      return `finalize: rank ${r.rank} for ${who} at ${activity.slug} isn't a whole number from 1; left out`;
+    }
+    if (!Number.isFinite(r.points) || r.points < 0) {
+      return `finalize: points ${r.points} for ${who} at ${activity.slug} aren't a number from 0; left out`;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * A `finalize` action's stored ranking as results, in its order. Totals stay live, and the Provisional
+ * Ranking ranks them among the entrants it didn't DQ, as information; ranks and points are as stored.
+ */
+function storedResults(
+  { ranking }: Finalize,
+  scored: readonly { entrantId: string; total: number }[],
+  rankingOf: ReturnType<typeof rankingFor>,
+): EntryResult[] {
+  const totalOf = (entrantId: string): number =>
+    scored.find((s) => s.entrantId === entrantId)?.total ?? 0;
+  const rankOf = rankingOf(
+    ranking.filter((r) => !r.disqualified).map((r) => totalOf(r.entrantId)),
+  );
+  return ranking.map((r): EntryResult => {
+    const total = totalOf(r.entrantId);
+    if (r.disqualified) {
+      return { entrantId: r.entrantId, total, points: 0, disqualified: true };
+    }
+    return {
+      entrantId: r.entrantId,
+      total,
+      provisionalRank: rankOf(total),
+      finalRank: r.rank,
+      points: r.points,
+      disqualified: false,
+    };
+  });
+}
+
+/** Entrants whose rank, points or DQ differ between two sets of results, or who are in only one. */
+function differences(
+  a: readonly EntryResult[],
+  b: readonly EntryResult[],
+): string[] {
+  const outcome = (r: EntryResult): string =>
+    r.disqualified ? "DQ" : `${r.finalRank}:${r.points}`;
+  const of = (results: readonly EntryResult[]) =>
+    new Map(results.map((r) => [r.entrantId, outcome(r)]));
+  const x = of(a);
+  const y = of(b);
+  return [...new Set([...x.keys(), ...y.keys()])]
+    .filter((id) => x.get(id) !== y.get(id))
+    .sort();
 }
