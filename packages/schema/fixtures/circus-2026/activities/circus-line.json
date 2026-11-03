@@ -49,6 +49,9 @@
         "audience": "judge",
         "sortOrder": 10,
         "weight": 1,
+        "primary": {
+          "direction": "lower-wins"
+        },
         "legacy": {
           "v1Weight": 1
         }

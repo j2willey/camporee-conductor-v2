@@ -62,6 +62,27 @@ describe("Circus 2026 fixtures: content and references", () => {
     expect(summary("exhibition")).toEqual(Array(4).fill("exhibition"));
   });
 
+  it("marks the primary metric of 10 Measured Activities, all times or counts where lower wins (#3)", () => {
+    expect(
+      activities.flatMap((a) =>
+        a.scoring.fields.flatMap((f) =>
+          f.primary ? [`${a.slug} ${f.id} ${f.primary.direction}`] : [],
+        ),
+      ),
+    ).toEqual([
+      "3-ring-circus elapsed_time lower-wins",
+      "circus-line elapsed_time lower-wins",
+      "ducks-in-a-row total_turns lower-wins",
+      "pioneering-train-performance elapsed_time lower-wins",
+      "setting-up-the-big-top elapsed_time lower-wins",
+      "sports-land-skis elapsed_time lower-wins",
+      "the-a-frame-trapeze elapsed_time lower-wins",
+      "the-barrel-of-monkeys-caravan elapsed_time lower-wins",
+      "the-high-wire-fire-act base_time lower-wins",
+      "the-tumbled-trapeze-rescue elapsed_time lower-wins",
+    ]);
+  });
+
   it("has Top Dog as an Award (top 25% of Troop Challenges), not an Activity (#3)", () => {
     expect(activities.map((a) => a.slug)).not.toContain("top-dog");
     expect(
@@ -292,6 +313,22 @@ describe("Circus 2026 as-run fixtures", () => {
         "the-circus-orchestra judge_notes: design only",
         "the-grand-entry judge_notes: design only",
         "trapeze-swing-assembly judge_notes: design only",
+        // Primary metrics are a v2 design decision (#3); v1 had none, so the as-run fixture has none.
+        ...[
+          "3-ring-circus elapsed_time",
+          "circus-line elapsed_time",
+          "ducks-in-a-row total_turns",
+          "pioneering-train-performance elapsed_time",
+          "setting-up-the-big-top elapsed_time",
+          "sports-land-skis elapsed_time",
+          "the-a-frame-trapeze elapsed_time",
+          "the-barrel-of-monkeys-caravan elapsed_time",
+          "the-high-wire-fire-act base_time",
+          "the-tumbled-trapeze-rescue elapsed_time",
+        ].map(
+          (field) =>
+            `${field} primary: as-run undefined, design {"direction":"lower-wins"}`,
+        ),
         // No v1 sortOrder, so it comes from list position, which the restored judge_notes shifts.
         "trapeze-swing-assembly field_1778197726672 sortOrder: as-run 60, design 70",
       ].sort(),

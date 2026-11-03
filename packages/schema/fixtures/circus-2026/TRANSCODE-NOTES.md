@@ -39,6 +39,8 @@ That's 7 fields across 6 Activities reclassified (5 of them finalized Patrol Gam
 `sports-land-skis`), and 5 restored note fields. Nothing else differs: Activity content, variables, scoring
 direction, Common Fields, Competitions and playlist order are the same, except `top-dog`: an Activity as
 run, the Top Dog Award in the design (see "Changed: Top Dog"). The test names it as the only exception.
+The design also marks 10 primary metrics that the as-run fixture doesn't have (see "Added: primary metrics"); the
+test lists them.
 
 The schema `2.9` cartridge predates v1's league model, so the as-run transcode fills three gaps:
 
@@ -132,6 +134,18 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
   Its game file and playlist entry are dropped; the other Activities keep their v1 `sortOrder`, so 28 is
   skipped. The game's story text isn't carried over. The **as-run** fixture keeps it as an Activity, as v1
   ran it. Top Dog had no scores at the event and isn't in the golden files, so parity is unaffected.
+
+## Added: primary metrics (#3)
+
+- v1 had no primary metric. In the **design**, 10 Measured Activities mark one (ADR-0019 Measured Activities
+  amendment; chosen by Jim 2026-11-02), all `lower-wins`: `elapsed_time` on `3-ring-circus`, `circus-line`,
+  `pioneering-train-performance`, `setting-up-the-big-top`, `sports-land-skis`, `the-a-frame-trapeze`,
+  `the-barrel-of-monkeys-caravan` and `the-tumbled-trapeze-rescue`; `total_turns` on `ducks-in-a-row`; `base_time`
+  on `the-high-wire-fire-act`.
+- Not marked: `jugglers` (scoring still TBD), and the points-ranked `buried-bearded-ladys-jewels`, `telephone`,
+  `the-grand-entry` and `trapeze-swing-assembly`.
+- Listing order only: ranking still comes from points. The **as-run** fixture has none, as v1 ran it, so parity
+  is unaffected.
 
 ## Carried over as-is, but worth a look
 
