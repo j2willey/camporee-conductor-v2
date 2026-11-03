@@ -9,6 +9,7 @@ export function start(config: Config): ServerType {
   const app = createApp({
     db: openDb(config.databasePath),
     auth: createAuth(config.auth),
+    authConfig: config.auth,
   });
   return serve({ fetch: app.fetch, port: config.port }, (info) =>
     console.log(`composer-api listening on :${info.port}`),

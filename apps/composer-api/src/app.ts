@@ -1,11 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { Slug } from "@camporee-conductor/schema";
+import { Slug, type Event } from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { validator } from "hono/validator";
 import { z } from "zod";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { requireRole } from "./authz.ts";
+import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
   documents,
@@ -25,20 +27,29 @@ const NewMember = z.strictObject({
   role: z.enum(ROLES),
 });
 
-/** The request body, parsed with `schema`, or 400. */
-async function body<S extends z.ZodType>(
-  request: Request,
-  schema: S,
-): Promise<z.infer<S>> {
-  const result = schema.safeParse(await request.json().catch(() => undefined));
-  if (!result.success) {
-    throw new HTTPException(400, { message: z.prettifyError(result.error) });
-  }
-  return result.data;
-}
+/** Validates the JSON body with `schema` (400 if it doesn't match); its type reaches the web client. */
+const jsonBody = <S extends z.ZodType>(schema: S) =>
+  validator("json", (value): z.infer<S> => {
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      throw new HTTPException(400, { message: z.prettifyError(result.error) });
+    }
+    return result.data;
+  });
 
-/** The Composer API (issue #4). `auth` is the swappable auth module (ADR-0014). */
-export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
+/**
+ * The Composer API (issue #4). `auth` is the swappable auth module (ADR-0014); `authConfig` tells the
+ * web app which sign-in to show (never the secret key).
+ */
+export function createApp({
+  db,
+  auth,
+  authConfig,
+}: {
+  db: Db;
+  auth: AuthAdapter;
+  authConfig: AuthConfig;
+}) {
   const myOrganizations = (userId: string) =>
     db
       .select({
@@ -80,8 +91,8 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
 
     .get("/organizations", (c) => c.json(myOrganizations(c.var.user.userId)))
 
-    .post("/organizations", async (c) => {
-      const { name, slug } = await body(c.req.raw, NewOrganization);
+    .post("/organizations", jsonBody(NewOrganization), (c) => {
+      const { name, slug } = c.req.valid("json");
       const taken = db
         .select({ id: organizations.id })
         .from(organizations)
@@ -106,10 +117,10 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
       return c.json({ id, slug, name, role: "owner" as const }, 201);
     })
 
-    .post("/organizations/:orgId/members", async (c) => {
+    .post("/organizations/:orgId/members", jsonBody(NewMember), (c) => {
       const orgId = c.req.param("orgId");
       requireRole(db, orgId, c.var.user.userId, "owner");
-      const { email, role } = await body(c.req.raw, NewMember);
+      const { email, role } = c.req.valid("json");
       const user = db
         .select({ id: users.id })
         .from(users)
@@ -196,9 +207,8 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
         .get();
       if (!row) throw new HTTPException(404, { message: "Not found." });
       requireRole(db, row.organizationId, c.var.user.userId, "viewer");
-      const event = JSON.parse(row.json) as {
-        activities: { activityId: string }[];
-      };
+      // Validated on import (ADR-0012); stored exactly as given.
+      const event = JSON.parse(row.json) as Event;
       const ids = new Set(event.activities.map((a) => a.activityId));
       const activities = db
         .select({
@@ -220,6 +230,16 @@ export function createApp({ db, auth }: { db: Db; auth: AuthAdapter }) {
 
   return new Hono()
     .get("/health", (c) => c.json({ ok: true }))
+    .get("/auth-config", (c) =>
+      c.json(
+        authConfig.adapter === "clerk"
+          ? {
+              adapter: "clerk" as const,
+              publishableKey: authConfig.publishableKey,
+            }
+          : { adapter: "dev" as const },
+      ),
+    )
     .route("/api", api)
     .onError((error, c) => {
       if (error instanceof HTTPException) {

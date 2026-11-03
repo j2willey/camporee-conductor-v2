@@ -42,7 +42,7 @@ async function createOrg(owner: string, slug: string): Promise<string> {
 
 beforeEach(() => {
   db = testDb();
-  app = createApp({ db, auth: devAuth() });
+  app = createApp({ db, auth: devAuth(), authConfig: { adapter: "dev" } });
 });
 
 describe("signing in", () => {
@@ -50,6 +50,26 @@ describe("signing in", () => {
     expect(await call(null, "GET", "/health")).toEqual({
       status: 200,
       json: { ok: true },
+    });
+  });
+
+  it("tells the web app which sign-in to show, signed out", async () => {
+    expect(await call(null, "GET", "/auth-config")).toEqual({
+      status: 200,
+      json: { adapter: "dev" },
+    });
+    const clerkApp = createApp({
+      db,
+      auth: devAuth(),
+      authConfig: {
+        adapter: "clerk",
+        secretKey: "sk_secret",
+        publishableKey: "pk_test_x",
+      },
+    });
+    expect(await (await clerkApp.request("/auth-config")).json()).toEqual({
+      adapter: "clerk",
+      publishableKey: "pk_test_x",
     });
   });
 
