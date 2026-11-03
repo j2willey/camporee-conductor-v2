@@ -9,6 +9,7 @@ import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
+import { recordUser } from "./users.ts";
 import {
   documents,
   memberships,
@@ -79,10 +80,7 @@ export function createApp({
         });
       }
       // Record the user on first sight, so an owner can add them by email.
-      db.insert(users)
-        .values({ id: user.userId, email: user.email, createdAt: new Date() })
-        .onConflictDoUpdate({ target: users.id, set: { email: user.email } })
-        .run();
+      recordUser(db, user, new Date());
       c.set("user", user);
       await next();
     })
@@ -252,7 +250,8 @@ export function createApp({
       if (error instanceof HTTPException) {
         return c.json({ error: error.message }, error.status);
       }
-      console.error(error);
+      // The details stay in the server log; the client gets a plain message, never a stack or DB error.
+      console.error(`${c.req.method} ${c.req.path} failed:`, error);
       return c.json({ error: "Something went wrong." }, 500);
     });
 }

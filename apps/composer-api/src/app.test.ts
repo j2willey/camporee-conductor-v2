@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { eq, sql } from "drizzle-orm";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.ts";
 import {
   devAuth,
   DEV_EMAIL_VERIFIED_HEADER,
   DEV_USER_HEADER,
 } from "./auth/dev.ts";
-import { users } from "./db/schema.ts";
+import type { AuthAdapter } from "./auth/index.ts";
+import { memberships, users } from "./db/schema.ts";
 import type { Db } from "./db/open.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
@@ -148,6 +150,102 @@ describe("unverified emails (second layer behind Clerk's own verification)", () 
     expect(db.select({ email: users.email }).from(users).all()).toEqual([
       { email: "ann@example.com" },
     ]);
+  });
+});
+
+describe("an email that comes back under a new auth id (#32)", () => {
+  // The dev adapter derives the id from the email, so these tests present the id explicitly, as Clerk
+  // does when an account is recreated or an email moves between accounts.
+  const asId = (userId: string, email: string, path = "/api/me") =>
+    createApp({
+      db,
+      auth: idAuth(userId, email),
+      authConfig: { adapter: "dev" },
+    }).request(path);
+
+  function idAuth(userId: string, email: string): AuthAdapter {
+    return {
+      currentUser: () =>
+        Promise.resolve({ userId, email, emailVerified: true }),
+    };
+  }
+
+  const membershipsOf = (userId: string) =>
+    db
+      .select({ org: memberships.organizationId, role: memberships.role })
+      .from(memberships)
+      .where(eq(memberships.userId, userId))
+      .orderBy(memberships.organizationId)
+      .all();
+
+  it("relinks the stored user to the new id and keeps their memberships", async () => {
+    const org = await createOrg("ann@example.com", "coyote-creek");
+    const [before] = db.select().from(users).all();
+
+    const res = await asId("user_new", "ann@example.com");
+
+    expect(res.status).toBe(200);
+    expect(db.select().from(users).all()).toEqual([
+      {
+        id: "user_new",
+        email: "ann@example.com",
+        createdAt: before?.createdAt,
+      },
+    ]);
+    expect(membershipsOf("user_new")).toEqual([{ org, role: "owner" }]);
+    expect(membershipsOf("dev|ann@example.com")).toEqual([]);
+    expect(
+      (
+        (await res.json()) as { organizations: { slug: string }[] }
+      ).organizations.map((o) => o.slug),
+    ).toEqual(["coyote-creek"]);
+  });
+
+  it("merges into a new id that's already stored, keeping the higher role per Organization", async () => {
+    const shared = await createOrg("ann@example.com", "shared");
+    const annOnly = await createOrg("ann@example.com", "ann-only");
+    const bobOnly = await createOrg("bob@example.com", "bob-only");
+    await call(
+      "ann@example.com",
+      "POST",
+      `/api/organizations/${shared}/members`,
+      {
+        email: "bob@example.com",
+        role: "viewer",
+      },
+    );
+
+    // Bob's account now holds Ann's verified email.
+    const res = await asId("dev|bob@example.com", "ann@example.com");
+
+    expect(res.status).toBe(200);
+    expect(
+      db.select({ id: users.id, email: users.email }).from(users).all(),
+    ).toEqual([{ id: "dev|bob@example.com", email: "ann@example.com" }]);
+    expect(membershipsOf("dev|bob@example.com")).toEqual(
+      [
+        { org: shared, role: "owner" },
+        { org: annOnly, role: "owner" },
+        { org: bobOnly, role: "owner" },
+      ].sort((a, b) => a.org.localeCompare(b.org)),
+    );
+  });
+});
+
+describe("unexpected errors", () => {
+  it("returns a clean 500 JSON response, with no stack trace or database message", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    db.run(sql`DROP TABLE memberships`);
+    db.run(sql`DROP TABLE users`); // "no such table: users" must not reach the client
+
+    const res = await call("ann@example.com", "GET", "/api/me");
+
+    expect(res).toEqual({
+      status: 500,
+      json: { error: "Something went wrong." },
+    });
+    expect(log).toHaveBeenCalled();
+    log.mockRestore();
   });
 });
 
