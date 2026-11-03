@@ -77,7 +77,28 @@ export type OfficialAction =
       entrantId: string;
       disqualified: boolean;
       notes?: string;
+    }
+  | {
+      /**
+       * Freezes the Activity's Final Ranking as `ranking`, which stores what the Official saw. Until
+       * `unfinalize`, scoring returns it as stored and never re-sorts it (ADR-0019).
+       */
+      type: "finalize";
+      activityId: string;
+      ranking: FinalizedResult[];
+      notes?: string;
+    }
+  | {
+      /** Reopens a finalized Activity; actions held back since `finalize` then apply (ADR-0019). */
+      type: "unfinalize";
+      activityId: string;
+      notes?: string;
     };
+
+/** One entrant's result as a `finalize` action froze it: a rank and placement points, or DQ. */
+export type FinalizedResult =
+  | { entrantId: string; rank: number; points: number; disqualified: false }
+  | { entrantId: string; disqualified: true };
 
 export interface ScoringInput {
   event: Event;
@@ -114,6 +135,8 @@ export interface DisqualifiedEntry {
 export interface ActivityResults {
   activityId: string;
   competitionId: string;
+  /** Finalized by an Official: `entries` are the stored Final Ranking, in its order (ADR-0019). */
+  finalized: boolean;
   entries: EntryResult[];
 }
 
