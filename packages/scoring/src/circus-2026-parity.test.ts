@@ -10,7 +10,12 @@ import {
   PRINTED_STICKERS_FILE,
   type V1Golden,
 } from "../scripts/v1-golden.ts";
-import { scoreEvent, type EntryResult, type Standing } from "./index.ts";
+import {
+  scoreEvent,
+  type EntryResult,
+  type OfficialAction,
+  type Standing,
+} from "./index.ts";
 
 const golden = JSON.parse(readFileSync(GOLDEN_FILE, "utf8")) as V1Golden;
 const printed = (
@@ -154,5 +159,61 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
     expect([...perActivity, ...overall].sort()).toEqual(
       printed.map((s) => `${s.gameId} ${place(s.rank)} ${s.entityId}`).sort(),
     );
+  });
+});
+
+describe("Circus 2026 finalized as v1's Officials left it", () => {
+  // v1 stored only a Draft/Final switch per game, not a ranking: it recomputed every time. So each of
+  // the 18 finalized games is frozen here with the Final Rank and points v1 showed, logged after every
+  // override, as a v2 Official would have. The real check is that a recompute agrees: no warning.
+  const finalizeActions = golden.games.map((g): OfficialAction => ({
+    type: "finalize",
+    activityId: circus.activityIdOf(g.gameId),
+    ranking: [...g.results]
+      .sort(
+        (a, b) =>
+          place(a.finalRank) - place(b.finalRank) ||
+          cmp(a.entityId, b.entityId),
+      )
+      .map((r) => ({
+        entrantId: r.entityId,
+        rank: place(r.finalRank),
+        points: r.points,
+        disqualified: false,
+      })),
+  }));
+  const finalized = scoreEvent({
+    ...circus.input,
+    actions: [...circus.input.actions, ...finalizeActions],
+  });
+
+  it("finalizes the 18 games, and a recompute from the scores agrees with every one", () => {
+    expect(finalized.warnings).toEqual([]);
+    expect(
+      finalized.activities.filter((a) => a.finalized).map((a) => a.activityId),
+    ).toEqual(
+      expect.arrayContaining(
+        golden.games.map((g) => circus.activityIdOf(g.gameId)),
+      ) as string[],
+    );
+    expect(finalized.activities.filter((a) => a.finalized)).toHaveLength(18);
+  });
+
+  it("gives the same results and standings as the recompute", () => {
+    expect(finalized.activities).toEqual(
+      results.activities.map((a) =>
+        finalizeActions.some(
+          (f) => f.type === "finalize" && f.activityId === a.activityId,
+        )
+          ? {
+              ...a,
+              finalized: true,
+              entries: expect.arrayContaining(a.entries) as EntryResult[],
+            }
+          : a,
+      ),
+    );
+    expect(finalized.standings).toEqual(results.standings);
+    expect(finalized.awards).toEqual(results.awards);
   });
 });
