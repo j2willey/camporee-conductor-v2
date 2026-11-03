@@ -71,6 +71,13 @@ export function createApp({
     .use(async (c, next) => {
       const user = await auth.currentUser(c.req.raw);
       if (!user) throw new HTTPException(401, { message: "Sign in first." });
+      // Second layer behind the provider's own verification: an unverified email is never stored, so
+      // it can't be matched when an owner adds a member by email.
+      if (!user.emailVerified) {
+        throw new HTTPException(403, {
+          message: "Verify your email address first.",
+        });
+      }
       // Record the user on first sight, so an owner can add them by email.
       db.insert(users)
         .values({ id: user.userId, email: user.email, createdAt: new Date() })

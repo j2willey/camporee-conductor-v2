@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
-import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
+import {
+  devAuth,
+  DEV_EMAIL_VERIFIED_HEADER,
+  DEV_USER_HEADER,
+} from "./auth/dev.ts";
+import { users } from "./db/schema.ts";
 import type { Db } from "./db/open.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
@@ -87,6 +92,62 @@ describe("signing in", () => {
         organizations: [],
       },
     });
+  });
+});
+
+describe("unverified emails (second layer behind Clerk's own verification)", () => {
+  const asUnverified = (
+    who: string,
+    method: string,
+    path: string,
+    body?: unknown,
+  ) =>
+    app.request(path, {
+      method,
+      headers: {
+        [DEV_USER_HEADER]: who,
+        [DEV_EMAIL_VERIFIED_HEADER]: "false",
+        ...(body !== undefined && { "content-type": "application/json" }),
+      },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+    });
+
+  it("refuses the API with 403 and doesn't store the user", async () => {
+    const res = await asUnverified("mallory@example.com", "GET", "/api/me");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      error: "Verify your email address first.",
+    });
+    expect(db.select().from(users).all()).toEqual([]);
+  });
+
+  it("can't be added as a member, since it was never stored", async () => {
+    const org = await createOrg("ann@example.com", "coyote-creek");
+    await asUnverified("mallory@example.com", "GET", "/api/me");
+    const res = await call(
+      "ann@example.com",
+      "POST",
+      `/api/organizations/${org}/members`,
+      {
+        email: "mallory@example.com",
+        role: "editor",
+      },
+    );
+    expect(res.status).toBe(404);
+  });
+
+  it("doesn't let an unverified email take over a stored user's email", async () => {
+    await call("ann@example.com", "GET", "/api/me");
+    // Same user id, now presenting an unverified address.
+    const res = await asUnverified(
+      "ann@example.com",
+      "GET",
+      "/api/organizations",
+    );
+    expect(res.status).toBe(403);
+    expect(db.select({ email: users.email }).from(users).all()).toEqual([
+      { email: "ann@example.com" },
+    ]);
   });
 });
 
