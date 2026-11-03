@@ -282,6 +282,36 @@ describe("actions logged after finalize wait for unfinalize", () => {
     ).toEqual([1, 1]);
   });
 
+  it("set-award doesn't change the Activity, so it still applies", () => {
+    const award = {
+      id: "0196cfa2-4c00-7000-8000-000000000031",
+      slug: "spirit",
+      label: "Spirit",
+      competitionId: COMPETITION,
+      scope: "event" as const,
+      rule: { type: "manual" as const },
+    };
+    const results = scoreEvent(
+      smallEvent({
+        scores: [SCORES],
+        awards: [award],
+        actions: [
+          finalize(AS_SCORED),
+          {
+            type: "set-award",
+            awardId: award.id,
+            entrantId: "t3",
+            awarded: true,
+          },
+        ],
+      }),
+    );
+    expect(results.warnings).toEqual([]);
+    expect(results.awards[0]?.recipients).toEqual([
+      { entrantId: "t3", manual: true },
+    ]);
+  });
+
   it("an overall DQ and set-overall-rank don't change the Activity, so they still apply", () => {
     const actions: OfficialAction[] = [
       finalize(AS_SCORED),
