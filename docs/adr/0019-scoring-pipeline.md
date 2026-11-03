@@ -19,7 +19,7 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Judge entry:** per field — raw metrics (counts, times) that get converted, or judged points entered directly (e.g., Scout Spirit 0–10). Raw entries are stored as entered.
 - **Final Ranking overrides:** no reason required; optional notes field. Logged (who/when).
 - **Ties:** allowed in Final Rankings. Numbering is configurable per Event by the director; default is dense (1, 2, 2, 3) — Jim's preference: give out more awards. See the 2026-11-02 tie-numbering amendment.
-- **Score change after finalization:** DEFERRED to Phase 2 session. Constraint in place now: the scoring package never silently re-sorts a finalized Challenge.
+- **Score change after finalization:** DEFERRED to Phase 2 session. Constraint in place now: the scoring package never silently re-sorts a finalized Challenge. _(Decided 2026-11-02: see the Finalization amendment.)_
 - **Overall awards:** director chooses per Event — sum of placement points via a per-Competition placement→points table (default), or sum of converted points. See the 2026-11-02 Awards amendment.
 
 ## Amendment 2026-10-30 (issue #2): `weight` is kept
@@ -124,3 +124,25 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - A primary stopwatch value that's entered but **can't be read** (e.g. `"7.47"`, `"7;47"`, `"1:75"`) is also
   listed last, and `scoreEvent` returns a **warning** naming the Activity, entrant, field and raw value, so
   the Official sees the typo. Scoring doesn't fail on it.
+
+## Amendment 2026-11-02 (issue #3): Finalization
+
+- **`finalize { activityId, ranking }`** freezes an Activity's Final Ranking. The action **stores the ranking
+  it froze**: each entrant's rank and placement points, or DQ. **`unfinalize { activityId }`** reopens it.
+  For each Activity, the latest of the two wins.
+- While an Activity is finalized, `scoreEvent` returns the **stored ranking**, and standings and Awards use
+  it. If recomputing from the current scores and the actions logged before the `finalize` would come out
+  differently (a rank, points, a DQ, or an entrant added or missing), it returns a **warning** naming the
+  Activity. It never re-sorts silently. The entries' totals and Provisional Ranking stay live, as
+  information.
+- **Actions logged after `finalize`** that would change that Activity (`adjust-points`, `set-final-rank`,
+  `set-placement-points`, a per-Activity `disqualify`) **don't apply until `unfinalize`**. Each one gets a
+  warning. Actions that don't change the Activity's results (an overall DQ, `set-overall-rank`,
+  `set-award`) still apply.
+- **Per Activity only.** Standings aren't finalized; they're derived from Activity results.
+- Only the effective (latest) `finalize` or `unfinalize` is checked. An invalid one (an Activity not in the
+  Event; an entrant with no entry at that Activity, or listed twice; a rank that isn't a whole number from 1;
+  negative points) is **left out with a warning**, and the Activity is scored as not finalized.
+- v1 had only a Draft/Final switch per game (`game_status`). It stored no ranking and didn't stop later
+  changes: v1 recomputed every time. Freezing the ranking is a deliberate change. v1's Close Game is
+  different: it's a Judge's "I'm done" handshake, not an Official's finalization.
