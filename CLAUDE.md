@@ -70,8 +70,11 @@ pnpm test         # Vitest in every package
 pnpm --filter @camporee-conductor/scoring test -- --watch   # TDD loop for scoring
 pnpm --filter @camporee-conductor/schema generate           # regenerate json-schema/ after changing a Zod schema
 
-# Composer API (apps/composer-api). Dev sign-in: send header `x-dev-user: <email>`; refused in production.
-NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer-api start   # :3010, composer.db
+# Composer API (apps/composer-api), :3010, composer.db. `start` loads .env.local at the repo root if present
+# (gitignored): CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY. Variables set on the command line win over the file.
+pnpm --filter @camporee-conductor/composer-api start                                         # Clerk sign-in
+NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer-api start   # dev sign-in: header `x-dev-user: <email>`; refused in production
+pnpm --filter @camporee-conductor/composer-web dev                                           # web app on :5173, proxies to the API
 pnpm --filter @camporee-conductor/composer-api import-event <org-slug> packages/schema/fixtures/circus-2026
 pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
 ```

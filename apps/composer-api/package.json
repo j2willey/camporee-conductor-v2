@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run",
-    "start": "node src/main.ts",
+    "start": "node --env-file-if-exists=../../.env.local src/main.ts",
     "import-event": "node src/cli/import.ts",
     "db:generate": "drizzle-kit generate"
   },
