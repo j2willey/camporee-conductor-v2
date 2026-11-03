@@ -1,6 +1,6 @@
 # Composer: the API serving the built web app, in one image (issue #4, D5).
 #   docker build -t composer .
-#   docker run --rm -p 3010:3010 --env-file .env.local -v composer-data:/data composer
+#   docker run --rm --init -p 3010:3010 --env-file .env.local -v composer-data:/data composer
 # Needs CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY at run time. The dev sign-in is refused here
 # (NODE_ENV=production, issue #4 D7). The database lives in /data, a volume, so it survives new images.
 

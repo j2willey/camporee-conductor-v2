@@ -81,7 +81,7 @@ pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> pack
 pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
 
 # One image: the API serving the built app (Clerk keys at run time; dev sign-in refused)
-docker build -t composer . && docker run --rm -p 3010:3010 --env-file .env.local -v composer-data:/data composer
+docker build -t composer . && docker run --rm --init -p 3010:3010 --env-file .env.local -v composer-data:/data composer
 ```
 
 CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test, the Playwright smoke test, and a Docker
