@@ -87,10 +87,8 @@ export function scoreEvent(input: ScoringInput): EventResults {
     warnings.push(...unreadablePrimaryTimes(activity, entries));
     const scored = listed(activity, entries).map((e) => {
       const actions = actionsFor(e.entrantId);
-      const adjustment = actions.reduce(
-        (sum, a) => (a.type === "adjust-points" ? sum + a.points : sum),
-        0,
-      );
+      // The latest adjust-points wins, like every action type; adjustments don't add up (ADR-0019).
+      const adjustment = latest(actions, "adjust-points")?.points ?? 0;
       return {
         entrantId: e.entrantId,
         total: entryTotal(fields, e.values) + adjustment,
