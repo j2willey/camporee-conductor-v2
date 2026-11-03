@@ -1,4 +1,7 @@
 import { eq, sql } from "drizzle-orm";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "./app.ts";
 import {
@@ -229,6 +232,63 @@ describe("an email that comes back under a new auth id (#32)", () => {
         { org: bobOnly, role: "owner" },
       ].sort((a, b) => a.org.localeCompare(b.org)),
     );
+  });
+});
+
+describe("the built web app (one image, issue #4 D5)", () => {
+  let web: ReturnType<typeof createApp>;
+
+  beforeEach(() => {
+    const webRoot = mkdtempSync(join(tmpdir(), "composer-web-"));
+    writeFileSync(
+      join(webRoot, "index.html"),
+      "<!doctype html><title>Composer</title>",
+    );
+    mkdirSync(join(webRoot, "assets"));
+    writeFileSync(join(webRoot, "assets", "app.js"), "console.log(1)");
+    web = createApp({
+      db,
+      auth: devAuth(),
+      authConfig: { adapter: "dev" },
+      webRoot,
+    });
+  });
+
+  it("serves the app's files", async () => {
+    const res = await web.request("/assets/app.js");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toBe("console.log(1)");
+  });
+
+  it("serves index.html for the app's own routes, so a reload or shared link works", async () => {
+    for (const path of ["/", "/organizations/x", "/events/y"]) {
+      const res = await web.request(path);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain("<title>Composer</title>");
+    }
+  });
+
+  it("keeps a JSON 404 for an unknown API path, never the app's page", async () => {
+    const res = await web.request("/api/nothing-here", {
+      headers: { [DEV_USER_HEADER]: "ann@example.com" },
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "Not found." });
+  });
+
+  it("still answers the API and /health", async () => {
+    expect((await web.request("/health")).status).toBe(200);
+    expect(
+      (
+        await web.request("/api/me", {
+          headers: { [DEV_USER_HEADER]: "ann@example.com" },
+        })
+      ).status,
+    ).toBe(200);
+  });
+
+  it("serves no page when there's no built app (development uses Vite)", async () => {
+    expect((await app.request("/")).status).toBe(404);
   });
 });
 

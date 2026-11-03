@@ -14,6 +14,8 @@ export interface Config {
   auth: AuthConfig;
   databasePath: string;
   port: number;
+  /** The built web app to serve, or null in development, where Vite serves it (issue #4, D5). */
+  webRoot: string | null;
 }
 
 /** Where the dev sign-in adapter may run. Anything else, including no NODE_ENV, is refused. */
@@ -52,7 +54,12 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (!Number.isInteger(port) || port < 0) {
     throw new ConfigError(`PORT must be a whole number, not "${env["PORT"]}".`);
   }
-  return { auth, databasePath: databasePathFrom(env), port };
+  return {
+    auth,
+    databasePath: databasePathFrom(env),
+    port,
+    webRoot: webRootFrom(env),
+  };
 }
 
 /**
@@ -80,4 +87,12 @@ export function databasePathFrom(
 ): string {
   const path = env["DATABASE_PATH"] ?? "composer.db";
   return path === ":memory:" ? path : resolve(env["INIT_CWD"] ?? ".", path);
+}
+
+/** WEB_ROOT, the built web app's folder, resolved like DATABASE_PATH; unset means don't serve it. */
+export function webRootFrom(
+  env: Record<string, string | undefined>,
+): string | null {
+  const path = env["WEB_ROOT"];
+  return path ? resolve(env["INIT_CWD"] ?? ".", path) : null;
 }

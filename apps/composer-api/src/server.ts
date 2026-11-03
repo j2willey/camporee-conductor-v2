@@ -11,6 +11,7 @@ export function start(config: Config): ServerType {
     db: openDb(config.databasePath),
     auth: createAuth(config.auth),
     authConfig: config.auth,
+    webRoot: config.webRoot,
   });
   return serve({ fetch: app.fetch, port: config.port }, (info) =>
     console.log(`composer-api listening on :${info.port}`),

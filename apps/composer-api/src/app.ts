@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Slug, type Event } from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
@@ -40,16 +41,19 @@ const jsonBody = <S extends z.ZodType>(schema: S) =>
 
 /**
  * The Composer API (issue #4). `auth` is the swappable auth module (ADR-0014); `authConfig` tells the
- * web app which sign-in to show (never the secret key).
+ * web app which sign-in to show (never the secret key). `webRoot`, when given, is the built web app,
+ * served from the same server so one image holds both (D5).
  */
 export function createApp({
   db,
   auth,
   authConfig,
+  webRoot = null,
 }: {
   db: Db;
   auth: AuthAdapter;
   authConfig: AuthConfig;
+  webRoot?: string | null;
 }) {
   const myOrganizations = (userId: string) =>
     db
@@ -233,7 +237,8 @@ export function createApp({
       return c.json({ event, activities });
     });
 
-  return new Hono()
+  const notFound = (c: Context) => c.json({ error: "Not found." }, 404);
+  const app = new Hono()
     .get("/health", (c) => c.json({ ok: true }))
     .get("/auth-config", (c) =>
       c.json(
@@ -253,7 +258,17 @@ export function createApp({
       // The details stay in the server log; the client gets a plain message, never a stack or DB error.
       console.error(`${c.req.method} ${c.req.path} failed:`, error);
       return c.json({ error: "Something went wrong." }, 500);
-    });
+    })
+    .notFound(notFound);
+  if (webRoot) {
+    // Added after the typed routes, so the web client's types stay the API's alone.
+    app
+      .all("/api/*", notFound)
+      .get("*", serveStatic({ root: webRoot }))
+      // Any other path is one of the app's own routes (React Router): send the page and let it route.
+      .get("*", serveStatic({ root: webRoot, path: "index.html" }));
+  }
+  return app;
 }
 
 /** For the web app's typed client (PR B). */

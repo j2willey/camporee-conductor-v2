@@ -4,6 +4,7 @@ import {
   ConfigError,
   databasePathFrom,
   describeAuth,
+  webRootFrom,
   loadConfig,
 } from "./config.ts";
 
@@ -106,6 +107,16 @@ describe("databasePathFrom", () => {
 
   it("keeps :memory: as is", () => {
     expect(databasePathFrom({ DATABASE_PATH: ":memory:" })).toBe(":memory:");
+  });
+});
+
+describe("webRootFrom", () => {
+  it("is off unless WEB_ROOT is set; a relative path is from where pnpm was run", () => {
+    expect(webRootFrom({})).toBeNull();
+    expect(webRootFrom({ INIT_CWD: "/repo", WEB_ROOT: "web/dist" })).toBe(
+      "/repo/web/dist",
+    );
+    expect(webRootFrom({ WEB_ROOT: "/app/web" })).toBe("/app/web");
   });
 });
 
