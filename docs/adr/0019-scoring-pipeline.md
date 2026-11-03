@@ -41,7 +41,8 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
   - `set-final-rank`: overrides the Final Ranking.
   - `set-placement-points`: overrides the placement points.
   - `adjust-points`: adds points to (or, if negative, subtracts them from) an entry's total.
-- For each action type, the **latest logged action wins**.
+- For each action type, the **latest logged action wins**. That includes `adjust-points`: a later adjustment
+  replaces an earlier one; they don't add up. _(Made explicit 2026-11-03, Jim: the code had summed them.)_
 - `adjust-points` replaces v1's Official-only "Official Score" field (`off_score`), which v1 added to the
   total. At Circus 2026 it was used once (+1 in `the-circus-orchestra`).
 - Still to come (#3): DQ, finalization and the overall rank override, as further actions.
