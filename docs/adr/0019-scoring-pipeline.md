@@ -121,3 +121,6 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - Stopwatch values are text (`m:ss`, `h:mm:ss`, optional decimal seconds). **`"00:00"` or blank means no
   time** (the stopwatch wasn't used, as in Circus 2026 `the-high-wire-fire-act`); entries with no value are
   listed last, in entry order.
+- A primary stopwatch value that's entered but **can't be read** (e.g. `"7.47"`, `"7;47"`, `"1:75"`) is also
+  listed last, and `scoreEvent` returns a **warning** naming the Activity, entrant, field and raw value, so
+  the Official sees the typo. Scoring doesn't fail on it.

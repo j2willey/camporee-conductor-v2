@@ -68,16 +68,18 @@ export function entryTotal(
 }
 
 /**
- * A stopwatch value in seconds: `m:ss` or `h:mm:ss`, with optional decimal seconds. `"00:00"`, blank
- * or unreadable means no time: the stopwatch wasn't used (ADR-0019 Measured Activities).
+ * Stopwatch text read as seconds: `m:ss` or `h:mm:ss`, with optional decimal seconds. `null` if it's
+ * blank (nothing entered); undefined if it's entered but can't be read, e.g. `"7.47"` or `"1:75"`.
  */
-export function stopwatchSeconds(
+function readStopwatch(
   value: FieldValue | undefined,
-): number | undefined {
+): number | null | undefined {
+  if (value === undefined || value === null) return null;
   if (typeof value === "number") {
-    return Number.isFinite(value) && value > 0 ? value : undefined;
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
   }
   if (typeof value !== "string") return undefined;
+  if (value.trim() === "") return null;
   const match = /^(?:(\d+):)?(\d+):(\d{1,2}(?:\.\d+)?)$/.exec(value.trim());
   if (!match) return undefined;
   const [, hours = "0", minutes = "0", seconds = "0"] = match;
@@ -86,8 +88,26 @@ export function stopwatchSeconds(
     (match[1] !== undefined && Number(minutes) >= 60)
   )
     return undefined;
-  const total = Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
-  return total > 0 ? total : undefined;
+  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+}
+
+/**
+ * A stopwatch value in seconds. `"00:00"`, blank or unreadable means no time: the stopwatch wasn't
+ * used (ADR-0019 Measured Activities).
+ */
+export function stopwatchSeconds(
+  value: FieldValue | undefined,
+): number | undefined {
+  const seconds = readStopwatch(value);
+  return seconds ? seconds : undefined;
+}
+
+/**
+ * A stopwatch value that was entered but can't be read as a time, e.g. `"7.47"` or `"7;47"`: probably
+ * a typo. Blank and `"00:00"` aren't; they mean no time.
+ */
+export function unreadableStopwatch(value: FieldValue | undefined): boolean {
+  return readStopwatch(value) === undefined;
 }
 
 /** A primary metric's raw value as a number: seconds for a stopwatch, the count for a number field. */

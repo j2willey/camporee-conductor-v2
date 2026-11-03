@@ -5,6 +5,7 @@ export {
   mergeCommonFields,
   metricValue,
   stopwatchSeconds,
+  unreadableStopwatch,
 } from "./fields.ts";
 export {
   DEFAULT_PLACEMENT_POINTS,

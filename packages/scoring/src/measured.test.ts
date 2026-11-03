@@ -7,7 +7,7 @@ import {
   type FieldValue,
   type ScoringInput,
 } from "./index.ts";
-import { smallEvent } from "./test-support.ts";
+import { activityId, smallEvent } from "./test-support.ts";
 
 describe("stopwatchSeconds: stopwatch text → seconds", () => {
   it.each([
@@ -167,6 +167,86 @@ describe("Measured Activities: entries listed by the primary metric (ADR-0019)",
   });
 });
 
+describe("an unreadable stopwatch time lists last with a warning", () => {
+  const timed = (t2: FieldValue) =>
+    scoreEvent(
+      measured({
+        type: "stopwatch",
+        listing: "lower-wins",
+        values: { t1: "01:32", t2, t3: "00:58" },
+        points: { t1: 1, t2: 1, t3: 1 },
+      }),
+    );
+
+  it.each([["7.47"], ["7;47"], ["1:75"], ["abc"]])(
+    "%j: listed last, warned with the Activity, entrant and raw value",
+    (raw) => {
+      const results = timed(raw);
+      expect(results.activities[0]?.entries.map((e) => e.entrantId)).toEqual([
+        "t3",
+        "t1",
+        "t2",
+      ]);
+      expect(results.warnings).toEqual([
+        {
+          activityId: activityId(0),
+          entrantId: "t2",
+          fieldId: "measure",
+          value: raw,
+          message: expect.stringContaining(
+            `activity-0, entrant t2: "${raw}"`,
+          ) as string,
+        },
+      ]);
+    },
+  );
+
+  it.each([["00:00"], ["0:00:00"], [""], ["  "], [null]])(
+    "%j is no time, not a typo: no warning",
+    (raw) => {
+      expect(timed(raw).warnings).toEqual([]);
+    },
+  );
+
+  it("a stopwatch field that isn't the primary metric isn't checked", () => {
+    const input = measured({
+      type: "number",
+      listing: "higher-wins",
+      values: { t1: 1 },
+      points: { t1: 1 },
+    });
+    const [activity] = input.activities;
+    if (!activity) throw new Error("no Activity");
+    const withTime: ScoringInput = {
+      ...input,
+      activities: [
+        ActivitySchema.parse({
+          ...activity,
+          scoring: {
+            ...activity.scoring,
+            fields: [
+              ...activity.scoring.fields,
+              {
+                id: "time",
+                label: "Time",
+                type: "stopwatch",
+                kind: "metric",
+                audience: "judge",
+                sortOrder: 3,
+              },
+            ],
+          },
+        }),
+      ],
+      entries: input.entries.map((e) => ({
+        ...e,
+        values: { ...e.values, time: "7;47" },
+      })),
+    };
+    expect(scoreEvent(withTime).warnings).toEqual([]);
+  });
+});
+
 describe("Measured Activities on real Circus 2026 times", () => {
   it("the-tumbled-trapeze-rescue: fastest first, the untimed 00:00 last", () => {
     const circus = loadCircus2026AsRun();
@@ -189,9 +269,10 @@ describe("Measured Activities on real Circus 2026 times", () => {
             }),
       ),
     };
+    const results = scoreEvent(input);
+    expect(results.warnings).toEqual([]);
     const entries =
-      scoreEvent(input).activities.find((a) => a.activityId === id)?.entries ??
-      [];
+      results.activities.find((a) => a.activityId === id)?.entries ?? [];
     const time = (entrantId: string) =>
       input.entries.find(
         (e) => e.activityId === id && e.entrantId === entrantId,

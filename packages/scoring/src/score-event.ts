@@ -1,6 +1,11 @@
 import type { Activity } from "@camporee-conductor/schema";
 import { awardRecipients } from "./awards.ts";
-import { entryTotal, mergeCommonFields, metricValue } from "./fields.ts";
+import {
+  entryTotal,
+  mergeCommonFields,
+  metricValue,
+  unreadableStopwatch,
+} from "./fields.ts";
 import {
   DEFAULT_PLACEMENT_POINTS,
   placementPoints,
@@ -40,6 +45,7 @@ export function scoreEvent(input: ScoringInput): EventResults {
   );
 
   const activities: ActivityResults[] = [];
+  const entryWarnings: ScoringWarning[] = [];
   for (const { activityId, competitionId } of input.event.activities) {
     const activity = activityById.get(activityId);
     const competition = competitionById.get(competitionId);
@@ -59,10 +65,9 @@ export function scoreEvent(input: ScoringInput): EventResults {
           a.entrantId === entrantId,
       );
 
-    const scored = listed(
-      activity,
-      input.entries.filter((e) => e.activityId === activityId),
-    ).map((e) => {
+    const entries = input.entries.filter((e) => e.activityId === activityId);
+    entryWarnings.push(...unreadablePrimaryTimes(activity, entries));
+    const scored = listed(activity, entries).map((e) => {
       const actions = actionsFor(e.entrantId);
       const adjustment = actions.reduce(
         (sum, a) => (a.type === "adjust-points" ? sum + a.points : sum),
@@ -131,7 +136,11 @@ export function scoreEvent(input: ScoringInput): EventResults {
     activities,
     standings,
     awards: awards.map(({ awardId, recipients }) => ({ awardId, recipients })),
-    warnings: [...overrides.warnings, ...awards.flatMap((a) => a.warnings)],
+    warnings: [
+      ...entryWarnings,
+      ...overrides.warnings,
+      ...awards.flatMap((a) => a.warnings),
+    ],
   };
 }
 
@@ -265,5 +274,27 @@ function listed(
       return (x === undefined ? 1 : 0) - (y === undefined ? 1 : 0);
     }
     return sign * (x - y);
+  });
+}
+
+/** A warning for each primary stopwatch time that was entered but can't be read, e.g. `"7.47"`. */
+function unreadablePrimaryTimes(
+  activity: Activity,
+  entries: readonly ScoreEntry[],
+): ScoringWarning[] {
+  const primary = activity.scoring.fields.find((f) => f.primary);
+  if (primary?.type !== "stopwatch") return [];
+  return entries.flatMap((e) => {
+    const value = e.values[primary.id];
+    if (!unreadableStopwatch(value)) return [];
+    return [
+      {
+        activityId: activity.id,
+        entrantId: e.entrantId,
+        fieldId: primary.id,
+        value: value ?? null,
+        message: `${activity.slug}, entrant ${e.entrantId}: "${String(value)}" isn't a stopwatch time (m:ss or h:mm:ss), so it's listed last`,
+      },
+    ];
   });
 }
