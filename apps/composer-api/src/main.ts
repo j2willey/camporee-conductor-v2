@@ -4,7 +4,7 @@ import { ConfigError, loadConfig } from "./config.ts";
 import { start } from "./server.ts";
 
 try {
-  await start(loadConfig(process.env));
+  start(loadConfig(process.env));
 } catch (error) {
   if (error instanceof ConfigError) {
     console.error(`composer-api refused to start: ${error.message}`);
