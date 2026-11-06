@@ -2,11 +2,15 @@ import {
   ActivitySchema,
   CommonFieldSetSchema,
   EventSchema,
+  OfficialSchema,
+  OfficialsSchema,
   SCHEMA_VERSION,
   type Activity,
   type CommonFieldSet,
   type Competition,
   type Event,
+  type Official,
+  type Officials,
   type ScoringField,
 } from "@camporee-conductor/schema";
 import type { z } from "zod";
@@ -54,6 +58,8 @@ export interface V1ImportResult {
   commonFieldSet: CommonFieldSet;
   /** Sorted by slug. */
   activities: Activity[];
+  /** The v1 cartridge's Officials, for the event-day cartridge only (ADR-0027 item 5). None listed: absent. */
+  officials?: Officials;
   /** Unfinished games left out, and why. `strict` turns any of these into a refusal. */
   skipped: SkippedGame[];
   /** What else didn't come across, in plain words. Never contains contact details. */
@@ -194,18 +200,68 @@ export function importV1Cartridge(
   );
   if (!event) throw new V1ImportError(issues);
 
-  if (camporee.officials && camporee.officials.length > 0) {
-    notes.push(
-      `Dropped ${count(camporee.officials.length, "Official")} from the v1 cartridge: v2 doesn't import them yet (#39).`,
-    );
-  }
+  const officials = toOfficials(camporee, event, id, options, notes);
   if (cartridge.assetNames && cartridge.assetNames.length > 0) {
     notes.push(
       `Skipped ${count(cartridge.assetNames.length, "asset")}: v2 has no asset import yet (#7).`,
     );
   }
   notes.push(...unresolvedVariables(event, commonFieldSet, activities));
-  return { event, commonFieldSet, activities, skipped, notes };
+  return {
+    event,
+    commonFieldSet,
+    activities,
+    ...(officials && { officials }),
+    skipped,
+    notes,
+  };
+}
+
+/**
+ * v1's Officials (the event's owner as "director", collaborators marked Official) → an Officials document.
+ * An entry without a valid email can't sign in on the Collator, so it's left out with a note that counts
+ * but never names it. The same email twice is one Official, Director if either says so.
+ */
+function toOfficials(
+  camporee: V1Camporee,
+  event: Event,
+  id: (key: string) => string,
+  options: V1ImportOptions,
+  notes: string[],
+): Officials | undefined {
+  const listed = camporee.officials ?? [];
+  if (listed.length === 0) return undefined;
+  const byEmail = new Map<string, Official>();
+  let unusable = 0;
+  for (const v1 of listed) {
+    const official = OfficialSchema.safeParse({
+      email: v1.email?.trim(),
+      ...(v1.display_name?.trim() && { name: v1.display_name.trim() }),
+      role: v1.role === "director" ? "director" : "official",
+    });
+    if (!official.success) {
+      unusable++;
+      continue;
+    }
+    const key = official.data.email.toLowerCase();
+    const seen = byEmail.get(key);
+    if (!seen) byEmail.set(key, official.data);
+    else if (official.data.role === "director") seen.role = "director";
+  }
+  if (unusable > 0) {
+    notes.push(
+      `Left out ${count(unusable, "Official")} with no valid email: they can't sign in on the Collator.`,
+    );
+  }
+  return OfficialsSchema.parse({
+    schemaVersion: SCHEMA_VERSION,
+    kind: "officials",
+    id: id("officials"),
+    slug: `${options.eventSlug}-officials`,
+    title: `${event.title} Officials`,
+    eventId: event.id,
+    officials: [...byEmail.values()],
+  });
 }
 
 function toCommonFieldSet(
