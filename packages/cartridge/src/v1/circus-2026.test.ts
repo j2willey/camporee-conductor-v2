@@ -29,7 +29,7 @@ const v1 = (): V1Cartridge => ({
     .map((f) => read(`v1-source/games/${f}`) as V1Game),
 });
 
-/** The names the hand transcode chose for this fixture (scripts/transcode-circus-2026.ts). */
+/** The names the hand transcode chose for this fixture (packages/cartridge/scripts/transcode-circus-2026.ts). */
 const CIRCUS: V1ImportOptions = {
   idNamespace: "circus-2026",
   idTimestamp: Date.UTC(2026, 9, 30),

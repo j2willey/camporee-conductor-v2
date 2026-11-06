@@ -2,7 +2,8 @@
 
 Source: `v1-source/`, the Circus 2026 cartridge (schema `3.0`), identical to v1's
 `tests/fixtures/circus`. Output: `event.json`, `common-fields.json`, `activities/*.json` (schema `4.0`).
-Produced by `scripts/transcode-circus-2026.ts`. Re-running it gives byte-identical output.
+Produced by `packages/cartridge/scripts/transcode-circus-2026.ts`: the general v1 importer (#46,
+`packages/cartridge`) plus the Circus-only design choices below. Re-running it gives byte-identical output.
 
 Counts: 33 Activities (18 ranked in Patrol Games, 11 ranked in Troop Challenges, 4 exhibition),
 3 Competitions, 1 Award (Top Dog), 1 Common Field set. The v1 playlist has 34 entries for 34 game files,
@@ -18,7 +19,7 @@ There are two Circus 2026 fixtures. They describe the same event at two moments,
 | `circus-2026/` (this folder) | v3 cartridge (schema `3.0`) | **Design.** The Circus with Jim's post-event corrections. The future Template. | Everything |
 | `circus-2026-as-run/` | Event-day cartridge (schema `2.9`), run by v1 commit 9ebffa5 on 2026-05-16 | **As run.** What was actually scored at the event. | Only the `packages/scoring` parity tests (issue #3) |
 
-Both come from `scripts/transcode-circus-2026.ts` with the same mapping. The as-run documents have their own ids
+Both come from `packages/cartridge/scripts/transcode-circus-2026.ts` with the same mapping. The as-run documents have their own ids
 (namespace `circus-2026-as-run`), so neither can be mistaken for the other.
 
 Every scoring-field difference between them, and why. `src/fixtures.test.ts` fails if this list changes.
