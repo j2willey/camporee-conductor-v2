@@ -4,7 +4,8 @@
 # Needs CLERK_SECRET_KEY and CLERK_PUBLISHABLE_KEY at run time. The dev sign-in is refused here
 # (NODE_ENV=production, issue #4 D7). The database lives in /data, a volume, so it survives new images.
 
-ARG NODE_IMAGE=node:22.23.3-bookworm-slim
+# At least 22.23.4 for CVE-2026-111497 (Node Brotli RCE), as in v1.
+ARG NODE_IMAGE=node:22.23.4-bookworm-slim
 
 # Every workspace package's manifest, so pnpm sees the whole workspace the lockfile describes.
 FROM ${NODE_IMAGE} AS manifests
