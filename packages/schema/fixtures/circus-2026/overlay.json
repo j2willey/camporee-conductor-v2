@@ -1,0 +1,76 @@
+{
+  "import": {
+    "idNamespace": "circus-2026",
+    "idDate": "2026-10-30",
+    "eventSlug": "coyote-creek-camporee-2026",
+    "commonFieldSet": {
+      "slug": "circus-2026-common-fields",
+      "title": "Circus 2026 Common Fields"
+    }
+  },
+  "awards": [
+    {
+      "slug": "top-dog",
+      "label": "Top Dog",
+      "competition": "troop-challenges",
+      "rule": { "type": "top-percent", "percent": 25 },
+      "replacesGame": "top-dog"
+    }
+  ],
+  "primaryMetrics": {
+    "3-ring-circus": { "field": "elapsed_time", "direction": "lower-wins" },
+    "circus-line": { "field": "elapsed_time", "direction": "lower-wins" },
+    "ducks-in-a-row": { "field": "total_turns", "direction": "lower-wins" },
+    "pioneering-train-performance": {
+      "field": "elapsed_time",
+      "direction": "lower-wins"
+    },
+    "setting-up-the-big-top": {
+      "field": "elapsed_time",
+      "direction": "lower-wins"
+    },
+    "sports-land-skis": { "field": "elapsed_time", "direction": "lower-wins" },
+    "the-a-frame-trapeze": {
+      "field": "elapsed_time",
+      "direction": "lower-wins"
+    },
+    "the-barrel-of-monkeys-caravan": {
+      "field": "elapsed_time",
+      "direction": "lower-wins"
+    },
+    "the-high-wire-fire-act": {
+      "field": "base_time",
+      "direction": "lower-wins"
+    },
+    "the-tumbled-trapeze-rescue": {
+      "field": "elapsed_time",
+      "direction": "lower-wins"
+    }
+  },
+  "competitions": {
+    "patrol-games": { "programGuide": { "listActivities": false } }
+  },
+  "programGuide": {
+    "skills": [
+      "Fire starting",
+      "First aid",
+      "Campfire entertainment",
+      "Tent assembly",
+      "Cooking",
+      "Map and compass",
+      "Color guard presentation",
+      "Fitness",
+      "Pioneering",
+      "Lashings",
+      "Teamwork",
+      "Problem solving"
+    ]
+  },
+  "commonFields": {
+    "p_flag": { "placeholder": "0-5 Points" },
+    "ten_ess": {
+      "label": "10 Essentials: {{ten_essentials}}",
+      "placeholder": "Does the patrol have {{ten_essentials}}?"
+    }
+  }
+}

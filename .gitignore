@@ -14,6 +14,12 @@ coverage/
 *.sqlite
 *.sqlite3
 
+# Unpublished event designs: v1 cartridges stay out of the public repo until after the event (issue #46).
+# Only an event's overlay.json belongs in events/.
+events/**/*.zip
+events/**/v1-source/
+events/**/camporee.json
+
 # Playwright output
 test-results/
 playwright-report/

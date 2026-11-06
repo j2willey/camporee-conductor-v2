@@ -1,0 +1,18 @@
+{
+  "import": {
+    "idNamespace": "circus-2026-as-run",
+    "idDate": "2026-10-30",
+    "eventSlug": "coyote-creek-camporee-2026-as-run",
+    "commonFieldSet": {
+      "slug": "circus-2026-as-run-common-fields",
+      "title": "Circus 2026 Common Fields (as run)"
+    }
+  },
+  "commonFields": {
+    "p_flag": { "placeholder": "0-5 Points" },
+    "ten_ess": {
+      "label": "10 Essentials: {{ten_essentials}}",
+      "placeholder": "Does the patrol have {{ten_essentials}}?"
+    }
+  }
+}

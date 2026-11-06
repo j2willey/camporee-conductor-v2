@@ -12,16 +12,19 @@
     "test": "vitest run",
     "start": "node --env-file-if-exists=../../.env.local src/main.ts",
     "import-event": "node src/cli/import.ts",
+    "import-v1": "node src/cli/import-v1.ts",
     "seed-demo": "node src/cli/seed-demo.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "@camporee-conductor/cartridge": "workspace:*",
     "@camporee-conductor/program-guide": "workspace:*",
     "@camporee-conductor/schema": "workspace:*",
     "@clerk/backend": "3.26.0",
     "@hono/node-server": "2.1.5",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.4",
+    "fflate": "0.8.2",
     "hono": "4.13.13",
     "zod": "4.6.7"
   },
