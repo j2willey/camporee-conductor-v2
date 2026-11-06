@@ -193,6 +193,9 @@ importers:
 
   apps/composer-api:
     dependencies:
+      '@camporee-conductor/program-guide':
+        specifier: workspace:*
+        version: link:../../packages/program-guide
       '@camporee-conductor/schema':
         specifier: workspace:*
         version: link:../../packages/schema

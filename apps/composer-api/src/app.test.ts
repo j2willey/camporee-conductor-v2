@@ -501,6 +501,60 @@ describe("Events", () => {
     ).toBe(404);
   });
 
+  describe("Program Guide (#5)", () => {
+    /** A GET as `who`, read as text: the guide is HTML, not JSON. */
+    async function page(who: string, path: string) {
+      const response = await app.request(path, {
+        headers: { [DEV_USER_HEADER]: who },
+      });
+      return {
+        status: response.status,
+        contentType: response.headers.get("content-type"),
+        text: await response.text(),
+      };
+    }
+    const guidePath = (id: string) => `/api/events/${id}/program-guide`;
+
+    it("serves a viewer the Event's guide as one print-ready HTML page", async () => {
+      const res = await page("bob@example.com", guidePath(EVENT_ID));
+      expect(res.status).toBe(200);
+      expect(res.contentType).toMatch(/^text\/html/);
+      expect(res.text).toMatch(/^<!doctype html>/);
+      expect(res.text).toContain(
+        "<title>Coyote Creek District Camporee 2026: Program Guide</title>",
+      );
+      // From the imported design: Competition settings, Activity titles, the Award rule.
+      expect(res.text).toContain(
+        "The Patrol Games will be announced closer to the Camporee.",
+      );
+      expect(res.text).toContain("<li>The Human Fly</li>");
+      expect(res.text).toContain(
+        "Top Dog: the top 25% of Troops in the Troop Challenges standings.",
+      );
+      expect(res.text).toMatch(/class="draft">DRAFT<br>\d+ sections/);
+    });
+
+    it("is 404 to someone who isn't a member", async () => {
+      await call("eve@example.com", "GET", "/api/me");
+      expect((await page("eve@example.com", guidePath(EVENT_ID))).status).toBe(
+        404,
+      );
+    });
+
+    it("is 404 for an Event that doesn't exist, or an id that isn't an Event", async () => {
+      const activityId = (
+        readEventBundle(CIRCUS_2026).activities[0] as { id: string }
+      ).id;
+      for (const id of ["0196cfa2-4c00-7000-8000-00000000ffff", activityId]) {
+        expect((await page("ann@example.com", guidePath(id))).status).toBe(404);
+      }
+    });
+
+    it("needs a signed-in user", async () => {
+      expect((await app.request(guidePath(EVENT_ID))).status).toBe(401);
+    });
+  });
+
   it("is 404 for an Event that doesn't exist, or an id that isn't an Event", async () => {
     expect(
       (
