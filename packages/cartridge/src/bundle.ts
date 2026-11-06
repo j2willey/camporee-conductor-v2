@@ -2,9 +2,11 @@ import {
   ActivitySchema,
   CommonFieldSetSchema,
   EventSchema,
+  OfficialsSchema,
   type Activity,
   type CommonFieldSet,
   type Event,
+  type Officials,
 } from "@camporee-conductor/schema";
 import type { z } from "zod";
 
@@ -13,12 +15,15 @@ export interface EventBundle {
   event: unknown;
   activities: unknown[];
   commonFieldSets: unknown[];
+  /** The Event's Officials: event-day cartridges only (ADR-0027 item 5). */
+  officials?: unknown;
 }
 
 export interface CheckedBundle {
   event: Event;
   activities: Activity[];
   commonFieldSets: CommonFieldSet[];
+  officials?: Officials;
 }
 
 export type BundleCheck =
@@ -69,7 +74,17 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
     ),
   );
 
+  const officials =
+    bundle.officials === undefined
+      ? undefined
+      : parse(OfficialsSchema, "officials", bundle.officials, "officials");
+
   if (event) {
+    if (officials && officials.eventId !== event.id) {
+      issues.push(
+        `officials ${officials.slug}: eventId: not this Event (${event.slug})`,
+      );
+    }
     // Ids as given, so an invalid Activity isn't also reported as missing.
     const activityIds = new Set(bundle.activities.map(idOf));
     const listed = new Set(event.activities.map((a) => a.activityId));
@@ -103,6 +118,7 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
       event,
       activities: activities.filter((a): a is Activity => a !== undefined),
       commonFieldSets: sets.filter((s): s is CommonFieldSet => s !== undefined),
+      ...(officials && { officials }),
     },
     raw: bundle,
   };

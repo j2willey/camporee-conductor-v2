@@ -69,6 +69,49 @@ describe("checkEventBundle: one set of rules for Composer import and Collator lo
     ]);
   });
 
+  describe("Officials (event-day only, ADR-0027 item 5)", () => {
+    const officials = (eventId: string) => ({
+      schemaVersion: "4.0",
+      kind: "officials",
+      id: "0196cfa2-4c00-7000-8000-000000000200",
+      slug: "circus-officials",
+      title: "Circus Officials",
+      eventId,
+      officials: [{ email: "director@example.com", role: "director" }],
+    });
+    const eventId = () => (circus().event as { id: string }).id;
+
+    it("accepts an Officials document for this Event", () => {
+      const result = checkEventBundle({
+        ...circus(),
+        officials: officials(eventId()),
+      });
+      expect(result.ok && result.bundle.officials?.officials).toEqual([
+        { email: "director@example.com", role: "director" },
+      ]);
+    });
+
+    it("rejects Officials of another Event, and an invalid Officials document", () => {
+      expect(
+        issues({
+          ...circus(),
+          officials: officials("0196cfa2-4c00-7000-8000-00000000ffff"),
+        }),
+      ).toEqual([
+        "officials circus-officials: eventId: not this Event (coyote-creek-camporee-2026)",
+      ]);
+      expect(
+        issues({
+          ...circus(),
+          officials: { ...officials(eventId()), officials: [{ email: "x" }] },
+        }),
+      ).toEqual([
+        "officials circus-officials: officials.0.email: Invalid email address",
+        'officials circus-officials: officials.0.role: Invalid option: expected one of "director"|"official"',
+      ]);
+    });
+  });
+
   it("checks documents as given: no defaults are added to what it returns as raw", () => {
     const bundle = circus();
     const result = checkEventBundle(bundle);

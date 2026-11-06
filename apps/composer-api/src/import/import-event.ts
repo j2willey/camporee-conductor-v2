@@ -66,6 +66,9 @@ export function importEvent(
     ...check.bundle.activities.map((activity, i) =>
       stored("activity", bundle.activities[i], activity),
     ),
+    ...(check.bundle.officials
+      ? [stored("officials", bundle.officials, check.bundle.officials)]
+      : []),
   ];
   return db.transaction((tx) => {
     const org = tx
