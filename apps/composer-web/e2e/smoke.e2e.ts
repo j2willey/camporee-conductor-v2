@@ -38,6 +38,34 @@ test("an Organizer opens Circus 2026 read-only", async ({ page }) => {
   );
 });
 
+// Issue #5: the Event page opens its Program Guide, print-ready, in a new tab.
+test("an Organizer opens the Program Guide in a new tab", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+
+  const [guide] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: "Program Guide" }).click(),
+  ]);
+  await expect(guide).toHaveTitle(
+    "Coyote Creek District Camporee 2026: Program Guide",
+  );
+  await expect(guide.getByRole("heading", { name: "Contents" })).toBeVisible();
+  await expect(
+    guide.getByText(/^DRAFT\s*\d+ sections to be supplied$/),
+  ).toBeVisible();
+  await expect(
+    guide.getByText(
+      "The Patrol Games will be announced closer to the Camporee.",
+    ),
+  ).toBeVisible();
+});
+
 test("not found replaces the whole page", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Email").fill("smoke@example.com");
