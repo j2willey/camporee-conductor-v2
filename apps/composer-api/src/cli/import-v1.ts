@@ -89,6 +89,7 @@ try {
     event: result.event,
     activities: result.activities,
     commonFieldSets: [result.commonFieldSet],
+    ...(result.officials && { officials: result.officials }),
   });
   console.log(
     `imported Event ${eventId}: ${created} created, ${updated} updated`,

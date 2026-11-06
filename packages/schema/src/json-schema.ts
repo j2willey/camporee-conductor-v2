@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ActivitySchema } from "./activity.ts";
 import { CommonFieldSetSchema } from "./common-field-set.ts";
+import { OfficialsSchema } from "./officials.ts";
 import { EventSchema, TemplateSchema } from "./event.ts";
 
 /** Where the committed JSON Schema files live. */
@@ -10,6 +11,7 @@ export const DOCUMENT_SCHEMAS = {
   activity: ActivitySchema,
   "common-field-set": CommonFieldSetSchema,
   event: EventSchema,
+  officials: OfficialsSchema,
   template: TemplateSchema,
 } as const;
 

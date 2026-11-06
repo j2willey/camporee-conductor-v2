@@ -98,6 +98,28 @@ describe("importEvent", () => {
     }
   });
 
+  it("stores the Event's Officials document too (event-day only, ADR-0027 item 5)", () => {
+    const bundle = circus();
+    const officials = {
+      schemaVersion: "4.0",
+      kind: "officials",
+      id: "0196cfa2-4c00-7000-8000-000000000200",
+      slug: "coyote-creek-camporee-2026-officials",
+      title: "Coyote Creek District Camporee 2026 Officials",
+      eventId: (bundle.event as { id: string }).id,
+      officials: [{ email: "director@example.com", role: "director" }],
+    };
+    expect(
+      importEvent(db, "org-coyote-creek", { ...bundle, officials }),
+    ).toMatchObject({ created: 36, updated: 0 });
+    const [row] = db
+      .select()
+      .from(documents)
+      .where(eq(documents.kind, "officials"))
+      .all();
+    expect(row?.json).toBe(JSON.stringify(officials));
+  });
+
   it("is idempotent: importing again updates the same documents", () => {
     importEvent(db, "org-coyote-creek", circus());
     const before = rows(db).map((r) => ({ ...r, updatedAt: null }));

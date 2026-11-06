@@ -13,6 +13,7 @@
     "start": "node --env-file-if-exists=../../.env.local src/main.ts",
     "import-event": "node src/cli/import.ts",
     "import-v1": "node src/cli/import-v1.ts",
+    "export-cartridge": "node src/cli/export-cartridge.ts",
     "seed-demo": "node src/cli/seed-demo.ts",
     "db:generate": "drizzle-kit generate"
   },
