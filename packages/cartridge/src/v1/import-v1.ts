@@ -415,7 +415,7 @@ function parseSupplies(suppliesText: string): Activity["content"]["supplies"] {
 }
 
 /** One note per Common Field and {{variable}} that some of a Competition's Activities don't define. */
-function unresolvedVariables(
+export function unresolvedVariables(
   event: Event,
   set: CommonFieldSet,
   activities: Activity[],

@@ -1,9 +1,17 @@
 export {
   defaultV1ImportOptions,
   importV1Cartridge,
+  V1ImportError,
   type V1ImportOptions,
   type SkippedGame,
   type V1ImportResult,
 } from "./v1/import-v1.ts";
 export { stableUuid7 } from "./v1/stable-id.ts";
 export type * from "./v1/types.ts";
+export {
+  importV1,
+  parseV1Overlay,
+  v1ImportOptions,
+  V1OverlaySchema,
+  type V1Overlay,
+} from "./v1/overlay.ts";

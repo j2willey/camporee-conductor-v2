@@ -3,7 +3,17 @@
 Source: `v1-source/`, the Circus 2026 cartridge (schema `3.0`), identical to v1's
 `tests/fixtures/circus`. Output: `event.json`, `common-fields.json`, `activities/*.json` (schema `4.0`).
 Produced by `packages/cartridge/scripts/transcode-circus-2026.ts`: the general v1 importer (#46,
-`packages/cartridge`) plus the Circus-only design choices below. Re-running it gives byte-identical output.
+`packages/cartridge`) plus `overlay.json`, the Circus-only design choices v1 can't express (Top Dog as an
+Award, primary metrics, Program Guide settings) and the two Common Field fixes (`p_flag`, `ten_ess`). The
+as-run fixture has its own `overlay.json` with only naming and the Common Field fixes. Re-running the script
+gives byte-identical output, and `packages/cartridge` tests that it does.
+
+**Mechanical vs design.** Everything under "Renamed or restructured", "Fixed or normalized" (except the two
+Common Field fixes), "Left empty" and "Dropped" is an import rule for any v1 cartridge. "Changed: Top Dog",
+"Added: primary metrics", "Added: Program Guide settings" and the two Common Field fixes are this event's
+design, in `overlay.json`. The penalty → metric reclassifications in the table below are already in the v1
+data, so the importer takes them as given. The Common Field fixes are for Circus 2026 only; a new event fixes
+its v1 presets instead.
 
 Counts: 33 Activities (18 ranked in Patrol Games, 11 ranked in Troop Challenges, 4 exhibition),
 3 Competitions, 1 Award (Top Dog), 1 Common Field set. The v1 playlist has 34 entries for 34 game files,
