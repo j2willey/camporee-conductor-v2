@@ -1,5 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { serveStatic } from "@hono/node-server/serve-static";
+import {
+  CartridgeError,
+  CartridgeProfileSchema,
+  exportCartridge,
+} from "@camporee-conductor/cartridge";
 import { buildGuide, renderGuideHtml } from "@camporee-conductor/program-guide";
 import { Slug, type Event } from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
@@ -11,6 +16,7 @@ import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
+import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import {
   documents,
@@ -248,6 +254,45 @@ export function createApp({
         c.var.user.userId,
       );
       return c.html(renderGuideHtml(buildGuide(event, activities)));
+    })
+
+    /**
+     * The Event's cartridge (issue #8). `design` (default) for any viewer; `event-day`, which holds the
+     * Officials' emails (ADR-0027 item 5), for editors and owners only.
+     */
+    .get("/events/:eventId/cartridge", (c) => {
+      const profile = CartridgeProfileSchema.safeParse(
+        c.req.query("profile") ?? "design",
+      );
+      if (!profile.success) {
+        throw new HTTPException(400, {
+          message: 'profile must be "design" or "event-day".',
+        });
+      }
+      const found = readEventDocuments(db, c.req.param("eventId"));
+      if (!found) throw new HTTPException(404, { message: "Not found." });
+      requireRole(
+        db,
+        found.organizationId,
+        c.var.user.userId,
+        profile.data === "event-day" ? "editor" : "viewer",
+      );
+      let zip: Uint8Array;
+      try {
+        zip = exportCartridge(found.bundle, profile.data, {
+          exportedAt: new Date(),
+        });
+      } catch (error) {
+        if (error instanceof CartridgeError) {
+          throw new HTTPException(422, { message: error.issues.join("\n") });
+        }
+        throw error;
+      }
+      const slug = (found.bundle.event as { slug: string }).slug;
+      return c.body(zip as Uint8Array<ArrayBuffer>, 200, {
+        "content-type": "application/zip",
+        "content-disposition": `attachment; filename="${slug}-${profile.data}.zip"`,
+      });
     });
 
   const notFound = (c: Context) => c.json({ error: "Not found." }, 404);

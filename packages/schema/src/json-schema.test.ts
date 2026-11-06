@@ -10,6 +10,7 @@ describe("generated JSON Schema files", () => {
       "activity",
       "common-field-set",
       "event",
+      "officials",
       "template",
     ]);
   });

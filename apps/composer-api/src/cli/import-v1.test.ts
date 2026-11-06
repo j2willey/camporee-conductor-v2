@@ -122,6 +122,33 @@ describe("import-v1 CLI", () => {
     );
   });
 
+  it("stores the v1 cartridge's Officials as the Event's Officials document", () => {
+    const zip = circusZip({
+      camporee: (c) => {
+        (c as V1Json & { officials: unknown[] }).officials = [
+          {
+            user_id: "u1",
+            display_name: "Ann",
+            email: "ann@example.com",
+            role: "director",
+          },
+        ];
+      },
+    });
+    const result = run("coyote-creek", zip, "--overlay", OVERLAY);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toMatch(/36 created, 0 updated/);
+    const row = openDb(dbPath)
+      .select()
+      .from(documents)
+      .where(eq(documents.kind, "officials"))
+      .get();
+    expect(JSON.parse(row?.json ?? "{}")).toMatchObject({
+      eventId: storedEvent().id,
+      officials: [{ email: "ann@example.com", name: "Ann", role: "director" }],
+    });
+  });
+
   it("reads a v1 workspace directory too, and without an overlay keeps top-dog as an Activity", () => {
     const result = run("coyote-creek", V1_SOURCE);
     expect(result.status).toBe(0);

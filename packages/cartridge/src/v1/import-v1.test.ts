@@ -584,17 +584,77 @@ describe("importV1Cartridge: unfinished games (designs change until about April)
 });
 
 describe("importV1Cartridge: notes on what didn't come across", () => {
-  it("drops Officials until #39 decides where they live, counting them without their emails", () => {
+  it("carries the v1 Officials into an Officials document for the event-day cartridge (ADR-0027 item 5)", () => {
     const withOfficials = camporee();
     withOfficials.officials = [
-      { email: "ann@example.com", role: "director" },
-      { email: "bob@example.com", role: "official" },
+      {
+        user_id: "user_1",
+        display_name: "Ann Director",
+        email: "ann@example.com",
+        role: "director",
+      },
+      {
+        user_id: "user_2",
+        display_name: null,
+        email: "bob@example.com",
+        role: "official",
+      },
     ];
-    const { notes } = run({ camporee: withOfficials });
-    expect(notes).toContain(
-      "Dropped 2 Officials from the v1 cartridge: v2 doesn't import them yet (#39).",
-    );
-    expect(notes.join("\n")).not.toContain("@");
+    const result = run({ camporee: withOfficials });
+    expect(result.officials).toEqual({
+      schemaVersion: "4.0",
+      kind: "officials",
+      id: expect.any(String),
+      slug: "spring-field-day-2027-officials",
+      title: "Spring Field Day 2027 Officials",
+      eventId: result.event.id,
+      officials: [
+        { email: "ann@example.com", name: "Ann Director", role: "director" },
+        { email: "bob@example.com", role: "official" },
+      ],
+    });
+    expect(result.notes).toEqual([]);
+  });
+
+  it("leaves out an Official with no email, saying how many but not who", () => {
+    const withOfficials = camporee();
+    withOfficials.officials = [
+      {
+        user_id: "user_1",
+        display_name: "Ann",
+        email: "ann@example.com",
+        role: "director",
+      },
+      {
+        user_id: "user_2",
+        display_name: "No Email",
+        email: null,
+        role: "official",
+      },
+    ];
+    const result = run({ camporee: withOfficials });
+    expect(result.officials?.officials.map((o) => o.email)).toEqual([
+      "ann@example.com",
+    ]);
+    expect(result.notes).toEqual([
+      "Left out 1 Official with no valid email: they can't sign in on the Collator.",
+    ]);
+    expect(result.notes.join("\n")).not.toContain("No Email");
+  });
+
+  it("merges an Official listed twice, keeping Director", () => {
+    const withOfficials = camporee();
+    withOfficials.officials = [
+      { email: "ann@example.com", role: "official" },
+      { email: "Ann@Example.com", role: "director" },
+    ];
+    expect(run({ camporee: withOfficials }).officials?.officials).toEqual([
+      { email: "ann@example.com", role: "director" },
+    ]);
+  });
+
+  it("makes no Officials document when the v1 cartridge lists none", () => {
+    expect(run().officials).toBeUndefined();
   });
 
   it("notes assets it can't import yet (#7)", () => {

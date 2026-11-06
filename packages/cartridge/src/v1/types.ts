@@ -83,7 +83,13 @@ export interface V1Camporee {
   /** The zip adds `enabled`; v1's Collator skips a game when it's false. */
   playlist: { gameId: string; order: number; enabled?: boolean }[];
   /** The zip includes the event's Officials (emails) when exported from the server. */
-  officials?: { email?: string; role?: string }[];
+  officials?: {
+    user_id?: string;
+    display_name?: string | null;
+    email?: string | null;
+    /** "director" for the event's owner; anything else is an Official. */
+    role?: string;
+  }[];
   sessions?: unknown[];
   rosters?: unknown;
 }

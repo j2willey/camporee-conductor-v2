@@ -14,6 +14,7 @@ import { memberships, users } from "./db/schema.ts";
 import type { Db } from "./db/open.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
+import { loadCartridge } from "@camporee-conductor/cartridge";
 import { CIRCUS_2026, testDb } from "./test-support.ts";
 
 const EVENT_ID = (readEventBundle(CIRCUS_2026).event as { id: string }).id;
@@ -499,6 +500,79 @@ describe("Events", () => {
     expect(
       (await call("eve@example.com", "GET", `/api/events/${EVENT_ID}`)).status,
     ).toBe(404);
+  });
+
+  describe("cartridge download (#8)", () => {
+    const download = async (who: string, query = "") => {
+      const response = await app.request(
+        `/api/events/${EVENT_ID}/cartridge${query}`,
+        { headers: { [DEV_USER_HEADER]: who } },
+      );
+      return {
+        status: response.status,
+        headers: response.headers,
+        bytes: new Uint8Array(await response.arrayBuffer()),
+      };
+    };
+    const withOfficials = () =>
+      importEvent(db, org, {
+        ...readEventBundle(CIRCUS_2026),
+        officials: {
+          schemaVersion: "4.0",
+          kind: "officials",
+          id: "0196cfa2-4c00-7000-8000-000000000200",
+          slug: "coyote-creek-camporee-2026-officials",
+          title: "Coyote Creek District Camporee 2026 Officials",
+          eventId: EVENT_ID,
+          officials: [{ email: "ann@example.com", role: "director" }],
+        },
+      });
+
+    it("gives a viewer the design cartridge, by default, with no Officials", async () => {
+      withOfficials();
+      const res = await download("bob@example.com");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("application/zip");
+      expect(res.headers.get("content-disposition")).toBe(
+        'attachment; filename="coyote-creek-camporee-2026-design.zip"',
+      );
+      const loaded = loadCartridge(res.bytes, { profile: "design" });
+      expect(loaded.ok && loaded.bundle.activities).toHaveLength(33);
+      expect(loaded.ok && loaded.bundle.officials).toBeUndefined();
+    });
+
+    it("gives the event-day cartridge only to an editor or owner: it holds Officials' emails", async () => {
+      withOfficials();
+      expect(
+        (await download("bob@example.com", "?profile=event-day")).status,
+      ).toBe(403);
+      const res = await download("ann@example.com", "?profile=event-day");
+      expect(res.status).toBe(200);
+      const loaded = loadCartridge(res.bytes, { profile: "event-day" });
+      expect(loaded.ok && loaded.bundle.officials?.officials).toEqual([
+        { email: "ann@example.com", role: "director" },
+      ]);
+    });
+
+    it("refuses an event-day cartridge without a Director, saying why", async () => {
+      const response = await app.request(
+        `/api/events/${EVENT_ID}/cartridge?profile=event-day`,
+        { headers: { [DEV_USER_HEADER]: "ann@example.com" } },
+      );
+      expect(response.status).toBe(422);
+      expect(await response.json()).toEqual({
+        error:
+          "officials: an event-day cartridge needs at least one Director, who signs in on the Collator (ADR-0027 item 5)",
+      });
+    });
+
+    it("rejects an unknown profile, and is 404 to a non-member", async () => {
+      expect(
+        (await download("ann@example.com", "?profile=everything")).status,
+      ).toBe(400);
+      await call("eve@example.com", "GET", "/api/me");
+      expect((await download("eve@example.com")).status).toBe(404);
+    });
   });
 
   describe("Program Guide (#5)", () => {

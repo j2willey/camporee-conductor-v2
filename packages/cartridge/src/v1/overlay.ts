@@ -257,6 +257,7 @@ export function importV1(
     event,
     commonFieldSet,
     activities,
+    ...(imported.officials && { officials: imported.officials }),
     skipped: imported.skipped,
     notes: [
       ...imported.notes.filter((n) => !stale.has(n)),
