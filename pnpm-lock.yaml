@@ -271,6 +271,15 @@ importers:
         specifier: 8.3.4
         version: 8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)
 
+  packages/cartridge:
+    dependencies:
+      '@camporee-conductor/schema':
+        specifier: workspace:*
+        version: link:../schema
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
   packages/program-guide:
     dependencies:
       '@camporee-conductor/schema':
