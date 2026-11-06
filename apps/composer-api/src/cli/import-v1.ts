@@ -11,6 +11,7 @@ import { parseArgs } from "node:util";
 import {
   importV1,
   parseV1Overlay,
+  v1ImportOptions,
   V1ImportError,
 } from "@camporee-conductor/cartridge";
 import { eq } from "drizzle-orm";
@@ -18,6 +19,7 @@ import { databasePathFrom } from "../config.ts";
 import { openDb } from "../db/open.ts";
 import { organizations } from "../db/schema.ts";
 import { ImportError, importEvent } from "../import/import-event.ts";
+import { leftoverActivities } from "../import/leftover-activities.ts";
 import {
   CartridgeReadError,
   readV1Cartridge,
@@ -91,6 +93,23 @@ try {
   console.log(
     `imported Event ${eventId}: ${created} created, ${updated} updated`,
   );
+
+  const leftovers = leftoverActivities(
+    db,
+    org.id,
+    cartridge,
+    v1ImportOptions(cartridge, overlay),
+  );
+  if (leftovers.length > 0) {
+    const n = leftovers.length;
+    console.log("");
+    console.log(
+      `${n} ${n === 1 ? "Activity" : "Activities"} no longer in the cartridge (kept in the database, not in the Event):`,
+    );
+    for (const { slug, title } of leftovers) {
+      console.log(`  - ${title} (${slug})`);
+    }
+  }
 } catch (error) {
   if (
     error instanceof V1ImportError ||

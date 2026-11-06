@@ -43,30 +43,57 @@ const run = (...args: string[]) =>
     timeout: 20_000,
   });
 
+interface V1Json {
+  playlist: { gameId: string; enabled?: boolean }[];
+}
+interface GameJson {
+  scoring_model: { inputs: unknown[] };
+}
+
 /**
  * The Circus 2026 v1 cartridge as a zip, laid out the way v1's Composer exports it (camporee.json,
- * presets.json and games/ at the root). `edit` can change camporee.json first.
+ * presets.json and games/ at the root). `camporee` edits the manifest; `game` edits a game file, or drops
+ * it by returning null.
  */
-function circusZip(
-  edit: (camporee: {
-    playlist: { gameId: string; enabled?: boolean }[];
-  }) => void = () => {},
-): string {
+function circusZip({
+  camporee: editCamporee = () => {},
+  game: editGame = (_id, json) => json,
+}: {
+  camporee?: (camporee: V1Json) => void;
+  game?: (id: string, json: GameJson) => GameJson | null;
+} = {}): string {
   const camporee = JSON.parse(
     readFileSync(join(V1_SOURCE, "camporee.json"), "utf8"),
-  );
-  edit(camporee);
+  ) as V1Json;
+  editCamporee(camporee);
   const files: Record<string, Uint8Array> = {
     "camporee.json": strToU8(JSON.stringify(camporee)),
     "presets.json": readFileSync(join(V1_SOURCE, "presets.json")),
   };
   for (const name of readdirSync(join(V1_SOURCE, "games"))) {
-    files[`games/${name}`] = readFileSync(join(V1_SOURCE, "games", name));
+    const id = name.replace(/\.json$/, "");
+    const json = editGame(
+      id,
+      JSON.parse(readFileSync(join(V1_SOURCE, "games", name), "utf8")),
+    );
+    if (json) files[`games/${name}`] = strToU8(JSON.stringify(json));
   }
   const path = join(dir, "circus.zip");
   writeFileSync(path, zipSync(files));
   return path;
 }
+
+/** circus-line with its scoring fields not written yet. */
+const unfinishedCircusLine = (id: string, json: GameJson) =>
+  id === "circus-line"
+    ? { ...json, scoring_model: { ...json.scoring_model, inputs: [] } }
+    : json;
+
+const disableCircusLine = (c: V1Json) => {
+  c.playlist = c.playlist.map((e) =>
+    e.gameId === "circus-line" ? { ...e, enabled: false } : e,
+  );
+};
 
 const storedEvent = () => {
   const row = openDb(dbPath)
@@ -102,31 +129,78 @@ describe("import-v1 CLI", () => {
     expect(storedEvent()).not.toHaveProperty("awards");
   });
 
-  it("prints skipped games prominently, and imports the rest", () => {
-    const zip = circusZip((c) => {
-      c.playlist = c.playlist.map((e) =>
-        e.gameId === "circus-line" ? { ...e, enabled: false } : e,
-      );
-    });
+  it("prints unfinished games prominently as SKIPPED, and imports the rest", () => {
+    const zip = circusZip({ game: unfinishedCircusLine });
     const result = run("coyote-creek", zip, "--overlay", OVERLAY);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("SKIPPED 1 game (not imported):");
-    expect(result.stdout).toContain("circus-line: disabled in the v1 playlist");
+    expect(result.stdout).toContain(
+      "circus-line: unfinished: scoring.fields: a ranked Activity needs at least one scoring field",
+    );
     expect(result.stdout).toMatch(/34 created, 0 updated/);
   });
 
-  it("refuses any skip with --strict, importing nothing", () => {
-    const zip = circusZip((c) => {
-      c.playlist = c.playlist.map((e) =>
-        e.gameId === "circus-line" ? { ...e, enabled: false } : e,
-      );
-    });
+  it("refuses an unfinished game with --strict, importing nothing", () => {
+    const zip = circusZip({ game: unfinishedCircusLine });
     const result = run("coyote-creek", zip, "--overlay", OVERLAY, "--strict");
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain(
-      "strict: circus-line would be skipped (disabled in the v1 playlist)",
-    );
+    expect(result.stderr).toContain("strict: circus-line would be skipped");
     expect(openDb(dbPath).select().from(documents).all()).toHaveLength(0);
+  });
+
+  it("lists a game the playlist disables as info, even with --strict", () => {
+    const zip = circusZip({ camporee: disableCircusLine });
+    const result = run("coyote-creek", zip, "--overlay", OVERLAY, "--strict");
+    expect(result.status).toBe(0);
+    expect(result.stdout).not.toMatch(/SKIPPED/);
+    expect(result.stdout).toContain(
+      "note: Left out 1 game the v1 playlist disables: circus-line.",
+    );
+  });
+
+  it("lists Activities no longer in the cartridge, with titles, on every import until they're cleaned up", () => {
+    run("coyote-creek", circusZip(), "--overlay", OVERLAY);
+    // jugglers: not mentioned in the overlay (removing a game the overlay names refuses the import).
+    const removed = circusZip({
+      camporee: (c) => {
+        c.playlist = c.playlist.filter((e) => e.gameId !== "jugglers");
+      },
+      game: (id, json) => (id === "jugglers" ? null : json),
+    });
+    for (let i = 0; i < 2; i++) {
+      const result = run("coyote-creek", removed, "--overlay", OVERLAY);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain(
+        "1 Activity no longer in the cartridge (kept in the database, not in the Event):",
+      );
+      expect(result.stdout).toContain("  - Jugglers (jugglers)");
+    }
+  });
+
+  it("refuses the import when the overlay names a game that's gone from the cartridge", () => {
+    const removed = circusZip({
+      camporee: (c) => {
+        c.playlist = c.playlist.filter((e) => e.gameId !== "circus-line");
+      },
+      game: (id, json) => (id === "circus-line" ? null : json),
+    });
+    const result = run("coyote-creek", removed, "--overlay", OVERLAY);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(
+      "overlay: primaryMetrics.circus-line: no game circus-line in the cartridge",
+    );
+  });
+
+  it("doesn't list a game that's still in the cartridge but disabled or unfinished", () => {
+    run("coyote-creek", circusZip(), "--overlay", OVERLAY);
+    for (const zip of [
+      circusZip({ camporee: disableCircusLine }),
+      circusZip({ game: unfinishedCircusLine }),
+    ]) {
+      expect(run("coyote-creek", zip, "--overlay", OVERLAY).stdout).not.toMatch(
+        /no longer in the cartridge/,
+      );
+    }
   });
 
   it("refuses a zip that isn't a v1 cartridge", () => {
