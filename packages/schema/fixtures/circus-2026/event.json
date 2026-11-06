@@ -70,6 +70,9 @@
           "off_notes"
         ]
       },
+      "programGuide": {
+        "listActivities": false
+      },
       "legacy": {
         "v1Id": "patrol-games"
       }
@@ -278,6 +281,22 @@
       }
     }
   ],
+  "programGuide": {
+    "skills": [
+      "Fire starting",
+      "First aid",
+      "Campfire entertainment",
+      "Tent assembly",
+      "Cooking",
+      "Map and compass",
+      "Color guard presentation",
+      "Fitness",
+      "Pioneering",
+      "Lashings",
+      "Teamwork",
+      "Problem solving"
+    ]
+  },
   "legacy": {
     "v1Id": "5d5a6a80-c9e1-4551-8e15-8ef1ca93b9ca"
   },
