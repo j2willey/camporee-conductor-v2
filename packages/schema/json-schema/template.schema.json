@@ -324,6 +324,18 @@
             ],
             "additionalProperties": false
           },
+          "programGuide": {
+            "type": "object",
+            "properties": {
+              "listActivities": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "listActivities"
+            ],
+            "additionalProperties": false
+          },
           "legacy": {
             "type": "object",
             "properties": {
@@ -491,6 +503,21 @@
         ],
         "additionalProperties": false
       }
+    },
+    "programGuide": {
+      "type": "object",
+      "properties": {
+        "skills": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "skills"
+      ],
+      "additionalProperties": false
     },
     "lineage": {
       "type": "object",
