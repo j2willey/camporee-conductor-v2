@@ -91,6 +91,7 @@ image build-and-start check on every PR and push to `main`.
 
 ```
 packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
+packages/program-guide/  pure Program Guide generation: guide model + print-ready HTML (ADR-0018, #5)
 packages/schema/    Zod document schemas (Event, Activity, Common Field set, Template) + generated JSON Schema;
                     fixtures/circus-2026/ is the transcoded Circus 2026 design; fixtures/circus-2026-as-run/ is
                     what the event ran, for scoring parity only (see TRANSCODE-NOTES.md)

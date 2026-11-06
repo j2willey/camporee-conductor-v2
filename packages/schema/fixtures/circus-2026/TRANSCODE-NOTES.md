@@ -147,6 +147,15 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 - Listing order only: ranking still comes from points. The **as-run** fixture has none, as v1 ran it, so parity
   is unaffected.
 
+## Added: Program Guide settings (#5)
+
+- v1 had no Program Guide. In the **design** (Jim 2026-11-06): Patrol Games has
+  `programGuide.listActivities: false`, because the guide publishes before the games are final; Exhibition
+  and Troop Challenges leave it out (= list them).
+- `event.programGuide.skills`: the 12 skills the 2026 guide promised units, wording lightly normalized. An
+  authored commitment, not derived from the Activities.
+- The **as-run** fixture has neither, as v1 ran it. Scoring ignores both, so parity is unaffected.
+
 ## Carried over as-is, but worth a look
 
 - No Event dates: v1 `meta` has only `year: 2026`.

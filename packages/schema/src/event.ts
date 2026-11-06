@@ -87,6 +87,11 @@ export const CompetitionSchema = z.strictObject({
       after: z.array(FieldId),
     })
     .optional(),
+  /**
+   * Program Guide settings (#5). `listActivities: false` leaves this Competition's Activities out of the
+   * guide, e.g. when it publishes before they're final. Left out = list them.
+   */
+  programGuide: z.strictObject({ listActivities: z.boolean() }).optional(),
   legacy: LegacySchema.optional(),
 });
 
@@ -171,6 +176,11 @@ const eventShape = {
       }),
     )
     .optional(),
+  /**
+   * Program Guide content authored for this Event (#5). `skills`: what units should prepare for, a
+   * commitment made up front, not derived from the Activities.
+   */
+  programGuide: z.strictObject({ skills: z.array(NonEmptyText) }).optional(),
   lineage: LineageSchema.optional(),
   legacy: LegacySchema.optional(),
 };

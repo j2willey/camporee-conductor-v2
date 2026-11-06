@@ -99,6 +99,8 @@ interface Variant {
   topDogAsAward: boolean;
   /** Mark `PRIMARY_METRICS` (#3). Only the design; v1 had no primary metrics. */
   primaryMetrics: boolean;
+  /** Program Guide settings (#5). Only the design; v1 had no Program Guide. */
+  programGuide: boolean;
 }
 
 /**
@@ -133,6 +135,31 @@ const PRIMARY_METRICS: Record<
   },
 };
 
+/**
+ * The skills the 2026 Program Guide promised units, authored up front (#5, Jim 2026-11-06). Wording
+ * lightly normalized from the guide's list.
+ */
+const PROGRAM_GUIDE_SKILLS = [
+  "Fire starting",
+  "First aid",
+  "Campfire entertainment",
+  "Tent assembly",
+  "Cooking",
+  "Map and compass",
+  "Color guard presentation",
+  "Fitness",
+  "Pioneering",
+  "Lashings",
+  "Teamwork",
+  "Problem solving",
+];
+
+/**
+ * Competitions whose Activities the guide doesn't list: it publishes before Patrol Games are final
+ * (#5, Jim 2026-11-06).
+ */
+const GUIDE_HIDES_ACTIVITIES = new Set(["patrol-games"]);
+
 /** v1 modelled Top Dog as a Troop Challenge; it's really an Award. */
 const TOP_DOG = "top-dog";
 
@@ -144,6 +171,7 @@ const DESIGN: Variant = {
   setTitle: "Circus 2026 Common Fields",
   topDogAsAward: true,
   primaryMetrics: true,
+  programGuide: true,
 };
 
 const AS_RUN: Variant = {
@@ -154,6 +182,7 @@ const AS_RUN: Variant = {
   setTitle: "Circus 2026 Common Fields (as run)",
   topDogAsAward: false,
   primaryMetrics: false,
+  programGuide: false,
 };
 
 let variant = DESIGN;
@@ -401,6 +430,9 @@ function toEvent(
     if (before.length > 0 || after.length > 0) {
       competition.commonFields = { setId: set.id, before, after };
     }
+    if (variant.programGuide && GUIDE_HIDES_ACTIVITIES.has(league.id)) {
+      competition.programGuide = { listActivities: false };
+    }
     return competition;
   });
 
@@ -468,6 +500,9 @@ function toEvent(
     }),
     // What v1 did, recorded rather than left to the default (ADR-0019).
     tieNumbering: "dense",
+    ...(variant.programGuide && {
+      programGuide: { skills: PROGRAM_GUIDE_SKILLS },
+    }),
     legacy: { v1Id: meta.camporeeId },
   });
 }

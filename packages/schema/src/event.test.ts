@@ -185,6 +185,62 @@ describe("EventSchema", () => {
     });
   });
 
+  describe("Program Guide settings (#5)", () => {
+    const withCompetitionGuide = (programGuide: unknown) => {
+      const event = validEvent();
+      return {
+        ...event,
+        competitions: [{ ...event.competitions[0], programGuide }],
+      };
+    };
+
+    it("leaves both settings out by default, so stored documents don't change", () => {
+      const parsed = EventSchema.parse(validEvent());
+      expect(parsed).not.toHaveProperty("programGuide");
+      expect(parsed.competitions[0]).not.toHaveProperty("programGuide");
+    });
+
+    it("accepts a per-Competition choice to list Activities or not", () => {
+      for (const listActivities of [true, false]) {
+        expect(
+          EventSchema.parse(withCompetitionGuide({ listActivities }))
+            .competitions[0]?.programGuide,
+        ).toEqual({ listActivities });
+      }
+    });
+
+    it("rejects a non-boolean or unknown Competition guide setting", () => {
+      expect(
+        issuesOf(EventSchema, withCompetitionGuide({ listActivities: "no" })),
+      ).toContain(
+        "competitions.0.programGuide.listActivities: Invalid input: expected boolean, received string",
+      );
+      expect(
+        issuesOf(
+          EventSchema,
+          withCompetitionGuide({ listActivities: true, teaser: "story" }),
+        ),
+      ).toContain('competitions.0.programGuide: Unrecognized key: "teaser"');
+    });
+
+    it("accepts an authored skills list on the Event", () => {
+      const skills = ["Fire starting", "First aid", "Lashings"];
+      expect(
+        EventSchema.parse({ ...validEvent(), programGuide: { skills } })
+          .programGuide,
+      ).toEqual({ skills });
+    });
+
+    it("rejects a blank skill", () => {
+      expect(
+        issuesOf(EventSchema, {
+          ...validEvent(),
+          programGuide: { skills: ["First aid", ""] },
+        }),
+      ).toEqual([expect.stringMatching(/^programGuide\.skills\.1: /)]);
+    });
+  });
+
   it("does not accept rosters (ADR-0026: rosters are Collator-only)", () => {
     expect(
       issuesOf(EventSchema, { ...validEvent(), rosters: { groups: [] } }),

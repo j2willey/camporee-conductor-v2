@@ -1,0 +1,17 @@
+{
+  "name": "@camporee-conductor/program-guide",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure Program Guide generation: an Event's guide model and its print-ready HTML. No I/O. (ADR-0018, issue #5)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@camporee-conductor/schema": "workspace:*"
+  }
+}

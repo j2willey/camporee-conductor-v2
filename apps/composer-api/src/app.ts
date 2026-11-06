@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { buildGuide, renderGuideHtml } from "@camporee-conductor/program-guide";
 import { Slug, type Event } from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
 import { Hono, type Context } from "hono";
@@ -71,6 +72,39 @@ export function createApp({
       .where(eq(memberships.userId, userId))
       .orderBy(organizations.name)
       .all();
+
+  /**
+   * An Event the user can view, plus its Activities' ids, slugs and titles. 404 if there's no such
+   * Event or the user isn't a member of its Organization (`requireRole`).
+   */
+  const readEvent = (eventId: string, userId: string) => {
+    const row = db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, eventId), eq(documents.kind, "event")))
+      .get();
+    if (!row) throw new HTTPException(404, { message: "Not found." });
+    requireRole(db, row.organizationId, userId, "viewer");
+    // Validated on import (ADR-0012); stored exactly as given.
+    const event = JSON.parse(row.json) as Event;
+    const ids = new Set(event.activities.map((a) => a.activityId));
+    const activities = db
+      .select({
+        id: documents.id,
+        slug: documents.slug,
+        title: documents.title,
+      })
+      .from(documents)
+      .where(
+        and(
+          eq(documents.organizationId, row.organizationId),
+          eq(documents.kind, "activity"),
+        ),
+      )
+      .all()
+      .filter((a) => ids.has(a.id));
+    return { event, activities };
+  };
 
   const api = new Hono<{ Variables: { user: AuthUser } }>()
     .use(async (c, next) => {
@@ -203,38 +237,17 @@ export function createApp({
       );
     })
 
-    .get("/events/:eventId", (c) => {
-      const row = db
-        .select()
-        .from(documents)
-        .where(
-          and(
-            eq(documents.id, c.req.param("eventId")),
-            eq(documents.kind, "event"),
-          ),
-        )
-        .get();
-      if (!row) throw new HTTPException(404, { message: "Not found." });
-      requireRole(db, row.organizationId, c.var.user.userId, "viewer");
-      // Validated on import (ADR-0012); stored exactly as given.
-      const event = JSON.parse(row.json) as Event;
-      const ids = new Set(event.activities.map((a) => a.activityId));
-      const activities = db
-        .select({
-          id: documents.id,
-          slug: documents.slug,
-          title: documents.title,
-        })
-        .from(documents)
-        .where(
-          and(
-            eq(documents.organizationId, row.organizationId),
-            eq(documents.kind, "activity"),
-          ),
-        )
-        .all()
-        .filter((a) => ids.has(a.id));
-      return c.json({ event, activities });
+    .get("/events/:eventId", (c) =>
+      c.json(readEvent(c.req.param("eventId"), c.var.user.userId)),
+    )
+
+    /** The Event's Program Guide as one print-ready HTML page (issue #5). */
+    .get("/events/:eventId/program-guide", (c) => {
+      const { event, activities } = readEvent(
+        c.req.param("eventId"),
+        c.var.user.userId,
+      );
+      return c.html(renderGuideHtml(buildGuide(event, activities)));
     });
 
   const notFound = (c: Context) => c.json({ error: "Not found." }, 404);

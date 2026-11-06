@@ -104,6 +104,36 @@ describe("Circus 2026 fixtures: content and references", () => {
     ]);
   });
 
+  it("hides Patrol Games' Activities from the Program Guide and lists the rest (#5)", () => {
+    expect(
+      event.competitions.map((c) => [
+        c.slug,
+        c.programGuide?.listActivities ?? "default",
+      ]),
+    ).toEqual([
+      ["patrol-games", false],
+      ["exhibition", "default"],
+      ["troop-challenges", "default"],
+    ]);
+  });
+
+  it("has the 12 skills the 2026 Program Guide promised units (#5)", () => {
+    expect(event.programGuide?.skills).toEqual([
+      "Fire starting",
+      "First aid",
+      "Campfire entertainment",
+      "Tent assembly",
+      "Cooking",
+      "Map and compass",
+      "Color guard presentation",
+      "Fitness",
+      "Pioneering",
+      "Lashings",
+      "Teamwork",
+      "Problem solving",
+    ]);
+  });
+
   it("lists each Activity file exactly once in the Event", () => {
     expect(event.activities.map((e) => e.activityId).sort()).toEqual(
       activities.map((a) => a.id).sort(),
@@ -249,6 +279,15 @@ describe("Circus 2026 as-run fixtures", () => {
 
   it("has no Awards: v1 ran Top Dog as a Troop Challenge", () => {
     expect(asRunEvent.awards).toBeUndefined();
+  });
+
+  it("has no Program Guide settings: v1 had none (#5)", () => {
+    expect(asRunEvent.programGuide).toBeUndefined();
+    expect(asRunEvent.competitions.map((c) => c.programGuide)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+    ]);
   });
 
   it("has its own ids, so the two fixtures are never mistaken for each other", () => {
