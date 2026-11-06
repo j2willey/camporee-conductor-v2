@@ -15,3 +15,9 @@ export {
   V1OverlaySchema,
   type V1Overlay,
 } from "./v1/overlay.ts";
+export {
+  checkEventBundle,
+  type BundleCheck,
+  type CheckedBundle,
+  type EventBundle,
+} from "./bundle.ts";

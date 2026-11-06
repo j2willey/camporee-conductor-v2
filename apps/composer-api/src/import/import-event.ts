@@ -1,19 +1,12 @@
 import {
-  ActivitySchema,
-  CommonFieldSetSchema,
-  EventSchema,
-} from "@camporee-conductor/schema";
+  checkEventBundle,
+  type EventBundle,
+} from "@camporee-conductor/cartridge";
 import { eq, inArray } from "drizzle-orm";
-import type { z } from "zod";
 import type { Db } from "../db/open.ts";
 import { documents, organizations, type DocumentKind } from "../db/schema.ts";
 
-/** One Event and every document it references, as read from a cartridge (ADR-0012). */
-export interface EventBundle {
-  event: unknown;
-  activities: unknown[];
-  commonFieldSets: unknown[];
-}
+export type { EventBundle };
 
 /** The bundle can't be imported; `issues` says why, one line per problem. */
 export class ImportError extends Error {
@@ -50,78 +43,30 @@ export function importEvent(
   bundle: EventBundle,
   now = new Date(),
 ): ImportResult {
-  const issues: string[] = [];
-  const parse = <S extends z.ZodType>(
-    schema: S,
+  const check = checkEventBundle(bundle);
+  if (!check.ok) throw new ImportError(check.issues);
+  // Stored exactly as given (ADR-0012); the parsed copy is only for the indexed columns.
+  const stored = (
     kind: DocumentKind,
     raw: unknown,
-    fallbackName: string,
-  ): (Parsed & { data: z.infer<S> }) | undefined => {
-    const result = schema.safeParse(raw);
-    const name = slugOf(raw) ?? fallbackName;
-    if (!result.success) {
-      for (const issue of result.error.issues) {
-        issues.push(
-          `${kind} ${name}: ${issue.path.length > 0 ? `${issue.path.join(".")}: ` : ""}${issue.message}`,
-        );
-      }
-      return undefined;
-    }
-    const doc = result.data as { id: string; slug: string; title: string };
-    return {
-      kind,
-      id: doc.id,
-      slug: doc.slug,
-      title: doc.title,
-      json: JSON.stringify(raw),
-      data: result.data,
-    };
-  };
-
-  const event = parse(EventSchema, "event", bundle.event, "event");
-  const activities = bundle.activities.map((raw, i) =>
-    parse(ActivitySchema, "activity", raw, `activities[${i}]`),
-  );
-  const sets = bundle.commonFieldSets.map((raw, i) =>
-    parse(
-      CommonFieldSetSchema,
-      "common-field-set",
-      raw,
-      `common-field-sets[${i}]`,
+    doc: { id: string; slug: string; title: string },
+  ): Parsed => ({
+    kind,
+    id: doc.id,
+    slug: doc.slug,
+    title: doc.title,
+    json: JSON.stringify(raw),
+  });
+  const { event } = check.bundle;
+  const docs: Parsed[] = [
+    stored("event", bundle.event, event),
+    ...check.bundle.commonFieldSets.map((set, i) =>
+      stored("common-field-set", bundle.commonFieldSets[i], set),
     ),
-  );
-
-  if (event) {
-    // Ids as given, so an invalid Activity isn't also reported as missing.
-    const activityIds = new Set(bundle.activities.map(idOf));
-    const listed = new Set(event.data.activities.map((a) => a.activityId));
-    for (const id of listed) {
-      if (!activityIds.has(id)) {
-        issues.push(
-          `event ${event.slug}: activities: no Activity ${id} in the bundle`,
-        );
-      }
-    }
-    for (const activity of activities) {
-      if (activity && !listed.has(activity.id)) {
-        issues.push(`activity ${activity.slug}: not listed in the Event`);
-      }
-    }
-    const setIds = new Set(bundle.commonFieldSets.map(idOf));
-    event.data.competitions.forEach((competition, i) => {
-      const setId = competition.commonFields?.setId;
-      if (setId && !setIds.has(setId)) {
-        issues.push(
-          `event ${event.slug}: competitions.${i}.commonFields.setId: no Common Field set ${setId} in the bundle`,
-        );
-      }
-    });
-  }
-  if (issues.length > 0) throw new ImportError(issues);
-
-  const docs = [event, ...sets, ...activities].filter(
-    (d): d is NonNullable<typeof d> => d !== undefined,
-  );
+    ...check.bundle.activities.map((activity, i) =>
+      stored("activity", bundle.activities[i], activity),
+    ),
+  ];
   return db.transaction((tx) => {
     const org = tx
       .select({ id: organizations.id })
@@ -170,17 +115,9 @@ export function importEvent(
     }
     const updated = docs.filter((d) => existing.has(d.id)).length;
     return {
-      eventId: event?.id ?? "",
+      eventId: event.id,
       created: docs.length - updated,
       updated,
     };
   });
 }
-
-const stringProp = (raw: unknown, key: string): string | undefined => {
-  if (typeof raw !== "object" || raw === null) return undefined;
-  const value = (raw as Record<string, unknown>)[key];
-  return typeof value === "string" && value.length > 0 ? value : undefined;
-};
-const slugOf = (raw: unknown) => stringProp(raw, "slug");
-const idOf = (raw: unknown) => stringProp(raw, "id");
