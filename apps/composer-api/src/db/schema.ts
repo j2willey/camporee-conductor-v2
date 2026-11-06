@@ -16,6 +16,8 @@ export const DOCUMENT_KINDS = [
   "activity",
   "common-field-set",
   "template",
+  /** An Event's Officials: event-day cartridge only (ADR-0027 item 5, issue #8). */
+  "officials",
 ] as const;
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
 
