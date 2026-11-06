@@ -76,6 +76,8 @@ pnpm --filter @camporee-conductor/composer-api start                            
 NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer-api start   # dev sign-in: header `x-dev-user: <email>`; refused in production
 pnpm --filter @camporee-conductor/composer-web dev                                           # web app on :5173, proxies to the API
 pnpm --filter @camporee-conductor/composer-api import-event <org-slug> packages/schema/fixtures/circus-2026
+pnpm --filter @camporee-conductor/composer-api import-v1 <org-slug> <cartridge.zip|dir> [--overlay events/<event>/overlay.json] [--strict]  # v1 cartridge → v2 (#46)
+node packages/cartridge/scripts/transcode-circus-2026.ts   # regenerate both Circus fixtures (must be a no-op)
 pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
 pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> packages/schema/fixtures/circus-2026  # owner + Org + Event
 pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
@@ -92,6 +94,8 @@ image build-and-start check on every PR and push to `main`.
 ```
 packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
 packages/program-guide/  pure Program Guide generation: guide model + print-ready HTML (ADR-0018, #5)
+packages/cartridge/ cartridge conversion: v1 cartridge → v2 documents + per-event overlay (#46); later the export (#8)
+events/             per-event overlay.json for v1 imports; never the v1 cartridge itself (unpublished designs)
 packages/schema/    Zod document schemas (Event, Activity, Common Field set, Template) + generated JSON Schema;
                     fixtures/circus-2026/ is the transcoded Circus 2026 design; fixtures/circus-2026-as-run/ is
                     what the event ran, for scoring parity only (see TRANSCODE-NOTES.md)
