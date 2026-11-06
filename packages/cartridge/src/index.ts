@@ -21,3 +21,15 @@ export {
   type CheckedBundle,
   type EventBundle,
 } from "./bundle.ts";
+export {
+  CARTRIDGE_FORMAT,
+  CARTRIDGE_FORMAT_VERSION,
+  CartridgeError,
+  CartridgeManifestSchema,
+  CartridgeProfileSchema,
+  exportCartridge,
+  loadCartridge,
+  type CartridgeLoad,
+  type CartridgeManifest,
+  type CartridgeProfile,
+} from "./cartridge.ts";

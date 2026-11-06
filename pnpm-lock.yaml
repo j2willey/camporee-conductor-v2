@@ -282,6 +282,9 @@ importers:
       '@camporee-conductor/schema':
         specifier: workspace:*
         version: link:../schema
+      fflate:
+        specifier: 0.8.2
+        version: 0.8.2
       zod:
         specifier: 4.6.7
         version: 4.6.7
