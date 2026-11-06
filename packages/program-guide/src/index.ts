@@ -6,3 +6,4 @@ export {
   type GuideBlock,
   type GuideSection,
 } from "./guide.ts";
+export { escapeHtml, renderGuideHtml } from "./render.ts";
