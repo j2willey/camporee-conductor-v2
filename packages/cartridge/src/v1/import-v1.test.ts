@@ -383,9 +383,17 @@ describe("importV1Cartridge: the Event", () => {
     const result = run({ camporee: disabled });
     expect(result.activities.map((a) => a.slug)).toEqual(["relay", "tug"]);
     expect(result.event.activities.map((e) => e.sortOrder)).toEqual([1, 3]);
-    expect(result.notes).toContain(
-      "Skipped 1 game the v1 playlist disables: archery.",
-    );
+    expect(result.skipped).toEqual([
+      { game: "archery", reason: "disabled in the v1 playlist" },
+    ]);
+  });
+
+  it("skips a game file the playlist doesn't list", () => {
+    const shortList = camporee();
+    shortList.playlist = shortList.playlist.filter((e) => e.gameId !== "tug");
+    expect(run({ camporee: shortList }).skipped).toEqual([
+      { game: "tug", reason: "not in the v1 playlist" },
+    ]);
   });
 });
 
@@ -503,11 +511,11 @@ describe("importV1Cartridge: refusals", () => {
     throw new Error("expected the import to be refused");
   };
 
-  it("refuses a ranked game with no scoring fields yet, naming the game and the rule", () => {
-    const unfinished = tug();
-    unfinished.scoring_model.inputs = [];
-    expect(refusal({ games: [relay(), archery(), unfinished] })).toEqual([
-      "activity tug: scoring.fields: a ranked Activity needs at least one scoring field",
+  it("refuses a bracket-mode game: v2 has no bracket mode", () => {
+    const bracket = tug();
+    bracket.bracketMode = true;
+    expect(refusal({ games: [relay(), archery(), bracket] })).toEqual([
+      "game tug: bracket mode isn't supported in v2; turn it off in v1's Composer",
     ]);
   });
 
@@ -520,6 +528,54 @@ describe("importV1Cartridge: refusals", () => {
     expect(refusal({ games: [relay(), archery(), lost] })).toEqual([
       "game tug: league \"nowhere\" isn't one of the cartridge's leagues",
     ]);
+  });
+});
+
+describe("importV1Cartridge: unfinished games (designs change until about April)", () => {
+  const unfinished = () => {
+    const game = tug();
+    game.scoring_model.inputs = [];
+    return game;
+  };
+
+  it("skips a game that isn't a valid Activity yet, with the reason, and imports the rest", () => {
+    const result = run({ games: [relay(), archery(), unfinished()] });
+    expect(result.activities.map((a) => a.slug)).toEqual(["archery", "relay"]);
+    expect(result.event.activities.map((e) => e.sortOrder)).toEqual([1, 2]);
+    expect(result.skipped).toEqual([
+      {
+        game: "tug",
+        reason:
+          "unfinished: scoring.fields: a ranked Activity needs at least one scoring field",
+      },
+    ]);
+  });
+
+  it("refuses instead when strict, listing every skip (for the final pre-event import)", () => {
+    const disabled = camporee();
+    disabled.playlist = disabled.playlist.map((e) =>
+      e.gameId === "archery" ? { ...e, enabled: false } : e,
+    );
+    expect(() =>
+      importV1Cartridge(
+        cartridge({
+          camporee: disabled,
+          games: [relay(), archery(), unfinished()],
+        }),
+        options(),
+        { strict: true },
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        issues: [
+          "strict: archery would be skipped (disabled in the v1 playlist)",
+          "strict: tug would be skipped (unfinished: scoring.fields: a ranked Activity needs at least one scoring field)",
+        ],
+      }),
+    );
+    expect(
+      importV1Cartridge(cartridge(), options(), { strict: true }).skipped,
+    ).toEqual([]);
   });
 });
 

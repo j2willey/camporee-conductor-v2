@@ -54,8 +54,16 @@ export interface V1ImportResult {
   commonFieldSet: CommonFieldSet;
   /** Sorted by slug. */
   activities: Activity[];
-  /** What didn't come across, in plain words. Never contains contact details. */
+  /** Games left out, and why. `strict` turns any of these into a refusal. */
+  skipped: SkippedGame[];
+  /** What else didn't come across, in plain words. Never contains contact details. */
   notes: string[];
+}
+
+export interface SkippedGame {
+  /** The v1 game id. */
+  game: string;
+  reason: string;
 }
 
 /**
@@ -103,67 +111,83 @@ const CUSTOM_SECTIONS = [
 export function importV1Cartridge(
   cartridge: V1Cartridge,
   options: V1ImportOptions,
+  { strict = false }: { strict?: boolean } = {},
 ): V1ImportResult {
   const { camporee, presets, games } = cartridge;
   const id = (key: string) =>
     stableUuid7(options.idNamespace, key, options.idTimestamp);
   const notes: string[] = [];
-
-  const gameById = new Map(games.map((g) => [g.id, g]));
-  const playlist = camporee.playlist.filter((entry) => entry.enabled !== false);
-  const disabled = camporee.playlist.filter((e) => e.enabled === false);
-  if (disabled.length > 0) {
-    notes.push(
-      `Skipped ${count(disabled.length, "game")} the v1 playlist disables: ${disabled.map((e) => e.gameId).join(", ")}.`,
-    );
-  }
+  const skipped: SkippedGame[] = [];
   const issues: string[] = [];
-  for (const entry of playlist) {
-    if (!gameById.has(entry.gameId)) {
-      issues.push(`playlist: no game file for ${entry.gameId}`);
-    }
-  }
-  const listed = new Set(camporee.playlist.map((e) => e.gameId));
-  const unlisted = games.filter((g) => !listed.has(g.id));
-  if (unlisted.length > 0) {
-    notes.push(
-      `Skipped ${count(unlisted.length, "game file")} not in the v1 playlist: ${unlisted.map((g) => g.id).join(", ")}.`,
-    );
-  }
+
+  // Event-level problems refuse the whole import.
+  const gameById = new Map(games.map((g) => [g.id, g]));
   const leagueIds = new Set(camporee.leagues.map((l) => l.id));
-  for (const entry of playlist) {
+  const enabled = camporee.playlist.filter((e) => e.enabled !== false);
+  for (const entry of enabled) {
     const game = gameById.get(entry.gameId);
-    if (game && !leagueIds.has(game.league)) {
+    if (!game) {
+      issues.push(`playlist: no game file for ${entry.gameId}`);
+    } else if (!leagueIds.has(game.league)) {
       issues.push(
         `game ${game.id}: league "${game.league}" isn't one of the cartridge's leagues`,
       );
+    } else if (game.bracketMode) {
+      issues.push(
+        `game ${game.id}: bracket mode isn't supported in v2; turn it off in v1's Composer`,
+      );
     }
   }
-  if (issues.length > 0) throw new V1ImportError(issues);
-
   const commonFieldSet = check(
     CommonFieldSetSchema,
     toCommonFieldSet(presets, id, options),
     "common fields",
     issues,
   );
-  const activities = playlist
-    .map((entry) => gameById.get(entry.gameId))
-    .filter((g): g is V1Game => g !== undefined)
-    .map((game) =>
-      check(
-        ActivitySchema,
-        toActivity(game, id),
-        `activity ${game.id}`,
-        issues,
-      ),
-    )
-    .filter((a): a is Activity => a !== undefined)
-    .sort((a, b) => a.slug.localeCompare(b.slug));
   if (!commonFieldSet || issues.length > 0) throw new V1ImportError(issues);
+
+  // Game-level gaps skip that game: designs are unfinished until about April.
+  for (const entry of camporee.playlist) {
+    if (entry.enabled === false) {
+      skipped.push({
+        game: entry.gameId,
+        reason: "disabled in the v1 playlist",
+      });
+    }
+  }
+  const listed = new Set(camporee.playlist.map((e) => e.gameId));
+  for (const game of games) {
+    if (!listed.has(game.id)) {
+      skipped.push({ game: game.id, reason: "not in the v1 playlist" });
+    }
+  }
+  const kept: V1Camporee["playlist"] = [];
+  const activities: Activity[] = [];
+  for (const entry of enabled) {
+    const game = gameById.get(entry.gameId);
+    if (!game) continue;
+    const problems: string[] = [];
+    const activity = check(ActivitySchema, toActivity(game, id), "", problems);
+    if (activity) {
+      kept.push(entry);
+      activities.push(activity);
+    } else {
+      skipped.push({
+        game: game.id,
+        reason: `unfinished: ${problems.map((p) => p.replace(/^: /, "")).join("; ")}`,
+      });
+    }
+  }
+  activities.sort((a, b) => a.slug.localeCompare(b.slug));
+  if (strict && skipped.length > 0) {
+    throw new V1ImportError(
+      skipped.map((s) => `strict: ${s.game} would be skipped (${s.reason})`),
+    );
+  }
+
   const event = check(
     EventSchema,
-    toEvent(camporee, playlist, gameById, commonFieldSet, id, options),
+    toEvent(camporee, kept, gameById, commonFieldSet, id, options),
     "event",
     issues,
   );
@@ -180,7 +204,7 @@ export function importV1Cartridge(
     );
   }
   notes.push(...unresolvedVariables(event, commonFieldSet, activities));
-  return { event, commonFieldSet, activities, notes };
+  return { event, commonFieldSet, activities, skipped, notes };
 }
 
 function toCommonFieldSet(
