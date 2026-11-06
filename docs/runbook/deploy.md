@@ -67,8 +67,8 @@ Browser ─▶ Cloudflare (proxied, its own cert) ─▶ droplet :443 ─▶ cam
   to `caddy/Caddyfile` and mounts that folder, so later changes are `git pull` plus `caddy reload` (section 6).
 - **Database:** `/data/composer.db` in the named volume `composer-v2_data`. It survives new images. Migrations run
   automatically when the server starts.
-- **Backups:** Litestream is a follow-up issue, not this PR. Until then, the DB holds only data the Circus 2026
-  fixture can recreate.
+- **Backups:** Litestream is a follow-up (#36). Until it lands, back up by hand **before every deploy**
+  (section 11).
 
 ---
 
@@ -303,8 +303,8 @@ the next `git pull` doesn't bring it back.
 
 **8.2 A bad v2 version:** set `TAG=` back to the previous tag in `~/composer-v2/.env`, then
 `cd ~/composer-v2 && docker compose up -d`. Keep the last couple of images on the droplet.
-If a newer image already migrated the DB, an older image may not run against it. In this phase, recreate the DB
-instead: `docker compose down -v` (deletes the volume), `up -d`, re-seed (7.3).
+If a newer image already migrated the DB, an older image may not run against it: restore the backup you took
+before the deploy (section 11.3), which also sets the old `TAG`.
 
 **8.3 Take v2 down entirely:**
 
@@ -334,8 +334,55 @@ If the health check fails: `cd ~/composer-v2 && docker compose up -d --force-rec
 
 ## 10. Later
 
-- **Deploying a new v2 version:** 4.1 to 4.4 with the new commit, set `TAG` in `~/composer-v2/.env`,
-  `docker compose up -d`, then 7.2. Caddy and DNS don't change.
+- **Deploying a new v2 version:** **back up first (11.1, 11.2)**, then 4.1 to 4.4 with the new commit, set `TAG` in
+  `~/composer-v2/.env`, `docker compose up -d`, then 7.2. Caddy and DNS don't change.
 - **Follow-up issue: Litestream backups** (ADR-0013). Stream `/data/composer.db` to object storage (e.g.
   DigitalOcean Spaces). Needs its own decisions (bucket, credentials, retention, a restore drill).
 - **Maybe:** CI publishes the image to GHCR so the droplet can `docker pull` instead of 4.4.
+
+---
+
+## 11. Backup before deploy / Rollback (until #36)
+
+Until Litestream (#36) replaces this section, **back up before ANY deploy**, with or without a migration.
+Migrations run automatically when the new image starts (section 2), so the backup is the only way back.
+
+These are the exact commands rehearsed on 2026-11-06 (backup → deploy a migrating image on the same volume →
+restore onto the old image; every row came back and the integrity check passed).
+
+> **Backups contain users' emails** (and, once there are Officials, theirs). Keep them private: only on the droplet
+> and on Omarchy. **Never commit them**, attach them to an issue, or paste them anywhere.
+
+**11.1 [vps]: back up, while v2 keeps running.** The database is in WAL mode, so a plain file copy can miss the latest
+writes. This uses SQLite's online backup through `better-sqlite3`, which is already in the image:
+
+```sh
+mkdir -p ~/composer-v2/backups
+docker exec -w /repo/apps/composer-api composer-v2 node -e "require('better-sqlite3')('/data/composer.db',{readonly:true}).backup('/data/composer-backup.db').then(()=>console.log('backup ok'))"
+docker cp composer-v2:/data/composer-backup.db ~/composer-v2/backups/composer-$(date +%Y%m%d-%H%M).db
+grep TAG ~/composer-v2/.env        # write down the running tag: it's what you roll back to
+```
+
+Expect `backup ok`. Name the file after the deploy if that helps (e.g. `…-before-8.db`).
+
+**11.2 [omarchy]: keep a private copy off the droplet.**
+
+```sh
+mkdir -p ~/composer-v2-backups && scp 'conductor:composer-v2/backups/*' ~/composer-v2-backups/
+```
+
+**11.3 [vps]: roll back** to the backup and the old tag. Nothing is deleted: the WAL side-files of the newer database
+are moved aside (`.before-restore`), so a wrong step can still be undone.
+
+```sh
+cd ~/composer-v2 && docker compose stop
+docker run --rm -v composer-v2_data:/data -v ~/composer-v2/backups:/b --entrypoint sh composer-v2:<OLD_TAG> \
+  -c 'cp /b/<backup-file>.db /data/composer.db && for f in /data/composer.db-wal /data/composer.db-shm; do if [ -e "$f" ]; then mv "$f" "$f.before-restore"; fi; done'
+# set TAG=<OLD_TAG> in ~/composer-v2/.env, then:
+docker compose up -d
+docker compose logs --tail 5          # expect "listening on :3010"
+curl -s https://v2.camporeeconductor.com/health
+```
+
+Replace `<OLD_TAG>` with the tag from 11.1, and `<backup-file>` with the file name in `~/composer-v2/backups`.
+The `.before-restore` files can go once v2 is healthy again.
