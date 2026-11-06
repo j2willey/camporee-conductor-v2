@@ -373,7 +373,7 @@ describe("importV1Cartridge: the Event", () => {
     ]);
   });
 
-  it("skips a game the playlist disables, as v1's Collator did, and says so", () => {
+  it("leaves out a game the playlist disables, as v1's Collator did, as info, not a skip", () => {
     const disabled = camporee();
     disabled.playlist = [
       { gameId: "relay", order: 1, enabled: true },
@@ -383,17 +383,20 @@ describe("importV1Cartridge: the Event", () => {
     const result = run({ camporee: disabled });
     expect(result.activities.map((a) => a.slug)).toEqual(["relay", "tug"]);
     expect(result.event.activities.map((e) => e.sortOrder)).toEqual([1, 3]);
-    expect(result.skipped).toEqual([
-      { game: "archery", reason: "disabled in the v1 playlist" },
-    ]);
+    expect(result.skipped).toEqual([]);
+    expect(result.notes).toContain(
+      "Left out 1 game the v1 playlist disables: archery.",
+    );
   });
 
-  it("skips a game file the playlist doesn't list", () => {
+  it("leaves out a game file the playlist doesn't list, as info", () => {
     const shortList = camporee();
     shortList.playlist = shortList.playlist.filter((e) => e.gameId !== "tug");
-    expect(run({ camporee: shortList }).skipped).toEqual([
-      { game: "tug", reason: "not in the v1 playlist" },
-    ]);
+    const result = run({ camporee: shortList });
+    expect(result.skipped).toEqual([]);
+    expect(result.notes).toContain(
+      "Left out 1 game file not in the v1 playlist: tug.",
+    );
   });
 });
 
@@ -551,7 +554,7 @@ describe("importV1Cartridge: unfinished games (designs change until about April)
     ]);
   });
 
-  it("refuses instead when strict, listing every skip (for the final pre-event import)", () => {
+  it("refuses instead when strict, listing every unfinished game, but not disabled ones (for the final pre-event import)", () => {
     const disabled = camporee();
     disabled.playlist = disabled.playlist.map((e) =>
       e.gameId === "archery" ? { ...e, enabled: false } : e,
@@ -568,13 +571,14 @@ describe("importV1Cartridge: unfinished games (designs change until about April)
     ).toThrow(
       expect.objectContaining({
         issues: [
-          "strict: archery would be skipped (disabled in the v1 playlist)",
           "strict: tug would be skipped (unfinished: scoring.fields: a ranked Activity needs at least one scoring field)",
         ],
       }),
     );
     expect(
-      importV1Cartridge(cartridge(), options(), { strict: true }).skipped,
+      importV1Cartridge(cartridge({ camporee: disabled }), options(), {
+        strict: true,
+      }).skipped,
     ).toEqual([]);
   });
 });

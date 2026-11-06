@@ -54,7 +54,7 @@ export interface V1ImportResult {
   commonFieldSet: CommonFieldSet;
   /** Sorted by slug. */
   activities: Activity[];
-  /** Games left out, and why. `strict` turns any of these into a refusal. */
+  /** Unfinished games left out, and why. `strict` turns any of these into a refusal. */
   skipped: SkippedGame[];
   /** What else didn't come across, in plain words. Never contains contact details. */
   notes: string[];
@@ -146,21 +146,22 @@ export function importV1Cartridge(
   );
   if (!commonFieldSet || issues.length > 0) throw new V1ImportError(issues);
 
-  // Game-level gaps skip that game: designs are unfinished until about April.
-  for (const entry of camporee.playlist) {
-    if (entry.enabled === false) {
-      skipped.push({
-        game: entry.gameId,
-        reason: "disabled in the v1 playlist",
-      });
-    }
+  // Games v1 itself leaves out: information, not skips.
+  const disabled = camporee.playlist.filter((e) => e.enabled === false);
+  if (disabled.length > 0) {
+    notes.push(
+      `Left out ${count(disabled.length, "game")} the v1 playlist disables: ${disabled.map((e) => e.gameId).join(", ")}.`,
+    );
   }
   const listed = new Set(camporee.playlist.map((e) => e.gameId));
-  for (const game of games) {
-    if (!listed.has(game.id)) {
-      skipped.push({ game: game.id, reason: "not in the v1 playlist" });
-    }
+  const unlisted = games.filter((g) => !listed.has(g.id));
+  if (unlisted.length > 0) {
+    notes.push(
+      `Left out ${count(unlisted.length, "game file")} not in the v1 playlist: ${unlisted.map((g) => g.id).join(", ")}.`,
+    );
   }
+
+  // Unfinished games are skipped: designs stay unfinished until about April.
   const kept: V1Camporee["playlist"] = [];
   const activities: Activity[] = [];
   for (const entry of enabled) {
