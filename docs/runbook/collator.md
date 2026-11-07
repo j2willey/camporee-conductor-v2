@@ -138,6 +138,29 @@ checks a backup containing the score appeared. It also validates the `files` mod
 certificate and the certificate script's checks with a fake token file. It tears everything down, volumes
 included, when it ends.
 
+## 8. Judge drones (CI and local)
+
+```sh
+docs/runbook/drones-collator.sh
+```
+
+Simulated Judges' phones in real browsers, **Chromium as Android and WebKit as iPhone**, against the real
+box image behind Caddy over `https://judge.camporeeconductor.com` (#63). They run in Playwright's Docker
+image, on the box's own Docker network, and trust only Caddy's root CA. Functional, not load. Covered:
+
+- two Judges scoring one Team, with the newer entry counting, and the home unit in the Official view
+- with no network, a reload, then a Team added and scored, all arriving once when the network is back
+- a lost reply, resent and counted once
+- a stopwatch running through a reload
+- the build stamp
+
+Each is checked on the box through the Official API. Traces on failure: `apps/collator-web/test-results/drones`.
+The first run pulls Playwright's image (about 2 GB).
+
+Software can't stand in for the phone itself: Android's Nearby devices permission, iOS's Local Network
+prompt, real Wi-Fi at the edge of range, and Safari on iOS. Those stay in the real-phone checks below,
+done by hand before the event.
+
 ## Manual acceptance on home Wi-Fi (Jim, recorded in the PR)
 
 On Omarchy, after step 1 (certificate issued, `--check` OK):
