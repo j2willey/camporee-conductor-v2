@@ -16,6 +16,7 @@ import {
   loadKept,
   rosterWithPending,
 } from "../offline-data.ts";
+import { drafts } from "../phone-drafts.ts";
 import { answerWaitMs, outbox, useOutboxItems } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 import { LoadProblem } from "./LoadProblem.tsx";
@@ -79,6 +80,8 @@ export function EntrantPicker({
         label: teamLabel(t, groupName(t.groupId)),
       }))
     : roster.groups.map((g) => ({ id: g.id, label: g.name }));
+  // Half-scored ones (#41 PR 4), as v1 marked them.
+  const withDrafts = drafts.entrantsWithDrafts(activity.id);
   const query = search.trim().toLowerCase();
   const shown = query
     ? listed.filter((e) => e.label.toLowerCase().includes(query))
@@ -106,10 +109,15 @@ export function EntrantPicker({
       {shown.map((entrant) => (
         <button
           key={entrant.id}
-          className={ui.choice}
+          className={`${ui.choice} flex items-center justify-between gap-2`}
           onClick={() => onPick(entrant)}
         >
           {entrant.label}
+          {withDrafts.has(entrant.id) && (
+            <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+              Draft
+            </span>
+          )}
         </button>
       ))}
       {listed.length === 0 && (
