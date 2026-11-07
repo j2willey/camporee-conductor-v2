@@ -7,8 +7,9 @@ import { valueProblem } from "./index.ts";
 // value (#40 PR 2).
 
 const field = (
-  type: "number" | "stopwatch" | "text",
-  config?: { min?: number; max?: number },
+  type: "number" | "stopwatch" | "text" | "select" | "checkbox",
+  config?: { min?: number; max?: number; options?: string[] },
+  required?: boolean,
 ) =>
   ScoringFieldSchema.parse({
     id: "flag",
@@ -18,6 +19,7 @@ const field = (
     audience: "judge",
     sortOrder: 0,
     ...(config && { config }),
+    ...(required !== undefined && { required }),
   });
 
 describe("valueProblem", () => {
@@ -61,6 +63,8 @@ describe("valueProblem", () => {
   it("lets a blank through: blank means not entered", () => {
     expect(valueProblem(flag, null)).toBeUndefined();
     expect(valueProblem(flag, "")).toBeUndefined();
+    expect(valueProblem(flag, undefined)).toBeUndefined();
+    expect(valueProblem(flag, "  ")).toBeUndefined();
   });
 
   it("leaves other field types alone (stopwatch text is read by scoring)", () => {
@@ -68,5 +72,68 @@ describe("valueProblem", () => {
       valueProblem(field("stopwatch", { max: 5 }), "1:23"),
     ).toBeUndefined();
     expect(valueProblem(field("text"), "anything")).toBeUndefined();
+  });
+
+  describe("a required field", () => {
+    // The phone and the box agree on what's required (#40 PR 3). Which fields a Judge must fill in is the
+    // caller's choice: only Judge fields (`audience: "judge"`); Officials fill in theirs later.
+    const required = field("number", { min: 0, max: 5 }, true);
+
+    it("refuses a blank: null, missing, empty or only spaces", () => {
+      for (const blank of [null, undefined, "", "   "]) {
+        expect(valueProblem(required, blank)).toBe("Patrol Flag is required");
+      }
+    });
+
+    it("accepts a value, and still checks it", () => {
+      expect(valueProblem(required, 0)).toBeUndefined();
+      expect(valueProblem(required, 6)).toBe("Patrol Flag must be from 0 to 5");
+    });
+
+    it("applies to every field type", () => {
+      expect(valueProblem(field("text", undefined, true), "")).toBe(
+        "Patrol Flag is required",
+      );
+      expect(
+        valueProblem(field("text", undefined, true), "ok"),
+      ).toBeUndefined();
+    });
+
+    it("takes an unticked checkbox as a value, not a blank", () => {
+      expect(
+        valueProblem(field("checkbox", undefined, true), false),
+      ).toBeUndefined();
+    });
+
+    it("isn't required when `required` is false or left out", () => {
+      expect(
+        valueProblem(field("number", undefined, false), null),
+      ).toBeUndefined();
+      expect(valueProblem(field("number"), null)).toBeUndefined();
+    });
+  });
+
+  describe("a select field", () => {
+    const pick = field("select", { options: ["Red", "Blue"] });
+
+    it("accepts one of its options", () => {
+      expect(valueProblem(pick, "Blue")).toBeUndefined();
+    });
+
+    it("refuses anything else, including a different case", () => {
+      const problem = "Patrol Flag must be one of the listed options";
+      expect(valueProblem(pick, "Green")).toBe(problem);
+      expect(valueProblem(pick, "blue")).toBe(problem);
+      expect(valueProblem(pick, 1)).toBe(problem);
+      expect(valueProblem(pick, true)).toBe(problem);
+    });
+
+    it("lets a blank through unless required", () => {
+      expect(valueProblem(pick, null)).toBeUndefined();
+      expect(valueProblem(pick, "")).toBeUndefined();
+      expect(
+        valueProblem(field("select", { options: ["Red"] }, true), ""),
+      ).toBe("Patrol Flag is required");
+    });
   });
 });
