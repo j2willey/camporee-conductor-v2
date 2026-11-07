@@ -5,15 +5,18 @@ import type {
   ScoreSubmission,
 } from "@camporee-conductor/collator/types";
 import { useState } from "react";
-import { api, errorMessage, newId, wasRefused } from "../api.ts";
+import { newId } from "../api.ts";
 import { initialEntry, readEntry, type Entry } from "../form.ts";
+import type { SendNowResult } from "../outbox.ts";
+import { outbox } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 import type { Entrant } from "./EntrantPicker.tsx";
 
 /**
  * The Activity's form, built from its fields (Common Fields already merged by the Collator, ADR-0020).
- * A failed send keeps the entry and freezes the exact submission: "Try again" resends it unchanged, same
- * id, so the box never counts it twice (ADR-0027 item 8). Changing it afterwards starts a new score id.
+ * Saving puts the score in the phone's outbox first, then sends it (#41 PR 2). If the box answers within a
+ * few seconds the Judge sees it saved; if not, it's kept on the phone and sent when the box can be reached,
+ * same id, so the box never counts it twice (ADR-0027 item 8). A refusal opens the form again to fix it.
  */
 export function ScoreForm({
   activity,
@@ -25,64 +28,65 @@ export function ScoreForm({
   activity: JudgeActivity;
   entrant: Entrant;
   judge: JudgeIdentity;
-  onSaved: (repeat: boolean) => void;
+  onSaved: (result: Exclude<SendNowResult, { status: "refused" }>) => void;
   onBack: () => void;
 }) {
   const [entry, setEntry] = useState<Entry>(() =>
     initialEntry(activity.fields),
   );
   const [problems, setProblems] = useState<string[]>([]);
-  const [pending, setPending] = useState<ScoreSubmission | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  const send = async (submission: ScoreSubmission) => {
-    setPending(submission);
-    setSending(true);
-    setError(null);
-    try {
-      const { status } = await api.putScore(submission);
-      onSaved(status === "repeat");
-    } catch (e) {
-      // Refused: nothing was stored, and the same entry would be refused again, so open the form to fix it.
-      if (wasRefused(e)) setPending(null);
-      setError(errorMessage(e));
-      setSending(false);
-    }
-  };
-
-  const submit = () => {
+  const submit = async () => {
     const read = readEntry(activity.fields, entry);
     if (!read.ok) {
       setProblems(read.problems);
       return;
     }
     setProblems([]);
-    void send({
+    setRefusal(null);
+    setSaving(true);
+    const { id, ...score }: ScoreSubmission = {
       id: newId(),
       judge,
       activityId: activity.id,
       entrantId: entrant.id,
       values: read.values,
       phoneCreatedAt: new Date().toISOString(),
-    });
+    };
+    const result = await outbox.sendNow(
+      {
+        id,
+        path: `/api/scores/${id}`,
+        body: score,
+        label: `${entrant.label} at ${activity.title}`,
+        queuedAt: score.phoneCreatedAt,
+      },
+      { waitMs: ANSWER_WAIT_MS },
+    );
+    if (result.status === "refused") {
+      // Nothing was stored, and the same entry would be refused again: the form stays open to fix it.
+      setRefusal(result.message);
+      setSaving(false);
+    } else {
+      onSaved(result);
+    }
   };
 
-  const locked = pending !== null;
   return (
     <form
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        if (pending) void send(pending);
-        else submit();
+        void submit();
       }}
     >
       <button
         type="button"
         className={`${ui.link} self-start`}
         onClick={onBack}
-        disabled={sending}
+        disabled={saving}
       >
         ← Back
       </button>
@@ -101,7 +105,7 @@ export function ScoreForm({
           key={field.id}
           field={field}
           value={entry[field.id]}
-          disabled={locked}
+          disabled={saving}
           onChange={(value) => setEntry({ ...entry, [field.id]: value })}
         />
       ))}
@@ -113,34 +117,21 @@ export function ScoreForm({
           ))}
         </ul>
       )}
-      {error && (
+      {refusal && (
         <div className={ui.error} role="alert">
-          <p>Not saved: {error}</p>
-          <p className="mt-1">
-            {locked
-              ? "Your entry is kept. Try again when you're back in range."
-              : "Your entry is kept. Fix it and save again."}
-          </p>
+          <p>Not saved: {refusal}</p>
+          <p className="mt-1">Your entry is kept. Fix it and save again.</p>
         </div>
       )}
-      <button className={ui.button} type="submit" disabled={sending}>
-        {sending ? "Saving…" : locked ? "Try again" : "Save score"}
+      <button className={ui.button} type="submit" disabled={saving}>
+        {saving ? "Saving…" : "Save score"}
       </button>
-      {locked && !sending && (
-        <button
-          type="button"
-          className={ui.buttonQuiet}
-          onClick={() => {
-            setPending(null);
-            setError(null);
-          }}
-        >
-          Change the entry
-        </button>
-      )}
     </form>
   );
 }
+
+/** How long the form waits for the box before telling the Judge the score is kept on the phone. */
+const ANSWER_WAIT_MS = 3000;
 
 function FieldInput({
   field,
