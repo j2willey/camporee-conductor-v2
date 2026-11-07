@@ -20,10 +20,20 @@ export const OTHER_EVENT_ID = "0196cfa2-4c00-7000-8000-0000000000e1";
 
 export const DIRECTOR_EMAIL = "director@example.com";
 
-/** The Circus 2026 bundle; `eventId` swaps in another Event id to make a different Event. */
+type Doc = Record<string, unknown>;
+
+/**
+ * The Circus 2026 bundle; `eventId` swaps in another Event id to make a different Event. `editActivity`
+ * changes a copy of each Activity document, for test cases the fixture doesn't have (the fixture itself
+ * never changes).
+ */
 export function circusBundle({
   eventId = CIRCUS_EVENT_ID,
-}: { eventId?: string } = {}): EventBundle {
+  editActivity = (activity) => activity,
+}: {
+  eventId?: string;
+  editActivity?: (activity: Doc) => Doc;
+} = {}): EventBundle {
   return {
     event: {
       ...read("event.json"),
@@ -34,7 +44,7 @@ export function circusBundle({
     activities: readdirSync(new URL("activities/", FIXTURE))
       .filter((f) => f.endsWith(".json"))
       .sort()
-      .map((f) => read(`activities/${f}`)),
+      .map((f) => editActivity(read(`activities/${f}`))),
     officials: {
       schemaVersion: "4.0",
       kind: "officials",
@@ -53,12 +63,38 @@ export function circusBundle({
 export function circusCartridge({
   eventId,
   profile = "event-day",
-}: { eventId?: string; profile?: CartridgeProfile } = {}): Uint8Array {
+  editActivity,
+}: {
+  eventId?: string;
+  profile?: CartridgeProfile;
+  editActivity?: (activity: Doc) => Doc;
+} = {}): Uint8Array {
   return exportCartridge(
-    circusBundle(eventId === undefined ? {} : { eventId }),
+    circusBundle({
+      ...(eventId !== undefined && { eventId }),
+      ...(editActivity && { editActivity }),
+    }),
     profile,
     { exportedAt: new Date("2027-05-10T18:00:00Z") },
   );
+}
+
+/**
+ * An `editActivity` that changes the own fields (not Common Fields) of the Activity with this id: `edit`
+ * gets a copy of them and returns the new list.
+ */
+export function editFields(
+  activityId: string,
+  edit: (fields: Doc[]) => Doc[],
+): (activity: Doc) => Doc {
+  return (activity) => {
+    if (activity["id"] !== activityId) return activity;
+    const scoring = activity["scoring"] as { fields: Doc[] };
+    return {
+      ...activity,
+      scoring: { ...scoring, fields: edit(structuredClone(scoring.fields)) },
+    };
+  };
 }
 
 /** A fresh in-memory Collator database. */
