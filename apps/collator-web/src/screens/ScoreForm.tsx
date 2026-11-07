@@ -9,6 +9,7 @@ import { newId } from "../api.ts";
 import type { Draft } from "../drafts.ts";
 import { initialEntry, readEntry } from "../form.ts";
 import type { SendNowResult } from "../outbox.ts";
+import { closing } from "../phone-closing.ts";
 import { drafts } from "../phone-drafts.ts";
 import { answerWaitMs, outbox } from "../phone-outbox.ts";
 import {
@@ -111,6 +112,7 @@ export function ScoreForm({
       setSaving(false);
     } else {
       drafts.clear(activity.id, entrant.id);
+      closing.scored(judge.id, activity.id, id);
       onSaved(result);
     }
   };

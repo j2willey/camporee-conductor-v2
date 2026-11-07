@@ -2,6 +2,7 @@
 // nothing here pulls server code into the browser.
 export { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 export type { SignedInOfficial } from "./app.ts";
+export type { ClosureSubmission, ClosureView } from "./closures.ts";
 export type {
   JudgeActivity,
   JudgeCompetition,

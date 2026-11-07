@@ -94,6 +94,46 @@ export function OfficialActivityView({
       </section>
 
       <section className="flex flex-col gap-2">
+        <h2 className={ui.h2}>Judges' closures</h2>
+        {view.closures.length === 0 ? (
+          <p className={ui.muted}>No Judge has closed this Activity yet.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {view.closures.map((c, i) => (
+              <li
+                key={i}
+                className={
+                  c.missing.length > 0 || c.scoredSince > 0
+                    ? ui.warning
+                    : ui.note
+                }
+              >
+                <p>
+                  <strong>{c.judge.name}</strong>
+                  {c.judge.homeGroup && ` (${c.judge.homeGroup})`} closed it
+                  with{" "}
+                  {c.scoreCount === 1 ? "1 score" : `${c.scoreCount} scores`}
+                  {c.missing.length === 0 &&
+                    c.scoredSince === 0 &&
+                    ": all here."}
+                </p>
+                {c.missing.length > 0 && (
+                  <p>
+                    {c.missing.length === 1
+                      ? "1 of them hasn't reached the box."
+                      : `${c.missing.length} of them haven't reached the box.`}
+                  </p>
+                )}
+                {c.scoredSince > 0 && (
+                  <p>Then scored {c.scoredSince} more: reopened.</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2">
         <h2 className={ui.h2}>Score entries received</h2>
         {view.entries.length === 0 && (
           <p className={ui.muted}>None received yet.</p>

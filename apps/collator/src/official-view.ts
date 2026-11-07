@@ -10,6 +10,7 @@ import {
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
+import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
 import {
   judgeList,
   roster,
@@ -44,6 +45,10 @@ export interface OfficialEvent {
   event: JudgeEvent["event"];
   activities: (Omit<JudgeEvent["activities"][number], "fields"> & {
     entryCount: number;
+    /** Judges whose newest closure here still stands (#41 PR 6). */
+    closedBy: number;
+    /** Closures an Official should look at: scores missing, or scored again since. */
+    closureProblems: number;
   })[];
 }
 
@@ -55,12 +60,17 @@ export function officialEvent(
   const { event, activities } = judgeEvent(bundle);
   return {
     event,
-    activities: activities.map(({ id, title, competition }) => ({
-      id,
-      title,
-      competition,
-      entryCount: entries.filter((e) => e.activityId === id).length,
-    })),
+    activities: activities.map(({ id, title, competition }) => {
+      const closures = closuresAt(db, id);
+      return {
+        id,
+        title,
+        competition,
+        entryCount: entries.filter((e) => e.activityId === id).length,
+        closedBy: closures.filter((c) => c.scoredSince === 0).length,
+        closureProblems: closures.filter(closureProblem).length,
+      };
+    }),
   };
 }
 
@@ -92,6 +102,10 @@ export interface OfficialActivity {
     /** The newest received for this entrant, so the one the ranking uses (ADR-0027 item 9). */
     counts: boolean;
   }[];
+  /** Each Judge's newest closure here (#41 PR 6), in the order received. */
+  closures: (Omit<ClosureView, "judgeId"> & {
+    judge: { name: string; homeGroup?: string };
+  })[];
 }
 
 /** One Activity for Officials, or undefined if the Event doesn't have it. */
@@ -162,6 +176,10 @@ export function officialActivity(
         phoneCreatedAt: e.phoneCreatedAt,
         counts: counting.has(e.id),
       })),
+    closures: closuresAt(db, activityId).map(({ judgeId, ...closure }) => ({
+      judge: judgeShown(judgeById.get(judgeId), judgeId),
+      ...closure,
+    })),
   };
 }
 

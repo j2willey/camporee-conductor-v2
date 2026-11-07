@@ -1,6 +1,7 @@
 import type {
   Group,
   JudgeActivity,
+  JudgeIdentity,
   JudgeLabels,
   Roster,
   Team,
@@ -20,6 +21,7 @@ import {
 import { drafts } from "../phone-drafts.ts";
 import { answerWaitMs, outbox, useOutboxItems } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
+import { CloseActivity } from "./CloseActivity.tsx";
 import { LoadProblem } from "./LoadProblem.tsx";
 
 /** Who's being scored: a Team, or a Group at a Group-level Activity. */
@@ -39,11 +41,13 @@ export interface Entrant {
 export function EntrantPicker({
   activity,
   labels,
+  judge,
   onPick,
   onBack,
 }: {
   activity: JudgeActivity;
   labels: JudgeLabels;
+  judge: JudgeIdentity;
   onPick: (entrant: Entrant) => void;
   onBack: () => void;
 }) {
@@ -150,6 +154,7 @@ export function EntrantPicker({
           {label} not listed? Add one
         </button>
       )}
+      <CloseActivity activity={activity} judge={judge} />
     </section>
   );
 }

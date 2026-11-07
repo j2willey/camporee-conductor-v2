@@ -89,3 +89,27 @@ export const scoreEntries = sqliteTable(
   },
   (t) => [index("score_entries_activity").on(t.activityId)],
 );
+
+/**
+ * A Judge closing an Activity (#41 PR 6, v1's "I'm done, close game"): the ids of every score their phone
+ * saved there, so the box can say whether it has them all. Keyed by an id the phone made; never
+ * overwritten. `afterScoreSeq` is the newest score entry's `receivedSeq` when it arrived: a score from the
+ * same Judge at the same Activity after that means they scored again, which reopens it.
+ */
+export const activityClosures = sqliteTable(
+  "activity_closures",
+  {
+    receivedSeq: integer("received_seq").primaryKey({ autoIncrement: true }),
+    id: text("id").notNull().unique(),
+    judgeId: text("judge_id")
+      .notNull()
+      .references(() => judges.id),
+    activityId: text("activity_id").notNull(),
+    /** JSON array of score entry ids. */
+    scoreIds: text("score_ids").notNull(),
+    afterScoreSeq: integer("after_score_seq").notNull(),
+    phoneCreatedAt: text("phone_created_at").notNull(),
+    receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("activity_closures_activity").on(t.activityId)],
+);

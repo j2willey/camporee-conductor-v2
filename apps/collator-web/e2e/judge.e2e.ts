@@ -12,6 +12,7 @@ import Database from "better-sqlite3";
 // page shows its build; a box it can't reach comes with the Nearby devices hint.
 // #41 PR 4: a half-filled form and a running stopwatch survive a reload; Stop gives the m:ss saved.
 // #41 PR 5: one Competition's Activities at a time, remembered; the Judge's home unit reaches Officials.
+// #41 PR 6: a Judge closes an Activity once everything has gone; Officials see it, and a reopen.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -433,6 +434,66 @@ test("the Activity list shows one Competition at a time, remembered, and a Judge
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.getByRole("button", { name: /Clown Car/ }).click();
   await expect(page.getByText("from Sam Judge (Troop 7)")).toBeVisible();
+});
+
+test("a Judge closes an Activity once their scores have gone, and Officials see it, then the reopen", async ({
+  page,
+  context,
+}) => {
+  await startJudging(page);
+  const close = page.getByRole("button", { name: "I'm done: close Clown Car" });
+
+  // Out of range, a score is still on the phone: closing waits for it.
+  await page
+    .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+    .waitFor();
+  await context.setOffline(true);
+  await scoreFlamingArrows(page);
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await expect(close).toHaveCount(0);
+  await expect(
+    page.getByText("1 of your scores here is still waiting to send."),
+  ).toBeVisible();
+
+  // Back in range: it goes, and the box confirms it has it.
+  await context.setOffline(false);
+  await expect(waitingToSend(page)).toHaveCount(0, { timeout: 10_000 });
+  await close.click();
+  await expect(
+    page.getByText("Closed. The box has your score at Clown Car."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "← Activities" }).click();
+  await expect(page.getByRole("button", { name: /^Clown Car/ })).toContainText(
+    "Closed",
+  );
+
+  // The Official view.
+  const official = await context.newPage();
+  await official.goto("/official");
+  await official.getByLabel("Email").fill("lead.judge@example.com");
+  await official.getByRole("button", { name: "Sign in" }).click();
+  await expect(
+    official.getByRole("button", { name: /Clown Car/ }),
+  ).toContainText("Closed by 1");
+  await official.getByRole("button", { name: /Clown Car/ }).click();
+  await expect(
+    official.getByText("Alex Judge closed it with 1 score: all here."),
+  ).toBeVisible();
+
+  // Scoring there again reopens it, on the phone and for Officials.
+  await page.getByRole("button", { name: /^Clown Car/ }).click();
+  await scoreFlamingArrows(page);
+  await expect(page.getByText(/^Score saved:/)).toBeVisible();
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await expect(close).toBeVisible();
+  await official.reload();
+  await expect(
+    official.getByRole("button", { name: /Clown Car/ }),
+  ).toContainText("Check closures");
+  await official.getByRole("button", { name: /Clown Car/ }).click();
+  await expect(
+    official.getByText("Then scored 1 more: reopened."),
+  ).toBeVisible();
 });
 
 test.describe("without the service worker", () => {

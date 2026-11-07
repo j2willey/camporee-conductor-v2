@@ -19,10 +19,13 @@ const LAST_KEY = "collator.lastActivity";
 export function ActivityList({
   activities,
   competitions,
+  closed,
   onPick,
 }: {
   activities: readonly JudgeActivity[];
   competitions: readonly JudgeCompetition[] | undefined;
+  /** The Activities this Judge has closed (#41 PR 6). */
+  closed: ReadonlySet<string>;
   onPick: (activity: JudgeActivity) => void;
 }) {
   const tabs = competitionTabs(activities, competitions);
@@ -72,10 +75,15 @@ export function ActivityList({
           .map((activity) => (
             <button
               key={activity.id}
-              className={ui.choice}
+              className={`${ui.choice} flex items-center justify-between gap-2`}
               onClick={() => pick(activity)}
             >
               {activity.title}
+              {closed.has(activity.id) && (
+                <span className="rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-900">
+                  Closed
+                </span>
+              )}
             </button>
           ))}
       </div>

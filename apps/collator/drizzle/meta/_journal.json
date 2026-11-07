@@ -15,6 +15,13 @@
       "when": 1794088854700,
       "tag": "0001_judge_home_group",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794092222919,
+      "tag": "0002_activity_closures",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { isScore } from "../offline-data.ts";
 import type { OutboxItem } from "../outbox.ts";
+import { closing } from "../phone-closing.ts";
 import { outbox, useOutboxItems } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 
@@ -48,7 +49,16 @@ export function OutboxStatus() {
           <button
             type="button"
             className={`${ui.link} mt-1`}
-            onClick={() => outbox.discard(item.id)}
+            onClick={() => {
+              // A discarded score never reaches the box: a closure mustn't name it (#41 PR 6).
+              const score = item.body as {
+                judge?: { id: string };
+                activityId?: string;
+              };
+              if (isScore(item) && score.judge && score.activityId)
+                closing.forget(score.judge.id, score.activityId, item.id);
+              outbox.discard(item.id);
+            }}
           >
             Discard
           </button>

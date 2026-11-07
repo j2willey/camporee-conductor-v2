@@ -1,5 +1,6 @@
 import {
   OFFICIAL_EMAIL_HEADER,
+  type ClosureSubmission,
   type Group,
   type JudgeEvent,
   type OfficialActivity,
@@ -83,6 +84,16 @@ export const api = {
     put(`/api/groups/${group.id}`, { name: group.name }),
   putTeam: (team: Team) =>
     put(`/api/teams/${team.id}`, { groupId: team.groupId, name: team.name }),
+  /** Close an Activity (#41 PR 6): the box answers which of the scores it has. */
+  putClosure: (id: string, closure: Omit<ClosureSubmission, "id">) =>
+    call<{ status: "created" | "repeat"; have: number; missing: string[] }>(
+      `/api/closures/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(closure),
+      },
+    ),
   /** Resending the same id is always safe: the box answers "repeat" (ADR-0027 item 8). */
   putScore: ({ id, ...score }: ScoreSubmission) =>
     put(`/api/scores/${id}`, score),
