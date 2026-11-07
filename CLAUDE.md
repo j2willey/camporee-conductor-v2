@@ -83,11 +83,12 @@ pnpm --filter @camporee-conductor/composer-api db:generate  # new migration afte
 pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> packages/schema/fixtures/circus-2026  # owner + Org + Event
 pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
 
-# Collator (apps/collator), :3030, collator.db (#40). One Event per box; no accounts for Judges.
+# Collator (apps/collator), :3030, collator.db (#40). One Event per box; no accounts for Judges. Officials
+# sign in at /official with an email on the cartridge's officials.json (an email-only gate, ADR-0027 item 5).
 pnpm --filter @camporee-conductor/collator load-cartridge <event-day-cartridge.zip>
-pnpm --filter @camporee-conductor/collator start            # WEB_ROOT=apps/collator-web/dist serves the built judge page
-pnpm --filter @camporee-conductor/collator-web dev          # judge page on :5174, proxies to the Collator
-pnpm --filter @camporee-conductor/collator-web e2e          # Playwright: judge page on a phone-sized browser, :3040
+pnpm --filter @camporee-conductor/collator start            # WEB_ROOT=apps/collator-web/dist serves the built web app
+pnpm --filter @camporee-conductor/collator-web dev          # judge page on :5174 (Official view at /official), proxies to the Collator
+pnpm --filter @camporee-conductor/collator-web e2e          # Playwright: judge page and Official view on a phone-sized browser, :3040
 pnpm --filter @camporee-conductor/collator db:generate     # new migration after changing src/db/schema.ts
 
 # One image: the API serving the built app (Clerk keys at run time; dev sign-in refused)
@@ -113,8 +114,9 @@ apps/composer-api/  Composer API: Hono, SQLite/Drizzle, auth module (Clerk + dev
 apps/composer-web/  Composer web app: React + Vite SPA (React Router library mode), TanStack Query, Tailwind;
                     e2e/ is the Playwright smoke test
 apps/collator/      Collator: the on-site event-day server (ADR-0027). Hono, SQLite/Drizzle; loads an event-day
-                    cartridge; roster and score entries keyed by phone-made ids (#40)
-apps/collator-web/  Collator web app: the judge page (React + Vite, Tailwind), served by the Collator; no accounts
+                    cartridge; roster and score entries keyed by phone-made ids; read-only Official view API (#40)
+apps/collator-web/  Collator web app (React + Vite, Tailwind), served by the Collator: the judge page at / (no
+                    accounts) and the Official view at /official
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```

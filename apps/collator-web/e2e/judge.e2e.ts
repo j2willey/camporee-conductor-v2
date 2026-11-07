@@ -4,7 +4,8 @@ import Database from "better-sqlite3";
 
 // #40 PR 2: a Judge with no account scores a newly added Patrol at Clown Car; a resend after a lost reply
 // doesn't duplicate the score; adding the same Patrol again is caught by the name warning.
-// Test 2 uses the Patrol test 1 adds, so they run in order.
+// #40 PR 3: an Official listed in the cartridge sees that score ranked; an unlisted email is refused.
+// Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
 const DB = resolve(import.meta.dirname, "../test-results/judge.db");
@@ -127,4 +128,51 @@ test("adding a Patrol that's already listed warns and offers the existing one", 
   ).toBeVisible();
   expect(count("teams")).toBe(1);
   expect(count("groups")).toBe(1);
+});
+
+test("an Official on the cartridge's list sees the score ranked; an unlisted email is refused", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await expect(page.getByRole("heading", { name: "Officials" })).toBeVisible();
+
+  // A Judge's email isn't an Official's: the gate refuses it (ADR-0027 item 5).
+  await page.getByLabel("Email").fill("alex@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "alex@example.com isn't on this Event's list of Officials.",
+  );
+  await expect(page.getByRole("heading", { name: "Activities" })).toHaveCount(
+    0,
+  );
+
+  // Listed in the event-day cartridge (apps/collator/src/test-support.ts); case doesn't matter.
+  await page.getByLabel("Email").fill("Lead.Judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Activities" })).toBeVisible();
+  await page.getByRole("button", { name: /Clown Car/ }).click();
+
+  await expect(page.getByRole("heading", { name: "Clown Car" })).toBeVisible();
+  const rows = page.getByRole("table").getByRole("row");
+  await expect(rows).toHaveCount(2);
+  // 7 clowns + 5 for the flag + Midway Mite's default 6, totalled by packages/scoring.
+  await expect(rows.nth(1).getByRole("cell")).toHaveText([
+    "1st",
+    "Flaming Arrows (Troop 101)",
+    "18",
+  ]);
+  await expect(
+    page.getByRole("columnheader", { name: "Patrol" }),
+  ).toBeVisible();
+  // The raw entry, with the Judge's name and the values as entered.
+  await expect(page.getByText("from Alex Judge")).toBeVisible();
+  await expect(page.getByText("Big Top Cruiser Clowns")).toBeVisible();
+
+  // The email is kept on this device: a reload stays signed in, checked again by the box.
+  await page.reload();
+  await expect(page.getByText("Signed in as")).toContainText(
+    "lead.judge@example.com",
+  );
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("heading", { name: "Officials" })).toBeVisible();
 });

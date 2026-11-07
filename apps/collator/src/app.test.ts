@@ -7,7 +7,9 @@ import {
   CIRCUS_EVENT_ID,
   circusCartridge,
   CLOWN_CAR,
+  editFields,
   GROUP_ACTIVITY,
+  HIGH_WIRE,
   SHOWTIME,
   testDb,
 } from "./test-support.ts";
@@ -40,7 +42,12 @@ const score = (overrides: Record<string, unknown> = {}) => ({
 
 /** Loads Circus 2026 and adds Troop 101 with one Team, as a Judge's phone would. */
 async function withRoster() {
-  const load = loadEventCartridge(db, circusCartridge());
+  await loadWithRoster(circusCartridge());
+}
+
+/** Loads this cartridge and adds Troop 101 with one Team. */
+async function loadWithRoster(cartridge: Uint8Array) {
+  const load = loadEventCartridge(db, cartridge);
   if (!load.ok) throw new Error(load.issues.join("\n"));
   expect((await put("/api/groups/group-1", { name: "Troop 101" })).status).toBe(
     201,
@@ -288,6 +295,18 @@ describe("the box re-checks number ranges: it's the record of truth on event day
     expect((await withValue("lots")).status).toBe(400);
   });
 
+  it("names the field as the phone does, with the Activity's {{variables}} filled in", async () => {
+    // Clown Car's 10 Essentials Common Field is "10 Essentials: {{ten_essentials}}"; its item is Buddy.
+    const res = await put(
+      "/api/scores/score-1",
+      score({ values: { ten_ess: "lots" } }),
+    );
+    expect(res.status).toBe(400);
+    const { error } = (await res.json()) as { error: string };
+    expect(error).toMatch(/10 Essentials: Buddy must be a number/);
+    expect(error).not.toMatch(/\{\{/);
+  });
+
   it("accepts any number for a field with no range", async () => {
     const res = await put(
       "/api/scores/score-1",
@@ -297,5 +316,101 @@ describe("the box re-checks number ranges: it's the record of truth on event day
       }),
     );
     expect(res.status).toBe(201);
+  });
+});
+
+describe("the box checks required fields and select options, as the phone does", () => {
+  // The fixture has neither, so these tests add them to a copy of the design (#40 PR 3).
+  const PICK = "costume";
+  const designWith = (edit: (fields: Record<string, unknown>[]) => void) =>
+    circusCartridge({
+      editActivity: editFields(CLOWN_CAR.id, (fields) => {
+        edit(fields);
+        return fields;
+      }),
+    });
+  const requiredOwnField = (fields: Record<string, unknown>[]) => {
+    const own = fields.find((f) => f["id"] === CLOWN_CAR.ownField);
+    if (own) own["required"] = true;
+  };
+
+  it("refuses a score with a required Judge field left out, saying which, and stores nothing", async () => {
+    await loadWithRoster(designWith(requiredOwnField));
+    const res = await put(
+      "/api/scores/score-1",
+      score({ values: { [CLOWN_CAR.commonField]: 5 } }),
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: expect.stringMatching(/Big Top Cruiser Clowns is required/),
+    });
+    expect(scoreEntries(db)).toHaveLength(0);
+  });
+
+  it("refuses a required Judge field sent blank", async () => {
+    await loadWithRoster(designWith(requiredOwnField));
+    for (const blank of [null, "", "  "]) {
+      const res = await put(
+        "/api/scores/score-1",
+        score({ values: { [CLOWN_CAR.ownField]: blank } }),
+      );
+      expect(res.status).toBe(400);
+    }
+    expect(scoreEntries(db)).toHaveLength(0);
+  });
+
+  it("accepts the score once the required field is filled in", async () => {
+    await loadWithRoster(designWith(requiredOwnField));
+    expect((await put("/api/scores/score-1", score())).status).toBe(201);
+  });
+
+  it("doesn't hold a Judge to a required field only Officials enter", async () => {
+    await loadWithRoster(
+      circusCartridge({
+        editActivity: editFields(HIGH_WIRE.id, (fields) =>
+          fields.map((f) =>
+            f["id"] === HIGH_WIRE.officialField ? { ...f, required: true } : f,
+          ),
+        ),
+      }),
+    );
+    const res = await put(
+      "/api/scores/score-1",
+      score({
+        activityId: HIGH_WIRE.id,
+        values: { [HIGH_WIRE.judgeField]: 3 },
+      }),
+    );
+    expect(res.status).toBe(201);
+  });
+
+  it("refuses a select value that isn't one of its options", async () => {
+    await loadWithRoster(
+      designWith((fields) =>
+        fields.push({
+          id: PICK,
+          label: "Costume",
+          type: "select",
+          kind: "info",
+          audience: "judge",
+          sortOrder: 99,
+          config: { options: ["Clown", "Ringmaster"] },
+        }),
+      ),
+    );
+    const refused = await put(
+      "/api/scores/score-1",
+      score({ values: { [PICK]: "Lion" } }),
+    );
+    expect(refused.status).toBe(400);
+    expect(await refused.text()).toMatch(
+      /Costume must be one of the listed options/,
+    );
+    expect(scoreEntries(db)).toHaveLength(0);
+    const accepted = await put(
+      "/api/scores/score-1",
+      score({ values: { [PICK]: "Clown" } }),
+    );
+    expect(accepted.status).toBe(201);
   });
 });

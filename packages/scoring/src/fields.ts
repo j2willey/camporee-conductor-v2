@@ -66,17 +66,28 @@ export function fillVariables(
 }
 
 /**
- * What's wrong with an entered value for its field, or undefined if nothing is. Number fields must hold
- * a number (or text that reads as one, as scoring reads it) within the field's min/max. A blank is
- * "not entered" and passes; other field types aren't checked here. The judge page and the Collator both
- * use this, so the box refuses what the phone would (#40).
+ * What's wrong with an entered value for its field, or undefined if nothing is. The judge page and the
+ * Collator both use this, so the box refuses what the phone would (#40).
+ * - A blank (null, missing, or text that's empty or only spaces) is "not entered": a problem only if the
+ *   field is `required`. An unticked checkbox (`false`) is a value, not a blank. Which fields a caller
+ *   holds to `required` is its choice: a Judge's entry is checked against Judge fields only.
+ * - A number field must hold a number (or text that reads as one, as scoring reads it) within its min/max.
+ * - A select field must hold one of its `options`, exactly.
+ * Other field types aren't checked here.
  */
 export function valueProblem(
-  field: Pick<ScoringField, "type" | "label" | "config">,
+  field: Pick<ScoringField, "type" | "label" | "config" | "required">,
   value: FieldValue | undefined,
 ): string | undefined {
+  if (isBlank(value)) {
+    return field.required ? `${field.label} is required` : undefined;
+  }
+  if (field.type === "select") {
+    return (field.config?.options ?? []).some((option) => option === value)
+      ? undefined
+      : `${field.label} must be one of the listed options`;
+  }
   if (field.type !== "number") return undefined;
-  if (value === null || value === undefined || value === "") return undefined;
   const n = numberOf(value);
   if (n === undefined) return `${field.label} must be a number`;
   const { min, max } = field.config ?? {};
@@ -89,6 +100,15 @@ export function valueProblem(
       : `${field.label} must be at most ${max}`;
   }
   return undefined;
+}
+
+/** Nothing entered: null, missing, or text that's empty or only spaces. */
+function isBlank(value: FieldValue | undefined): boolean {
+  return (
+    value === null ||
+    value === undefined ||
+    (typeof value === "string" && value.trim() === "")
+  );
 }
 
 /** A numeric reading of an entered value, or undefined if it isn't a number. */

@@ -35,26 +35,22 @@ export function readEntry(
   const problems: string[] = [];
   for (const f of fields) {
     const raw = entry[f.id];
-    if (f.type === "checkbox") {
-      values[f.id] = raw === true;
-      continue;
-    }
-    const text = typeof raw === "string" ? raw.trim() : "";
-    if (text === "") {
-      if (f.required) problems.push(`${f.label} is required`);
-      continue;
-    }
-    if (f.type !== "number") {
-      values[f.id] = text;
-      continue;
-    }
-    // The same check the Collator makes (packages/scoring), so the phone and the box agree.
-    const problem = valueProblem(f, text);
+    const value =
+      f.type === "checkbox"
+        ? raw === true
+        : typeof raw === "string"
+          ? raw.trim()
+          : "";
+    // The same check the Collator makes (packages/scoring): required fields, number ranges and select
+    // options, so the phone and the box agree.
+    const problem = valueProblem(f, value);
     if (problem) {
       problems.push(problem);
       continue;
     }
-    values[f.id] = Number(text);
+    if (value === "") continue;
+    values[f.id] =
+      f.type === "number" && typeof value === "string" ? Number(value) : value;
   }
   return problems.length > 0 ? { ok: false, problems } : { ok: true, values };
 }

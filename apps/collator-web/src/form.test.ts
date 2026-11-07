@@ -64,6 +64,28 @@ describe("readEntry: what the Judge typed → the score's values", () => {
     });
   });
 
+  it("refuses a select value that isn't one of its options, as the box does", () => {
+    const result = readEntry(
+      [
+        field("pick", "select", {
+          label: "Costume",
+          config: { options: ["Red", "Blue"] },
+        }),
+      ],
+      { pick: "Green" },
+    );
+    expect(result).toEqual({
+      ok: false,
+      problems: ["Costume must be one of the listed options"],
+    });
+  });
+
+  it("takes a required checkbox left unticked as a value", () => {
+    expect(
+      readEntry([field("ok", "checkbox", { required: true })], { ok: false }),
+    ).toEqual({ ok: true, values: { ok: false } });
+  });
+
   it("refuses a number outside the field's range, or not a number", () => {
     const result = readEntry(
       [

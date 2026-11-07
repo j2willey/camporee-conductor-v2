@@ -1,4 +1,6 @@
+import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import { serveStatic } from "@hono/node-server/serve-static";
+import type { Official } from "@camporee-conductor/schema";
 import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
@@ -6,6 +8,12 @@ import { z } from "zod";
 import type { Db } from "./db/open.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
+import {
+  normalEmail,
+  officialActivity,
+  officialByEmail,
+  officialEvent,
+} from "./official-view.ts";
 import {
   recordGroup,
   recordScore,
@@ -50,6 +58,61 @@ const idParam = validator("param", (value: Record<string, string>) => {
   if (!id.success) throw new HTTPException(400, { message: "bad id" });
   return { id: id.data };
 });
+
+/** The header the Official page sends its email in, on every call. */
+export const OFFICIAL_EMAIL_HEADER = "x-official-email";
+
+/**
+ * The Official view's API (#40 PR 3). Every call is checked against the loaded Event's Officials list.
+ * Read-only: edits, DQ, finalize and conflicts are #42.
+ */
+function officialRoutes(db: Db) {
+  const routes = new Hono<{
+    Variables: { official: Official; bundle: CheckedBundle };
+  }>();
+
+  // The Official gate (ADR-0027 item 5). This is an email-only gate, not authentication: it keeps casual
+  // visitors out of the Official view; it doesn't stop someone who knows an Official's email. No passwords,
+  // tokens or sessions: the page sends the email on every call and it's checked again here each time.
+  routes.use(async (c, next) => {
+    const event = loadedEvent(db);
+    if (!event) {
+      return c.json({ error: "no Event is loaded on this box yet" }, 409);
+    }
+    const email = c.req.header(OFFICIAL_EMAIL_HEADER)?.trim() ?? "";
+    if (email === "") {
+      return c.json({ error: "Sign in with an Official's email." }, 401);
+    }
+    const official = officialByEmail(event.bundle, email);
+    if (!official) {
+      return c.json(
+        {
+          error: `${normalEmail(email)} isn't on this Event's list of Officials.`,
+        },
+        403,
+      );
+    }
+    c.set("official", official);
+    c.set("bundle", event.bundle);
+    await next();
+  });
+
+  routes.get("/me", (c) => {
+    const { email, name, role } = c.get("official");
+    return c.json({ email: normalEmail(email), name, role });
+  });
+
+  routes.get("/event", (c) => c.json(officialEvent(db, c.get("bundle"))));
+
+  routes.get("/activities/:id", (c) => {
+    const found = officialActivity(db, c.get("bundle"), c.req.param("id"));
+    return found
+      ? c.json(found)
+      : c.json({ error: "no such Activity in the loaded Event" }, 404);
+  });
+
+  return routes;
+}
 
 /** created → 201, repeat → 200; a refusal says why. */
 function reply(c: Context, result: Recorded) {
@@ -114,6 +177,8 @@ export function createApp({
       recordScore(db, { id: c.req.valid("param").id, ...c.req.valid("json") }),
     ),
   );
+
+  app.route("/api/official", officialRoutes(db));
 
   app.onError((error, c) => {
     if (error instanceof HTTPException) {

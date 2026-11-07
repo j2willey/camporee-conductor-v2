@@ -1,5 +1,7 @@
 import type {
   JudgeEvent,
+  OfficialActivity,
+  OfficialEvent,
   ScoreSubmission,
 } from "@camporee-conductor/collator/types";
 
@@ -65,6 +67,28 @@ const put = (path: string, body: unknown) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
+
+export interface SignedInOfficial {
+  email: string;
+  name?: string;
+  role: "director" | "official";
+}
+
+/** An Official call: the email goes with every one, and the box checks it each time (ADR-0027 item 5). */
+const asOfficial = <T>(email: string, path: string) =>
+  call<T>(`/api/official${path}`, {
+    headers: { "x-official-email": email },
+  });
+
+export const officialApi = {
+  me: (email: string) => asOfficial<SignedInOfficial>(email, "/me"),
+  event: (email: string) => asOfficial<OfficialEvent>(email, "/event"),
+  activity: (email: string, activityId: string) =>
+    asOfficial<OfficialActivity>(
+      email,
+      `/activities/${encodeURIComponent(activityId)}`,
+    ),
+};
 
 export const api = {
   event: () => call<JudgeEvent>("/api/event"),

@@ -1,4 +1,8 @@
-import { valueProblem, type FieldValue } from "@camporee-conductor/scoring";
+import {
+  fillVariables,
+  valueProblem,
+  type FieldValue,
+} from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import {
@@ -137,12 +141,15 @@ export function recordScore(db: Db, score: ScoreSubmission): Recorded {
       `${officialOnly.join(", ")} at ${activity.title}: entered by Officials, not Judges`,
     );
   }
-  // The same check the phone makes: the box is the record of truth, whatever the client.
-  const problems = Object.entries(score.values).flatMap(([id, value]) => {
-    const field = byId.get(id);
-    const problem = field && valueProblem(field, value);
-    return problem ? [problem] : [];
-  });
+  // The same check the phone makes, on every Judge field, sent or not (a required one may be missing):
+  // the box is the record of truth, whatever the client. Officials fill in their fields later. Labels get
+  // the Activity's {{variables}} first, so a refusal names the field as the phone shows it.
+  const problems = fillVariables(fields, activity.variables ?? {})
+    .filter((field) => field.audience === "judge")
+    .flatMap((field) => {
+      const problem = valueProblem(field, score.values[field.id]);
+      return problem ? [problem] : [];
+    });
   if (problems.length > 0) {
     return invalid(`${activity.title}: ${problems.join("; ")}`);
   }
