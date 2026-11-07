@@ -60,7 +60,14 @@ export function backupNow(
       error: `couldn't write a backup to ${dir}: ${(error as Error).message}`,
     };
   }
-  return { ok: true, file, pruned: prune(dir, keep) };
+  // The backup is safe on the stick; failing to tidy up (the stick pulled just now) mustn't fail it or throw.
+  let pruned: string[] = [];
+  try {
+    pruned = prune(dir, keep, now);
+  } catch {
+    // The next run prunes.
+  }
+  return { ok: true, file, pruned };
 }
 
 function folderProblem(dir: string): string | null {
@@ -72,8 +79,11 @@ function folderProblem(dir: string): string | null {
   return null;
 }
 
-/** Deletes all but the newest `keep` backups, and any half-written ones left by an interruption. */
-function prune(dir: string, keep: number): string[] {
+/** A half-written backup older than this was interrupted; a newer one may still be being written. */
+const ABANDONED_AFTER_MS = 10 * 60_000;
+
+/** Deletes all but the newest `keep` backups, and half-written ones left by an interruption. */
+function prune(dir: string, keep: number, now: Date): string[] {
   const names = readdirSync(dir);
   const old = names
     .filter((n) => BACKUP_NAME.test(n))
@@ -81,7 +91,11 @@ function prune(dir: string, keep: number): string[] {
     .reverse()
     .slice(keep);
   for (const n of names.filter((n) => PARTIAL.test(n))) {
-    rmSync(join(dir, n), { force: true });
+    const path = join(dir, n);
+    // Another writer (the backup-now CLI beside the server's timer) may be mid-write: leave fresh ones.
+    if (now.getTime() - statSync(path).mtimeMs > ABANDONED_AFTER_MS) {
+      rmSync(path, { force: true });
+    }
   }
   const pruned = old.sort().map((n) => join(dir, n));
   for (const file of pruned) rmSync(file, { force: true });
@@ -111,9 +125,14 @@ export function scheduleBackups(
   },
 ): BackupSchedule {
   const run = () => {
-    const result = backupNow(db, { dir, keep });
-    if (result.ok) log.info(`backup written: ${result.file}`);
-    else log.error(`backup failed: ${result.error}`);
+    // backupNow doesn't throw; the catch is a last guard, since a throw from a timer would stop the server.
+    try {
+      const result = backupNow(db, { dir, keep });
+      if (result.ok) log.info(`backup written: ${result.file}`);
+      else log.error(`backup failed: ${result.error}`);
+    } catch (error) {
+      log.error(`backup failed: ${(error as Error).message}`);
+    }
   };
   run();
   const timer = setInterval(run, everyMinutes * 60_000);

@@ -4,7 +4,11 @@
 # box itself then needs no internet. Caddy serves the result with TLS_MODE=files (compose.tls-files.yaml).
 #
 # Usage: deploy/collator/issue-cert.sh            issue the certificate, then check its expiry
+#        deploy/collator/issue-cert.sh --renew    issue a fresh one even if the current one isn't near expiry
+#                                                 (certbot otherwise keeps it until its last 30 days): use this
+#                                                 in the weeks before the event so it lasts past the end + 7 days
 #        deploy/collator/issue-cert.sh --print    print the docker command it would run, and stop
+#                                                 (--print --renew: the renewing command)
 #        deploy/collator/issue-cert.sh --check    only check the expiry of the certificate already in CERTS_DIR
 #        deploy/collator/issue-cert.sh --help
 #
@@ -25,13 +29,16 @@ set -euo pipefail
 usage() { sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//'; }
 
 mode=issue
-case "${1:-}" in
-  "") ;;
-  --print) mode=print ;;
-  --check) mode=check ;;
-  -h | --help) usage; exit 0 ;;
-  *) echo "unknown option: $1 (see --help)" >&2; exit 2 ;;
-esac
+renewal=--keep-until-expiring
+for arg in "$@"; do
+  case "$arg" in
+    --print) mode=print ;;
+    --check) mode=check ;;
+    --renew) renewal=--force-renewal ;;
+    -h | --help) usage; exit 0 ;;
+    *) echo "unknown option: $arg (see --help)" >&2; exit 2 ;;
+  esac
+done
 
 host=${COLLATOR_HOSTNAME:-judge.camporeeconductor.com}
 ini=${CLOUDFLARE_INI:-$HOME/.secrets/cloudflare-camporeeconductor.ini}
@@ -59,7 +66,7 @@ check_expiry() {
   end_epoch=$(date -u -d "$end" +%s)
   echo "certificate for $host expires: $end ($(date -u -d "@$end_epoch" +%F))"
   if [ "$end_epoch" -lt "$deadline_epoch" ]; then
-    echo "WARNING: it expires before $deadline (CERT_MUST_LAST_UNTIL: the event's end + 7 days). Issue it again closer to the event." >&2
+    echo "WARNING: it expires before $deadline (CERT_MUST_LAST_UNTIL: the event's end + 7 days). Issue it again closer to the event, with --renew." >&2
     exit 3
   fi
   echo "OK: it lasts past $deadline (CERT_MUST_LAST_UNTIL: the event's end + 7 days)."
@@ -90,7 +97,7 @@ cmd=(docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp
   --dns-cloudflare --dns-cloudflare-credentials /run/secrets/cloudflare.ini
   --dns-cloudflare-propagation-seconds 30
   --config-dir /etc/letsencrypt --work-dir /etc/letsencrypt/work --logs-dir /etc/letsencrypt/logs
-  --keep-until-expiring -d "$host")
+  "$renewal" -d "$host")
 
 if [ "$mode" = print ]; then
   printf '%q ' "${cmd[@]}"

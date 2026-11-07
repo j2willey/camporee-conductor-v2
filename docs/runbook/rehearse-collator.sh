@@ -20,6 +20,11 @@ set -euo pipefail
 
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 project=${REHEARSAL_PROJECT:-collator-rehearsal}
+# Cleanup runs `down -v` on this project: never let it be the real box's (deploy/collator's is "collator").
+case "$project" in
+  *rehearsal*) ;;
+  *) echo "rehearse-collator: REHEARSAL_PROJECT must contain 'rehearsal' (got '$project')" >&2; exit 2 ;;
+esac
 https_port=${REHEARSAL_HTTPS_PORT:-8443}
 http_port=${REHEARSAL_HTTP_PORT:-8080}
 host=judge.camporeeconductor.com
@@ -66,8 +71,11 @@ cert --print >/dev/null 2>&1 && fail "issue-cert.sh accepted a token file with m
 chmod 600 "$work/fake.ini"
 cert --print | grep -q "certbot/dns-cloudflare:v" || fail "issue-cert.sh --print"
 cert --print | grep -q "not a token" && fail "issue-cert.sh printed the token"
-rc=0 && cert --check >/dev/null 2>&1 || rc=$?
-[ "$rc" = 3 ] || fail "issue-cert.sh --check should warn (3) for a certificate ending before 2027-05-23, got $rc"
+cert --print | grep -q -- "--keep-until-expiring" || fail "issue-cert.sh should keep a certificate that isn't near expiry"
+cert --print --renew | grep -q -- "--force-renewal" || fail "issue-cert.sh --renew should force a fresh certificate"
+# An explicit far-off deadline, so this keeps meaning "too short" after the 2027 event has passed.
+rc=0 && CERT_MUST_LAST_UNTIL=2099-01-01 cert --check >/dev/null 2>&1 || rc=$?
+[ "$rc" = 3 ] || fail "issue-cert.sh --check should warn (3) for a certificate ending before its deadline, got $rc"
 CERT_MUST_LAST_UNTIL=$(date -u +%F) cert --check >/dev/null || fail "issue-cert.sh --check with an earlier date"
 pass "issue-cert.sh refuses a missing or mode-644 token file, never prints it, and checks the expiry"
 

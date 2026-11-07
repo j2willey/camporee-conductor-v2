@@ -2,6 +2,7 @@
 // check the stick. Safe while the server runs.
 // Usage: pnpm --filter @camporee-conductor/collator backup-now [folder]
 // The folder defaults to BACKUP_DIR; the database is DATABASE_PATH, the same file the server uses.
+import { existsSync } from "node:fs";
 import { backupNow } from "../backup.ts";
 import { backupConfigFrom, ConfigError, databasePathFrom } from "../config.ts";
 import { openDb } from "../db/open.ts";
@@ -16,7 +17,15 @@ try {
     console.error("usage: backup-now <folder>   (or set BACKUP_DIR)");
     process.exit(2);
   }
-  const result = backupNow(openDb(databasePathFrom(process.env)), config);
+  // Back up the box's database, never a new empty one made by a wrong DATABASE_PATH or folder.
+  const databasePath = databasePathFrom(process.env);
+  if (!existsSync(databasePath)) {
+    console.error(
+      `backup failed: no database at ${databasePath} (check DATABASE_PATH)`,
+    );
+    process.exit(1);
+  }
+  const result = backupNow(openDb(databasePath), config);
   if (!result.ok) {
     console.error(`backup failed: ${result.error}`);
     process.exit(1);

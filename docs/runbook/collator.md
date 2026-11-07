@@ -35,7 +35,7 @@ deploy/collator/issue-cert.sh --check
 ```
 
 Let's Encrypt certificates last 90 days or less, so one issued in November 2026 expires before the event.
-Issue it again in the weeks before the event, while still online, and run `--check`.
+Issue it again in the weeks before the event, while still online, with `--renew` (certbot otherwise keeps a certificate until its last 30 days), and run `--check`.
 
 ## 2. Configure
 

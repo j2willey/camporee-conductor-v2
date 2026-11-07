@@ -14,18 +14,19 @@ export function start(config: Config): ServerType {
       ? `event: ${event.title} (${event.slug})`
       : "event: none loaded yet (load-cartridge <file.zip>)",
   );
-  if (config.backup) {
-    const { dir, everyMinutes } = config.backup;
-    console.log(`backups: to ${dir} every ${everyMinutes} min`);
-    scheduleBackups(db, config.backup);
-  } else {
-    console.log("backups: off (set BACKUP_DIR to turn them on)");
-  }
-  return serve(
+  const backups = config.backup && scheduleBackups(db, config.backup);
+  console.log(
+    config.backup
+      ? `backups: to ${config.backup.dir} every ${config.backup.everyMinutes} min`
+      : "backups: off (set BACKUP_DIR to turn them on)",
+  );
+  const server = serve(
     {
       fetch: createApp({ db, webRoot: config.webRoot }).fetch,
       port: config.port,
     },
     (info) => console.log(`collator listening on :${info.port}`),
   );
+  server.on("close", () => backups?.stop());
+  return server;
 }

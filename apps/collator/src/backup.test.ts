@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readdirSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -160,6 +161,8 @@ describe("backupNow", () => {
   it("clears a half-written backup left by an earlier interruption (a stick pulled mid-write)", () => {
     const partial = ".collator-2027-05-15T09-00-00.000Z.db.partial";
     writeFileSync(join(backups, partial), "half a database");
+    const anHourAgo = new Date("2027-05-15T08:05:00Z");
+    utimesSync(join(backups, partial), anHourAgo, anHourAgo);
     const result = backupNow(db, {
       dir: backups,
       keep: 10,
@@ -167,6 +170,25 @@ describe("backupNow", () => {
     });
     expect(result.ok).toBe(true);
     expect(filesIn(backups)).toEqual(["collator-2027-05-15T09-05-00.000Z.db"]);
+  });
+
+  it("leaves a fresh half-written backup alone: another writer (backup-now) may be mid-write", () => {
+    const now = new Date("2027-05-15T09:05:00Z");
+    const theirs = ".collator-2027-05-15T09-04-59.000Z.db.partial";
+    writeFileSync(join(backups, theirs), "being written");
+    utimesSync(join(backups, theirs), now, now);
+    expect(backupNow(db, { dir: backups, keep: 10, now }).ok).toBe(true);
+    expect(readdirSync(backups)).toContain(theirs);
+  });
+
+  it("doesn't throw when pruning fails after the backup is written (the stick pulled just then)", () => {
+    // Write and enter, but not list: the backup is written, listing the folder to prune fails.
+    chmodSync(backups, 0o300);
+    let result: ReturnType<typeof backupNow> | undefined;
+    expect(() => {
+      result = backupNow(db, { dir: backups, keep: 10 });
+    }).not.toThrow();
+    expect(result).toMatchObject({ ok: true, pruned: [] });
   });
 
   it("reports a missing folder clearly (is the stick mounted?) and doesn't throw", () => {
