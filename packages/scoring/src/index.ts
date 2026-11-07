@@ -1,5 +1,6 @@
 // Pure scoring and ranking (ADR-0008, ADR-0019, ADR-0020). No I/O.
 export { awardRecipients } from "./awards.ts";
+export { inRankOrder, newestEntries } from "./entries.ts";
 export {
   entryTotal,
   fillVariables,
