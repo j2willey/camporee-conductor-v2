@@ -8,6 +8,7 @@ import { api } from "./api.ts";
 import { levelLabel } from "./format.ts";
 import { savedJudge } from "./identity.ts";
 import { loadKept } from "./offline-data.ts";
+import { closing } from "./phone-closing.ts";
 import type { SendNowResult } from "./outbox.ts";
 import { LoadProblem } from "./screens/LoadProblem.tsx";
 import { OutboxStatus } from "./screens/OutboxStatus.tsx";
@@ -152,6 +153,7 @@ export function App() {
       {step.name === "activity" && (
         <ActivityList
           activities={event.activities}
+          closed={closing.closedActivities(judge.id)}
           // Absent from an event kept on the phone before #41 PR 5.
           competitions={
             event.competitions as JudgeEvent["competitions"] | undefined
@@ -163,9 +165,12 @@ export function App() {
         <EntrantPicker
           activity={step.activity}
           labels={labels}
-          onPick={(entrant) =>
-            setStep({ name: "score", activity: step.activity, entrant })
-          }
+          judge={judge}
+          onPick={(entrant) => {
+            // Scoring at a closed Activity reopens it, as in v1 (#41 PR 6).
+            closing.reopen(judge.id, step.activity.id);
+            setStep({ name: "score", activity: step.activity, entrant });
+          }}
           onBack={() => setStep({ name: "activity" })}
         />
       )}

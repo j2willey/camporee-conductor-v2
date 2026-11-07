@@ -96,6 +96,17 @@ async function box(request: APIRequestContext) {
           }[];
         }>(`/api/official/activities/${idOf(title)}`)
       ).entries.filter((e) => e.entrant.name === team),
+    closures: async (title: string) =>
+      (
+        await get<{
+          closures: {
+            judge: { name: string };
+            scoreCount: number;
+            missing: string[];
+            scoredSince: number;
+          }[];
+        }>(`/api/official/activities/${idOf(title)}`)
+      ).closures,
     teamsNamed: async (team: string) =>
       (await get<{ teams: { name: string }[] }>("/api/roster")).teams.filter(
         (t) => t.name === team,
@@ -267,5 +278,37 @@ test("a stopwatch keeps running through a reload, and its time is what the box s
 
   const stored = await (await box(request)).entries("3 Ring Circus", owls);
   expect(stored.map((e) => e.values["elapsed_time"])).toEqual([time]);
+  await context.close();
+});
+
+test("a Judge closes an Activity, and the box confirms it has their scores", async ({
+  browser,
+  request,
+}, info) => {
+  const tag = info.project.name;
+  const owls = `Owls ${tag}`;
+  const { context, page } = await phone(browser, info);
+  await startJudging(page, `Fran ${tag}`);
+  await activity(page, "Clown Car").click();
+  await page.getByRole("button", { name: `${owls} (Troop ${tag})` }).click();
+  await fillClownCar(page, "4", "4");
+  await expect(page.getByText(/^Score saved:/)).toBeVisible();
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await page.getByRole("button", { name: "I'm done: close Clown Car" }).click();
+  await expect(
+    page.getByText("Closed. The box has your score at Clown Car."),
+  ).toBeVisible();
+
+  const closed = (await (await box(request)).closures("Clown Car")).filter(
+    (c) => c.judge.name === `Fran ${tag}`,
+  );
+  expect(closed).toMatchObject([
+    {
+      judge: { name: `Fran ${tag}` },
+      scoreCount: 1,
+      missing: [],
+      scoredSince: 0,
+    },
+  ]);
   await context.close();
 });

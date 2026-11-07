@@ -7,6 +7,7 @@ import { validator } from "hono/validator";
 import { z } from "zod";
 import type { Db } from "./db/open.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
+import { recordClosure } from "./closures.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import {
@@ -29,20 +30,29 @@ const PhoneId = z.string().min(1).max(100);
 
 const GroupBody = z.strictObject({ name: Name });
 const TeamBody = z.strictObject({ groupId: PhoneId, name: Name });
+const JudgeBody = z.strictObject({
+  id: PhoneId,
+  name: Name,
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  /** Optional free text (#41 PR 5); blank means none. */
+  homeGroup: z.string().max(200).optional(),
+});
 const ScoreBody = z.strictObject({
-  judge: z.strictObject({
-    id: PhoneId,
-    name: Name,
-    email: z.string().trim().toLowerCase().pipe(z.email()),
-    /** Optional free text (#41 PR 5); blank means none. */
-    homeGroup: z.string().max(200).optional(),
-  }),
+  judge: JudgeBody,
   activityId: z.string().min(1),
   entrantId: PhoneId,
   values: z.record(
     z.string(),
     z.union([z.number(), z.string(), z.boolean(), z.null()]),
   ),
+  phoneCreatedAt: z.iso.datetime({ offset: true }),
+});
+
+/** A Judge closing an Activity (#41 PR 6): every score id their phone saved there. */
+const ClosureBody = z.strictObject({
+  judge: JudgeBody,
+  activityId: z.string().min(1),
+  scoreIds: z.array(PhoneId).max(5000),
   phoneCreatedAt: z.iso.datetime({ offset: true }),
 });
 
@@ -189,6 +199,18 @@ export function createApp({
       recordScore(db, { id: c.req.valid("param").id, ...c.req.valid("json") }),
     ),
   );
+
+  app.put("/api/closures/:id", idParam, jsonBody(ClosureBody), (c) => {
+    const result = recordClosure(db, {
+      id: c.req.valid("param").id,
+      ...c.req.valid("json"),
+    });
+    if (!result.ok) return reply(c, result);
+    return c.json(
+      { status: result.status, have: result.have, missing: result.missing },
+      result.status === "created" ? 201 : 200,
+    );
+  });
 
   app.route("/api/official", officialRoutes(db));
 

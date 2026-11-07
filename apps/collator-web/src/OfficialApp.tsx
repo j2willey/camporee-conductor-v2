@@ -134,7 +134,23 @@ function ActivityPicker({
                 onClick={() => onPick(activity)}
               >
                 <span>{activity.title}</span>
-                <span className={ui.muted}>{entries(activity.entryCount)}</span>
+                <span className="flex flex-col items-end text-right">
+                  <span className={ui.muted}>
+                    {entries(activity.entryCount)}
+                  </span>
+                  {/* Judges' closures (#41 PR 6): an Official checks the ones that need a look. */}
+                  {activity.closureProblems > 0 ? (
+                    <span className="text-xs font-medium text-amber-800">
+                      Check closures
+                    </span>
+                  ) : (
+                    activity.closedBy > 0 && (
+                      <span className="text-xs text-teal-800">
+                        Closed by {activity.closedBy}
+                      </span>
+                    )
+                  )}
+                </span>
               </button>
             ))}
         </section>

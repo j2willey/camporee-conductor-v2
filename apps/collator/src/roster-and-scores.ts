@@ -19,23 +19,28 @@ import { loadedEvent } from "./load-event.ts";
 // different content is refused: that's an accidental conflicting resend. Judge corrections are a new
 // flow, decided in #41 / #42.
 
-export type Recorded =
-  | { ok: true; status: "created" | "repeat" }
-  | { ok: false; reason: "no-event" | "conflict" | "invalid"; message: string };
+/** The box answered, and said no. */
+export interface Refused {
+  ok: false;
+  reason: "no-event" | "conflict" | "invalid";
+  message: string;
+}
 
-const NO_EVENT: Recorded = {
+export type Recorded = { ok: true; status: "created" | "repeat" } | Refused;
+
+export const NO_EVENT: Refused = {
   ok: false,
   reason: "no-event",
   message: "no Event is loaded on this box yet",
 };
 const CREATED: Recorded = { ok: true, status: "created" };
 const REPEAT: Recorded = { ok: true, status: "repeat" };
-const conflict = (what: string, id: string): Recorded => ({
+export const conflict = (what: string, id: string): Refused => ({
   ok: false,
   reason: "conflict",
   message: `${what} ${id} was already received with different content`,
 });
-const invalid = (message: string): Recorded => ({
+export const invalid = (message: string): Refused => ({
   ok: false,
   reason: "invalid",
   message,
@@ -170,25 +175,8 @@ export function recordScore(db: Db, score: ScoreSubmission): Recorded {
     );
   }
 
-  // The Judge's newest details win: a later score may correct the name or home unit.
-  const judge = {
-    id: score.judge.id,
-    name: score.judge.name,
-    email: score.judge.email,
-    homeGroup: score.judge.homeGroup?.trim() || null,
-  };
   db.transaction((tx) => {
-    tx.insert(judges)
-      .values(judge)
-      .onConflictDoUpdate({
-        target: judges.id,
-        set: {
-          name: judge.name,
-          email: judge.email,
-          homeGroup: judge.homeGroup,
-        },
-      })
-      .run();
+    upsertJudge(tx, score.judge);
     tx.insert(scoreEntriesTable)
       .values({
         id: score.id,
@@ -202,6 +190,26 @@ export function recordScore(db: Db, score: ScoreSubmission): Recorded {
       .run();
   });
   return CREATED;
+}
+
+/** The Judge's newest details win: a later score (or closure) may correct the name or home unit. */
+export function upsertJudge(
+  tx: Pick<Db, "insert">,
+  judge: JudgeIdentity,
+): void {
+  const row = {
+    id: judge.id,
+    name: judge.name,
+    email: judge.email,
+    homeGroup: judge.homeGroup?.trim() || null,
+  };
+  tx.insert(judges)
+    .values(row)
+    .onConflictDoUpdate({
+      target: judges.id,
+      set: { name: row.name, email: row.email, homeGroup: row.homeGroup },
+    })
+    .run();
 }
 
 /** What makes two submissions of one score id the same: everything but the Judge's name and email. */
