@@ -2,7 +2,7 @@
   "name": "@camporee-conductor/collator-web",
   "version": "0.0.0",
   "private": true,
-  "description": "Collator web app: the judge page (#40). React + Vite, served by the Collator. No accounts for Judges (ADR-0023).",
+  "description": "Collator web app (#40): the judge page (no accounts, ADR-0023) and the Official view at /official (email-only gate, ADR-0027). React + Vite, served by the Collator.",
   "type": "module",
   "scripts": {
     "dev": "vite",
