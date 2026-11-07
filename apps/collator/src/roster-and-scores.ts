@@ -11,7 +11,7 @@ import {
   scoreEntries as scoreEntriesTable,
   teams,
 } from "./db/schema.ts";
-import { activityFields } from "./judge-event.ts";
+import { activityFields } from "./bundle-lookup.ts";
 import { loadedEvent } from "./load-event.ts";
 
 // What Judges' phones send: Groups and Teams added on the spot, and score entries. Each carries an id
@@ -236,7 +236,25 @@ export function scoreEntries(db: Db): ScoreEntryRow[] {
     }));
 }
 
-export function roster(db: Db) {
+/** A Group on the roster, as the phone sees it. */
+export interface Group {
+  id: string;
+  name: string;
+}
+
+/** A Team on the roster, with its Group's id. */
+export interface Team {
+  id: string;
+  groupId: string;
+  name: string;
+}
+
+export interface Roster {
+  groups: Group[];
+  teams: Team[];
+}
+
+export function roster(db: Db): Roster {
   return {
     groups: db.select().from(groups).orderBy(asc(groups.name)).all(),
     teams: db.select().from(teams).orderBy(asc(teams.name)).all(),

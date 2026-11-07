@@ -1,23 +1,14 @@
-import type {
-  JudgeEvent,
-  OfficialActivity,
-  OfficialEvent,
-  ScoreSubmission,
+import {
+  OFFICIAL_EMAIL_HEADER,
+  type Group,
+  type JudgeEvent,
+  type OfficialActivity,
+  type OfficialEvent,
+  type Roster,
+  type ScoreSubmission,
+  type SignedInOfficial,
+  type Team,
 } from "@camporee-conductor/collator/types";
-
-export interface Group {
-  id: string;
-  name: string;
-}
-export interface Team {
-  id: string;
-  groupId: string;
-  name: string;
-}
-export interface Roster {
-  groups: Group[];
-  teams: Team[];
-}
 
 /**
  * A failed call, with the Collator's message, or "can't reach the box" when there's no answer.
@@ -68,16 +59,10 @@ const put = (path: string, body: unknown) =>
     body: JSON.stringify(body),
   });
 
-export interface SignedInOfficial {
-  email: string;
-  name?: string;
-  role: "director" | "official";
-}
-
 /** An Official call: the email goes with every one, and the box checks it each time (ADR-0027 item 5). */
 const asOfficial = <T>(email: string, path: string) =>
   call<T>(`/api/official${path}`, {
-    headers: { "x-official-email": email },
+    headers: { [OFFICIAL_EMAIL_HEADER]: email },
   });
 
 export const officialApi = {

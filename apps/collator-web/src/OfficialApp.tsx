@@ -1,11 +1,9 @@
-import type { OfficialEvent } from "@camporee-conductor/collator/types";
+import type {
+  OfficialEvent,
+  SignedInOfficial,
+} from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
-import {
-  errorMessage,
-  officialApi,
-  wasRefused,
-  type SignedInOfficial,
-} from "./api.ts";
+import { errorMessage, officialApi, wasRefused } from "./api.ts";
 import {
   forgetOfficialEmail,
   savedOfficialEmail,

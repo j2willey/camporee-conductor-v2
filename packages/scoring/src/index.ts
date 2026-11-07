@@ -6,6 +6,7 @@ export {
   fillVariables,
   mergeCommonFields,
   metricValue,
+  numberOf,
   stopwatchSeconds,
   unreadableStopwatch,
   valueProblem,

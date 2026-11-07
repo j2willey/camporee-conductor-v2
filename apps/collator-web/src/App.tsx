@@ -5,6 +5,7 @@ import type {
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
 import { api, errorMessage } from "./api.ts";
+import { levelLabel } from "./format.ts";
 import { savedJudge } from "./identity.ts";
 import { ActivityList } from "./screens/ActivityList.tsx";
 import { EntrantPicker, type Entrant } from "./screens/EntrantPicker.tsx";
@@ -123,11 +124,7 @@ export function App() {
           activity={step.activity}
           entrant={step.entrant}
           repeat={step.repeat}
-          entrantLabel={
-            step.activity.competition.level === "team"
-              ? labels.team
-              : labels.group
-          }
+          entrantLabel={levelLabel(step.activity.competition.level, labels)}
           onNext={() => setStep({ name: "entrant", activity: step.activity })}
           onChangeActivity={() => setStep({ name: "activity" })}
         />

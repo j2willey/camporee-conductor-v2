@@ -8,7 +8,8 @@ import {
   type FieldValue,
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
-import { activityFields, judgeEvent, type JudgeEvent } from "./judge-event.ts";
+import { activityFields } from "./bundle-lookup.ts";
+import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { judgeList, roster, scoreEntries } from "./roster-and-scores.ts";
 
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Read-only;

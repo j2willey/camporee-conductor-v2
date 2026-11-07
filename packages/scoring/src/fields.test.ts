@@ -1,6 +1,6 @@
 import { ScoringFieldSchema } from "@camporee-conductor/schema";
 import { describe, expect, it } from "vitest";
-import { entryTotal } from "./index.ts";
+import { entryTotal, numberOf } from "./index.ts";
 
 /** A judge number field as stored; `weight` is left out unless given. */
 function field(id: string, kind: string, weight?: number) {
@@ -37,5 +37,19 @@ describe("entryTotal: weight (ADR-0019 amendment 2026-10-30)", () => {
 
   it("allows a fractional weight", () => {
     expect(entryTotal([field("knots", "points", 0.5)], { knots: 7 })).toBe(3.5);
+  });
+});
+
+describe("numberOf: how every reader turns a value into a number", () => {
+  it("reads numbers and numeric text; blank, non-numeric and non-finite are undefined", () => {
+    expect(numberOf(7)).toBe(7);
+    expect(numberOf(" 2.5 ")).toBe(2.5);
+    expect(numberOf("-3")).toBe(-3);
+    expect(numberOf("")).toBeUndefined();
+    expect(numberOf("  ")).toBeUndefined();
+    expect(numberOf("abc")).toBeUndefined();
+    expect(numberOf(Number.POSITIVE_INFINITY)).toBeUndefined();
+    expect(numberOf(true)).toBeUndefined();
+    expect(numberOf(undefined)).toBeUndefined();
   });
 });
