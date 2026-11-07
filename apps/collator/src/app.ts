@@ -6,6 +6,7 @@ import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import type { Db } from "./db/open.ts";
+import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import {
@@ -59,8 +60,12 @@ const idParam = validator("param", (value: Record<string, string>) => {
   return { id: id.data };
 });
 
-/** The header the Official page sends its email in, on every call. */
-export const OFFICIAL_EMAIL_HEADER = "x-official-email";
+/** What `/api/official/me` answers: who's signed in on the Official page. */
+export interface SignedInOfficial {
+  email: string;
+  name?: string;
+  role: "director" | "official";
+}
 
 /**
  * The Official view's API (#40 PR 3). Every call is checked against the loaded Event's Officials list.
@@ -99,7 +104,12 @@ function officialRoutes(db: Db) {
 
   routes.get("/me", (c) => {
     const { email, name, role } = c.get("official");
-    return c.json({ email: normalEmail(email), name, role });
+    const me: SignedInOfficial = {
+      email: normalEmail(email),
+      role,
+      ...(name !== undefined && { name }),
+    };
+    return c.json(me);
   });
 
   routes.get("/event", (c) => c.json(officialEvent(db, c.get("bundle"))));

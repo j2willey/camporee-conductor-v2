@@ -1,10 +1,10 @@
 import type {
-  JudgeEvent,
+  JudgeLabels,
   OfficialActivity,
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
 import { errorMessage, officialApi } from "../api.ts";
-import { entrantLabel, ordinal } from "../format.ts";
+import { entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
 
 /**
@@ -19,7 +19,7 @@ export function OfficialActivityView({
 }: {
   email: string;
   activityId: string;
-  labels: JudgeEvent["event"]["labels"];
+  labels: JudgeLabels;
   onBack: () => void;
 }) {
   const [view, setView] = useState<OfficialActivity | null>(null);
@@ -53,8 +53,7 @@ export function OfficialActivityView({
   }
   if (!view) return <p className={ui.muted}>Loading…</p>;
 
-  const entrantWord =
-    view.activity.competition.level === "team" ? labels.team : labels.group;
+  const entrantWord = levelLabel(view.activity.competition.level, labels);
   const fieldLabel = new Map(view.fields.map((f) => [f.id, f.label]));
   return (
     <section className="flex flex-col gap-4">

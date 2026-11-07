@@ -111,8 +111,11 @@ function isBlank(value: FieldValue | undefined): boolean {
   );
 }
 
-/** A numeric reading of an entered value, or undefined if it isn't a number. */
-function numberOf(value: FieldValue | undefined): number | undefined {
+/**
+ * A numeric reading of an entered value, or undefined if it isn't a number. Every reader (the box, the
+ * phone, exports) uses this one, so they can't drift.
+ */
+export function numberOf(value: FieldValue | undefined): number | undefined {
   if (typeof value === "number")
     return Number.isFinite(value) ? value : undefined;
   if (typeof value !== "string" || value.trim() === "") return undefined;

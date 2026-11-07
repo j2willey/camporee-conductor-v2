@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import type { Db } from "./db/open.ts";
+import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
 import {
   circusCartridge,
@@ -41,7 +42,7 @@ const put = (path: string, body: unknown) =>
 
 const asOfficial = (path: string, email: string | null = OFFICIAL) =>
   app.request(path, {
-    headers: email === null ? {} : { "x-official-email": email },
+    headers: email === null ? {} : { [OFFICIAL_EMAIL_HEADER]: email },
   });
 
 const load = () => {

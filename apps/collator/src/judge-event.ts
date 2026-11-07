@@ -1,6 +1,7 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import type { ScoringField } from "@camporee-conductor/schema";
-import { fillVariables, mergeCommonFields } from "@camporee-conductor/scoring";
+import { fillVariables } from "@camporee-conductor/scoring";
+import { activityFields } from "./bundle-lookup.ts";
 
 // The Event as a Judge's phone sees it (#40 PR 2): each Activity's form, already merged with its
 // Competition's Common Fields by packages/scoring (ADR-0020), Judge fields only.
@@ -20,40 +21,19 @@ export interface JudgeActivity {
   fields: JudgeField[];
 }
 
+/** What this pack calls a Team and a Group on screen (ADR-0003), e.g. Patrol and Troop. */
+export interface JudgeLabels {
+  team: string;
+  group: string;
+}
+
 export interface JudgeEvent {
   event: {
     id: string;
     title: string;
-    /** What this pack calls a Team and a Group on screen (ADR-0003), e.g. Patrol and Troop. */
-    labels: { team: string; group: string };
+    labels: JudgeLabels;
   };
   activities: JudgeActivity[];
-}
-
-/** Every field scored at the Activity, Common Fields included (`mergeCommonFields`), or undefined. */
-export function activityFields(
-  bundle: CheckedBundle,
-  activityId: string,
-):
-  | {
-      activity: CheckedBundle["activities"][number];
-      competition: CheckedBundle["event"]["competitions"][number];
-      fields: ScoringField[];
-    }
-  | undefined {
-  const listed = bundle.event.activities.find(
-    (a) => a.activityId === activityId,
-  );
-  const activity = bundle.activities.find((a) => a.id === activityId);
-  const competition = bundle.event.competitions.find(
-    (c) => c.id === listed?.competitionId,
-  );
-  if (!listed || !activity || !competition) return undefined;
-  return {
-    activity,
-    competition,
-    fields: mergeCommonFields(activity, competition, bundle.commonFieldSets),
-  };
 }
 
 export function judgeEvent(bundle: CheckedBundle): JudgeEvent {

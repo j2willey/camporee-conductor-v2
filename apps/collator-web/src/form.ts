@@ -1,5 +1,5 @@
 import type { JudgeField } from "@camporee-conductor/collator/types";
-import { valueProblem } from "@camporee-conductor/scoring";
+import { numberOf, valueProblem } from "@camporee-conductor/scoring";
 
 /** What the inputs hold: text for most fields, a boolean for checkboxes. */
 export type Entry = Record<string, string | boolean>;
@@ -49,8 +49,8 @@ export function readEntry(
       continue;
     }
     if (value === "") continue;
-    values[f.id] =
-      f.type === "number" && typeof value === "string" ? Number(value) : value;
+    // Read as packages/scoring reads it; valueProblem has already checked it's a number.
+    values[f.id] = f.type === "number" ? (numberOf(value) ?? value) : value;
   }
   return problems.length > 0 ? { ok: false, problems } : { ok: true, values };
 }

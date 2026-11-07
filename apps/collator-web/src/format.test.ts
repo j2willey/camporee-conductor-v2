@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entrantLabel, ordinal } from "./format.ts";
+import { entrantLabel, levelLabel, ordinal } from "./format.ts";
 
 describe("ordinal", () => {
   it("names places as people say them", () => {
@@ -37,5 +37,13 @@ describe("entrantLabel", () => {
 
   it("falls back to the id for an entrant not on the roster", () => {
     expect(entrantLabel("team-x", { name: null, group: null })).toBe("team-x");
+  });
+});
+
+describe("levelLabel", () => {
+  const labels = { team: "Patrol", group: "Troop" };
+  it("names who's scored at a Competition's level, in the event's words", () => {
+    expect(levelLabel("team", labels)).toBe("Patrol");
+    expect(levelLabel("group", labels)).toBe("Troop");
   });
 });

@@ -1,4 +1,8 @@
-import type { EntrantName } from "@camporee-conductor/collator/types";
+import type {
+  EntrantName,
+  JudgeActivity,
+  JudgeLabels,
+} from "@camporee-conductor/collator/types";
 
 /** 1 → "1st", 2 → "2nd", 11 → "11th". Display only: places come from packages/scoring. */
 export function ordinal(n: number): string {
@@ -14,4 +18,12 @@ export function ordinal(n: number): string {
 export function entrantLabel(id: string, entrant: EntrantName): string {
   const name = entrant.name ?? id;
   return entrant.group ? `${name} (${entrant.group})` : name;
+}
+
+/** The event's word for who's scored at a Competition's level: its Team label or its Group label. */
+export function levelLabel(
+  level: JudgeActivity["competition"]["level"],
+  labels: JudgeLabels,
+): string {
+  return level === "team" ? labels.team : labels.group;
 }

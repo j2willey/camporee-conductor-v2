@@ -1,14 +1,13 @@
-import type { JudgeActivity } from "@camporee-conductor/collator/types";
+import type {
+  Group,
+  JudgeActivity,
+  JudgeLabels,
+  Roster,
+  Team,
+} from "@camporee-conductor/collator/types";
 import { useCallback, useEffect, useState } from "react";
-import {
-  api,
-  errorMessage,
-  newId,
-  wasRefused,
-  type Group,
-  type Roster,
-  type Team,
-} from "../api.ts";
+import { api, errorMessage, newId, wasRefused } from "../api.ts";
+import { entrantLabel, levelLabel } from "../format.ts";
 import { matchingGroup, matchingTeam } from "../names.ts";
 import { ui } from "../ui.ts";
 
@@ -18,8 +17,6 @@ export interface Entrant {
   /** As shown, e.g. "Flaming Arrows (Troop 101)". */
   label: string;
 }
-
-type Labels = { team: string; group: string };
 
 /**
  * Pick who's being scored. Picking an existing one is the default path; adding is the quieter option
@@ -33,7 +30,7 @@ export function EntrantPicker({
   onBack,
 }: {
   activity: JudgeActivity;
-  labels: Labels;
+  labels: JudgeLabels;
   onPick: (entrant: Entrant) => void;
   onBack: () => void;
 }) {
@@ -42,7 +39,7 @@ export function EntrantPicker({
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const teamLevel = activity.competition.level === "team";
-  const label = teamLevel ? labels.team : labels.group;
+  const label = levelLabel(activity.competition.level, labels);
 
   // Fresh each time: Teams other Judges added since are listed, so they're picked, not added again.
   const loadRoster = useCallback(() => {
@@ -63,7 +60,7 @@ export function EntrantPicker({
   const listed: Entrant[] = teamLevel
     ? roster.teams.map((t) => ({
         id: t.id,
-        label: `${t.name} (${groupName(t.groupId)})`,
+        label: teamLabel(t, groupName(t.groupId)),
       }))
     : roster.groups.map((g) => ({ id: g.id, label: g.name }));
   const query = search.trim().toLowerCase();
@@ -140,7 +137,7 @@ function AddTeam({
   onCancel,
 }: {
   roster: Roster;
-  labels: Labels;
+  labels: JudgeLabels;
   onPick: (entrant: Entrant) => void;
   onCancel: () => void;
 }) {
@@ -185,7 +182,7 @@ function AddTeam({
       await api.putTeam(adding.team);
       onPick({
         id: adding.team.id,
-        label: `${adding.team.name} (${adding.group.name})`,
+        label: teamLabel(adding.team, adding.group.name),
       });
     } catch (e) {
       if (wasRefused(e)) setPending(null);
@@ -259,32 +256,17 @@ function AddTeam({
         />
       </label>
       {teamMatch && existingGroup && (
-        <div className={`${ui.warning} flex flex-col gap-2`} role="alert">
-          <p>
-            {teamMatch.name} is already in {existingGroup.name}. Another Judge
-            may have added it.
-          </p>
-          <button
-            type="button"
-            className={ui.button}
-            onClick={() =>
-              onPick({
-                id: teamMatch.id,
-                label: `${teamMatch.name} (${existingGroup.name})`,
-              })
-            }
-          >
-            Score {teamMatch.name} ({existingGroup.name})
-          </button>
-          <button
-            type="button"
-            className={ui.buttonQuiet}
-            disabled={saving}
-            onClick={() => void add(pending ?? attempt())}
-          >
-            No, it's a different {labels.team}: add it
-          </button>
-        </div>
+        <AlreadyListed
+          message={`${teamMatch.name} is already in ${existingGroup.name}.`}
+          match={{
+            id: teamMatch.id,
+            label: teamLabel(teamMatch, existingGroup.name),
+          }}
+          word={labels.team}
+          saving={saving}
+          onPick={onPick}
+          onAddAnyway={() => void add(pending ?? attempt())}
+        />
       )}
       {error && <NotSaved error={error} kept={locked} />}
       {(locked || !teamMatch) && (
@@ -313,7 +295,7 @@ function AddGroup({
   onCancel,
 }: {
   roster: Roster;
-  labels: Labels;
+  labels: JudgeLabels;
   onPick: (entrant: Entrant) => void;
   onCancel: () => void;
 }) {
@@ -361,27 +343,14 @@ function AddGroup({
         />
       </label>
       {match && (
-        <div className={`${ui.warning} flex flex-col gap-2`} role="alert">
-          <p>
-            {match.name} is already on the list. Another Judge may have added
-            it.
-          </p>
-          <button
-            type="button"
-            className={ui.button}
-            onClick={() => onPick({ id: match.id, label: match.name })}
-          >
-            Score {match.name}
-          </button>
-          <button
-            type="button"
-            className={ui.buttonQuiet}
-            disabled={saving}
-            onClick={() => void add(pending ?? attempt())}
-          >
-            No, it's a different {labels.group}: add it
-          </button>
-        </div>
+        <AlreadyListed
+          message={`${match.name} is already on the list.`}
+          match={{ id: match.id, label: match.name }}
+          word={labels.group}
+          saving={saving}
+          onPick={onPick}
+          onAddAnyway={() => void add(pending ?? attempt())}
+        />
       )}
       {error && <NotSaved error={error} kept={locked} />}
       {(locked || !match) && (
@@ -397,6 +366,48 @@ function AddGroup({
         Cancel
       </button>
     </form>
+  );
+}
+
+/** "Team (Group)", as the Official view shows it. */
+const teamLabel = (team: Team, groupName: string) =>
+  entrantLabel(team.id, { name: team.name, group: groupName });
+
+/**
+ * The name typed matches one already listed (another Judge may have added it): score that one, or add
+ * this as a different one.
+ */
+function AlreadyListed({
+  message,
+  match,
+  word,
+  saving,
+  onPick,
+  onAddAnyway,
+}: {
+  message: string;
+  match: Entrant;
+  /** The event's word for what's being added, e.g. Patrol. */
+  word: string;
+  saving: boolean;
+  onPick: (entrant: Entrant) => void;
+  onAddAnyway: () => void;
+}) {
+  return (
+    <div className={`${ui.warning} flex flex-col gap-2`} role="alert">
+      <p>{message} Another Judge may have added it.</p>
+      <button type="button" className={ui.button} onClick={() => onPick(match)}>
+        Score {match.label}
+      </button>
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        disabled={saving}
+        onClick={onAddAnyway}
+      >
+        No, it's a different {word}: add it
+      </button>
+    </div>
   );
 }
 
