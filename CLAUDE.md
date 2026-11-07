@@ -85,7 +85,9 @@ pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: bu
 
 # Collator (apps/collator), :3030, collator.db (#40). One Event per box; no accounts for Judges.
 pnpm --filter @camporee-conductor/collator load-cartridge <event-day-cartridge.zip>
-pnpm --filter @camporee-conductor/collator start
+pnpm --filter @camporee-conductor/collator start            # WEB_ROOT=apps/collator-web/dist serves the built judge page
+pnpm --filter @camporee-conductor/collator-web dev          # judge page on :5174, proxies to the Collator
+pnpm --filter @camporee-conductor/collator-web e2e          # Playwright: judge page on a phone-sized browser, :3040
 pnpm --filter @camporee-conductor/collator db:generate     # new migration after changing src/db/schema.ts
 
 # One image: the API serving the built app (Clerk keys at run time; dev sign-in refused)
@@ -112,6 +114,7 @@ apps/composer-web/  Composer web app: React + Vite SPA (React Router library mod
                     e2e/ is the Playwright smoke test
 apps/collator/      Collator: the on-site event-day server (ADR-0027). Hono, SQLite/Drizzle; loads an event-day
                     cartridge; roster and score entries keyed by phone-made ids (#40)
+apps/collator-web/  Collator web app: the judge page (React + Vite, Tailwind), served by the Collator; no accounts
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```

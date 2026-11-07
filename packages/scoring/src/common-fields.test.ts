@@ -3,7 +3,12 @@ import {
   type CommonFieldSet,
 } from "@camporee-conductor/schema";
 import { describe, expect, it } from "vitest";
-import { mergeCommonFields, scoreEvent, type ScoringInput } from "./index.ts";
+import {
+  fillVariables,
+  mergeCommonFields,
+  scoreEvent,
+  type ScoringInput,
+} from "./index.ts";
 import { smallEvent } from "./test-support.ts";
 
 /** Common Fields, merged per Competition at runtime and nowhere else (ADR-0020). */
@@ -123,5 +128,45 @@ describe("scoreEvent counts Common Fields in every entry's total", () => {
       ["t1", 13],
       ["t2", 11],
     ]);
+  });
+});
+
+describe("fillVariables: an Activity's {{variables}} in field text", () => {
+  const field = (label: string, placeholder?: string) =>
+    CommonFieldSetSchema.parse({
+      ...SET,
+      fields: [
+        {
+          id: "ten_ess",
+          label,
+          type: "number",
+          kind: "points",
+          audience: "judge",
+          sortOrder: 1,
+          ...(placeholder !== undefined && { config: { placeholder } }),
+        },
+      ],
+    }).fields;
+
+  it("fills {{key}} in labels and placeholders from the Activity's variables", () => {
+    const [filled] = fillVariables(
+      field(
+        "10 Essentials: {{ten_essentials}}",
+        "Does the patrol have {{ ten_essentials }}?",
+      ),
+      { ten_essentials: "Buddy" },
+    );
+    expect(filled?.label).toBe("10 Essentials: Buddy");
+    expect(filled?.config?.placeholder).toBe("Does the patrol have Buddy?");
+  });
+
+  it("leaves a token the Activity doesn't define as it is", () => {
+    const [filled] = fillVariables(field("Bring {{item}}"), {});
+    expect(filled?.label).toBe("Bring {{item}}");
+  });
+
+  it("leaves fields without tokens unchanged", () => {
+    const fields = field("Flag");
+    expect(fillVariables(fields, { item: "x" })).toEqual(fields);
   });
 });

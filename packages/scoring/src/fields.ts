@@ -39,6 +39,58 @@ export function mergeCommonFields(
   ];
 }
 
+/**
+ * Fields with an Activity's `variables` filled into `{{key}}` tokens in their labels and placeholders,
+ * e.g. a Common Field "10 Essentials: {{ten_essentials}}" (ADR-0020). A token the Activity doesn't
+ * define is left as it is. Ids and everything that affects scoring are unchanged.
+ */
+export function fillVariables(
+  fields: readonly ScoringField[],
+  variables: Readonly<Record<string, string>>,
+): ScoringField[] {
+  const fill = (text: string) =>
+    text.replace(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g, (token, key: string) =>
+      Object.hasOwn(variables, key) ? (variables[key] ?? token) : token,
+    );
+  return fields.map((field) => {
+    const placeholder = field.config?.placeholder;
+    return {
+      ...field,
+      label: fill(field.label),
+      ...(field.config &&
+        placeholder !== undefined && {
+          config: { ...field.config, placeholder: fill(placeholder) },
+        }),
+    };
+  });
+}
+
+/**
+ * What's wrong with an entered value for its field, or undefined if nothing is. Number fields must hold
+ * a number (or text that reads as one, as scoring reads it) within the field's min/max. A blank is
+ * "not entered" and passes; other field types aren't checked here. The judge page and the Collator both
+ * use this, so the box refuses what the phone would (#40).
+ */
+export function valueProblem(
+  field: Pick<ScoringField, "type" | "label" | "config">,
+  value: FieldValue | undefined,
+): string | undefined {
+  if (field.type !== "number") return undefined;
+  if (value === null || value === undefined || value === "") return undefined;
+  const n = numberOf(value);
+  if (n === undefined) return `${field.label} must be a number`;
+  const { min, max } = field.config ?? {};
+  if ((min !== undefined && n < min) || (max !== undefined && n > max)) {
+    if (min !== undefined && max !== undefined) {
+      return `${field.label} must be from ${min} to ${max}`;
+    }
+    return min !== undefined
+      ? `${field.label} must be at least ${min}`
+      : `${field.label} must be at most ${max}`;
+  }
+  return undefined;
+}
+
 /** A numeric reading of an entered value, or undefined if it isn't a number. */
 function numberOf(value: FieldValue | undefined): number | undefined {
   if (typeof value === "number")

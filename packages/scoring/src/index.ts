@@ -2,10 +2,12 @@
 export { awardRecipients } from "./awards.ts";
 export {
   entryTotal,
+  fillVariables,
   mergeCommonFields,
   metricValue,
   stopwatchSeconds,
   unreadableStopwatch,
+  valueProblem,
 } from "./fields.ts";
 export {
   DEFAULT_PLACEMENT_POINTS,

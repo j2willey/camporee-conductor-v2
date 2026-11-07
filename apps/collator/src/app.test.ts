@@ -8,6 +8,7 @@ import {
   circusCartridge,
   CLOWN_CAR,
   GROUP_ACTIVITY,
+  SHOWTIME,
   testDb,
 } from "./test-support.ts";
 
@@ -240,5 +241,61 @@ describe("Judges add Groups and Teams on the spot (v1 parity), keyed by the phon
       groups: [{ id: "group-1", name: "Troop 101" }],
       teams: [{ id: "team-1", groupId: "group-1", name: "Flaming Arrows" }],
     });
+  });
+});
+
+describe("the box re-checks number ranges: it's the record of truth on event day", () => {
+  // Clown Car's own field is 0 to 9. An old cached page or a modified client mustn't store 10.
+  beforeEach(withRoster);
+
+  const withValue = (value: unknown) =>
+    put(
+      "/api/scores/score-1",
+      score({ values: { [CLOWN_CAR.ownField]: value } }),
+    );
+
+  it("accepts a value in range, including both ends", async () => {
+    expect((await withValue(9)).status).toBe(201);
+    expect(
+      (
+        await put(
+          "/api/scores/score-2",
+          score({ values: { [CLOWN_CAR.ownField]: 0 } }),
+        )
+      ).status,
+    ).toBe(201);
+  });
+
+  it("refuses a value below min, saying why, and stores nothing", async () => {
+    const res = await withValue(-1);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: expect.stringMatching(
+        /Big Top Cruiser Clowns must be from 0 to 9/,
+      ),
+    });
+    expect(scoreEntries(db)).toHaveLength(0);
+  });
+
+  it("refuses a value above max", async () => {
+    const res = await withValue(10);
+    expect(res.status).toBe(400);
+    expect(await res.text()).toMatch(/must be from 0 to 9/);
+    expect(scoreEntries(db)).toHaveLength(0);
+  });
+
+  it("refuses text that isn't a number in a number field", async () => {
+    expect((await withValue("lots")).status).toBe(400);
+  });
+
+  it("accepts any number for a field with no range", async () => {
+    const res = await put(
+      "/api/scores/score-1",
+      score({
+        activityId: SHOWTIME.id,
+        values: { [SHOWTIME.unrangedField]: 1000 },
+      }),
+    );
+    expect(res.status).toBe(201);
   });
 });

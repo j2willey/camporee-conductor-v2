@@ -73,6 +73,17 @@ export const CLOWN_CAR = {
   /** A field from the Competition's `before` Common Fields (ADR-0020). */
   commonField: "p_flag",
 };
+/** The High Wire Fire Act: Team-level, with one field only Officials enter (`audience: "official"`). */
+export const HIGH_WIRE = {
+  id: activityIdOf("the-high-wire-fire-act"),
+  judgeField: "matches_used",
+  officialField: "field_1777494221037",
+};
+/** Showtime in the Center Ring: Team-level; its `points` number field has no min or max. */
+export const SHOWTIME = {
+  id: activityIdOf("showtime-in-the-center-ring"),
+  unrangedField: "points",
+};
 /** A Troop Challenges Activity: Group-level. */
 export const GROUP_ACTIVITY = activityIdOf("campsite-all-around");
 

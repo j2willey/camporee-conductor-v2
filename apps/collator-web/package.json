@@ -1,0 +1,31 @@
+{
+  "name": "@camporee-conductor/collator-web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Collator web app: the judge page (#40). React + Vite, served by the Collator. No accounts for Judges (ADR-0023).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@camporee-conductor/scoring": "workspace:*",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@camporee-conductor/collator": "workspace:*",
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "better-sqlite3": "13.0.3",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4"
+  }
+}

@@ -8,6 +8,8 @@ export class ConfigError extends Error {
 export interface Config {
   databasePath: string;
   port: number;
+  /** The built web app to serve, or null in development, where Vite serves it. */
+  webRoot: string | null;
 }
 
 /** Reads the Collator's settings from the environment. */
@@ -16,7 +18,12 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   if (!Number.isInteger(port) || port < 0) {
     throw new ConfigError(`PORT must be a whole number, not "${env["PORT"]}".`);
   }
-  return { databasePath: databasePathFrom(env), port };
+  const webRoot = env["WEB_ROOT"];
+  return {
+    databasePath: databasePathFrom(env),
+    port,
+    webRoot: webRoot ? resolve(env["INIT_CWD"] ?? ".", webRoot) : null,
+  };
 }
 
 /**
