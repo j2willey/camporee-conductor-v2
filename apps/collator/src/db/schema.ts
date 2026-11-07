@@ -62,6 +62,8 @@ export const judges = sqliteTable("judges", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
+  /** Their own unit, as they typed it (#41 PR 5): a Group's name, not a roster entry; may not be attending. */
+  homeGroup: text("home_group"),
 });
 
 /**

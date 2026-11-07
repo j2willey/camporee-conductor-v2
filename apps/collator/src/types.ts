@@ -4,6 +4,7 @@ export { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 export type { SignedInOfficial } from "./app.ts";
 export type {
   JudgeActivity,
+  JudgeCompetition,
   JudgeEvent,
   JudgeField,
   JudgeLabels,

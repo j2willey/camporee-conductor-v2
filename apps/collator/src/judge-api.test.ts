@@ -27,6 +27,7 @@ const load = () => {
 };
 
 interface JudgeEvent {
+  competitions: { id: string; label: string; level: "team" | "group" }[];
   event: {
     id: string;
     title: string;
@@ -61,6 +62,16 @@ describe("GET /api/event: the Event a Judge scores", () => {
     });
   });
 
+  it("lists the Competitions in the Event's order, for the judge page's tabs (#41 PR 5)", async () => {
+    load();
+    const { competitions } = await judgeEvent();
+    expect(competitions.map((c) => [c.label, c.level])).toEqual([
+      ["Patrol Games", "team"],
+      ["Exhibition Events", "team"],
+      ["Troop Challenges", "group"],
+    ]);
+  });
+
   it("lists every Activity in the Event's order, with its Competition and level", async () => {
     load();
     const { activities } = await judgeEvent();
@@ -91,6 +102,37 @@ describe("GET /api/event: the Event a Judge scores", () => {
     const highWireIds = highWire?.fields.map((f) => f.id) ?? [];
     expect(highWireIds).toContain(HIGH_WIRE.judgeField);
     expect(highWireIds).not.toContain(HIGH_WIRE.officialField);
+  });
+});
+
+describe("a Judge's home unit (#41 PR 5)", () => {
+  const scoreWith = (judge: Record<string, unknown>) =>
+    app.request("/api/scores/s-1", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        judge: { id: "j-1", name: "Alex", email: "alex@example.com", ...judge },
+        activityId: "no-such-activity",
+        entrantId: "t-1",
+        values: {},
+        phoneCreatedAt: "2027-05-15T09:00:00Z",
+      }),
+    });
+
+  it("is optional free text: a long one is refused before anything else is checked", async () => {
+    load();
+    const res = await scoreWith({ homeGroup: "x".repeat(201) });
+    expect(res.status).toBe(400);
+    expect(await res.text()).toMatch(/homeGroup/);
+  });
+
+  it("takes one, or none, or a blank as none", async () => {
+    load();
+    for (const homeGroup of ["Troop 7", "  ", undefined]) {
+      const res = await scoreWith(homeGroup === undefined ? {} : { homeGroup });
+      // Past the body check: refused for the made-up Activity, not for the Judge.
+      expect(await res.text()).toMatch(/no-such-activity/);
+    }
   });
 });
 

@@ -34,6 +34,8 @@ const ScoreBody = z.strictObject({
     id: PhoneId,
     name: Name,
     email: z.string().trim().toLowerCase().pipe(z.email()),
+    /** Optional free text (#41 PR 5); blank means none. */
+    homeGroup: z.string().max(200).optional(),
   }),
   activityId: z.string().min(1),
   entrantId: PhoneId,

@@ -14,10 +14,16 @@ export interface JudgeField {
   config: NonNullable<ScoringField["config"]>;
 }
 
+export interface JudgeCompetition {
+  id: string;
+  label: string;
+  level: "team" | "group";
+}
+
 export interface JudgeActivity {
   id: string;
   title: string;
-  competition: { id: string; label: string; level: "team" | "group" };
+  competition: JudgeCompetition;
   fields: JudgeField[];
 }
 
@@ -28,6 +34,8 @@ export interface JudgeLabels {
 }
 
 export interface JudgeEvent {
+  /** In the Event's order: the judge page's tabs (#41 PR 5). */
+  competitions: JudgeCompetition[];
   event: {
     id: string;
     title: string;
@@ -66,6 +74,11 @@ export function judgeEvent(bundle: CheckedBundle): JudgeEvent {
       ];
     });
   return {
+    competitions: event.competitions.map((c) => ({
+      id: c.id,
+      label: c.label,
+      level: c.level,
+    })),
     event: {
       id: event.id,
       title: event.title,

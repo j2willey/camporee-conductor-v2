@@ -8,9 +8,9 @@ export function savedJudge(): JudgeIdentity | null {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const judge = JSON.parse(raw) as Partial<JudgeIdentity>;
-    return judge.id && judge.name && judge.email
-      ? { id: judge.id, name: judge.name, email: judge.email }
-      : null;
+    if (!judge.id || !judge.name || !judge.email) return null;
+    const found = { id: judge.id, name: judge.name, email: judge.email };
+    return judge.homeGroup ? { ...found, homeGroup: judge.homeGroup } : found;
   } catch {
     return null;
   }
