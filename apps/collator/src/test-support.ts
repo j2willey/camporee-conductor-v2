@@ -79,6 +79,11 @@ export const HIGH_WIRE = {
   judgeField: "matches_used",
   officialField: "field_1777494221037",
 };
+/** Showtime in the Center Ring: Team-level; its `points` number field has no min or max. */
+export const SHOWTIME = {
+  id: activityIdOf("showtime-in-the-center-ring"),
+  unrangedField: "points",
+};
 /** A Troop Challenges Activity: Group-level. */
 export const GROUP_ACTIVITY = activityIdOf("campsite-all-around");
 

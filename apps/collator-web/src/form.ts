@@ -1,4 +1,5 @@
 import type { JudgeField } from "@camporee-conductor/collator/types";
+import { valueProblem } from "@camporee-conductor/scoring";
 
 /** What the inputs hold: text for most fields, a boolean for checkboxes. */
 export type Entry = Record<string, string | boolean>;
@@ -47,19 +48,13 @@ export function readEntry(
       values[f.id] = text;
       continue;
     }
-    const n = Number(text);
-    if (!Number.isFinite(n)) {
-      problems.push(`${f.label} must be a number`);
+    // The same check the Collator makes (packages/scoring), so the phone and the box agree.
+    const problem = valueProblem(f, text);
+    if (problem) {
+      problems.push(problem);
       continue;
     }
-    const { min, max } = f.config;
-    if ((min !== undefined && n < min) || (max !== undefined && n > max)) {
-      problems.push(
-        `${f.label} must be from ${min ?? "any"} to ${max ?? "any"}`,
-      );
-      continue;
-    }
-    values[f.id] = n;
+    values[f.id] = Number(text);
   }
   return problems.length > 0 ? { ok: false, problems } : { ok: true, values };
 }

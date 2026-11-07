@@ -7,6 +7,7 @@ export {
   metricValue,
   stopwatchSeconds,
   unreadableStopwatch,
+  valueProblem,
 } from "./fields.ts";
 export {
   DEFAULT_PLACEMENT_POINTS,

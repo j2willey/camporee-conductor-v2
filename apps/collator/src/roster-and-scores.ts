@@ -1,4 +1,4 @@
-import type { FieldValue } from "@camporee-conductor/scoring";
+import { valueProblem, type FieldValue } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import {
@@ -136,6 +136,15 @@ export function recordScore(db: Db, score: ScoreSubmission): Recorded {
     return invalid(
       `${officialOnly.join(", ")} at ${activity.title}: entered by Officials, not Judges`,
     );
+  }
+  // The same check the phone makes: the box is the record of truth, whatever the client.
+  const problems = Object.entries(score.values).flatMap(([id, value]) => {
+    const field = byId.get(id);
+    const problem = field && valueProblem(field, value);
+    return problem ? [problem] : [];
+  });
+  if (problems.length > 0) {
+    return invalid(`${activity.title}: ${problems.join("; ")}`);
   }
 
   const onRoster =
