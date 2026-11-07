@@ -97,6 +97,7 @@ pnpm --filter @camporee-conductor/collator backup-now [folder]  # one backup (VA
 cd deploy/collator && docker compose up -d --build --wait     # internal TLS; event day adds -f compose.tls-files.yaml
 docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/<file>.zip
 docs/runbook/rehearse-collator.sh   # build, start on :8443, score over HTTPS, Official view, backups; runs in CI
+docs/runbook/drones-collator.sh     # judge drones (#63): Chromium + WebKit phones on the box over HTTPS; runs in CI
 deploy/collator/issue-cert.sh --print|--check   # Jim only issues the certificate (certbot DNS-01, Cloudflare token)
 
 # One image: the API serving the built app (Clerk keys at run time; dev sign-in refused)

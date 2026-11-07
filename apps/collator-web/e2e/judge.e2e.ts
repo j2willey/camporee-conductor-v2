@@ -106,7 +106,7 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
   });
   await page.getByRole("button", { name: "Save score" }).click();
   // No answer, so it's kept on the phone (#41 PR 2) and the Judge moves on.
-  await expect(page.getByText("Saved on this phone")).toBeVisible();
+  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
 
   // The outbox resends it on its own, same id: the box already has it, so it counts once.
@@ -208,7 +208,7 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
     .waitFor();
   await context.setOffline(true);
   await scoreFlamingArrows(page);
-  await expect(page.getByText("Saved on this phone")).toBeVisible();
+  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
   expect(count("score_entries")).toBe(before);
 
@@ -221,7 +221,7 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
   await page.route("**/api/scores/*", (route) => route.abort());
   await page.getByRole("button", { name: "Score another Patrol" }).click();
   await scoreFlamingArrows(page);
-  await expect(page.getByText("Saved on this phone")).toBeVisible();
+  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
   await page.reload();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
 
@@ -249,7 +249,7 @@ test("out of range is normal: an offline save moves on at once, never in red, an
   await expect(
     page.getByRole("button", { name: "Score another Patrol" }),
   ).toBeVisible({ timeout: 1_000 });
-  await expect(page.getByText("Saved on this phone")).toBeVisible();
+  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
   // Red is only for the box saying no.
   await expect(page.locator(".bg-red-50")).toHaveCount(0);
@@ -294,7 +294,7 @@ test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored
   await page.getByLabel("Big Top Cruiser Clowns").fill("6");
   await page.getByLabel("Patrol Flag").fill("3");
   await page.getByRole("button", { name: "Save score" }).click();
-  await expect(page.getByText("Saved on this phone")).toBeVisible();
+  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/2 waiting to send/);
 
   // The Patrol added on this phone is listed before the box has it.

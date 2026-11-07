@@ -96,3 +96,28 @@ jobs:
       # over HTTPS by hostname, the Official view and the backups (#40).
       - name: Rehearse
         run: docs/runbook/rehearse-collator.sh
+
+  drones:
+    name: Judge drones (box over HTTPS, Chromium + WebKit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      # Simulated Judges' phones in Chromium and WebKit, in Playwright's Docker image, against the real box
+      # image behind Caddy over HTTPS by hostname: offline and reload, a lost reply, two Judges on one Team,
+      # the stopwatch, the build stamp; each score and Team exactly once on the box (#63).
+      - name: Drones
+        run: docs/runbook/drones-collator.sh
+      - name: Keep the traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: drone-results
+          path: apps/collator-web/test-results/drones
+          retention-days: 7
