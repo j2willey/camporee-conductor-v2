@@ -41,9 +41,12 @@ export interface OfficialEvent {
   })[];
 }
 
-export function officialEvent(db: Db, bundle: CheckedBundle): OfficialEvent {
+export function officialEvent(
+  db: Db,
+  bundle: CheckedBundle,
+  entries = scoreEntries(db),
+): OfficialEvent {
   const { event, activities } = judgeEvent(bundle);
-  const entries = scoreEntries(db);
   return {
     event,
     activities: activities.map(({ id, title, competition }) => ({
@@ -92,22 +95,24 @@ export function officialActivity(
   activityId: string,
 ): OfficialActivity | undefined {
   const found = activityFields(bundle, activityId);
-  const listed = officialEvent(db, bundle).activities.find(
+  if (!found) return undefined;
+  const all = scoreEntries(db);
+  const listed = officialEvent(db, bundle, all).activities.find(
     (a) => a.id === activityId,
   );
-  if (!found || !listed) return undefined;
+  if (!listed) return undefined;
 
   const { groups, teams } = roster(db);
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const teamById = new Map(teams.map((t) => [t.id, t]));
   const entrantName = (id: string): EntrantName => {
-    const team = teams.find((t) => t.id === id);
+    const team = teamById.get(id);
     if (team) {
       return { name: team.name, group: groupName.get(team.groupId) ?? null };
     }
     return { name: groupName.get(id) ?? null, group: null };
   };
 
-  const all = scoreEntries(db);
   const newest = newestEntries(all);
   const results = scoreEvent({
     event: bundle.event,

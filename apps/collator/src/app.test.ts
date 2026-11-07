@@ -295,6 +295,18 @@ describe("the box re-checks number ranges: it's the record of truth on event day
     expect((await withValue("lots")).status).toBe(400);
   });
 
+  it("names the field as the phone does, with the Activity's {{variables}} filled in", async () => {
+    // Clown Car's 10 Essentials Common Field is "10 Essentials: {{ten_essentials}}"; its item is Buddy.
+    const res = await put(
+      "/api/scores/score-1",
+      score({ values: { ten_ess: "lots" } }),
+    );
+    expect(res.status).toBe(400);
+    const { error } = (await res.json()) as { error: string };
+    expect(error).toMatch(/10 Essentials: Buddy must be a number/);
+    expect(error).not.toMatch(/\{\{/);
+  });
+
   it("accepts any number for a field with no range", async () => {
     const res = await put(
       "/api/scores/score-1",
