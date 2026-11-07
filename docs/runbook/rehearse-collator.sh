@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Rehearses the on-site box (issue #40, ADR-0027) on a local Docker, end to end over HTTPS by hostname:
 #
-#   1. Caddy accepts the TLS_MODE=files configuration (with a throwaway self-signed certificate).
+#   1. Caddy accepts the TLS_MODE=files configuration (with a throwaway self-signed certificate), and the
+#      certificate script's checks work (fake token file; it never runs certbot here).
 #   2. Build the Collator image and start deploy/collator/compose.yaml with TLS_MODE=internal.
 #   3. Load the Circus 2026 event-day cartridge (with its Officials list) into the running container.
 #   4. Over https://judge.camporeeconductor.com, trusting only Caddy's own root CA (taken from the caddy
@@ -56,6 +57,20 @@ echo "== 1. Caddy accepts TLS_MODE=files"
 openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=$host" -addext "subjectAltName=DNS:$host" \
   -keyout "$work/certs/privkey.pem" -out "$work/certs/fullchain.pem" 2>/dev/null
 chmod 644 "$work/certs/privkey.pem" # readable inside the container; a throwaway key
+
+# The certificate script's checks, with fake files only: it never runs certbot here (--print, --check).
+cert() { CERTS_DIR=$work/certs CLOUDFLARE_INI=$work/fake.ini "$repo/deploy/collator/issue-cert.sh" "$@"; }
+cert --print >/dev/null 2>&1 && fail "issue-cert.sh accepted a missing token file"
+echo "not a token" >"$work/fake.ini" && chmod 644 "$work/fake.ini"
+cert --print >/dev/null 2>&1 && fail "issue-cert.sh accepted a token file with mode 644"
+chmod 600 "$work/fake.ini"
+cert --print | grep -q "certbot/dns-cloudflare:v" || fail "issue-cert.sh --print"
+cert --print | grep -q "not a token" && fail "issue-cert.sh printed the token"
+rc=0 && cert --check >/dev/null 2>&1 || rc=$?
+[ "$rc" = 3 ] || fail "issue-cert.sh --check should warn (3) for a certificate ending before 2027-05-23, got $rc"
+CERT_MUST_LAST_UNTIL=$(date -u +%F) cert --check >/dev/null || fail "issue-cert.sh --check with an earlier date"
+pass "issue-cert.sh refuses a missing or mode-644 token file, never prints it, and checks the expiry"
+
 CERTS_DIR=$work/certs docker compose -p "$project" --env-file "$work/empty.env" \
   -f "$repo/deploy/collator/compose.yaml" -f "$repo/deploy/collator/compose.tls-files.yaml" \
   run --rm --no-deps -T caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >"$work/validate.log" 2>&1 ||
@@ -115,6 +130,7 @@ expect "resend the score" 200 "$resent"
 echo "== 5. the Official view shows exactly one"
 view=$(api GET "/api/official/activities/$activity")
 [ "$(status_of "$view")" = 200 ] || fail "Official view: HTTP $(status_of "$view"): $(body_of "$view")"
+# shellcheck disable=SC2016 # JavaScript, not shell
 counts=$(body_of "$view" | node -e '
   const v = JSON.parse(require("fs").readFileSync(0, "utf8"));
   console.log(`${v.entries.length} ${v.ranking.length} ${v.entries[0]?.id} ${v.ranking[0]?.place}`);')
