@@ -8,7 +8,7 @@ import { useState } from "react";
 import { newId } from "../api.ts";
 import { initialEntry, readEntry, type Entry } from "../form.ts";
 import type { SendNowResult } from "../outbox.ts";
-import { outbox } from "../phone-outbox.ts";
+import { ANSWER_WAIT_MS, outbox } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 import type { Entrant } from "./EntrantPicker.tsx";
 
@@ -129,9 +129,6 @@ export function ScoreForm({
     </form>
   );
 }
-
-/** How long the form waits for the box before telling the Judge the score is kept on the phone. */
-const ANSWER_WAIT_MS = 3000;
 
 function FieldInput({
   field,

@@ -13,6 +13,9 @@ import {
 
 const KEY = "collator.outbox";
 
+/** How long a form waits for the box before telling the Judge it's kept on the phone. */
+export const ANSWER_WAIT_MS = 3000;
+
 const localStore: OutboxStore = {
   load: () => {
     try {
