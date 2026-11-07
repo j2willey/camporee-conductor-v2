@@ -8,7 +8,7 @@ import { useState } from "react";
 import { newId } from "../api.ts";
 import { initialEntry, readEntry, type Entry } from "../form.ts";
 import type { SendNowResult } from "../outbox.ts";
-import { ANSWER_WAIT_MS, outbox } from "../phone-outbox.ts";
+import { answerWaitMs, outbox } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 import type { Entrant } from "./EntrantPicker.tsx";
 
@@ -63,7 +63,7 @@ export function ScoreForm({
         label: `${entrant.label} at ${activity.title}`,
         queuedAt: score.phoneCreatedAt,
       },
-      { waitMs: ANSWER_WAIT_MS },
+      { waitMs: answerWaitMs() },
     );
     if (result.status === "refused") {
       // Nothing was stored, and the same entry would be refused again: the form stays open to fix it.

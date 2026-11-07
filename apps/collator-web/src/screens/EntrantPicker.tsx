@@ -7,7 +7,7 @@ import type {
 } from "@camporee-conductor/collator/types";
 import type { OutboxItem } from "../outbox.ts";
 import { useCallback, useEffect, useState } from "react";
-import { api, errorMessage, newId } from "../api.ts";
+import { api, newId } from "../api.ts";
 import { entrantLabel, levelLabel } from "../format.ts";
 import { matchingGroup, matchingTeam } from "../names.ts";
 import {
@@ -16,8 +16,9 @@ import {
   loadKept,
   rosterWithPending,
 } from "../offline-data.ts";
-import { ANSWER_WAIT_MS, outbox, useOutboxItems } from "../phone-outbox.ts";
+import { answerWaitMs, outbox, useOutboxItems } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
+import { LoadProblem } from "./LoadProblem.tsx";
 
 /** Who's being scored: a Team, or a Group at a Group-level Activity. */
 export interface Entrant {
@@ -46,7 +47,7 @@ export function EntrantPicker({
 }) {
   const [keptRoster, setRoster] = useState<Roster | null>(null);
   const waiting = useOutboxItems();
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const teamLevel = activity.competition.level === "team";
@@ -56,7 +57,7 @@ export function EntrantPicker({
   const loadRoster = useCallback(() => {
     loadKept(ROSTER_KEY, api.roster, localStorage).then(
       (kept) => setRoster(kept.value),
-      (e: unknown) => setError(errorMessage(e)),
+      (e: unknown) => setLoadError(e),
     );
   }, []);
   useEffect(loadRoster, [loadRoster]);
@@ -66,7 +67,7 @@ export function EntrantPicker({
     loadRoster();
   };
 
-  if (error) return <p className={ui.error}>{error}</p>;
+  if (loadError !== null) return <LoadProblem error={loadError} />;
   if (!keptRoster) return <p className={ui.muted}>Loading…</p>;
   const roster = rosterWithPending(keptRoster, waiting);
 
@@ -151,7 +152,7 @@ const ROSTER_KEY = "collator.roster";
  * Send one roster add through the outbox. `waitMs` 0 when something before it is already waiting: it
  * can't go first, so there's nothing to wait for.
  */
-const sendAdd = (item: OutboxItem, waitMs = ANSWER_WAIT_MS) =>
+const sendAdd = (item: OutboxItem, waitMs = answerWaitMs()) =>
   outbox.sendNow(item, { waitMs });
 
 function AddTeam({
@@ -204,7 +205,7 @@ function AddTeam({
     }
     const result = await sendAdd(
       addTeamItem(team, group.name, now),
-      behind ? 0 : ANSWER_WAIT_MS,
+      behind ? 0 : answerWaitMs(),
     );
     if (result.status === "refused") return refuse(result.message);
     onPick({ id: team.id, label: teamLabel(team, group.name) });

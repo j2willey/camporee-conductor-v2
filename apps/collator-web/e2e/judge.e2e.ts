@@ -8,6 +8,8 @@ import Database from "better-sqlite3";
 // #41 PR 2: scores saved with no Wi-Fi are kept on the phone, survive a reload, and arrive once each.
 // #41 PR 3: with no Wi-Fi the page still opens after a reload, a Patrol can be added and scored, and both
 // arrive when it's back; a changed event is announced.
+// #41 follow-up: out of range is normal. An offline save moves on at once and is never shown in red; the
+// page shows its build; a box it can't reach comes with the Nearby devices hint.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -102,7 +104,7 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
   });
   await page.getByRole("button", { name: "Save score" }).click();
   // No answer, so it's kept on the phone (#41 PR 2) and the Judge moves on.
-  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(page.getByText("Saved on this phone")).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
 
   // The outbox resends it on its own, same id: the box already has it, so it counts once.
@@ -204,7 +206,7 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
     .waitFor();
   await context.setOffline(true);
   await scoreFlamingArrows(page);
-  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(page.getByText("Saved on this phone")).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
   expect(count("score_entries")).toBe(before);
 
@@ -217,7 +219,7 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
   await page.route("**/api/scores/*", (route) => route.abort());
   await page.getByRole("button", { name: "Score another Patrol" }).click();
   await scoreFlamingArrows(page);
-  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(page.getByText("Saved on this phone")).toBeVisible();
   await page.reload();
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
 
@@ -225,6 +227,38 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
   await waitingToSend(page).getByRole("button", { name: "Send now" }).click();
   await expect(waitingToSend(page)).toHaveCount(0);
   expect(count("score_entries")).toBe(before + 2);
+});
+
+test("out of range is normal: an offline save moves on at once, never in red, and arrives once when it's back", async ({
+  page,
+  context,
+}) => {
+  await startJudging(page);
+  // Which build this is, on the page itself.
+  await expect(page.getByText(/^Build \w+/)).toBeVisible();
+  await page
+    .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+    .waitFor();
+  const before = count("score_entries");
+
+  await context.setOffline(true);
+  await scoreFlamingArrows(page);
+  // Straight on to the next Patrol: no waiting on the box.
+  await expect(
+    page.getByRole("button", { name: "Score another Patrol" }),
+  ).toBeVisible({ timeout: 1_000 });
+  await expect(page.getByText("Saved on this phone")).toBeVisible();
+  await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
+  // Red is only for the box saying no.
+  await expect(page.locator(".bg-red-50")).toHaveCount(0);
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(
+    page.getByText(/Not saved|Try again|Check the Wi-Fi/),
+  ).toHaveCount(0);
+
+  await context.setOffline(false);
+  await expect(waitingToSend(page)).toHaveCount(0, { timeout: 10_000 });
+  expect(count("score_entries")).toBe(before + 1);
 });
 
 test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored there arrives when it's back", async ({
@@ -258,7 +292,7 @@ test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored
   await page.getByLabel("Big Top Cruiser Clowns").fill("6");
   await page.getByLabel("Patrol Flag").fill("3");
   await page.getByRole("button", { name: "Save score" }).click();
-  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(page.getByText("Saved on this phone")).toBeVisible();
   await expect(waitingToSend(page)).toHaveText(/2 waiting to send/);
 
   // The Patrol added on this phone is listed before the box has it.
@@ -279,9 +313,21 @@ test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored
 });
 
 test.describe("without the service worker", () => {
-  // Playwright can't route the page's requests once the service worker controls it, and the check is the
-  // page's own: run it with the service worker blocked.
+  // Playwright can't route the page's requests once the service worker controls it, and these checks are
+  // the page's own: run them with the service worker blocked.
   test.use({ serviceWorkers: "block" });
+
+  test("a phone that can't reach the box, with nothing kept, gets the Nearby devices hint, not red", async ({
+    page,
+  }) => {
+    await page.route("**/api/event", (route) => route.abort());
+    await page.goto("/");
+    await expect(page.getByRole("alert")).toContainText(
+      "Can't reach the scoring box.",
+    );
+    await expect(page.getByRole("alert")).toContainText("Nearby devices");
+    await expect(page.locator(".bg-red-50")).toHaveCount(0);
+  });
 
   test("a Judge is told when the event changed on the box", async ({
     page,

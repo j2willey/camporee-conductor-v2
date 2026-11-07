@@ -26,9 +26,9 @@ export function Saved({
           {result.repeat && " (The box already had it.)"}
         </p>
       ) : (
-        <p className={ui.warning} role="status">
-          Score kept on this phone: {entrant.label} at {activity.title}. It will
-          send when you're back in range of the scoring box.
+        <p className={`${ui.note} text-base`} role="status">
+          Saved on this phone: {entrant.label} at {activity.title}. It will send
+          by itself when the scoring box is in range.
         </p>
       )}
       <button className={ui.button} onClick={onNext}>

@@ -16,5 +16,7 @@ export const ui = {
   link: "text-sm text-teal-700 underline underline-offset-2",
   error: "rounded-md bg-red-50 px-3 py-2 text-sm text-red-800",
   warning: "rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900",
+  /** Normal news, e.g. kept on the phone while out of range: not a warning (#41). */
+  note: "rounded-md bg-stone-100 px-3 py-2 text-sm text-stone-800",
   success: "rounded-md bg-teal-50 px-3 py-3 text-base text-teal-900",
 };

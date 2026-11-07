@@ -18,7 +18,7 @@ export function OutboxStatus() {
     <div className="flex flex-col gap-2">
       {waiting.length > 0 && (
         <div
-          className={`${ui.warning} flex items-center justify-between gap-2`}
+          className={`${ui.note} flex items-center justify-between gap-2`}
           role="status"
           aria-label="Waiting to send"
         >

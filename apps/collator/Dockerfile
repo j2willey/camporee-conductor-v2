@@ -32,7 +32,9 @@ COPY packages/scoring packages/scoring
 COPY packages/cartridge packages/cartridge
 COPY apps/collator apps/collator
 COPY apps/collator-web apps/collator-web
-RUN pnpm --filter @camporee-conductor/collator-web build
+# The commit shown on the judge page (#41); there is no .git in here. compose.yaml passes it in.
+ARG BUILD_COMMIT=unknown
+RUN BUILD_COMMIT=${BUILD_COMMIT} pnpm --filter @camporee-conductor/collator-web build
 
 # The Collator's production dependencies. Build tools in case better-sqlite3 has no prebuilt binary.
 FROM manifests AS app
