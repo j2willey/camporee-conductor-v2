@@ -9,6 +9,7 @@ import {
   type SignedInOfficial,
   type Team,
 } from "@camporee-conductor/collator/types";
+import type { OutboxItem, SendResult } from "./outbox.ts";
 
 /**
  * A failed call, with the Collator's message, or "can't reach the box" when there's no answer.
@@ -86,6 +87,16 @@ export const api = {
   putScore: ({ id, ...score }: ScoreSubmission) =>
     put(`/api/scores/${id}`, score),
 };
+
+/** One send from the outbox (#41 PR 2): what the box answered, or that it couldn't be reached. */
+export async function sendQueued(item: OutboxItem): Promise<SendResult> {
+  try {
+    const { status } = await put(item.path, item.body);
+    return { ok: true, repeat: status === "repeat" };
+  } catch (e) {
+    return { ok: false, refused: wasRefused(e), message: errorMessage(e) };
+  }
+}
 
 /** A new id, made on the phone (ADR-0027 item 8). */
 export function newId(): string {

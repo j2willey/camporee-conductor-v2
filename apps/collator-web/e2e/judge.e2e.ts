@@ -5,6 +5,7 @@ import Database from "better-sqlite3";
 // #40 PR 2: a Judge with no account scores a newly added Patrol at Clown Car; a resend after a lost reply
 // doesn't duplicate the score; adding the same Patrol again is caught by the name warning.
 // #40 PR 3: an Official listed in the cartridge sees that score ranked; an unlisted email is refused.
+// #41 PR 2: scores saved with no Wi-Fi are kept on the phone, survive a reload, and arrive once each.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -19,6 +20,19 @@ const count = (table: string) => {
     db.close();
   }
 };
+
+/** The header line that counts scores kept on the phone and not yet in the box (#41 PR 2). */
+const waitingToSend = (page: Page) =>
+  page.getByRole("status", { name: "Scores waiting to send" });
+
+async function scoreFlamingArrows(page: Page) {
+  await page
+    .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+    .click();
+  await page.getByLabel("Big Top Cruiser Clowns").fill("8");
+  await page.getByLabel("Patrol Flag").fill("4");
+  await page.getByRole("button", { name: "Save score" }).click();
+}
 
 async function startJudging(page: Page) {
   await page.goto("/");
@@ -86,13 +100,12 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
     await route.fulfill({ status: 503, json: { error: "no answer" } });
   });
   await page.getByRole("button", { name: "Save score" }).click();
-  await expect(page.getByRole("alert")).toContainText("Not saved");
-  await expect(page.getByLabel("Big Top Cruiser Clowns")).toHaveValue("7");
+  // No answer, so it's kept on the phone (#41 PR 2) and the Judge moves on.
+  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
 
-  await page.getByRole("button", { name: "Try again" }).click();
-  await expect(page.getByRole("status")).toHaveText(
-    "Score saved: Flaming Arrows (Troop 101) at Clown Car. (The box already had it.)",
-  );
+  // The outbox resends it on its own, same id: the box already has it, so it counts once.
+  await expect(waitingToSend(page)).toHaveCount(0, { timeout: 10_000 });
   expect(count("score_entries")).toBe(1);
 });
 
@@ -175,4 +188,40 @@ test("an Official on the cartridge's list sees the score ranked; an unlisted ema
   );
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page.getByRole("heading", { name: "Officials" })).toBeVisible();
+});
+
+test("scores saved with no Wi-Fi are kept on the phone and arrive once each when it's back", async ({
+  page,
+  context,
+}) => {
+  await startJudging(page);
+  const before = count("score_entries");
+
+  // Wi-Fi drops between picking the Patrol and saving.
+  await page
+    .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+    .waitFor();
+  await context.setOffline(true);
+  await scoreFlamingArrows(page);
+  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
+  expect(count("score_entries")).toBe(before);
+
+  // Back in range: it goes by itself.
+  await context.setOffline(false);
+  await expect(waitingToSend(page)).toHaveCount(0, { timeout: 10_000 });
+  expect(count("score_entries")).toBe(before + 1);
+
+  // The box can't be reached for scores, and the page is reloaded: the score is still on the phone.
+  await page.route("**/api/scores/*", (route) => route.abort());
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await scoreFlamingArrows(page);
+  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await page.reload();
+  await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
+
+  await page.unroute("**/api/scores/*");
+  await waitingToSend(page).getByRole("button", { name: "Send now" }).click();
+  await expect(waitingToSend(page)).toHaveCount(0);
+  expect(count("score_entries")).toBe(before + 2);
 });

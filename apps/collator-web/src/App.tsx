@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { api, errorMessage } from "./api.ts";
 import { levelLabel } from "./format.ts";
 import { savedJudge } from "./identity.ts";
+import type { SendNowResult } from "./outbox.ts";
+import { OutboxStatus } from "./screens/OutboxStatus.tsx";
 import { ActivityList } from "./screens/ActivityList.tsx";
 import { EntrantPicker, type Entrant } from "./screens/EntrantPicker.tsx";
 import { JudgeDetails } from "./screens/JudgeDetails.tsx";
@@ -15,7 +17,8 @@ import { ScoreForm } from "./screens/ScoreForm.tsx";
 import { ui } from "./ui.ts";
 
 // The judge page (#40 PR 2): who's judging → Activity → Team (or Group) → form → saved.
-// No account (ADR-0023). Offline queue, drafts, stopwatch and QR codes come with #41.
+// No account (ADR-0023). Scores go through the phone's outbox (#41 PR 2); drafts, stopwatch and QR codes
+// come later in #41.
 
 type Step =
   | { name: "activity" }
@@ -25,7 +28,7 @@ type Step =
       name: "saved";
       activity: JudgeActivity;
       entrant: Entrant;
-      repeat: boolean;
+      result: Exclude<SendNowResult, { status: "refused" }>;
     };
 
 export function App() {
@@ -65,6 +68,7 @@ export function App() {
           </button>
         </p>
       )}
+      <OutboxStatus />
     </header>
   );
 
@@ -108,12 +112,12 @@ export function App() {
           activity={step.activity}
           entrant={step.entrant}
           judge={judge}
-          onSaved={(repeat) =>
+          onSaved={(result) =>
             setStep({
               name: "saved",
               activity: step.activity,
               entrant: step.entrant,
-              repeat,
+              result,
             })
           }
           onBack={() => setStep({ name: "entrant", activity: step.activity })}
@@ -123,7 +127,7 @@ export function App() {
         <Saved
           activity={step.activity}
           entrant={step.entrant}
-          repeat={step.repeat}
+          result={step.result}
           entrantLabel={levelLabel(step.activity.competition.level, labels)}
           onNext={() => setStep({ name: "entrant", activity: step.activity })}
           onChangeActivity={() => setStep({ name: "activity" })}
