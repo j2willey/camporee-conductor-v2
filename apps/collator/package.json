@@ -1,0 +1,28 @@
+{
+  "name": "@camporee-conductor/collator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Collator: the on-site event-day server. Loads an event-day cartridge, takes Judges' score entries, serves Officials. Works offline. (ADR-0015, 0023, 0026, 0027)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "start": "node src/main.ts",
+    "load-cartridge": "node src/cli/load-cartridge.ts",
+    "db:generate": "drizzle-kit generate"
+  },
+  "dependencies": {
+    "@camporee-conductor/cartridge": "workspace:*",
+    "@camporee-conductor/schema": "workspace:*",
+    "@camporee-conductor/scoring": "workspace:*",
+    "@hono/node-server": "2.1.5",
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.13",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "drizzle-kit": "0.31.11"
+  }
+}

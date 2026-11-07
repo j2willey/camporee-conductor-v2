@@ -23,3 +23,6 @@ events/**/camporee.json
 # Playwright output
 test-results/
 playwright-report/
+
+# Agent worktrees (CLAUDE.md: agents work in a git worktree). Each holds a full checkout of a branch.
+.claude/worktrees/
