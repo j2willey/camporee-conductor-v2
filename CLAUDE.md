@@ -90,13 +90,21 @@ pnpm --filter @camporee-conductor/collator start            # WEB_ROOT=apps/coll
 pnpm --filter @camporee-conductor/collator-web dev          # judge page on :5174 (Official view at /official), proxies to the Collator
 pnpm --filter @camporee-conductor/collator-web e2e          # Playwright: judge page and Official view on a phone-sized browser, :3040
 pnpm --filter @camporee-conductor/collator db:generate     # new migration after changing src/db/schema.ts
+pnpm --filter @camporee-conductor/collator backup-now [folder]  # one backup (VACUUM INTO); the server backs up every
+                                                           # BACKUP_EVERY_MINUTES (5) to BACKUP_DIR (off when unset)
+
+# The on-site box (docs/runbook/collator.md): Collator + Caddy, amd64 only. TLS_MODE=internal (dev/CI) or files.
+cd deploy/collator && docker compose up -d --build --wait     # internal TLS; event day adds -f compose.tls-files.yaml
+docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/<file>.zip
+docs/runbook/rehearse-collator.sh   # build, start on :8443, score over HTTPS, Official view, backups; runs in CI
+deploy/collator/issue-cert.sh --print|--check   # Jim only issues the certificate (certbot DNS-01, Cloudflare token)
 
 # One image: the API serving the built app (Clerk keys at run time; dev sign-in refused)
 docker build -t composer . && docker run --rm --init -p 3010:3010 --env-file .env.local -v composer-data:/data composer
 ```
 
-CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test, the Playwright smoke test, and a Docker
-image build-and-start check on every PR and push to `main`.
+CI (`.github/workflows/ci.yml`) runs install → typecheck → lint → test, the Playwright smoke test, a Docker
+image build-and-start check and the Collator box rehearsal on every PR and push to `main`.
 
 ## Layout
 
@@ -114,9 +122,13 @@ apps/composer-api/  Composer API: Hono, SQLite/Drizzle, auth module (Clerk + dev
 apps/composer-web/  Composer web app: React + Vite SPA (React Router library mode), TanStack Query, Tailwind;
                     e2e/ is the Playwright smoke test
 apps/collator/      Collator: the on-site event-day server (ADR-0027). Hono, SQLite/Drizzle; loads an event-day
-                    cartridge; roster and score entries keyed by phone-made ids; read-only Official view API (#40)
+                    cartridge; roster and score entries keyed by phone-made ids; read-only Official view API;
+                    backups to a folder; Dockerfile (built from the repo root) (#40)
 apps/collator-web/  Collator web app (React + Vite, Tailwind), served by the Collator: the judge page at / (no
                     accounts) and the Official view at /official
+deploy/collator/    the on-site box: compose.yaml (collator + caddy), caddy/ (Caddyfile + TLS_MODE snippets),
+                    compose.tls-files.yaml, env.example, issue-cert.sh (#40)
+docs/runbook/       runbooks: deploy.md (Composer droplet), collator.md (on-site box) and their rehearsal scripts
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```

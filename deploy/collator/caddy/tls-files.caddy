@@ -1,0 +1,3 @@
+# TLS_MODE=files: certificate files supplied (deploy/collator/issue-cert.sh writes them), mounted read-only
+# at /certs by compose.tls-files.yaml.
+tls /certs/fullchain.pem /certs/privkey.pem

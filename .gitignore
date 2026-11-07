@@ -26,3 +26,7 @@ playwright-report/
 
 # Agent worktrees (CLAUDE.md: agents work in a git worktree). Each holds a full checkout of a branch.
 .claude/worktrees/
+
+# The on-site box: backups and event-day cartridges hold names and emails (issue #40).
+deploy/collator/backups/
+deploy/collator/cartridges/

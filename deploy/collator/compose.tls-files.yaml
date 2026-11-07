@@ -1,0 +1,9 @@
+# TLS_MODE=files: Caddy serves certificate files supplied from CERTS_DIR, a folder outside the repo holding
+# fullchain.pem and privkey.pem (deploy/collator/issue-cert.sh writes it). Used on top of compose.yaml:
+#   docker compose -f compose.yaml -f compose.tls-files.yaml up -d
+services:
+  caddy:
+    environment:
+      TLS_MODE: files
+    volumes:
+      - ${CERTS_DIR:?set CERTS_DIR to the folder holding fullchain.pem and privkey.pem}:/certs:ro
