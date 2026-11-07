@@ -4,17 +4,19 @@ import type {
   JudgeIdentity,
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
-import { api, errorMessage } from "./api.ts";
+import { api } from "./api.ts";
 import { levelLabel } from "./format.ts";
 import { savedJudge } from "./identity.ts";
 import { loadKept } from "./offline-data.ts";
 import type { SendNowResult } from "./outbox.ts";
+import { LoadProblem } from "./screens/LoadProblem.tsx";
 import { OutboxStatus } from "./screens/OutboxStatus.tsx";
 import { ActivityList } from "./screens/ActivityList.tsx";
 import { EntrantPicker, type Entrant } from "./screens/EntrantPicker.tsx";
 import { JudgeDetails } from "./screens/JudgeDetails.tsx";
 import { Saved } from "./screens/Saved.tsx";
 import { ScoreForm } from "./screens/ScoreForm.tsx";
+import { BuildStamp } from "./screens/BuildStamp.tsx";
 import { ui } from "./ui.ts";
 
 // The judge page (#40 PR 2): who's judging → Activity → Team (or Group) → form → saved.
@@ -39,7 +41,7 @@ export function App() {
   const [event, setEvent] = useState<JudgeEvent | null>(null);
   const [fromPhone, setFromPhone] = useState(false);
   const [eventChanged, setEventChanged] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<unknown>(null);
   const [judge, setJudge] = useState<JudgeIdentity | null>(savedJudge);
   const [editingJudge, setEditingJudge] = useState(false);
   const [step, setStep] = useState<Step>({ name: "activity" });
@@ -50,7 +52,7 @@ export function App() {
         setEvent(kept.value);
         setFromPhone(kept.fromPhone);
       },
-      (e: unknown) => setLoadError(errorMessage(e)),
+      (e: unknown) => setLoadError(e),
     );
   }, []);
 
@@ -80,10 +82,10 @@ export function App() {
     };
   }, [event]);
 
-  if (loadError) {
+  if (loadError !== null) {
     return (
       <Shell>
-        <p className={ui.error}>{loadError}</p>
+        <LoadProblem error={loadError} />
       </Shell>
     );
   }
@@ -192,5 +194,10 @@ export function App() {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-md px-4 py-4">{children}</main>;
+  return (
+    <main className="mx-auto max-w-md px-4 py-4">
+      {children}
+      <BuildStamp />
+    </main>
+  );
 }

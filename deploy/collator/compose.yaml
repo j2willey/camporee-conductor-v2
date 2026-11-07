@@ -12,6 +12,10 @@ services:
     build:
       context: ../..
       dockerfile: apps/collator/Dockerfile
+      # Shown on the judge page so a phone shows which build it has (#41):
+      #   BUILD_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build --wait
+      args:
+        BUILD_COMMIT: ${BUILD_COMMIT:-unknown}
     image: ${COLLATOR_IMAGE:-collator:local}
     # amd64 only (ADR-0027 item 2).
     platform: linux/amd64

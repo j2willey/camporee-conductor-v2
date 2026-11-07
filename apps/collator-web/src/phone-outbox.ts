@@ -13,8 +13,12 @@ import {
 
 const KEY = "collator.outbox";
 
-/** How long a form waits for the box before telling the Judge it's kept on the phone. */
-export const ANSWER_WAIT_MS = 3000;
+/**
+ * How long a form waits for the box before telling the Judge it's kept on the phone: 3 s while a send is
+ * under way and slow, none when the phone knows it's offline. Out of range is normal, not something to
+ * wait out (#41).
+ */
+export const answerWaitMs = () => (navigator.onLine ? 3000 : 0);
 
 const localStore: OutboxStore = {
   load: () => {

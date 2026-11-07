@@ -59,11 +59,20 @@ Automatic DNS-01 inside Caddy needs a custom Caddy build: later.
 
 ## 3. Start
 
+From the checkout (and branch) you mean to run. `--build` rebuilds the image from it; without it, Compose
+reuses whatever `collator:local` was built last, which may be an old build.
+
 ```sh
 cd deploy/collator
-docker compose up -d --build --wait
+git log --oneline -1                                               # the commit you're building
+BUILD_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build --wait
 docker compose ps        # collator (healthy) and caddy (running)
+docker image inspect collator:local --format '{{.Created}}'        # just now
 ```
+
+**Check the build on the phone:** the judge page shows `Build <commit> · <time>` in small grey text at the
+bottom. It should match `git log --oneline -1`. If a phone shows an older one, reload the page twice: the
+first load after an update may still be the copy the phone kept.
 
 ## 4. Load the event-day cartridge
 
@@ -93,6 +102,17 @@ newest `BACKUP_KEEP` (default 288, a day's worth). A mounted USB stick is just a
   The phones resend anything newer (ADR-0027 item 8).
 
 ## 6. If a phone can't connect
+
+- **Android: Chrome needs the "Nearby devices" permission** to reach the box on the local network:
+  Settings → Apps → Chrome → Permissions → Nearby devices → Allow. Without it, the page says "Can't reach
+  the scoring box" (or the reload fails with `ERR_TOO_MANY_RETRIES`), and Android gives no hint why. The
+  judge page shows this hint when it can't reach the box. **Do it at check-in**, with a volunteer, before
+  the Judge scans the judge URL: Judges shouldn't have to find it at their Station.
+- **iPhone: use Safari.** Chrome and other browsers on iOS need "Local Network" access (Settings → Privacy &
+  Security → Local Network). Safari itself is expected not to need it: confirm on a real iPhone.
+- The Wi-Fi must let phones reach the box: **Client Device Isolation (AP isolation) off.**
+- An Android phone that's asleep doesn't answer ARP (`ip neigh` shows FAILED). Wake it before network tests.
+- Caddy on the box logs no requests, so its logs can't show whether a phone reached it.
 
 - The A record publishes the box's **private** IP in public DNS; that's expected. A router with DNS
   rebinding protection may refuse to answer it; then add a local DNS override for the name on the router.
@@ -125,7 +145,8 @@ On Omarchy, after step 1 (certificate issued, `--check` OK):
 - [ ] Public DNS: `judge.camporeeconductor.com` resolves to Omarchy's home-LAN IP (`dig +short judge.camporeeconductor.com`).
 - [ ] `cp deploy/collator/env.example deploy/collator/.env`; set `CERTS_DIR=$HOME/collator-certs` and a
       `BACKUP_HOST_DIR` you can write to as uid 1000.
-- [ ] `cd deploy/collator && docker compose up -d --build --wait`.
+- [ ] `cd deploy/collator && BUILD_COMMIT=$(git rev-parse --short HEAD) docker compose up -d --build --wait`
+      (§3), and the phone shows that build at the bottom of the judge page.
 - [ ] Load the Circus 2026 event-day cartridge: from the repo root,
       `node apps/collator-web/e2e/make-cartridge.ts deploy/collator/cartridges/circus-event-day.zip`, then
       `docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/circus-event-day.zip`.
@@ -139,13 +160,16 @@ On Omarchy, after step 1 (certificate issued, `--check` OK):
 
 ## Offline check on real phones (#41; Jim, recorded in the PR)
 
-Service workers behave differently in each browser, and Judges use both: do this on an **iPhone (Safari)**
-and an **Android phone (Chrome)**, with the box up and the event loaded as above.
+Service workers behave differently in each browser, and Judges use both: do this on an **Android phone
+(Chrome)**, an **iPhone in Safari** and an **iPhone in Chrome**, with the box rebuilt (§3: check the build
+on the phone) and the event loaded as above.
 
+- [ ] Android: Chrome has the Nearby devices permission (§6). iPhone in Chrome: note whether it asked for
+      Local Network access.
 - [ ] In range: open `https://judge.camporeeconductor.com`, enter a Judge name and email, pick an Activity,
       and wait for the list of Teams to show. (That keeps the app, the event and the roster on the phone.)
-- [ ] Airplane mode on (Wi-Fi off too). Score a listed Team: "Score kept on this phone", and the header says
-      "1 score waiting to send".
+- [ ] Airplane mode on (Wi-Fi off too). Score a listed Team: at once, a grey "Saved on this phone" and
+      "Score another …"; the header says "1 score waiting to send". Nothing red, no "Try again".
 - [ ] Still offline: close the browser tab, open the page again (or pull to reload). It opens, with "using
       the event saved on this phone".
 - [ ] Still offline: add a new Team in an existing Group and score it. The header says "3 waiting to send",
