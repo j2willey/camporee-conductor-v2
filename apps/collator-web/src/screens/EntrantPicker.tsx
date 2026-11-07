@@ -5,10 +5,18 @@ import type {
   Roster,
   Team,
 } from "@camporee-conductor/collator/types";
+import type { OutboxItem } from "../outbox.ts";
 import { useCallback, useEffect, useState } from "react";
-import { api, errorMessage, newId, wasRefused } from "../api.ts";
+import { api, errorMessage, newId } from "../api.ts";
 import { entrantLabel, levelLabel } from "../format.ts";
 import { matchingGroup, matchingTeam } from "../names.ts";
+import {
+  addGroupItem,
+  addTeamItem,
+  loadKept,
+  rosterWithPending,
+} from "../offline-data.ts";
+import { ANSWER_WAIT_MS, outbox, useOutboxItems } from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 
 /** Who's being scored: a Team, or a Group at a Group-level Activity. */
@@ -22,6 +30,8 @@ export interface Entrant {
  * Pick who's being scored. Picking an existing one is the default path; adding is the quieter option
  * below the list (v1 parity). Two phones adding the same Patrol would make duplicates, so a name that
  * matches one already listed warns first and offers it. Merging duplicates is an Official's tool (#42).
+ * With no Wi-Fi (#41 PR 3) the list is the one kept on the phone, plus what this phone added that's still
+ * waiting to send; adds go through the outbox like scores.
  */
 export function EntrantPicker({
   activity,
@@ -34,7 +44,8 @@ export function EntrantPicker({
   onPick: (entrant: Entrant) => void;
   onBack: () => void;
 }) {
-  const [roster, setRoster] = useState<Roster | null>(null);
+  const [keptRoster, setRoster] = useState<Roster | null>(null);
+  const waiting = useOutboxItems();
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
@@ -43,7 +54,10 @@ export function EntrantPicker({
 
   // Fresh each time: Teams other Judges added since are listed, so they're picked, not added again.
   const loadRoster = useCallback(() => {
-    api.roster().then(setRoster, (e: unknown) => setError(errorMessage(e)));
+    loadKept(ROSTER_KEY, api.roster, localStorage).then(
+      (kept) => setRoster(kept.value),
+      (e: unknown) => setError(errorMessage(e)),
+    );
   }, []);
   useEffect(loadRoster, [loadRoster]);
   // After a cancelled add, reload: anything the box did save is then listed and its name warns.
@@ -53,7 +67,8 @@ export function EntrantPicker({
   };
 
   if (error) return <p className={ui.error}>{error}</p>;
-  if (!roster) return <p className={ui.muted}>Loading…</p>;
+  if (!keptRoster) return <p className={ui.muted}>Loading…</p>;
+  const roster = rosterWithPending(keptRoster, waiting);
 
   const groupName = (id: string) =>
     roster.groups.find((g) => g.id === id)?.name ?? "?";
@@ -106,6 +121,7 @@ export function EntrantPicker({
             roster={roster}
             labels={labels}
             onPick={onPick}
+            onRefused={loadRoster}
             onCancel={closeAdd}
           />
         ) : (
@@ -129,16 +145,27 @@ export function EntrantPicker({
 }
 
 const NEW = "__new__";
+const ROSTER_KEY = "collator.roster";
+
+/**
+ * Send one roster add through the outbox. `waitMs` 0 when something before it is already waiting: it
+ * can't go first, so there's nothing to wait for.
+ */
+const sendAdd = (item: OutboxItem, waitMs = ANSWER_WAIT_MS) =>
+  outbox.sendNow(item, { waitMs });
 
 function AddTeam({
   roster,
   labels,
   onPick,
+  onRefused,
   onCancel,
 }: {
   roster: Roster;
   labels: JudgeLabels;
   onPick: (entrant: Entrant) => void;
+  /** The box refused part of the add: reload the list, since a new Group may have been saved. */
+  onRefused: () => void;
   onCancel: () => void;
 }) {
   const [groupChoice, setGroupChoice] = useState(
@@ -148,8 +175,6 @@ function AddTeam({
   const [teamName, setTeamName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [pending, setPending] = useState<NewTeam | null>(null);
-  const locked = pending !== null;
 
   const groupMatch =
     groupChoice === NEW
@@ -163,32 +188,31 @@ function AddTeam({
     existingGroup !== undefined ||
     (groupChoice === NEW && newGroupName.trim() !== "");
 
-  // The ids are made once per attempt and kept until it succeeds: "Try again" resends the same ones, so
-  // a lost reply never adds the Team (or its new Group) twice (ADR-0027 item 8).
-  const attempt = (): NewTeam => {
+  // New ids for each add, made on the phone: the outbox resends them unchanged, so a lost reply never adds
+  // the Team (or its new Group) twice (ADR-0027 item 8). The Group goes first: the outbox sends in order.
+  const add = async () => {
     const group = existingGroup ?? { id: newId(), name: newGroupName.trim() };
-    return {
-      group,
-      groupIsNew: !existingGroup,
-      team: { id: newId(), groupId: group.id, name: teamName.trim() },
-    };
-  };
-  const add = async (adding: NewTeam) => {
-    setPending(adding);
+    const team = { id: newId(), groupId: group.id, name: teamName.trim() };
+    const now = new Date().toISOString();
     setSaving(true);
     setError(null);
-    try {
-      if (adding.groupIsNew) await api.putGroup(adding.group);
-      await api.putTeam(adding.team);
-      onPick({
-        id: adding.team.id,
-        label: teamLabel(adding.team, adding.group.name),
-      });
-    } catch (e) {
-      if (wasRefused(e)) setPending(null);
-      setError(errorMessage(e));
-      setSaving(false);
+    let behind = false;
+    if (!existingGroup) {
+      const result = await sendAdd(addGroupItem(group, now));
+      if (result.status === "refused") return refuse(result.message);
+      behind = result.status === "waiting";
     }
+    const result = await sendAdd(
+      addTeamItem(team, group.name, now),
+      behind ? 0 : ANSWER_WAIT_MS,
+    );
+    if (result.status === "refused") return refuse(result.message);
+    onPick({ id: team.id, label: teamLabel(team, group.name) });
+  };
+  const refuse = (message: string) => {
+    setError(message);
+    setSaving(false);
+    onRefused();
   };
 
   return (
@@ -196,8 +220,7 @@ function AddTeam({
       className={`${ui.card} flex flex-col gap-3`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (pending) void add(pending);
-        else if (!teamMatch && !groupMatch) void add(attempt());
+        if (!teamMatch && !groupMatch) void add();
       }}
     >
       <h2 className={ui.h2}>Add a {labels.team}</h2>
@@ -207,7 +230,7 @@ function AddTeam({
           className={ui.input}
           value={groupChoice}
           onChange={(e) => setGroupChoice(e.target.value)}
-          disabled={locked}
+          disabled={saving}
           required
         >
           <option value="" disabled>
@@ -228,7 +251,7 @@ function AddTeam({
             className={ui.input}
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
-            disabled={locked}
+            disabled={saving}
             required
           />
         </label>
@@ -251,7 +274,7 @@ function AddTeam({
           className={ui.input}
           value={teamName}
           onChange={(e) => setTeamName(e.target.value)}
-          disabled={locked}
+          disabled={saving}
           required
         />
       </label>
@@ -265,20 +288,19 @@ function AddTeam({
           word={labels.team}
           saving={saving}
           onPick={onPick}
-          onAddAnyway={() => void add(pending ?? attempt())}
+          onAddAnyway={() => void add()}
         />
       )}
-      {error && <NotSaved error={error} kept={locked} />}
-      {(locked || !teamMatch) && (
+      {error && <NotSaved error={error} />}
+      {!teamMatch && (
         <button
           className={ui.button}
           type="submit"
           disabled={
-            saving ||
-            (!locked && (!groupReady || teamName.trim() === "" || !!groupMatch))
+            saving || !groupReady || teamName.trim() === "" || !!groupMatch
           }
         >
-          {saving ? "Saving…" : locked ? "Try again" : `Add ${labels.team}`}
+          {saving ? "Saving…" : `Add ${labels.team}`}
         </button>
       )}
       <button type="button" className={ui.link} onClick={onCancel}>
@@ -302,33 +324,28 @@ function AddGroup({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  // As in AddTeam: one id per attempt, resent unchanged by "Try again".
-  const [pending, setPending] = useState<Group | null>(null);
-  const locked = pending !== null;
   const match = matchingGroup(roster.groups, name, labels.group);
 
-  const add = async (group: Group) => {
-    setPending(group);
+  // As in AddTeam: a new id each add, resent unchanged by the outbox.
+  const add = async () => {
+    const group: Group = { id: newId(), name: name.trim() };
     setSaving(true);
     setError(null);
-    try {
-      await api.putGroup(group);
-      onPick({ id: group.id, label: group.name });
-    } catch (e) {
-      if (wasRefused(e)) setPending(null);
-      setError(errorMessage(e));
+    const result = await sendAdd(addGroupItem(group, new Date().toISOString()));
+    if (result.status === "refused") {
+      setError(result.message);
       setSaving(false);
+      return;
     }
+    onPick({ id: group.id, label: group.name });
   };
-  const attempt = (): Group => ({ id: newId(), name: name.trim() });
 
   return (
     <form
       className={`${ui.card} flex flex-col gap-3`}
       onSubmit={(e) => {
         e.preventDefault();
-        if (pending) void add(pending);
-        else if (!match) void add(attempt());
+        if (!match) void add();
       }}
     >
       <h2 className={ui.h2}>Add a {labels.group}</h2>
@@ -338,7 +355,7 @@ function AddGroup({
           className={ui.input}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          disabled={locked}
+          disabled={saving}
           required
         />
       </label>
@@ -349,17 +366,17 @@ function AddGroup({
           word={labels.group}
           saving={saving}
           onPick={onPick}
-          onAddAnyway={() => void add(pending ?? attempt())}
+          onAddAnyway={() => void add()}
         />
       )}
-      {error && <NotSaved error={error} kept={locked} />}
-      {(locked || !match) && (
+      {error && <NotSaved error={error} />}
+      {!match && (
         <button
           className={ui.button}
           type="submit"
-          disabled={saving || (!locked && name.trim() === "")}
+          disabled={saving || name.trim() === ""}
         >
-          {saving ? "Saving…" : locked ? "Try again" : `Add ${labels.group}`}
+          {saving ? "Saving…" : `Add ${labels.group}`}
         </button>
       )}
       <button type="button" className={ui.link} onClick={onCancel}>
@@ -411,26 +428,12 @@ function AlreadyListed({
   );
 }
 
-/** A new Team being added, with its Group when that's new too. */
-interface NewTeam {
-  group: Group;
-  groupIsNew: boolean;
-  team: Team;
-}
-
-/**
- * Why an add failed. `kept`: the box didn't answer, so the same thing is resent unchanged; otherwise the
- * box refused it and the Judge fixes the entry.
- */
-function NotSaved({ error, kept }: { error: string; kept: boolean }) {
+/** Why an add failed: the box refused it, so the Judge fixes the entry. */
+function NotSaved({ error }: { error: string }) {
   return (
     <div className={ui.error} role="alert">
       <p>Not saved: {error}</p>
-      <p className="mt-1">
-        {kept
-          ? "Try again when you're back in range."
-          : "Fix it and add again."}
-      </p>
+      <p className="mt-1">Fix it and add again.</p>
     </div>
   );
 }

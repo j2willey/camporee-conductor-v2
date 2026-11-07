@@ -99,6 +99,11 @@ newest `BACKUP_KEEP` (default 288, a day's worth). A mounted USB stick is just a
 - Omarchy's firewall (ufw) is active. Docker's published ports usually bypass it; if the phone still can't
   connect: `sudo ufw allow 443/tcp` (and `80/tcp` for the http-to-https redirect).
 
+- **Out of range is normal.** A phone that has opened the judge page once in range keeps the app, the event
+  and the roster, and keeps what the Judge saves until it's back in range (#41). So have each Judge open
+  `https://judge.camporeeconductor.com` at check-in, on the box's Wi-Fi. A phone that never has can't open
+  the page out of range.
+
 ## 7. Rehearsal (CI and local)
 
 ```sh
@@ -130,4 +135,21 @@ On Omarchy, after step 1 (certificate issued, `--check` OK):
       open that Activity: the score is there, once.
 - [ ] A backup file appeared in `BACKUP_HOST_DIR`.
 - [ ] `docker compose down` when done (add `-v` to also delete the test database).
+- [ ] Record the date, phone model and browser in the PR.
+
+## Offline check on real phones (#41; Jim, recorded in the PR)
+
+Service workers behave differently in each browser, and Judges use both: do this on an **iPhone (Safari)**
+and an **Android phone (Chrome)**, with the box up and the event loaded as above.
+
+- [ ] In range: open `https://judge.camporeeconductor.com`, enter a Judge name and email, pick an Activity,
+      and wait for the list of Teams to show. (That keeps the app, the event and the roster on the phone.)
+- [ ] Airplane mode on (Wi-Fi off too). Score a listed Team: "Score kept on this phone", and the header says
+      "1 score waiting to send".
+- [ ] Still offline: close the browser tab, open the page again (or pull to reload). It opens, with "using
+      the event saved on this phone".
+- [ ] Still offline: add a new Team in an existing Group and score it. The header says "3 waiting to send",
+      and the new Team is in the list for the next score.
+- [ ] Airplane mode off. Within about 30 seconds (or tap **Send now**), the header clears.
+- [ ] Official view on another device: the new Team is there once, and each score is there once.
 - [ ] Record the date, phone model and browser in the PR.

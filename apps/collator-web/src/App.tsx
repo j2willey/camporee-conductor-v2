@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { api, errorMessage } from "./api.ts";
 import { levelLabel } from "./format.ts";
 import { savedJudge } from "./identity.ts";
+import { loadKept } from "./offline-data.ts";
 import type { SendNowResult } from "./outbox.ts";
 import { OutboxStatus } from "./screens/OutboxStatus.tsx";
 import { ActivityList } from "./screens/ActivityList.tsx";
@@ -17,8 +18,11 @@ import { ScoreForm } from "./screens/ScoreForm.tsx";
 import { ui } from "./ui.ts";
 
 // The judge page (#40 PR 2): who's judging → Activity → Team (or Group) → form → saved.
-// No account (ADR-0023). Scores go through the phone's outbox (#41 PR 2); drafts, stopwatch and QR codes
-// come later in #41.
+// No account (ADR-0023). Scores and roster adds go through the phone's outbox (#41 PR 2), and the page
+// opens with no Wi-Fi from the copies kept on the phone (#41 PR 3); drafts, stopwatch and QR codes come later
+// in #41.
+
+const EVENT_KEY = "collator.event";
 
 type Step =
   | { name: "activity" }
@@ -33,14 +37,48 @@ type Step =
 
 export function App() {
   const [event, setEvent] = useState<JudgeEvent | null>(null);
+  const [fromPhone, setFromPhone] = useState(false);
+  const [eventChanged, setEventChanged] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [judge, setJudge] = useState<JudgeIdentity | null>(savedJudge);
   const [editingJudge, setEditingJudge] = useState(false);
   const [step, setStep] = useState<Step>({ name: "activity" });
 
   useEffect(() => {
-    api.event().then(setEvent, (e: unknown) => setLoadError(errorMessage(e)));
+    loadKept(EVENT_KEY, api.event, localStorage).then(
+      (kept) => {
+        setEvent(kept.value);
+        setFromPhone(kept.fromPhone);
+      },
+      (e: unknown) => setLoadError(errorMessage(e)),
+    );
   }, []);
+
+  // When the phone is back in range or the page is shown again, ask the box whether the event changed
+  // (a new cartridge loaded). The page keeps the event it has until the Judge reloads.
+  useEffect(() => {
+    if (!event) return;
+    const check = () => {
+      loadKept(EVENT_KEY, api.event, localStorage).then(
+        (kept) => {
+          if (kept.fromPhone) return;
+          setFromPhone(false);
+          if (JSON.stringify(kept.value) !== JSON.stringify(event))
+            setEventChanged(true);
+        },
+        () => {},
+      );
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") check();
+    };
+    window.addEventListener("online", check);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("online", check);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [event]);
 
   if (loadError) {
     return (
@@ -67,6 +105,22 @@ export function App() {
             Not you?
           </button>
         </p>
+      )}
+      {fromPhone && (
+        <p className={ui.muted} role="status">
+          Can't reach the scoring box: using the event saved on this phone.
+        </p>
+      )}
+      {eventChanged && (
+        <div className={ui.warning} role="alert">
+          <p>The event was changed on the scoring box.</p>
+          <button
+            className={`${ui.link} mt-1`}
+            onClick={() => window.location.reload()}
+          >
+            Reload to get the changes
+          </button>
+        </div>
       )}
       <OutboxStatus />
     </header>

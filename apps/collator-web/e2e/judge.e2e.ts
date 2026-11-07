@@ -6,6 +6,8 @@ import Database from "better-sqlite3";
 // doesn't duplicate the score; adding the same Patrol again is caught by the name warning.
 // #40 PR 3: an Official listed in the cartridge sees that score ranked; an unlisted email is refused.
 // #41 PR 2: scores saved with no Wi-Fi are kept on the phone, survive a reload, and arrive once each.
+// #41 PR 3: with no Wi-Fi the page still opens after a reload, a Patrol can be added and scored, and both
+// arrive when it's back; a changed event is announced.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -21,9 +23,9 @@ const count = (table: string) => {
   }
 };
 
-/** The header line that counts scores kept on the phone and not yet in the box (#41 PR 2). */
+/** The header line that counts what's kept on the phone and not yet in the box (#41 PR 2). */
 const waitingToSend = (page: Page) =>
-  page.getByRole("status", { name: "Scores waiting to send" });
+  page.getByRole("status", { name: "Waiting to send" });
 
 async function scoreFlamingArrows(page: Page) {
   await page
@@ -56,7 +58,8 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
   await page.getByLabel("New Troop name").fill("Troop 101");
   await page.getByLabel("Patrol name").fill("Flaming Arrows");
 
-  // Adding is safe to resend too: the box saves the Patrol, but the phone never hears back.
+  // Adding is safe to resend too: the box saves the Patrol, but the phone never hears back. The outbox
+  // resends it with the same id (#41 PR 3), and the Judge goes on to the form.
   let teamReplyLost = false;
   await page.route("**/api/teams/*", async (route) => {
     if (teamReplyLost) return route.continue();
@@ -65,8 +68,6 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
     await route.fulfill({ status: 503, json: { error: "no answer" } });
   });
   await page.getByRole("button", { name: "Add Patrol" }).click();
-  await expect(page.getByRole("alert")).toContainText("Not saved");
-  await page.getByRole("button", { name: "Try again" }).click();
 
   await expect(
     page.getByRole("heading", { name: "Flaming Arrows (Troop 101)" }),
@@ -224,4 +225,84 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
   await waitingToSend(page).getByRole("button", { name: "Send now" }).click();
   await expect(waitingToSend(page)).toHaveCount(0);
   expect(count("score_entries")).toBe(before + 2);
+});
+
+test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored there arrives when it's back", async ({
+  page,
+  context,
+}) => {
+  await startJudging(page);
+  // The phone has seen the event and the roster once, and the service worker has kept the app.
+  await page
+    .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+    .waitFor();
+  await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  const teams = count("teams");
+  const scores = count("score_entries");
+
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByRole("status").first()).toContainText(
+    "using the event saved on this phone",
+  );
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await page
+    .getByRole("button", { name: "Patrol not listed? Add one" })
+    .click();
+  await page.getByRole("combobox").selectOption({ label: "Troop 101" });
+  await page.getByLabel("Patrol name").fill("Owls");
+  await page.getByRole("button", { name: "Add Patrol" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Owls (Troop 101)" }),
+  ).toBeVisible();
+  await page.getByLabel("Big Top Cruiser Clowns").fill("6");
+  await page.getByLabel("Patrol Flag").fill("3");
+  await page.getByRole("button", { name: "Save score" }).click();
+  await expect(page.getByText("Score kept on this phone")).toBeVisible();
+  await expect(waitingToSend(page)).toHaveText(/2 waiting to send/);
+
+  // The Patrol added on this phone is listed before the box has it.
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await expect(
+    page.getByRole("button", { name: "Owls (Troop 101)" }),
+  ).toBeVisible();
+  expect(count("teams")).toBe(teams);
+
+  // Back in range: the Patrol goes first, then its score, once each.
+  await context.setOffline(false);
+  await expect(waitingToSend(page)).toHaveCount(0, { timeout: 10_000 });
+  expect(count("teams")).toBe(teams + 1);
+  expect(count("score_entries")).toBe(scores + 1);
+  await expect(
+    page.getByText("using the event saved on this phone"),
+  ).toHaveCount(0);
+});
+
+test.describe("without the service worker", () => {
+  // Playwright can't route the page's requests once the service worker controls it, and the check is the
+  // page's own: run it with the service worker blocked.
+  test.use({ serviceWorkers: "block" });
+
+  test("a Judge is told when the event changed on the box", async ({
+    page,
+  }) => {
+    await startJudging(page);
+    await page.route("**/api/event", async (route) => {
+      const response = await route.fetch();
+      const event = (await response.json()) as { event: { title: string } };
+      event.event.title = "Circus 2026 (moved to Saturday)";
+      await route.fulfill({ response, json: event });
+    });
+    // The page asks again when the phone is back online or the page is shown again.
+    await page.evaluate(() => window.dispatchEvent(new Event("online")));
+    await expect(page.getByRole("alert")).toContainText(
+      "The event was changed on the scoring box.",
+    );
+    await page
+      .getByRole("button", { name: "Reload to get the changes" })
+      .click();
+    await expect(
+      page.getByText("Circus 2026 (moved to Saturday)"),
+    ).toBeVisible();
+  });
 });

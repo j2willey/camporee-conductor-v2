@@ -125,7 +125,7 @@ apps/collator/      Collator: the on-site event-day server (ADR-0027). Hono, SQL
                     cartridge; roster and score entries keyed by phone-made ids; read-only Official view API;
                     backups to a folder; Dockerfile (built from the repo root) (#40)
 apps/collator-web/  Collator web app (React + Vite, Tailwind), served by the Collator: the judge page at / (no
-                    accounts) and the Official view at /official
+                    accounts; works offline: outbox + service worker, #41) and the Official view at /official
 deploy/collator/    the on-site box: compose.yaml (collator + caddy), caddy/ (Caddyfile + TLS_MODE snippets),
                     compose.tls-files.yaml, env.example, issue-cert.sh (#40)
 docs/runbook/       runbooks: deploy.md (Composer droplet), collator.md (on-site box) and their rehearsal scripts
