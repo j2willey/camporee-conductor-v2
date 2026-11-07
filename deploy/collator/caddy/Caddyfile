@@ -1,0 +1,24 @@
+# Caddy in front of the Collator on the on-site box (issue #40, ADR-0027 item 4).
+# The hostname and the certificate source are configuration (compose.yaml passes them in):
+#   COLLATOR_HOSTNAME  the name phones use (default judge.camporeeconductor.com)
+#   TLS_MODE           internal: Caddy's own local CA (development and CI; phones would warn)
+#                      files:    certificate files supplied in /certs (fullchain.pem, privkey.pem),
+#                                issued by deploy/collator/issue-cert.sh; mounted by compose.tls-files.yaml
+# compose.yaml mounts this folder (not single files) at /etc/caddy, so a git pull reaches Caddy on reload.
+# TLS_MODE picks one of the two tls-*.caddy snippets in this folder; any other value stops Caddy.
+# Automatic DNS-01 inside Caddy needs a custom Caddy build: later.
+{
+	# Never try to install the local CA into a trust store: Caddy runs in a container. Both TLS modes use
+	# no ACME server, so the box needs no internet on event day.
+	skip_install_trust
+	# HTTP/1.1 and HTTP/2 only: compose publishes TCP, not the UDP that HTTP/3 needs.
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$COLLATOR_HOSTNAME:judge.camporeeconductor.com} {
+	import /etc/caddy/tls-{$TLS_MODE}.caddy
+	encode
+	reverse_proxy collator:3030
+}

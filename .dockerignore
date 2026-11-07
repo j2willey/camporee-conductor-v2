@@ -10,3 +10,7 @@
 *.db-*
 *.sqlite
 *.sqlite3
+
+# The on-site box's backups and cartridges: people's names and emails (issue #40).
+deploy/collator/backups
+deploy/collator/cartridges

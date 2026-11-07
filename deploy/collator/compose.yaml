@@ -1,0 +1,52 @@
+# The on-site box (issue #40, ADR-0027): the Collator behind Caddy, which terminates HTTPS for phones.
+# See docs/runbook/collator.md. Settings come from the environment or a .env file next to this file
+# (env.example lists them). Run from this folder:
+#   docker compose up -d --build                                            # TLS_MODE=internal (dev)
+#   docker compose -f compose.yaml -f compose.tls-files.yaml up -d --build  # certificate files (event day)
+# Load a cartridge put in the cartridges folder:
+#   docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/<file>.zip
+name: collator
+
+services:
+  collator:
+    build:
+      context: ../..
+      dockerfile: apps/collator/Dockerfile
+    image: ${COLLATOR_IMAGE:-collator:local}
+    # amd64 only (ADR-0027 item 2).
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      BACKUP_DIR: /backups
+      BACKUP_EVERY_MINUTES: ${BACKUP_EVERY_MINUTES:-5}
+      BACKUP_KEEP: ${BACKUP_KEEP:-288}
+    volumes:
+      - collator-data:/data
+      # A mounted USB stick is just a folder (ADR-0027 item 11). It must be writable by uid 1000 (node).
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+      - ${CARTRIDGES_DIR:-./cartridges}:/cartridges:ro
+    # Not published: phones reach it through Caddy only.
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    depends_on:
+      collator:
+        condition: service_healthy
+    environment:
+      COLLATOR_HOSTNAME: ${COLLATOR_HOSTNAME:-judge.camporeeconductor.com}
+      TLS_MODE: ${TLS_MODE:-internal}
+    ports:
+      - ${HTTPS_PORT:-443}:443
+      - ${HTTP_PORT:-80}:80
+    volumes:
+      # The folder, not single files, so a git pull reaches Caddy on reload.
+      - ./caddy:/etc/caddy:ro
+      # Caddy's state, including its local CA for TLS_MODE=internal.
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  collator-data:
+  caddy-data:
+  caddy-config:

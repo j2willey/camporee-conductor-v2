@@ -1,0 +1,2 @@
+# TLS_MODE=internal: a certificate from Caddy's local CA. For development and CI only: phones would warn.
+tls internal
