@@ -6,7 +6,10 @@ import {
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema.ts";
 
-export type Db = BetterSQLite3Database<typeof schema>;
+/** The Drizzle database, with the better-sqlite3 connection underneath (`$client`) for backups. */
+export type Db = BetterSQLite3Database<typeof schema> & {
+  $client: Database.Database;
+};
 
 const MIGRATIONS = new URL("../../drizzle", import.meta.url).pathname;
 
