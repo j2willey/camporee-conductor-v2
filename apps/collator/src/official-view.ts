@@ -10,7 +10,12 @@ import {
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
-import { judgeList, roster, scoreEntries } from "./roster-and-scores.ts";
+import {
+  judgeList,
+  roster,
+  scoreEntries,
+  type JudgeIdentity,
+} from "./roster-and-scores.ts";
 
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Read-only;
 // edits, DQ, finalize, conflicts and standings are #42. Every ranking comes from packages/scoring.
@@ -78,8 +83,8 @@ export interface OfficialActivity {
   entries: {
     id: string;
     receivedSeq: number;
-    /** The Judge's name only: Judges' emails aren't served. */
-    judge: { name: string };
+    /** The Judge's name and home unit (#41 PR 5): Judges' emails aren't served. */
+    judge: { name: string; homeGroup?: string };
     entrantId: string;
     entrant: EntrantName;
     values: Record<string, FieldValue>;
@@ -130,7 +135,7 @@ export function officialActivity(
     actions: [],
   }).activities.find((a) => a.activityId === activityId);
 
-  const judgeName = new Map(judgeList(db).map((j) => [j.id, j.name]));
+  const judgeById = new Map(judgeList(db).map((j) => [j.id, j]));
   const counting = new Set(newest.map((e) => e.id));
   return {
     activity: listed,
@@ -150,7 +155,7 @@ export function officialActivity(
       .map((e) => ({
         id: e.id,
         receivedSeq: e.receivedSeq,
-        judge: { name: judgeName.get(e.judgeId) ?? e.judgeId },
+        judge: judgeShown(judgeById.get(e.judgeId), e.judgeId),
         entrantId: e.entrantId,
         entrant: entrantName(e.entrantId),
         values: e.values,
@@ -158,4 +163,15 @@ export function officialActivity(
         counts: counting.has(e.id),
       })),
   };
+}
+
+/** A Judge as Officials see them: name and home unit, never the email. */
+function judgeShown(
+  judge: JudgeIdentity | undefined,
+  id: string,
+): { name: string; homeGroup?: string } {
+  if (!judge) return { name: id };
+  return judge.homeGroup === undefined
+    ? { name: judge.name }
+    : { name: judge.name, homeGroup: judge.homeGroup };
 }

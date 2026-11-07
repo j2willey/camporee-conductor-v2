@@ -11,6 +11,7 @@ import Database from "better-sqlite3";
 // #41 follow-up: out of range is normal. An offline save moves on at once and is never shown in red; the
 // page shows its build; a box it can't reach comes with the Nearby devices hint.
 // #41 PR 4: a half-filled form and a running stopwatch survive a reload; Stop gives the m:ss saved.
+// #41 PR 5: one Competition's Activities at a time, remembered; the Judge's home unit reaches Officials.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -47,7 +48,7 @@ async function startJudging(page: Page) {
   await page.getByLabel("Name").fill("Alex Judge");
   await page.getByLabel("Email").fill("alex@example.com");
   await page.getByRole("button", { name: "Start judging" }).click();
-  await page.getByRole("button", { name: "Clown Car" }).click();
+  await page.getByRole("button", { name: "Clown Car", exact: true }).click();
 }
 
 test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't counted twice", async ({
@@ -280,7 +281,7 @@ test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored
   await expect(page.getByRole("status").first()).toContainText(
     "using the event saved on this phone",
   );
-  await page.getByRole("button", { name: "Clown Car" }).click();
+  await page.getByRole("button", { name: "Clown Car", exact: true }).click();
   await page
     .getByRole("button", { name: "Patrol not listed? Add one" })
     .click();
@@ -320,7 +321,9 @@ test("a half-filled form and a running stopwatch survive a reload, and the stopw
   await page.clock.install();
   const timeField = "Total elapsed time for 3 complete passes";
   const openForm = async () => {
-    await page.getByRole("button", { name: "3 Ring Circus" }).click();
+    await page
+      .getByRole("button", { name: "3 Ring Circus", exact: true })
+      .click();
     await page
       .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
       .click();
@@ -340,7 +343,7 @@ test("a half-filled form and a running stopwatch survive a reload, and the stopw
 
   // The phone reloads mid-run (a locked screen can do this): the draft and the timer are still there.
   await page.reload();
-  await page.getByRole("button", { name: "3 Ring Circus" }).click();
+  await page.getByRole("button", { name: "Back to 3 Ring Circus" }).click();
   await expect(
     page.getByRole("button", { name: "Flaming Arrows (Troop 101)" }),
   ).toContainText("Draft");
@@ -379,6 +382,57 @@ test("a half-filled form and a running stopwatch survive a reload, and the stopw
   await expect(
     page.getByRole("button", { name: "Flaming Arrows (Troop 101)" }),
   ).not.toContainText("Draft");
+});
+
+test("the Activity list shows one Competition at a time, remembered, and a Judge's home unit reaches the Officials", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Name").fill("Sam Judge");
+  await page.getByLabel("Email").fill("sam@example.com");
+  // Free text with the event's word for a Group: it needn't be on the roster.
+  await page.getByLabel("Your Troop (optional)").fill("Troop 7");
+  await page.getByRole("button", { name: "Start judging" }).click();
+  await expect(page.getByText("Judging as")).toContainText(
+    "Sam Judge (Troop 7)",
+  );
+
+  // The event's first Competition shows; the afternoon's Troop Challenges don't crowd it.
+  const tab = (name: RegExp) => page.getByRole("tab", { name });
+  await expect(tab(/^Patrol Games/)).toHaveAttribute("aria-selected", "true");
+  await expect(
+    page.getByRole("button", { name: "Clown Car", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "The Grand Entrée" }),
+  ).toHaveCount(0);
+
+  // After lunch: the Troop Challenges tab, remembered through a reload, with the last Activity on top.
+  await tab(/^Troop Challenges/).click();
+  await expect(
+    page.getByRole("button", { name: "Clown Car", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "The Grand Entrée" }).click();
+  await page.getByRole("button", { name: "← Activities" }).click();
+  await page.reload();
+  await expect(tab(/^Troop Challenges/)).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(
+    page.getByRole("button", { name: "Back to The Grand Entrée" }),
+  ).toBeVisible();
+
+  // A score from Sam names the home unit in the Official view.
+  await tab(/^Patrol Games/).click();
+  await page.getByRole("button", { name: "Clown Car", exact: true }).click();
+  await scoreFlamingArrows(page);
+  await expect(page.getByText(/Score saved/)).toBeVisible();
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: /Clown Car/ }).click();
+  await expect(page.getByText("from Sam Judge (Troop 7)")).toBeVisible();
 });
 
 test.describe("without the service worker", () => {

@@ -14,6 +14,7 @@ import {
   addGroupItem,
   addTeamItem,
   loadKept,
+  ROSTER_KEY,
   rosterWithPending,
 } from "../offline-data.ts";
 import { drafts } from "../phone-drafts.ts";
@@ -154,7 +155,6 @@ export function EntrantPicker({
 }
 
 const NEW = "__new__";
-const ROSTER_KEY = "collator.roster";
 
 /**
  * Send one roster add through the outbox. `waitMs` 0 when something before it is already waiting: it

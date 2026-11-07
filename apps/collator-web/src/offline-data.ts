@@ -49,6 +49,9 @@ export async function loadKept<T>(
   }
 }
 
+/** Where the roster from the box is kept on the phone. */
+export const ROSTER_KEY = "collator.roster";
+
 const GROUPS = "/api/groups/";
 const TEAMS = "/api/teams/";
 

@@ -102,7 +102,8 @@ export function App() {
       <p className={ui.muted}>{event.event.title}</p>
       {judge && !editingJudge && (
         <p className="text-sm">
-          Judging as <strong>{judge.name}</strong>.{" "}
+          Judging as <strong>{judge.name}</strong>
+          {judge.homeGroup && ` (${judge.homeGroup})`}.{" "}
           <button className={ui.link} onClick={() => setEditingJudge(true)}>
             Not you?
           </button>
@@ -134,6 +135,7 @@ export function App() {
         {header}
         <JudgeDetails
           judge={judge}
+          labels={event.event.labels}
           onSaved={(j) => {
             setJudge(j);
             setEditingJudge(false);
@@ -150,6 +152,10 @@ export function App() {
       {step.name === "activity" && (
         <ActivityList
           activities={event.activities}
+          // Absent from an event kept on the phone before #41 PR 5.
+          competitions={
+            event.competitions as JudgeEvent["competitions"] | undefined
+          }
           onPick={(activity) => setStep({ name: "entrant", activity })}
         />
       )}

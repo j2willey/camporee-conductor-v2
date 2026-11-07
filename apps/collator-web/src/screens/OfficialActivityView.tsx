@@ -106,6 +106,7 @@ export function OfficialActivityView({
               </p>
               <p className={ui.muted}>
                 #{e.receivedSeq} from {e.judge.name}
+                {e.judge.homeGroup && ` (${e.judge.homeGroup})`}
                 {!e.counts &&
                   " · a newer entry for this " + entrantWord + " counts"}
               </p>

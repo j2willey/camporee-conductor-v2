@@ -23,7 +23,13 @@ const ALEX = {
   name: "Alex Judge",
   email: "alex@example.com",
 };
-const SAM = { id: "judge-sam", name: "Sam Judge", email: "sam@example.com" };
+/** Sam gave a home unit (#41 PR 5): a Group as typed, not a roster entry. */
+const SAM = {
+  id: "judge-sam",
+  name: "Sam Judge",
+  email: "sam@example.com",
+  homeGroup: "Troop 7",
+};
 
 let db: Db;
 let app: ReturnType<typeof createApp>;
@@ -61,7 +67,7 @@ async function withScores() {
   await put("/api/teams/team-2", { groupId: "group-1", name: "Owls" });
   const score = (
     id: string,
-    judge: typeof ALEX,
+    judge: typeof ALEX | typeof SAM,
     entrantId: string,
     clowns: number,
   ) =>
@@ -175,7 +181,7 @@ interface OfficialActivity {
   entries: {
     id: string;
     receivedSeq: number;
-    judge: { name: string };
+    judge: { name: string; homeGroup?: string };
     entrantId: string;
     entrant: { name: string | null; group: string | null };
     values: Record<string, unknown>;
@@ -231,6 +237,30 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
     });
     const seqs = entries.map((e) => e.receivedSeq);
     expect([...seqs].sort((a, b) => a - b)).toEqual(seqs);
+  });
+
+  it("names the Judge's home unit when they gave one, for thank-you notes", async () => {
+    const { entries } = await clownCar();
+    expect(entries.map((e) => e.judge)).toEqual([
+      { name: "Alex Judge" },
+      { name: "Alex Judge" },
+      { name: "Sam Judge", homeGroup: "Troop 7" },
+    ]);
+  });
+
+  it("keeps the home unit from a Judge's newest score: a corrected one replaces it", async () => {
+    await put("/api/scores/score-4", {
+      judge: { ...SAM, homeGroup: "Troop 77" },
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-1",
+      values: { [CLOWN_CAR.ownField]: 1, [CLOWN_CAR.commonField]: 5 },
+      phoneCreatedAt: "2027-05-15T10:30:00Z",
+    });
+    const { entries } = await clownCar();
+    expect(entries.find((e) => e.id === "score-3")?.judge).toEqual({
+      name: "Sam Judge",
+      homeGroup: "Troop 77",
+    });
   });
 
   it("doesn't serve Judges' emails", async () => {

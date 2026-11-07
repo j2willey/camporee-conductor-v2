@@ -85,6 +85,11 @@ export interface JudgeIdentity {
   id: string;
   name: string;
   email: string;
+  /**
+   * The Judge's own unit, e.g. "Troop 7" (#41 PR 5): free text, not a roster entry, since their unit may
+   * not be attending. For thank-you notes.
+   */
+  homeGroup?: string | undefined;
 }
 
 export interface ScoreSubmission {
@@ -165,12 +170,23 @@ export function recordScore(db: Db, score: ScoreSubmission): Recorded {
     );
   }
 
+  // The Judge's newest details win: a later score may correct the name or home unit.
+  const judge = {
+    id: score.judge.id,
+    name: score.judge.name,
+    email: score.judge.email,
+    homeGroup: score.judge.homeGroup?.trim() || null,
+  };
   db.transaction((tx) => {
     tx.insert(judges)
-      .values(score.judge)
+      .values(judge)
       .onConflictDoUpdate({
         target: judges.id,
-        set: { name: score.judge.name, email: score.judge.email },
+        set: {
+          name: judge.name,
+          email: judge.email,
+          homeGroup: judge.homeGroup,
+        },
       })
       .run();
     tx.insert(scoreEntriesTable)
@@ -263,5 +279,12 @@ export function roster(db: Db): Roster {
 
 /** Judges, with their emails: never served without the Official gate (#40 PR 3). */
 export function judgeList(db: Db): JudgeIdentity[] {
-  return db.select().from(judges).orderBy(asc(judges.id)).all();
+  return db
+    .select()
+    .from(judges)
+    .orderBy(asc(judges.id))
+    .all()
+    .map(({ homeGroup, ...judge }) =>
+      homeGroup === null ? judge : { ...judge, homeGroup },
+    );
 }
