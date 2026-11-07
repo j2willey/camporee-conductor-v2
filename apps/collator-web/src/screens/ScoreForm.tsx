@@ -4,11 +4,21 @@ import type {
   JudgeIdentity,
   ScoreSubmission,
 } from "@camporee-conductor/collator/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { newId } from "../api.ts";
-import { initialEntry, readEntry, type Entry } from "../form.ts";
+import type { Draft } from "../drafts.ts";
+import { initialEntry, readEntry } from "../form.ts";
 import type { SendNowResult } from "../outbox.ts";
+import { drafts } from "../phone-drafts.ts";
 import { answerWaitMs, outbox } from "../phone-outbox.ts";
+import {
+  elapsedMs,
+  formatElapsed,
+  resetTimer,
+  startTimer,
+  stopTimer,
+  type TimerState,
+} from "../stopwatch.ts";
 import { ui } from "../ui.ts";
 import type { Entrant } from "./EntrantPicker.tsx";
 
@@ -17,6 +27,7 @@ import type { Entrant } from "./EntrantPicker.tsx";
  * Saving puts the score in the phone's outbox first, then sends it (#41 PR 2). If the box answers within a
  * few seconds the Judge sees it saved; if not, it's kept on the phone and sent when the box can be reached,
  * same id, so the box never counts it twice (ADR-0027 item 8). A refusal opens the form again to fix it.
+ * What's typed (and any stopwatch) is kept as a draft until the score is saved (#41 PR 4).
  */
 export function ScoreForm({
   activity,
@@ -31,15 +42,44 @@ export function ScoreForm({
   onSaved: (result: Exclude<SendNowResult, { status: "refused" }>) => void;
   onBack: () => void;
 }) {
-  const [entry, setEntry] = useState<Entry>(() =>
-    initialEntry(activity.fields),
-  );
+  const blank = (): Draft => ({
+    entry: initialEntry(activity.fields),
+    timers: {},
+  });
+  const [kept] = useState(() => drafts.get(activity.id, entrant.id));
+  const [draft, setDraft] = useState<Draft>(() => kept ?? blank());
+  const [restored, setRestored] = useState(kept !== undefined);
+  const { entry, timers } = draft;
+
+  // Keep the draft as it changes; a form back as it started has none.
+  const { id: activityId, fields } = activity;
+  const { id: entrantId } = entrant;
+  useEffect(() => {
+    const untouched =
+      JSON.stringify(draft.entry) === JSON.stringify(initialEntry(fields)) &&
+      Object.values(draft.timers).every(
+        (t) => t.runningSince === null && t.elapsedMs === 0,
+      );
+    if (untouched) drafts.clear(activityId, entrantId);
+    else drafts.save(activityId, entrantId, draft);
+  }, [draft, activityId, fields, entrantId]);
   const [problems, setProblems] = useState<string[]>([]);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
-    const read = readEntry(activity.fields, entry);
+    // A stopwatch still running stops now, and its time is the one saved.
+    const now = Date.now();
+    let toSave = entry;
+    let stopped = timers;
+    for (const [fieldId, timer] of Object.entries(timers)) {
+      if (timer.runningSince === null) continue;
+      const done = stopTimer(timer, now);
+      stopped = { ...stopped, [fieldId]: done };
+      toSave = { ...toSave, [fieldId]: formatElapsed(done.elapsedMs) };
+    }
+    if (stopped !== timers) setDraft({ entry: toSave, timers: stopped });
+    const read = readEntry(activity.fields, toSave);
     if (!read.ok) {
       setProblems(read.problems);
       return;
@@ -70,6 +110,7 @@ export function ScoreForm({
       setRefusal(result.message);
       setSaving(false);
     } else {
+      drafts.clear(activity.id, entrant.id);
       onSaved(result);
     }
   };
@@ -95,6 +136,21 @@ export function ScoreForm({
         <p className={ui.muted}>{activity.title}</p>
       </div>
 
+      {restored && (
+        <div className={`${ui.note} flex items-center justify-between gap-2`}>
+          <p>Picked up where you left off.</p>
+          <button
+            type="button"
+            className={ui.link}
+            onClick={() => {
+              setDraft(blank());
+              setRestored(false);
+            }}
+          >
+            Start over
+          </button>
+        </div>
+      )}
       {activity.fields.length === 0 && (
         <p className={ui.muted}>
           This Activity has nothing for Judges to enter.
@@ -105,8 +161,23 @@ export function ScoreForm({
           key={field.id}
           field={field}
           value={entry[field.id]}
+          timer={timers[field.id]}
           disabled={saving}
-          onChange={(value) => setEntry({ ...entry, [field.id]: value })}
+          onChange={(value) =>
+            setDraft((d) => ({
+              ...d,
+              entry: { ...d.entry, [field.id]: value },
+            }))
+          }
+          onTimer={(timer, value) =>
+            setDraft((d) => ({
+              entry:
+                value === undefined
+                  ? d.entry
+                  : { ...d.entry, [field.id]: value },
+              timers: { ...d.timers, [field.id]: timer },
+            }))
+          }
         />
       ))}
 
@@ -133,13 +204,18 @@ export function ScoreForm({
 function FieldInput({
   field,
   value,
+  timer,
   disabled,
   onChange,
+  onTimer,
 }: {
   field: JudgeField;
   value: string | boolean | undefined;
+  timer: TimerState | undefined;
   disabled: boolean;
   onChange: (value: string | boolean) => void;
+  /** A stopwatch changed; `value`, when given, is the time to put in the field. */
+  onTimer: (timer: TimerState, value?: string) => void;
 }) {
   const { config } = field;
   const label = `${field.label}${field.required ? " *" : ""}`;
@@ -164,7 +240,7 @@ function FieldInput({
     disabled,
     placeholder: config.placeholder,
   };
-  return (
+  const input = (
     <label className={ui.label}>
       {label}
       {field.type === "textarea" ? (
@@ -190,7 +266,7 @@ function FieldInput({
           min={config.min}
           max={config.max}
           step="any"
-          // Stopwatch times are typed as m:ss for now; the timer comes with #41.
+          // A stopwatch time can be typed too, as m:ss.
           {...(field.type === "stopwatch" && {
             placeholder: config.placeholder ?? "m:ss",
           })}
@@ -198,5 +274,92 @@ function FieldInput({
         />
       )}
     </label>
+  );
+  if (field.type !== "stopwatch") return input;
+  return (
+    <div className="flex flex-col gap-2">
+      {input}
+      <Stopwatch
+        label={field.label}
+        timer={timer}
+        disabled={disabled}
+        onTimer={onTimer}
+      />
+    </div>
+  );
+}
+
+/**
+ * Start, Stop and Reset for a stopwatch field. Stop puts the time in the field (whole seconds, m:ss);
+ * Start again carries on from there. It runs on the clock, kept in the draft, so a locked screen or a
+ * reload doesn't lose time.
+ */
+function Stopwatch({
+  label,
+  timer,
+  disabled,
+  onTimer,
+}: {
+  label: string;
+  timer: TimerState | undefined;
+  disabled: boolean;
+  onTimer: (timer: TimerState, value?: string) => void;
+}) {
+  const running = timer?.runningSince != null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    const tick = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(tick);
+  }, [running]);
+  const shown = timer ? elapsedMs(timer, running ? now : 0) : 0;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className="min-w-16 font-mono text-2xl tabular-nums"
+        role="timer"
+        aria-label={`Timer: ${label}`}
+      >
+        {formatElapsed(shown)}
+      </span>
+      {running ? (
+        <button
+          type="button"
+          className={ui.button}
+          disabled={disabled}
+          aria-label={`Stop timer: ${label}`}
+          onClick={() => {
+            const done = stopTimer(timer, Date.now());
+            onTimer(done, formatElapsed(done.elapsedMs));
+          }}
+        >
+          Stop
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={ui.button}
+          disabled={disabled}
+          aria-label={`Start timer: ${label}`}
+          onClick={() => {
+            const start = Date.now();
+            setNow(start);
+            onTimer(startTimer(timer ?? resetTimer(), start));
+          }}
+        >
+          {shown > 0 ? "Carry on" : "Start"}
+        </button>
+      )}
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        disabled={disabled || (!running && shown === 0)}
+        aria-label={`Reset timer: ${label}`}
+        onClick={() => onTimer(resetTimer(), "")}
+      >
+        Reset
+      </button>
+    </div>
   );
 }

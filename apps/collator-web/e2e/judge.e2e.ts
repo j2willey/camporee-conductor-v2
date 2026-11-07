@@ -10,6 +10,7 @@ import Database from "better-sqlite3";
 // arrive when it's back; a changed event is announced.
 // #41 follow-up: out of range is normal. An offline save moves on at once and is never shown in red; the
 // page shows its build; a box it can't reach comes with the Nearby devices hint.
+// #41 PR 4: a half-filled form and a running stopwatch survive a reload; Stop gives the m:ss saved.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -310,6 +311,74 @@ test("with no Wi-Fi the page opens after a reload, and a Patrol added and scored
   await expect(
     page.getByText("using the event saved on this phone"),
   ).toHaveCount(0);
+});
+
+test("a half-filled form and a running stopwatch survive a reload, and the stopwatch's time is saved", async ({
+  page,
+}) => {
+  // The page's clock, run by the test: the stopwatch counts exactly what the test lets pass.
+  await page.clock.install();
+  const timeField = "Total elapsed time for 3 complete passes";
+  const openForm = async () => {
+    await page.getByRole("button", { name: "3 Ring Circus" }).click();
+    await page
+      .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+      .click();
+  };
+
+  await page.goto("/");
+  await page.getByLabel("Name").fill("Alex Judge");
+  await page.getByLabel("Email").fill("alex@example.com");
+  await page.getByRole("button", { name: "Start judging" }).click();
+  await openForm();
+  await page.getByLabel("Number of hand breaks (+15 sec each)").fill("2");
+  await page.getByRole("button", { name: `Start timer: ${timeField}` }).click();
+  await page.clock.fastForward("01:05");
+  await expect(
+    page.getByRole("timer", { name: `Timer: ${timeField}` }),
+  ).toHaveText("1:05");
+
+  // The phone reloads mid-run (a locked screen can do this): the draft and the timer are still there.
+  await page.reload();
+  await page.getByRole("button", { name: "3 Ring Circus" }).click();
+  await expect(
+    page.getByRole("button", { name: "Flaming Arrows (Troop 101)" }),
+  ).toContainText("Draft");
+  await page
+    .getByRole("button", { name: "Flaming Arrows (Troop 101)" })
+    .click();
+  await expect(page.getByText("Picked up where you left off.")).toBeVisible();
+  await expect(
+    page.getByLabel("Number of hand breaks (+15 sec each)"),
+  ).toHaveValue("2");
+  await page.clock.fastForward("00:10");
+  await page.getByRole("button", { name: `Stop timer: ${timeField}` }).click();
+  await expect(page.getByLabel(timeField, { exact: true })).toHaveValue("1:15");
+
+  const before = count("score_entries");
+  await page.getByRole("button", { name: "Save score" }).click();
+  await expect(page.getByText(/Score saved/)).toBeVisible();
+  expect(count("score_entries")).toBe(before + 1);
+  const db = new Database(DB, { readonly: true });
+  try {
+    const row = db
+      .prepare(
+        'SELECT "values" AS v FROM score_entries ORDER BY received_seq DESC LIMIT 1',
+      )
+      .get() as { v: string };
+    expect(JSON.parse(row.v)).toMatchObject({
+      elapsed_time: "1:15",
+      hand_breaks: 2,
+    });
+  } finally {
+    db.close();
+  }
+
+  // Saved, so the draft is gone.
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await expect(
+    page.getByRole("button", { name: "Flaming Arrows (Troop 101)" }),
+  ).not.toContainText("Draft");
 });
 
 test.describe("without the service worker", () => {

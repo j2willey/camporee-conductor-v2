@@ -21,8 +21,8 @@ import { ui } from "./ui.ts";
 
 // The judge page (#40 PR 2): who's judging → Activity → Team (or Group) → form → saved.
 // No account (ADR-0023). Scores and roster adds go through the phone's outbox (#41 PR 2), and the page
-// opens with no Wi-Fi from the copies kept on the phone (#41 PR 3); drafts, stopwatch and QR codes come later
-// in #41.
+// opens with no Wi-Fi from the copies kept on the phone (#41 PR 3). Half-filled forms and stopwatches are
+// kept as drafts (#41 PR 4); Stations and QR codes come later in #41.
 
 const EVENT_KEY = "collator.event";
 

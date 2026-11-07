@@ -25,7 +25,8 @@ export function initialEntry(fields: readonly JudgeField[]): Entry {
 
 /**
  * The values to send, or the problems to show. Numbers are read as numbers; other text is kept as typed
- * (trimmed). Blank fields are left out. Stopwatch times are text here; their timer is #41.
+ * (trimmed). Blank fields are left out. Stopwatch times are m:ss text here (typed, or
+ * written by the timer, stopwatch.ts).
  */
 export function readEntry(
   fields: readonly JudgeField[],
