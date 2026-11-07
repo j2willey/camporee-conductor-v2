@@ -17,10 +17,26 @@ export interface Roster {
   teams: Team[];
 }
 
-/** A failed call, with the Collator's message, or "can't reach the box" when there's no answer. */
+/**
+ * A failed call, with the Collator's message, or "can't reach the box" when there's no answer.
+ * `refused`: the box answered and said no (4xx), so sending the same thing again can't help; anything
+ * else (no answer, a 5xx) may have been saved or may succeed, so it's resent unchanged.
+ */
 export class ApiError extends Error {
   override name = "ApiError";
+  readonly refused: boolean;
+  constructor(message: string, refused = false) {
+    super(message);
+    this.refused = refused;
+  }
 }
+
+/** What to show the Judge for a failed call. */
+export const errorMessage = (e: unknown) =>
+  e instanceof ApiError ? e.message : String(e);
+
+/** True when the box refused the request: resending it unchanged can't help. */
+export const wasRefused = (e: unknown) => e instanceof ApiError && e.refused;
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
@@ -35,7 +51,10 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     error?: string;
   };
   if (!response.ok) {
-    throw new ApiError(body.error ?? `The box answered ${response.status}`);
+    throw new ApiError(
+      body.error ?? `The box answered ${response.status}`,
+      response.status >= 400 && response.status < 500,
+    );
   }
   return body as T;
 }

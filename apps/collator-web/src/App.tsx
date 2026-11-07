@@ -4,7 +4,7 @@ import type {
   JudgeIdentity,
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
-import { api, ApiError } from "./api.ts";
+import { api, errorMessage } from "./api.ts";
 import { savedJudge } from "./identity.ts";
 import { ActivityList } from "./screens/ActivityList.tsx";
 import { EntrantPicker, type Entrant } from "./screens/EntrantPicker.tsx";
@@ -35,11 +35,7 @@ export function App() {
   const [step, setStep] = useState<Step>({ name: "activity" });
 
   useEffect(() => {
-    api
-      .event()
-      .then(setEvent, (e: unknown) =>
-        setLoadError(e instanceof ApiError ? e.message : String(e)),
-      );
+    api.event().then(setEvent, (e: unknown) => setLoadError(errorMessage(e)));
   }, []);
 
   if (loadError) {

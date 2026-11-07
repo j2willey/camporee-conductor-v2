@@ -4,6 +4,8 @@ import Database from "better-sqlite3";
 
 // #40 PR 2: a Judge with no account scores a newly added Patrol at Clown Car; a resend after a lost reply
 // doesn't duplicate the score; adding the same Patrol again is caught by the name warning.
+// Test 2 uses the Patrol test 1 adds, so they run in order.
+test.describe.configure({ mode: "serial" });
 
 const DB = resolve(import.meta.dirname, "../test-results/judge.db");
 const count = (table: string) => {
@@ -38,7 +40,18 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
     .click();
   await page.getByLabel("New Troop name").fill("Troop 101");
   await page.getByLabel("Patrol name").fill("Flaming Arrows");
+
+  // Adding is safe to resend too: the box saves the Patrol, but the phone never hears back.
+  let teamReplyLost = false;
+  await page.route("**/api/teams/*", async (route) => {
+    if (teamReplyLost) return route.continue();
+    teamReplyLost = true;
+    await route.fetch();
+    await route.fulfill({ status: 503, json: { error: "no answer" } });
+  });
   await page.getByRole("button", { name: "Add Patrol" }).click();
+  await expect(page.getByRole("alert")).toContainText("Not saved");
+  await page.getByRole("button", { name: "Try again" }).click();
 
   await expect(
     page.getByRole("heading", { name: "Flaming Arrows (Troop 101)" }),
@@ -47,6 +60,21 @@ test("a Judge adds a Patrol, scores it, and a resend after a lost reply isn't co
   await expect(page.getByLabel("10 Essentials: Buddy")).toBeVisible();
   await page.getByLabel("Big Top Cruiser Clowns").fill("7");
   await page.getByLabel("Patrol Flag").fill("5");
+  expect(count("groups")).toBe(1);
+  expect(count("teams")).toBe(1);
+
+  // When the box refuses an entry, resending it can't help: the form opens again to fix it.
+  await page.route(
+    "**/api/scores/*",
+    (route) =>
+      route.fulfill({ status: 400, json: { error: "Patrol Flag is wrong" } }),
+    { times: 1 },
+  );
+  await page.getByRole("button", { name: "Save score" }).click();
+  await expect(page.getByRole("alert")).toContainText("Patrol Flag is wrong");
+  await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
+  await expect(page.getByLabel("Patrol Flag")).toBeEnabled();
+  expect(count("score_entries")).toBe(0);
 
   // The box stores the first send, but the phone never hears back.
   let lost = false;

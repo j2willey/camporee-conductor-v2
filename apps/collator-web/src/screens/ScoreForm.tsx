@@ -5,7 +5,7 @@ import type {
   ScoreSubmission,
 } from "@camporee-conductor/collator/types";
 import { useState } from "react";
-import { api, ApiError, newId } from "../api.ts";
+import { api, errorMessage, newId, wasRefused } from "../api.ts";
 import { initialEntry, readEntry, type Entry } from "../form.ts";
 import { ui } from "../ui.ts";
 import type { Entrant } from "./EntrantPicker.tsx";
@@ -44,7 +44,9 @@ export function ScoreForm({
       const { status } = await api.putScore(submission);
       onSaved(status === "repeat");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : String(e));
+      // Refused: nothing was stored, and the same entry would be refused again, so open the form to fix it.
+      if (wasRefused(e)) setPending(null);
+      setError(errorMessage(e));
       setSending(false);
     }
   };
@@ -115,7 +117,9 @@ export function ScoreForm({
         <div className={ui.error} role="alert">
           <p>Not saved: {error}</p>
           <p className="mt-1">
-            Your entry is kept. Try again when you're back in range.
+            {locked
+              ? "Your entry is kept. Try again when you're back in range."
+              : "Your entry is kept. Fix it and save again."}
           </p>
         </div>
       )}
