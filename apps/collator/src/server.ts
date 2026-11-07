@@ -13,7 +13,11 @@ export function start(config: Config): ServerType {
       ? `event: ${event.title} (${event.slug})`
       : "event: none loaded yet (load-cartridge <file.zip>)",
   );
-  return serve({ fetch: createApp({ db }).fetch, port: config.port }, (info) =>
-    console.log(`collator listening on :${info.port}`),
+  return serve(
+    {
+      fetch: createApp({ db, webRoot: config.webRoot }).fetch,
+      port: config.port,
+    },
+    (info) => console.log(`collator listening on :${info.port}`),
   );
 }

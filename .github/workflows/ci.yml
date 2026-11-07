@@ -47,12 +47,17 @@ jobs:
       # no Clerk secrets (issue #4, D7).
       - name: Smoke test
         run: pnpm --filter @camporee-conductor/composer-web e2e
+      # The judge page, served by the Collator loaded with the Circus 2026 event-day cartridge (#40).
+      - name: Judge page test
+        run: pnpm --filter @camporee-conductor/collator-web e2e
       - name: Keep the trace on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-results
-          path: apps/composer-web/test-results/
+          path: |
+            apps/composer-web/test-results/
+            apps/collator-web/test-results/
           retention-days: 7
 
   image:

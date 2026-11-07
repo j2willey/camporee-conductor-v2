@@ -4,6 +4,9 @@
   "private": true,
   "description": "Collator: the on-site event-day server. Loads an event-day cartridge, takes Judges' score entries, serves Officials. Works offline. (ADR-0015, 0023, 0026, 0027)",
   "type": "module",
+  "exports": {
+    "./types": "./src/types.ts"
+  },
   "scripts": {
     "typecheck": "tsc",
     "test": "vitest run",

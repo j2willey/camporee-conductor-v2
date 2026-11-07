@@ -1,8 +1,10 @@
+import { serveStatic } from "@hono/node-server/serve-static";
 import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import type { Db } from "./db/open.ts";
+import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import {
   recordGroup,
@@ -67,12 +69,27 @@ function reply(c: Context, result: Recorded) {
  * The Collator API (issue #40). Judges need no account (ADR-0023); what they send is keyed by ids their
  * phones made, so resending is always safe (ADR-0027 item 8).
  */
-export function createApp({ db }: { db: Db }) {
+export function createApp({
+  db,
+  webRoot = null,
+}: {
+  db: Db;
+  /** The built web app (judge page) to serve, or null in development, where Vite serves it. */
+  webRoot?: string | null;
+}) {
   const app = new Hono();
 
   app.get("/api/health", (c) => {
     const event = loadedEvent(db);
     return c.json({ ok: true, event: event?.manifest.event ?? null });
+  });
+
+  app.get("/api/event", (c) => {
+    const event = loadedEvent(db);
+    if (!event) {
+      return c.json({ error: "no Event is loaded on this box yet" }, 409);
+    }
+    return c.json(judgeEvent(event.bundle));
   });
 
   app.get("/api/roster", (c) => c.json(roster(db)));
@@ -106,5 +123,12 @@ export function createApp({ db }: { db: Db }) {
     return c.json({ error: "internal error" }, 500);
   });
 
+  if (webRoot) {
+    app
+      .all("/api/*", (c) => c.json({ error: "not found" }, 404))
+      .get("*", serveStatic({ root: webRoot }))
+      // Any other path is one of the app's own routes: send the page and let it route.
+      .get("*", serveStatic({ root: webRoot, path: "index.html" }));
+  }
   return app;
 }

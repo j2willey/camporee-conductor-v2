@@ -2,6 +2,7 @@
 export { awardRecipients } from "./awards.ts";
 export {
   entryTotal,
+  fillVariables,
   mergeCommonFields,
   metricValue,
   stopwatchSeconds,

@@ -39,6 +39,32 @@ export function mergeCommonFields(
   ];
 }
 
+/**
+ * Fields with an Activity's `variables` filled into `{{key}}` tokens in their labels and placeholders,
+ * e.g. a Common Field "10 Essentials: {{ten_essentials}}" (ADR-0020). A token the Activity doesn't
+ * define is left as it is. Ids and everything that affects scoring are unchanged.
+ */
+export function fillVariables(
+  fields: readonly ScoringField[],
+  variables: Readonly<Record<string, string>>,
+): ScoringField[] {
+  const fill = (text: string) =>
+    text.replace(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g, (token, key: string) =>
+      Object.hasOwn(variables, key) ? (variables[key] ?? token) : token,
+    );
+  return fields.map((field) => {
+    const placeholder = field.config?.placeholder;
+    return {
+      ...field,
+      label: fill(field.label),
+      ...(field.config &&
+        placeholder !== undefined && {
+          config: { ...field.config, placeholder: fill(placeholder) },
+        }),
+    };
+  });
+}
+
 /** A numeric reading of an entered value, or undefined if it isn't a number. */
 function numberOf(value: FieldValue | undefined): number | undefined {
   if (typeof value === "number")

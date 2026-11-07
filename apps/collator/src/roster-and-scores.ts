@@ -1,7 +1,4 @@
-import {
-  mergeCommonFields,
-  type FieldValue,
-} from "@camporee-conductor/scoring";
+import type { FieldValue } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import {
@@ -10,6 +7,7 @@ import {
   scoreEntries as scoreEntriesTable,
   teams,
 } from "./db/schema.ts";
+import { activityFields } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 
 // What Judges' phones send: Groups and Teams added on the spot, and score entries. Each carries an id
@@ -118,27 +116,25 @@ export function recordScore(db: Db, score: ScoreSubmission): Recorded {
     return same ? REPEAT : conflict("Score entry", score.id);
   }
 
-  const { bundle } = event;
-  const listed = bundle.event.activities.find(
-    (a) => a.activityId === score.activityId,
-  );
-  const activity = bundle.activities.find((a) => a.id === score.activityId);
-  const competition = bundle.event.competitions.find(
-    (c) => c.id === listed?.competitionId,
-  );
-  if (!listed || !activity || !competition) {
+  const found = activityFields(event.bundle, score.activityId);
+  if (!found) {
     return invalid(`Activity ${score.activityId} isn't in the loaded Event`);
   }
+  const { activity, competition, fields } = found;
 
-  const fieldIds = new Set(
-    mergeCommonFields(activity, competition, bundle.commonFieldSets).map(
-      (f) => f.id,
-    ),
-  );
-  const unknown = Object.keys(score.values).filter((id) => !fieldIds.has(id));
+  const byId = new Map(fields.map((f) => [f.id, f]));
+  const unknown = Object.keys(score.values).filter((id) => !byId.has(id));
   if (unknown.length > 0) {
     return invalid(
-      `${activity.title} has no field ${unknown.join(", ")} (its fields, with Common Fields: ${[...fieldIds].join(", ")})`,
+      `${activity.title} has no field ${unknown.join(", ")} (its fields, with Common Fields: ${[...byId.keys()].join(", ")})`,
+    );
+  }
+  const officialOnly = Object.keys(score.values).filter(
+    (id) => byId.get(id)?.audience === "official",
+  );
+  if (officialOnly.length > 0) {
+    return invalid(
+      `${officialOnly.join(", ")} at ${activity.title}: entered by Officials, not Judges`,
     );
   }
 
