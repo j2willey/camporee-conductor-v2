@@ -15,6 +15,8 @@ import Database from "better-sqlite3";
 // #41 PR 6: a Judge closes an Activity once everything has gone; Officials see it, and a reopen.
 // #41 PR 7: the Official prints QR codes (Wi-Fi, judge page, one per Activity); an Activity's code opens
 // the judge page at that Activity, and an old printout's code falls back to the list.
+// #42 PR 1: the Official's Overview shows each Activity's counts, and a conflict when a second Judge
+// scores the same Patrol.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -163,14 +165,12 @@ test("an Official on the cartridge's list sees the score ranked; an unlisted ema
   await expect(page.getByRole("alert")).toContainText(
     "alex@example.com isn't on this Event's list of Officials.",
   );
-  await expect(page.getByRole("heading", { name: "Activities" })).toHaveCount(
-    0,
-  );
+  await expect(page.getByRole("heading", { name: "Overview" })).toHaveCount(0);
 
   // Listed in the event-day cartridge (apps/collator/src/test-support.ts); case doesn't matter.
   await page.getByLabel("Email").fill("Lead.Judge@example.com");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Activities" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await page.getByRole("button", { name: /Clown Car/ }).click();
 
   await expect(page.getByRole("heading", { name: "Clown Car" })).toBeVisible();
@@ -474,9 +474,9 @@ test("a Judge closes an Activity once their scores have gone, and Officials see 
   await official.goto("/official");
   await official.getByLabel("Email").fill("lead.judge@example.com");
   await official.getByRole("button", { name: "Sign in" }).click();
-  await expect(
-    official.getByRole("button", { name: /Clown Car/ }),
-  ).toContainText("Closed by 1");
+  await expect(official.getByRole("row", { name: /Clown Car/ })).toContainText(
+    "Closed by 1",
+  );
   await official.getByRole("button", { name: /Clown Car/ }).click();
   await expect(
     official.getByText("Alex Judge closed it with 1 score: all here."),
@@ -489,9 +489,9 @@ test("a Judge closes an Activity once their scores have gone, and Officials see 
   await page.getByRole("button", { name: "Score another Patrol" }).click();
   await expect(close).toBeVisible();
   await official.reload();
-  await expect(
-    official.getByRole("button", { name: /Clown Car/ }),
-  ).toContainText("Check closures");
+  await expect(official.getByRole("row", { name: /Clown Car/ })).toContainText(
+    "Check closures",
+  );
   await official.getByRole("button", { name: /Clown Car/ }).click();
   await expect(
     official.getByText("Then scored 1 more: reopened."),
@@ -558,6 +558,72 @@ test("an Official prints QR codes, and an Activity's code opens the judge page a
     judge.getByRole("heading", { name: "Which Activity are you judging?" }),
   ).toBeVisible();
   await phone.close();
+});
+
+test("the Official's Overview shows Clown Car's counts, refreshes by itself, and flags a Patrol scored by two Judges", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  const row = page.getByRole("row", { name: /Clown Car/ });
+  const cell = async (n: number) =>
+    (await row.getByRole("cell").nth(n).textContent()) ?? "";
+  // Earlier tests left scores here, from Alex and Sam, and Flaming Arrows scored by both.
+  await expect(page.getByText(/^Updated /)).toBeVisible();
+  await expect(
+    page.getByText(/scores? across \d+ of \d+ Activities/),
+  ).toBeVisible();
+  const entries = Number(await cell(2));
+  const judges = Number(await cell(3));
+  expect(entries).toBeGreaterThanOrEqual(3);
+  expect(judges).toBeGreaterThanOrEqual(2);
+  expect(await cell(6)).toMatch(/^\d\d:\d\d/);
+  const conflicts = (await cell(5)) === "—" ? 0 : Number(await cell(5));
+  expect(conflicts).toBeGreaterThanOrEqual(1);
+
+  // Alex (on a new phone, so a new Judge) adds a new Patrol and scores it; Quinn, scores the same Patrol.
+  const alex = await browser.newContext({ ...devices["Pixel 7"] });
+  const alexPage = await alex.newPage();
+  await startJudging(alexPage);
+  await alexPage
+    .getByRole("button", { name: "Patrol not listed? Add one" })
+    .click();
+  await alexPage.getByRole("combobox").selectOption({ label: "Troop 101" });
+  await alexPage.getByLabel("Patrol name").fill("Night Owls");
+  await alexPage.getByRole("button", { name: "Add Patrol" }).click();
+  await alexPage.getByLabel("Big Top Cruiser Clowns").fill("5");
+  await alexPage.getByLabel("Patrol Flag").fill("2");
+  await alexPage.getByRole("button", { name: "Save score" }).click();
+  await expect(alexPage.getByText(/^Score saved:/)).toBeVisible();
+
+  const quinn = await browser.newContext({ ...devices["Pixel 7"] });
+  const quinnPage = await quinn.newPage();
+  await quinnPage.goto("/");
+  await quinnPage.getByLabel("Name").fill("Quinn Judge");
+  await quinnPage.getByLabel("Email").fill("quinn@example.com");
+  await quinnPage.getByRole("button", { name: "Start judging" }).click();
+  await quinnPage
+    .getByRole("button", { name: "Clown Car", exact: true })
+    .click();
+  await quinnPage
+    .getByRole("button", { name: "Night Owls (Troop 101)" })
+    .click();
+  await quinnPage.getByLabel("Big Top Cruiser Clowns").fill("6");
+  await quinnPage.getByLabel("Patrol Flag").fill("3");
+  await quinnPage.getByRole("button", { name: "Save score" }).click();
+  await expect(quinnPage.getByText(/^Score saved:/)).toBeVisible();
+
+  // Nobody reloads the Official's page: the Overview asks the box again within 15 s.
+  await expect(row.getByRole("cell").nth(2)).toHaveText(String(entries + 2), {
+    timeout: 30_000,
+  });
+  await expect(row.getByRole("cell").nth(3)).toHaveText(String(judges + 2));
+  await expect(row.getByRole("cell").nth(5)).toHaveText(String(conflicts + 1));
+  await alex.close();
+  await quinn.close();
 });
 
 test.describe("without the service worker", () => {

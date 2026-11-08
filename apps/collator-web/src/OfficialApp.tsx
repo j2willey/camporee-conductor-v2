@@ -10,13 +10,15 @@ import {
   saveOfficialEmail,
 } from "./official-identity.ts";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
+import { OfficialOverview } from "./screens/OfficialOverview.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
 import { QrCodesPage } from "./screens/QrCodesPage.tsx";
 import { ui } from "./ui.ts";
 
-// The Official view (#40 PR 3), at /official: sign in with an email on the Event's Officials list, pick an
-// Activity, see its ranking and the score entries received. Read-only; Officials' tools are #42. The QR
-// codes to print are here too (#41 PR 7): Officials work in a laptop browser.
+// The Official view (#40 PR 3), at /official: sign in with an email on the Event's Officials list, see the
+// Overview (#42 PR 1: every Activity's status, refreshed every 15 s), open an Activity for its ranking and
+// the score entries received. Read-only; Officials' tools are the rest of #42. The QR codes to print are
+// here too (#41 PR 7): Officials work in a laptop browser.
 
 type Activity = OfficialEvent["activities"][number];
 
@@ -86,7 +88,7 @@ export function OfficialApp() {
   }
 
   return (
-    <Shell wide={printing}>
+    <Shell wide={printing || !activity}>
       <header className="mb-4 flex flex-col gap-1 print:hidden">
         <p className={ui.muted}>{event.event.title}</p>
         <p className="text-sm">
@@ -110,70 +112,14 @@ export function OfficialApp() {
           onBack={() => setActivity(null)}
         />
       ) : (
-        <>
-          <ActivityPicker activities={event.activities} onPick={setActivity} />
-          <button
-            className={`${ui.buttonQuiet} mt-6 w-full`}
-            onClick={() => setPrinting(true)}
-          >
-            QR codes to print
-          </button>
-        </>
+        <OfficialOverview
+          email={email}
+          event={event}
+          onPick={setActivity}
+          onPrint={() => setPrinting(true)}
+        />
       )}
     </Shell>
-  );
-}
-
-function ActivityPicker({
-  activities,
-  onPick,
-}: {
-  activities: readonly Activity[];
-  onPick: (activity: Activity) => void;
-}) {
-  const competitions = [
-    ...new Map(
-      activities.map((a) => [a.competition.id, a.competition]),
-    ).values(),
-  ];
-  const entries = (n: number) => (n === 1 ? "1 entry" : `${n} entries`);
-  return (
-    <section className="flex flex-col gap-4">
-      <h1 className={ui.h1}>Activities</h1>
-      {competitions.map((competition) => (
-        <section key={competition.id} className="flex flex-col gap-2">
-          <h2 className={ui.h2}>{competition.label}</h2>
-          {activities
-            .filter((a) => a.competition.id === competition.id)
-            .map((activity) => (
-              <button
-                key={activity.id}
-                className={`${ui.choice} flex justify-between gap-2`}
-                onClick={() => onPick(activity)}
-              >
-                <span>{activity.title}</span>
-                <span className="flex flex-col items-end text-right">
-                  <span className={ui.muted}>
-                    {entries(activity.entryCount)}
-                  </span>
-                  {/* Judges' closures (#41 PR 6): an Official checks the ones that need a look. */}
-                  {activity.closureProblems > 0 ? (
-                    <span className="text-xs font-medium text-amber-800">
-                      Check closures
-                    </span>
-                  ) : (
-                    activity.closedBy > 0 && (
-                      <span className="text-xs text-teal-800">
-                        Closed by {activity.closedBy}
-                      </span>
-                    )
-                  )}
-                </span>
-              </button>
-            ))}
-        </section>
-      ))}
-    </section>
   );
 }
 
@@ -186,7 +132,7 @@ function Shell({
 }) {
   return (
     <main
-      className={`mx-auto px-4 py-4 ${wide ? "max-w-3xl print:max-w-none print:p-0" : "max-w-md"}`}
+      className={`mx-auto px-4 py-4 ${wide ? "max-w-5xl print:max-w-none print:p-0" : "max-w-md"}`}
     >
       {children}
     </main>

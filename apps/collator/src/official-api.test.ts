@@ -166,6 +166,59 @@ describe("GET /api/official/event: the Activities to pick from", () => {
         .map((a) => a.entryCount),
     ).toEqual(expect.arrayContaining([0]));
   });
+
+  const clownCar = async () => {
+    const res = await asOfficial("/api/official/event");
+    const body = (await res.json()) as {
+      activities: {
+        id: string;
+        entrantsScored: number;
+        judges: number;
+        conflicts: number;
+        lastReceivedAt: string | null;
+      }[];
+    };
+    return body.activities;
+  };
+
+  it("counts distinct entrants and Judges, and flags an entrant scored by two Judges", async () => {
+    const activities = await clownCar();
+    // Alex scored two Teams; Sam scored the Owls again: 2 entrants, 2 Judges, 1 conflict (item 9).
+    expect(activities.find((a) => a.id === CLOWN_CAR.id)).toMatchObject({
+      entrantsScored: 2,
+      judges: 2,
+      conflicts: 1,
+    });
+  });
+
+  it("does not call one Judge scoring an entrant again a conflict: that's a correction", async () => {
+    await put("/api/scores/score-4", {
+      judge: ALEX,
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-1",
+      values: { [CLOWN_CAR.ownField]: 10, [CLOWN_CAR.commonField]: 5 },
+      phoneCreatedAt: "2027-05-15T09:40:00Z",
+    });
+    const found = (await clownCar()).find((a) => a.id === CLOWN_CAR.id);
+    expect(found).toMatchObject({
+      entrantsScored: 2,
+      judges: 2,
+      conflicts: 1,
+    });
+  });
+
+  it("is lastReceivedAt for the newest entry, and null where nothing is scored", async () => {
+    const activities = await clownCar();
+    const at = activities.find((a) => a.id === CLOWN_CAR.id)?.lastReceivedAt;
+    expect(Number.isNaN(Date.parse(at ?? ""))).toBe(false);
+    const empty = activities.find((a) => a.id !== CLOWN_CAR.id);
+    expect(empty).toMatchObject({
+      entrantsScored: 0,
+      judges: 0,
+      conflicts: 0,
+      lastReceivedAt: null,
+    });
+  });
 });
 
 interface OfficialActivity {
