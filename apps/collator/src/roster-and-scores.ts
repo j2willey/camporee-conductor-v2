@@ -240,6 +240,8 @@ export interface ScoreEntryRow {
   entrantId: string;
   values: Record<string, FieldValue>;
   phoneCreatedAt: string;
+  /** When the box received it. */
+  receivedAt: Date;
 }
 
 /** Every score entry, in the order the box received them. */
@@ -257,6 +259,7 @@ export function scoreEntries(db: Db): ScoreEntryRow[] {
       entrantId: row.entrantId,
       values: JSON.parse(row.values) as Record<string, FieldValue>,
       phoneCreatedAt: row.phoneCreatedAt,
+      receivedAt: row.receivedAt,
     }));
 }
 

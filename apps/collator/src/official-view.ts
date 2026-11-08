@@ -49,6 +49,14 @@ export interface OfficialEvent {
     closedBy: number;
     /** Closures an Official should look at: scores missing, or scored again since. */
     closureProblems: number;
+    /** Distinct entrants with at least one score entry. */
+    entrantsScored: number;
+    /** Distinct Judges with score entries here. */
+    judges: number;
+    /** Entrants scored by more than one Judge: both kept, newest counts, an Official looks (item 9). */
+    conflicts: number;
+    /** When the newest entry here was received (ISO), or null with none. */
+    lastReceivedAt: string | null;
   })[];
 }
 
@@ -62,11 +70,28 @@ export function officialEvent(
     event,
     activities: activities.map(({ id, title, competition }) => {
       const closures = closuresAt(db, id);
+      const here = entries.filter((e) => e.activityId === id);
+      const judgesByEntrant = new Map<string, Set<string>>();
+      for (const e of here) {
+        const set = judgesByEntrant.get(e.entrantId) ?? new Set<string>();
+        set.add(e.judgeId);
+        judgesByEntrant.set(e.entrantId, set);
+      }
+      const newest = here.reduce<Date | null>(
+        (latest, e) =>
+          latest && latest >= e.receivedAt ? latest : e.receivedAt,
+        null,
+      );
       return {
         id,
         title,
         competition,
-        entryCount: entries.filter((e) => e.activityId === id).length,
+        entryCount: here.length,
+        entrantsScored: judgesByEntrant.size,
+        judges: new Set(here.map((e) => e.judgeId)).size,
+        conflicts: [...judgesByEntrant.values()].filter((j) => j.size > 1)
+          .length,
+        lastReceivedAt: newest ? newest.toISOString() : null,
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };
