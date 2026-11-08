@@ -12,7 +12,8 @@ import { closing } from "./phone-closing.ts";
 import type { SendNowResult } from "./outbox.ts";
 import { LoadProblem } from "./screens/LoadProblem.tsx";
 import { OutboxStatus } from "./screens/OutboxStatus.tsx";
-import { ActivityList } from "./screens/ActivityList.tsx";
+import { activityFromLink } from "./qr-codes.ts";
+import { ActivityList, rememberPicked } from "./screens/ActivityList.tsx";
 import { EntrantPicker, type Entrant } from "./screens/EntrantPicker.tsx";
 import { JudgeDetails } from "./screens/JudgeDetails.tsx";
 import { Saved } from "./screens/Saved.tsx";
@@ -23,7 +24,7 @@ import { ui } from "./ui.ts";
 // The judge page (#40 PR 2): who's judging → Activity → Team (or Group) → form → saved.
 // No account (ADR-0023). Scores and roster adds go through the phone's outbox (#41 PR 2), and the page
 // opens with no Wi-Fi from the copies kept on the phone (#41 PR 3). Half-filled forms and stopwatches are
-// kept as drafts (#41 PR 4); Stations and QR codes come later in #41.
+// kept as drafts (#41 PR 4). A Station's QR code opens the page at its Activity (`?activity=`, #41 PR 7).
 
 const EVENT_KEY = "collator.event";
 
@@ -46,12 +47,26 @@ export function App() {
   const [judge, setJudge] = useState<JudgeIdentity | null>(savedJudge);
   const [editingJudge, setEditingJudge] = useState(false);
   const [step, setStep] = useState<Step>({ name: "activity" });
+  const [unknownLink, setUnknownLink] = useState(false);
 
   useEffect(() => {
     loadKept(EVENT_KEY, api.event, localStorage).then(
       (kept) => {
         setEvent(kept.value);
         setFromPhone(kept.fromPhone);
+        // Opened from an Activity's QR code: go straight to it (after the Judge's details, if new). The
+        // link is dropped from the address, so a reload later doesn't jump back to it.
+        const link = activityFromLink(
+          window.location.search,
+          kept.value.activities,
+        );
+        if (link.kind === "found") {
+          rememberPicked(link.activity);
+          setStep({ name: "entrant", activity: link.activity });
+        }
+        if (link.kind === "unknown") setUnknownLink(true);
+        if (link.kind !== "none")
+          window.history.replaceState(null, "", window.location.pathname);
       },
       (e: unknown) => setLoadError(e),
     );
@@ -150,6 +165,12 @@ export function App() {
   return (
     <Shell>
       {header}
+      {step.name === "activity" && unknownLink && (
+        <p className={`${ui.note} mb-4`} role="status">
+          That QR code is for an Activity this event doesn't have. Pick yours
+          from the list.
+        </p>
+      )}
       {step.name === "activity" && (
         <ActivityList
           activities={event.activities}
@@ -158,7 +179,10 @@ export function App() {
           competitions={
             event.competitions as JudgeEvent["competitions"] | undefined
           }
-          onPick={(activity) => setStep({ name: "entrant", activity })}
+          onPick={(activity) => {
+            setUnknownLink(false);
+            setStep({ name: "entrant", activity });
+          }}
         />
       )}
       {step.name === "entrant" && (

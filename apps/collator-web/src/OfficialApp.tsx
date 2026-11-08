@@ -11,10 +11,12 @@ import {
 } from "./official-identity.ts";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
+import { QrCodesPage } from "./screens/QrCodesPage.tsx";
 import { ui } from "./ui.ts";
 
 // The Official view (#40 PR 3), at /official: sign in with an email on the Event's Officials list, pick an
-// Activity, see its ranking and the score entries received. Read-only; Officials' tools are #42.
+// Activity, see its ranking and the score entries received. Read-only; Officials' tools are #42. The QR
+// codes to print are here too (#41 PR 7): Officials work in a laptop browser.
 
 type Activity = OfficialEvent["activities"][number];
 
@@ -24,6 +26,7 @@ export function OfficialApp() {
   const [event, setEvent] = useState<OfficialEvent | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
+  const [printing, setPrinting] = useState(false);
 
   // Signing in, or coming back with a saved email: the box checks it, as it does on every call.
   useEffect(() => {
@@ -57,6 +60,7 @@ export function OfficialApp() {
     setOfficial(null);
     setEvent(null);
     setActivity(null);
+    setPrinting(false);
     setProblem(null);
   };
 
@@ -82,8 +86,8 @@ export function OfficialApp() {
   }
 
   return (
-    <Shell>
-      <header className="mb-4 flex flex-col gap-1">
+    <Shell wide={printing}>
+      <header className="mb-4 flex flex-col gap-1 print:hidden">
         <p className={ui.muted}>{event.event.title}</p>
         <p className="text-sm">
           Signed in as <strong>{official.name ?? official.email}</strong>.{" "}
@@ -92,7 +96,13 @@ export function OfficialApp() {
           </button>
         </p>
       </header>
-      {activity ? (
+      {printing ? (
+        <QrCodesPage
+          eventTitle={event.event.title}
+          activities={event.activities}
+          onBack={() => setPrinting(false)}
+        />
+      ) : activity ? (
         <OfficialActivityView
           email={email}
           activityId={activity.id}
@@ -100,7 +110,15 @@ export function OfficialApp() {
           onBack={() => setActivity(null)}
         />
       ) : (
-        <ActivityPicker activities={event.activities} onPick={setActivity} />
+        <>
+          <ActivityPicker activities={event.activities} onPick={setActivity} />
+          <button
+            className={`${ui.buttonQuiet} mt-6 w-full`}
+            onClick={() => setPrinting(true)}
+          >
+            QR codes to print
+          </button>
+        </>
       )}
     </Shell>
   );
@@ -159,6 +177,18 @@ function ActivityPicker({
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return <main className="mx-auto max-w-md px-4 py-4">{children}</main>;
+function Shell({
+  children,
+  wide = false,
+}: {
+  children: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <main
+      className={`mx-auto px-4 py-4 ${wide ? "max-w-3xl print:max-w-none print:p-0" : "max-w-md"}`}
+    >
+      {children}
+    </main>
+  );
 }

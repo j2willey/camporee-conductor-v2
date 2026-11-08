@@ -83,6 +83,20 @@ cartridges folder (default `deploy/collator/cartridges/`, gitignored), and:
 docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/<file>.zip
 ```
 
+### Print the QR codes (#41)
+
+On the laptop, open `https://<COLLATOR_HOSTNAME>/official`, sign in, and choose **QR codes to print**. Type
+the Wi-Fi name and password (they stay in the page: nothing is sent to the box or kept), then **Print**.
+
+- **Join the Wi-Fi** and **Open the judge page** go where Judges check in. The judge page link is the
+  address the laptop has the box at, so print from a laptop that uses the same name as the phones
+  (`COLLATOR_HOSTNAME`), not `localhost` or an IP address.
+- **One per Activity**, a page per Competition: post each at its Station. Scanning it opens the judge page
+  at that Activity (after a new Judge's details). A code for an Activity the loaded cartridge doesn't have
+  (an old printout) opens the Activity list with a note.
+- Reprint the Activity codes after loading a cartridge with new Activities; the Wi-Fi and judge page codes
+  only change with the network name, password or hostname.
+
 ## 5. Backups (ADR-0027 item 11)
 
 The Collator writes a backup to the backup folder every `BACKUP_EVERY_MINUTES` (default 5) and keeps the
@@ -99,7 +113,13 @@ newest `BACKUP_KEEP` (default 288, a day's worth). A mounted USB stick is just a
   `docker compose exec collator node apps/collator/src/cli/backup-now.ts`
 - To restore, stop the box, copy a backup into the `collator-data` volume as `collator.db` (deleting any
   `collator.db-wal` and `collator.db-shm` beside it), and start it.
-  The phones resend anything newer (ADR-0027 item 8).
+- **After a restore, scores the box confirmed after that backup are lost** (#66). Phones resend only what's
+  still in their outbox: scores saved while out of range and not yet sent. A score the box had already
+  confirmed is gone from the phone's outbox and is **not** resent. Until #66 is fixed:
+  - Note the backup's time. Anything scored after it may be missing.
+  - In the Official view, check each Activity's closures: "Check closures" and "N of them haven't reached
+    the box" point at Activities with missing scores.
+  - Re-enter missing scores from the paper scoresheets, or ask the Judge to score that Team again.
 
 ## 6. If a phone can't connect
 

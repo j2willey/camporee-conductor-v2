@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { expect, test, type Page } from "@playwright/test";
+import { devices, expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
 
 // #40 PR 2: a Judge with no account scores a newly added Patrol at Clown Car; a resend after a lost reply
@@ -13,6 +13,8 @@ import Database from "better-sqlite3";
 // #41 PR 4: a half-filled form and a running stopwatch survive a reload; Stop gives the m:ss saved.
 // #41 PR 5: one Competition's Activities at a time, remembered; the Judge's home unit reaches Officials.
 // #41 PR 6: a Judge closes an Activity once everything has gone; Officials see it, and a reopen.
+// #41 PR 7: the Official prints QR codes (Wi-Fi, judge page, one per Activity); an Activity's code opens
+// the judge page at that Activity, and an old printout's code falls back to the list.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -494,6 +496,68 @@ test("a Judge closes an Activity once their scores have gone, and Officials see 
   await expect(
     official.getByText("Then scored 1 more: reopened."),
   ).toBeVisible();
+});
+
+test("an Official prints QR codes, and an Activity's code opens the judge page at that Activity", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "QR codes to print" }).click();
+  await expect(
+    page.getByRole("heading", { name: "QR codes to print" }),
+  ).toBeVisible();
+
+  const code = (name: string) =>
+    page.getByRole("img", { name: `QR code: ${name}`, exact: true });
+  // No Wi-Fi name yet: no Wi-Fi code, just the judge page and one per Activity.
+  await expect(code("1. Join the Wi-Fi")).toHaveCount(0);
+  await expect(code("Judge page")).toHaveAttribute(
+    "data-qr-text",
+    "http://localhost:3040/",
+  );
+  await page.getByLabel("Wi-Fi name").fill("Coyote Creek");
+  await page.getByLabel("Wi-Fi password").fill("big;top");
+  await expect(code("1. Join the Wi-Fi")).toHaveAttribute(
+    "data-qr-text",
+    "WIFI:T:WPA;S:Coyote Creek;P:big\\;top;;",
+  );
+  await expect(code("2. Open the judge page")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Troop Challenges" }),
+  ).toBeVisible();
+  const clownCar = await code("Clown Car").getAttribute("data-qr-text");
+  // Clown Car's id in the Circus 2026 fixture.
+  expect(clownCar).toBe(
+    "http://localhost:3040/?activity=01a18a1b-3000-7872-beea-714277375bbe",
+  );
+
+  // A new Judge scans Clown Car's code: details first, then straight to Clown Car's Patrols.
+  const phone = await browser.newContext({ ...devices["Pixel 7"] });
+  const judge = await phone.newPage();
+  await judge.goto(clownCar ?? "");
+  await judge.getByLabel("Name").fill("Pat Judge");
+  await judge.getByLabel("Email").fill("pat@example.com");
+  await judge.getByRole("button", { name: "Start judging" }).click();
+  await expect(judge.getByRole("heading", { name: "Clown Car" })).toBeVisible();
+  // The link is dropped from the address: a reload shows the list, with Clown Car on top.
+  expect(new URL(judge.url()).search).toBe("");
+  await judge.reload();
+  await expect(
+    judge.getByRole("button", { name: "Back to Clown Car" }),
+  ).toBeVisible();
+
+  // A code from an older printout names an Activity this event doesn't have.
+  await judge.goto("/?activity=tightrope");
+  await expect(
+    judge.getByRole("status").filter({ hasText: "That QR code" }),
+  ).toContainText("That QR code is for an Activity this event doesn't have.");
+  await expect(
+    judge.getByRole("heading", { name: "Which Activity are you judging?" }),
+  ).toBeVisible();
+  await phone.close();
 });
 
 test.describe("without the service worker", () => {

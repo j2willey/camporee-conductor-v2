@@ -10,6 +10,12 @@ import { ui } from "../ui.ts";
 const TAB_KEY = "collator.competition";
 const LAST_KEY = "collator.lastActivity";
 
+/** Remember an Activity as the last picked, and its tab: also when a QR code opened it (#41 PR 7). */
+export function rememberPicked(activity: JudgeActivity): void {
+  remember(LAST_KEY, activity.id);
+  remember(TAB_KEY, activity.competition.id);
+}
+
 /**
  * Every Activity, one Competition at a time (#41 PR 5): tabs, as v1's Patrol / Troop tabs, so the
  * morning's Patrol Games and the afternoon's Troop Challenges don't crowd each other. The phone remembers
@@ -33,8 +39,7 @@ export function ActivityList({
   const last = activities.find((a) => a.id === remembered(LAST_KEY));
 
   const pick = (activity: JudgeActivity) => {
-    remember(LAST_KEY, activity.id);
-    remember(TAB_KEY, activity.competition.id);
+    rememberPicked(activity);
     onPick(activity);
   };
   const show = (id: string) => {
