@@ -1,7 +1,9 @@
+import { scoreEvent } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { groups, rosterChanges, teams } from "./db/schema.ts";
 import { loadedEvent } from "./load-event.ts";
+import { scoringInput } from "./scoring-input.ts";
 import {
   conflict,
   invalid,
@@ -75,6 +77,10 @@ export function recordRosterChange(
   const { change } = submission;
   const problem = changeProblem(db, change);
   if (problem !== undefined) return invalid(problem);
+  const frozen = frozenBy(db, change);
+  if (frozen !== undefined) {
+    return { ok: false, reason: "conflict", message: frozen };
+  }
 
   db.transaction((tx) => {
     if (change.type === "add-group") {
@@ -102,6 +108,34 @@ export function recordRosterChange(
       .run();
   });
   return { ok: true, status: "created" };
+}
+
+/**
+ * A merge or unmerge changes who an id counts for, which would make a finalized ranking invalid and silently reopen
+ * the Activity (ADR-0019). So it's refused while any finalized Activity's frozen ranking has either side.
+ */
+function frozenBy(db: Db, change: RosterChange): string | undefined {
+  if (change.type !== "merge" && change.type !== "unmerge") return undefined;
+  const event = loadedEvent(db);
+  if (!event) return undefined;
+  const roster = resolvedRoster(db);
+  const touched = new Set([
+    roster.resolve(change.id),
+    roster.resolve(change.type === "merge" ? change.intoId : change.id),
+  ]);
+  const input = scoringInput(db, event.bundle);
+  for (const results of scoreEvent(input).activities) {
+    if (!results.finalized || !results.finalizedBy) continue;
+    const action = input.actions[results.finalizedBy.actionIndex];
+    if (action?.type !== "finalize") continue;
+    if (!action.ranking.some((r) => touched.has(r.entrantId))) continue;
+    const title =
+      event.bundle.activities.find((a) => a.id === results.activityId)?.title ??
+      results.activityId;
+    const name = roster.displayName(change.id) ?? change.id;
+    return `${title} is finalized with ${name} in its ranking; unfinalize it first.`;
+  }
+  return undefined;
 }
 
 const levelName = (kind: "group" | "team") =>
