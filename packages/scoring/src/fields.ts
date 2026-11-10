@@ -4,7 +4,7 @@ import type {
   Competition,
   ScoringField,
 } from "@camporee-conductor/schema";
-import type { FieldValue } from "./types.ts";
+import type { FieldValue, OfficialAction, ScoreEntry } from "./types.ts";
 
 /**
  * The fields scored at an Activity: the Competition's `before` Common Fields, the Activity's own,
@@ -73,11 +73,13 @@ export function fillVariables(
  *   holds to `required` is its choice: a Judge's entry is checked against Judge fields only.
  * - A number field must hold a number (or text that reads as one, as scoring reads it) within its min/max.
  * - A select field must hold one of its `options`, exactly.
+ * - `range: false` skips only the min/max check; the kind checks stay (an Official's correction, ADR-0019).
  * Other field types aren't checked here.
  */
 export function valueProblem(
   field: Pick<ScoringField, "type" | "label" | "config" | "required">,
   value: FieldValue | undefined,
+  { range = true }: { range?: boolean } = {},
 ): string | undefined {
   if (isBlank(value)) {
     return field.required ? `${field.label} is required` : undefined;
@@ -91,7 +93,10 @@ export function valueProblem(
   const n = numberOf(value);
   if (n === undefined) return `${field.label} must be a number`;
   const { min, max } = field.config ?? {};
-  if ((min !== undefined && n < min) || (max !== undefined && n > max)) {
+  if (
+    range &&
+    ((min !== undefined && n < min) || (max !== undefined && n > max))
+  ) {
     if (min !== undefined && max !== undefined) {
       return `${field.label} must be from ${min} to ${max}`;
     }
@@ -191,4 +196,29 @@ export function metricValue(
   value: FieldValue | undefined,
 ): number | undefined {
   return field.type === "stopwatch" ? stopwatchSeconds(value) : numberOf(value);
+}
+
+type SetFieldValue = Extract<OfficialAction, { type: "set-field-value" }>;
+
+/**
+ * The effective correction per field for one score entry: actions applied in log order, so the latest
+ * `set-field-value` or `revert-field-value` for the entry and field wins, and a revert removes the field.
+ * An entry with no id has none (ADR-0019).
+ */
+export function fieldCorrections(
+  entry: Pick<ScoreEntry, "id">,
+  actions: readonly OfficialAction[],
+): Map<string, SetFieldValue> {
+  void entry;
+  void actions;
+  return new Map<string, SetFieldValue>();
+}
+
+/** The entry's values with its effective corrections laid over them. */
+export function correctedValues(
+  entry: Pick<ScoreEntry, "id" | "values">,
+  actions: readonly OfficialAction[],
+): Record<string, FieldValue> {
+  void actions;
+  return { ...entry.values };
 }

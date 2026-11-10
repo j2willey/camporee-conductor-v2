@@ -3,7 +3,9 @@ export { actionProblem } from "./action-checks.ts";
 export { awardRecipients } from "./awards.ts";
 export { inRankOrder, newestEntries } from "./entries.ts";
 export {
+  correctedValues,
   entryTotal,
+  fieldCorrections,
   fillVariables,
   mergeCommonFields,
   metricValue,

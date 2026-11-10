@@ -1,6 +1,6 @@
 import { ScoringFieldSchema } from "@camporee-conductor/schema";
 import { describe, expect, it } from "vitest";
-import { entryTotal, numberOf } from "./index.ts";
+import { entryTotal, numberOf, valueProblem } from "./index.ts";
 
 /** A judge number field as stored; `weight` is left out unless given. */
 function field(id: string, kind: string, weight?: number) {
@@ -51,5 +51,21 @@ describe("numberOf: how every reader turns a value into a number", () => {
     expect(numberOf(Number.POSITIVE_INFINITY)).toBeUndefined();
     expect(numberOf(true)).toBeUndefined();
     expect(numberOf(undefined)).toBeUndefined();
+  });
+});
+
+describe("valueProblem with range: false", () => {
+  const field = {
+    type: "number" as const,
+    label: "Score",
+    required: false,
+    config: { min: 0, max: 9 },
+  };
+  it("skips only the min/max check", () => {
+    expect(valueProblem(field, 99)).toBe("Score must be from 0 to 9");
+    expect(valueProblem(field, 99, { range: false })).toBeUndefined();
+    expect(valueProblem(field, "lots", { range: false })).toBe(
+      "Score must be a number",
+    );
   });
 });

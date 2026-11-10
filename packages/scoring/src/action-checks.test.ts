@@ -64,6 +64,68 @@ describe("actionProblem: other action types", () => {
   });
 });
 
+describe("actionProblem: set-field-value and revert-field-value", () => {
+  const set = (
+    over: Partial<Extract<OfficialAction, { type: "set-field-value" }>> = {},
+  ): OfficialAction => ({
+    type: "set-field-value",
+    activityId: activityId(0),
+    entrantId: "t1",
+    entryId: "e1",
+    fieldId: "score",
+    value: 5,
+    ...over,
+  });
+  const revert: OfficialAction = {
+    type: "revert-field-value",
+    activityId: activityId(0),
+    entrantId: "t1",
+    entryId: "e1",
+    fieldId: "score",
+  };
+  const missing = "0196cfa2-4c00-7000-8000-0000000009ff";
+
+  it("accepts a field of the Activity, even a value outside a range, and a blank", () => {
+    expect(actionProblem(context, set())).toBeUndefined();
+    expect(actionProblem(context, set({ value: null }))).toBeUndefined();
+    expect(actionProblem(context, revert)).toBeUndefined();
+  });
+
+  it("refuses an unknown Activity", () => {
+    expect(actionProblem(context, set({ activityId: missing }))).toBe(
+      `set-field-value: no Activity ${missing} in the Event; left out`,
+    );
+    expect(actionProblem(context, { ...revert, activityId: missing })).toBe(
+      `revert-field-value: no Activity ${missing} in the Event; left out`,
+    );
+  });
+
+  it("refuses an entrant from another Competition", () => {
+    const other = {
+      ...context,
+      entrants: [{ id: "x1", competitionId: "some-other-competition" }],
+    };
+    expect(actionProblem(other, set({ entrantId: "x1" }))).toBe(
+      "set-field-value: x1 isn't in Competition teams; left out",
+    );
+  });
+
+  it("refuses an unknown field", () => {
+    expect(actionProblem(context, set({ fieldId: "nope" }))).toBe(
+      "set-field-value: Activity 0 has no field nope; left out",
+    );
+    expect(actionProblem(context, { ...revert, fieldId: "nope" })).toBe(
+      "revert-field-value: Activity 0 has no field nope; left out",
+    );
+  });
+
+  it("refuses a value of the wrong kind", () => {
+    expect(actionProblem(context, set({ value: "lots" }))).toBe(
+      "set-field-value: Score must be a number; left out",
+    );
+  });
+});
+
 describe("scoreEvent warns on an invalid effective disqualify", () => {
   it("leaves it out with actionProblem's message, and still scores the rest", () => {
     const bad = dq("ghost", activityId(0));

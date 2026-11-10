@@ -9,6 +9,8 @@ export type FieldValue = number | string | boolean | null;
 
 /** One Judge's score entry for one entrant at one Activity. */
 export interface ScoreEntry {
+  /** The Collator's score entry id; corrections name it (ADR-0019). Optional for fixtures without ids. */
+  id?: string;
   activityId: string;
   /** A Team or Group from the Collator roster, by the Competition's `level`. */
   entrantId: string;
@@ -76,6 +78,29 @@ export type OfficialAction =
       activityId?: string;
       entrantId: string;
       disqualified: boolean;
+      notes?: string;
+    }
+  | {
+      /**
+       * An Official's value for one field of one Judge's score entry. The entry is kept as entered;
+       * scoring lays the value over it before totalling and listing. A null value clears the field.
+       * It belongs to that entry: a newer entry for the entrant counts as entered (ADR-0019).
+       */
+      type: "set-field-value";
+      activityId: string;
+      entrantId: string;
+      entryId: string;
+      fieldId: string;
+      value: FieldValue;
+      notes?: string;
+    }
+  | {
+      /** Undoes a correction: the Judge's value counts again. The latest for an entry and field wins. */
+      type: "revert-field-value";
+      activityId: string;
+      entrantId: string;
+      entryId: string;
+      fieldId: string;
       notes?: string;
     }
   | {
