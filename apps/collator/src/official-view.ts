@@ -194,6 +194,20 @@ export interface MatrixRow {
     counts: boolean;
     newest: boolean;
   }[];
+  /** Reassignments into or out of this row's entrant here, with who and when (ADR-0019). */
+  moves?: {
+    entryId: string;
+    /** "here": an entry moved onto this row; "away": one moved off it. */
+    direction: "here" | "away";
+    fromId: string;
+    fromName: string | null;
+    toId: string;
+    toName: string | null;
+    by: string;
+    at: string;
+    notes?: string;
+    state: "applied" | "held";
+  }[];
   /** Corrections on an entry an Official chose not to count: they come back if it's chosen again. */
   notCounting: SupersededCorrection[];
   /** The counting entry's Judge: name and home unit, never the email. */
