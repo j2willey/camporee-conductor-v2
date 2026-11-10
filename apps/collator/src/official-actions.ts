@@ -76,17 +76,33 @@ export function recordOfficialAction(
       : conflict("Official action", submission.id);
   }
   const { action } = submission;
+  const entries = scoreEntries(db);
   const problem = actionProblem(
     {
       event: bundle.event,
       activities: bundle.activities,
       commonFieldSets: bundle.commonFieldSets,
       entrants: scoringEntrants(bundle, roster(db)),
-      entries: scoreEntries(db),
+      entries,
     },
     submission.action,
   );
   if (problem !== undefined) return invalid(problem);
+  // A choice covers the entries the Official saw: a newer one means a stale view (ADR-0019 2026-11-10).
+  if (action.type === "choose-entry") {
+    const newest = entries.findLast(
+      (e) =>
+        e.activityId === action.activityId && e.entrantId === action.entrantId,
+    );
+    if (newest?.id !== action.newestEntryId) {
+      return {
+        ok: false,
+        reason: "conflict",
+        message:
+          "A newer entry has arrived since you loaded this; reload and choose again.",
+      };
+    }
+  }
   db.insert(officialActions)
     .values({
       id: submission.id,
