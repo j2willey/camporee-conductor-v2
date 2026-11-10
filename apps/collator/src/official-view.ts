@@ -1,5 +1,4 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
-import type { Official } from "@camporee-conductor/schema";
 import {
   fillVariables,
   finalizeRanking,
@@ -13,6 +12,7 @@ import {
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
+import { officialByEmail } from "./officials.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
 import {
@@ -30,20 +30,6 @@ import {
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Every ranking comes from
 // packages/scoring; Official actions are logged in official-actions.ts.
 
-/** An email as Officials are matched: trimmed, any case. */
-export const normalEmail = (email: string) => email.trim().toLowerCase();
-
-/** The Official on the loaded Event's list with this email, or undefined. */
-export function officialByEmail(
-  bundle: CheckedBundle,
-  email: string,
-): Official | undefined {
-  const wanted = normalEmail(email);
-  return bundle.officials?.officials.find(
-    (o) => normalEmail(o.email) === wanted,
-  );
-}
-
 /** An entrant's name from the roster: a Team with its Group, or a Group; null names for an id that isn't on it. */
 export function entrantNamer(db: Db): (id: string) => EntrantName {
   const { groups, teams } = roster(db);
@@ -60,6 +46,7 @@ export function entrantNamer(db: Db): (id: string) => EntrantName {
 
 /** Who logged the action at an index in the log, and when and why; blank for an index past the log. */
 export function actedOnLog(
+  db: Db,
   bundle: CheckedBundle,
   logged: LoggedAction[],
 ): (actionIndex: number) => Acted {
@@ -68,7 +55,9 @@ export function actedOnLog(
     if (!row) return { by: "", at: "" };
     const notes = (row.action as { notes?: string }).notes;
     return {
-      by: officialByEmail(bundle, row.officialEmail)?.name ?? row.officialEmail,
+      by:
+        officialByEmail(db, bundle, row.officialEmail)?.name ??
+        row.officialEmail,
       at: row.receivedAt.toISOString(),
       ...(notes !== undefined && { notes }),
     };
@@ -354,8 +343,8 @@ export function officialActivity(
   const entrants = competition?.level === "team" ? teams : groups;
   const fieldList = fillVariables(found.fields, found.activity.variables ?? {});
   const officialName = (a: LoggedAction): string =>
-    officialByEmail(bundle, a.officialEmail)?.name ?? a.officialEmail;
-  const actedOn = actedOnLog(bundle, logged);
+    officialByEmail(db, bundle, a.officialEmail)?.name ?? a.officialEmail;
+  const actedOn = actedOnLog(db, bundle, logged);
   const originOf = (r: EntryResult): MatrixRow["corrections"] => {
     const result: MatrixRow["corrections"] = {};
     for (const c of r.corrections) {

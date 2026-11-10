@@ -83,6 +83,26 @@ cartridges folder (default `deploy/collator/cartridges/`, gitignored), and:
 docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/<file>.zip
 ```
 
+### Add an Official on site
+
+Do this for a mistyped email in the cartridge (a Director who can't sign in), or a new Official on the day.
+Add the email, with `--director` for a Director and `--name` for how they appear in the logs:
+
+```sh
+docker compose exec collator node apps/collator/src/cli/add-official.ts pat@example.com --name "Pat Director" --director
+docker compose exec collator node apps/collator/src/cli/list-officials.ts
+```
+
+The first prints `added pat@example.com (director)`, or `updated ...` for an email already listed (the name or
+role changes; leave a flag off to keep it). The second lists everyone: email, role, name, and whether they came
+from the cartridge or were added on the box.
+
+There is no sign-in for this: having the box's console is the trust (ADR-0027 item 5). Additions are kept on the
+box and laid over the cartridge's list; the cartridge itself is unchanged. There is no removal: an Official added
+by mistake is harmless, since only listed emails get in, and the Officials' email-only gate is the same for all.
+
+Afterwards the Official signs in at `/official` with that email.
+
 ### Print the QR codes (#41)
 
 On the laptop, open `https://<COLLATOR_HOSTNAME>/official`, sign in, and choose **QR codes to print**. Type
