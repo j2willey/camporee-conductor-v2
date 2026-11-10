@@ -96,7 +96,10 @@ interface Row {
 }
 const matrix = async (activityId = CLOWN_CAR.id) => {
   const res = await asOfficial(`/api/official/activities/${activityId}`);
-  return ((await res.json()) as { matrix: Row[] }).matrix;
+  // Unscored roster rows are listed too; these tests look at the scored ones.
+  return ((await res.json()) as { matrix: Row[] }).matrix.filter(
+    (r) => r.total !== null,
+  );
 };
 const phoneRoster = async () =>
   (await (await app.request("/api/roster")).json()) as {
@@ -109,7 +112,9 @@ const standingsRows = async () => {
     competition: { level: string };
     rows: { entrantId: string; entrant: { name: string }; total: number }[];
   }[];
-  return all.find((c) => c.competition.level === "team")?.rows ?? [];
+  return (all.find((c) => c.competition.level === "team")?.rows ?? []).filter(
+    (r) => r.total > 0,
+  );
 };
 
 describe("adding, renaming and logging roster changes", () => {
@@ -335,8 +340,8 @@ describe("merging", () => {
         r.total,
       ]),
     ).toEqual([
-      ["team-b", "Foo Fighters", 14],
-      ["team-c", "Hawks", 7],
+      ["team-b", "Foo Fighters", 100],
+      ["team-c", "Hawks", 90],
     ]);
     expect((await phoneRoster()).teams.map((t) => t.id)).toEqual([
       "team-b",

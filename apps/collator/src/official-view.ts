@@ -15,24 +15,21 @@ import { activityFields } from "./bundle-lookup.ts";
 import { officialByEmail } from "./officials.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
+import { resolvedRoster } from "./roster.ts";
 import {
   loggedActions,
+  resolvedEntries,
   scoringInput,
   type LoggedAction,
 } from "./scoring-input.ts";
-import {
-  judgeList,
-  roster,
-  scoreEntries,
-  type JudgeIdentity,
-} from "./roster-and-scores.ts";
+import { judgeList, type JudgeIdentity } from "./roster-and-scores.ts";
 
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Every ranking comes from
 // packages/scoring; Official actions are logged in official-actions.ts.
 
 /** An entrant's name from the roster: a Team with its Group, or a Group; null names for an id that isn't on it. */
 export function entrantNamer(db: Db): (id: string) => EntrantName {
-  const { groups, teams } = roster(db);
+  const { groups, teams } = resolvedRoster(db);
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
   const teamById = new Map(teams.map((t) => [t.id, t]));
   return (id) => {
@@ -107,7 +104,7 @@ export function judgesByEntrant(
 export function officialEvent(
   db: Db,
   bundle: CheckedBundle,
-  entries = scoreEntries(db),
+  entries = resolvedEntries(db),
 ): OfficialEvent {
   const { event, activities } = judgeEvent(bundle);
   const scored = scoreEvent(scoringInput(db, bundle, entries)).activities;
@@ -288,13 +285,13 @@ export function officialActivity(
 ): OfficialActivity | undefined {
   const found = activityFields(bundle, activityId);
   if (!found) return undefined;
-  const all = scoreEntries(db);
+  const all = resolvedEntries(db);
   const listed = officialEvent(db, bundle, all).activities.find(
     (a) => a.id === activityId,
   );
   if (!listed) return undefined;
 
-  const { groups, teams } = roster(db);
+  const { groups, teams } = resolvedRoster(db);
   const entrantName = entrantNamer(db);
   const newest = newestEntries(all);
   const logged = loggedActions(db);

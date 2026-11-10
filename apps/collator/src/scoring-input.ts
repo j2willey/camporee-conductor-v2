@@ -3,8 +3,8 @@ import type { OfficialAction, ScoringInput } from "@camporee-conductor/scoring";
 import { asc } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
+import { resolvedRoster } from "./roster.ts";
 import {
-  roster,
   scoreEntries,
   scoringEntrants,
   type ScoreEntryRow,
@@ -36,6 +36,35 @@ export function loggedActions(db: Db): LoggedAction[] {
     }));
 }
 
+/** Every score entry, in the order received, with its entrant resolved through the roster's merges (ADR-0027). */
+export function resolvedEntries(db: Db): ScoreEntryRow[] {
+  const { resolve } = resolvedRoster(db);
+  return scoreEntries(db).map((e) => ({
+    ...e,
+    entrantId: resolve(e.entrantId),
+  }));
+}
+
+/** An Official action with every entrant it names resolved through merges: a DQ on A applies to B once A is merged. */
+export function resolveAction(
+  action: OfficialAction,
+  resolve: (id: string) => string,
+): OfficialAction {
+  if (action.type === "finalize") {
+    return {
+      ...action,
+      ranking: action.ranking.map((r) => ({
+        ...r,
+        entrantId: resolve(r.entrantId),
+      })),
+    };
+  }
+  if ("entrantId" in action) {
+    return { ...action, entrantId: resolve(action.entrantId) };
+  }
+  return action;
+}
+
 /**
  * The one input to packages/scoring for the Event, so the Overview and the matrix can't drift (#42): every
  * on-roster entry, in the order received, with its id and Judge, and every logged action. An entry for
@@ -44,10 +73,11 @@ export function loggedActions(db: Db): LoggedAction[] {
 export function scoringInput(
   db: Db,
   bundle: CheckedBundle,
-  entries: ScoreEntryRow[] = scoreEntries(db),
+  entries: ScoreEntryRow[] = resolvedEntries(db),
   logged: LoggedAction[] = loggedActions(db),
 ): ScoringInput {
-  const entrants = scoringEntrants(bundle, roster(db));
+  const roster = resolvedRoster(db);
+  const entrants = scoringEntrants(bundle, roster);
   const rosterIds = new Set(entrants.map((e) => `${e.competitionId} ${e.id}`));
   const competitionOf = new Map(
     bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
@@ -68,6 +98,6 @@ export function scoringInput(
         entrantId,
         values,
       })),
-    actions: logged.map((a) => a.action),
+    actions: logged.map((a) => resolveAction(a.action, roster.resolve)),
   };
 }

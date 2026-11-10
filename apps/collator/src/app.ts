@@ -19,9 +19,10 @@ import {
   recordGroup,
   recordScore,
   recordTeam,
-  roster,
   type Recorded,
 } from "./roster-and-scores.ts";
+import { officialRoster } from "./roster-view.ts";
+import { recordRosterChange, resolvedRoster } from "./roster.ts";
 
 const Name = z.string().trim().min(1).max(200);
 /** An id a phone made (ADR-0027 item 8). Any opaque string; phones use UUIDs. */
@@ -170,6 +171,42 @@ const ActionBody = z.strictObject({
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
 
+/** An Official's roster change (#42 PR 6): add, rename, merge or unmerge a Group or Team (ADR-0027). */
+const RosterChangeBody = z.strictObject({
+  change: z.discriminatedUnion("type", [
+    z.strictObject({
+      type: z.literal("add-group"),
+      groupId: PhoneId,
+      name: Name,
+    }),
+    z.strictObject({
+      type: z.literal("add-team"),
+      teamId: PhoneId,
+      groupId: PhoneId,
+      name: Name,
+    }),
+    z.strictObject({
+      type: z.literal("rename"),
+      kind: z.enum(["group", "team"]),
+      id: PhoneId,
+      name: Name,
+    }),
+    z.strictObject({
+      type: z.literal("merge"),
+      kind: z.enum(["group", "team"]),
+      id: PhoneId,
+      intoId: PhoneId,
+    }),
+    z.strictObject({
+      type: z.literal("unmerge"),
+      kind: z.enum(["group", "team"]),
+      id: PhoneId,
+    }),
+  ]),
+  notes: Notes,
+  clientCreatedAt: z.iso.datetime({ offset: true }),
+});
+
 /** Named, so the refusal says why: placement points are #23, not parity. Runs before `ActionBody` is checked. */
 const refusePlacementPoints: MiddlewareHandler = async (c, next) => {
   const body = (await c.req.json().catch(() => null)) as {
@@ -238,6 +275,27 @@ function officialRoutes(db: Db) {
 
   routes.get("/standings", (c) =>
     c.json(officialStandings(db, c.get("bundle"))),
+  );
+
+  routes.get("/roster", (c) => c.json(officialRoster(db, c.get("bundle"))));
+
+  routes.put(
+    "/roster-changes/:id",
+    idParam,
+    jsonBody(RosterChangeBody),
+    (c) => {
+      const { change, notes, clientCreatedAt } = c.req.valid("json");
+      return reply(
+        c,
+        recordRosterChange(db, {
+          id: c.req.valid("param").id,
+          officialEmail: normalEmail(c.get("official").email),
+          change,
+          notes,
+          clientCreatedAt,
+        }),
+      );
+    },
   );
 
   routes.get("/activities/:id", (c) => {
@@ -314,7 +372,11 @@ export function createApp({
     return c.json(judgeEvent(event.bundle));
   });
 
-  app.get("/api/roster", (c) => c.json(roster(db)));
+  // Display names, with what an Official merged away left out; the resend path below keeps what phones sent.
+  app.get("/api/roster", (c) => {
+    const { groups, teams } = resolvedRoster(db);
+    return c.json({ groups, teams });
+  });
 
   app.put("/api/groups/:id", idParam, jsonBody(GroupBody), (c) =>
     reply(
