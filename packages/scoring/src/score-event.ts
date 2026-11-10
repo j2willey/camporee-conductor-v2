@@ -1,6 +1,7 @@
 import type { Activity } from "@camporee-conductor/schema";
 import { actionProblem } from "./action-checks.ts";
 import { awardRecipients } from "./awards.ts";
+import { newestEntries } from "./entries.ts";
 import {
   correctedValues,
   entryTotal,
@@ -16,8 +17,10 @@ import {
 import type {
   ActivityResults,
   CompetitionStandings,
+  CorrectionReport,
   EntryReport,
   EntryResult,
+  FieldValue,
   EventResults,
   OfficialAction,
   ScoreEntry,
@@ -26,13 +29,12 @@ import type {
   Standing,
 } from "./types.ts";
 
-// Stub until the report is built (red commit).
-const STUB: EntryReport = { values: {}, corrections: [], conflict: "none" };
-
 type ActionOf<T extends OfficialAction["type"]> = Extract<
   OfficialAction,
   { type: T }
 >;
+
+type SetFieldValue = ActionOf<"set-field-value">;
 
 /** The latest logged action of this type, or undefined. Later actions supersede earlier ones. */
 function latest<T extends OfficialAction["type"]>(
@@ -62,6 +64,8 @@ function effectiveKey(a: OfficialAction): string | undefined {
  */
 function validActions(input: ScoringInput): {
   actions: readonly OfficialAction[];
+  /** For each kept action, its index in the actions as given. */
+  givenIndex: readonly number[];
   warnings: ScoringWarning[];
 } {
   const effective = new Map<string, OfficialAction>();
@@ -77,12 +81,83 @@ function validActions(input: ScoringInput): {
     invalid.add(key);
     warnings.push({ action, message });
   }
+  const kept = input.actions.flatMap((action, index) => {
+    const key = effectiveKey(action);
+    return key === undefined || !invalid.has(key) ? [{ action, index }] : [];
+  });
   return {
-    actions: input.actions.filter((a) => {
-      const key = effectiveKey(a);
-      return key === undefined || !invalid.has(key);
-    }),
+    actions: kept.map((k) => k.action),
+    givenIndex: kept.map((k) => k.index),
     warnings,
+  };
+}
+
+const NO_REPORT: EntryReport = {
+  values: {},
+  corrections: [],
+  conflict: "none",
+};
+
+/**
+ * What scoring used for one entrant at one Activity: the counting entry's id and values, every effective
+ * correction on the entrant's entries here with its state, and the conflict state (ADR-0019 2026-11-10).
+ * `mine` is the entrant's actions at the Activity with their index in the (filtered) log; `frozenAt` is
+ * that index for the `finalize` freezing it, if any.
+ */
+function entryReport(
+  counting: ScoreEntry,
+  entrantEntries: readonly ScoreEntry[],
+  values: Record<string, FieldValue>,
+  mine: readonly { action: OfficialAction; index: number }[],
+  frozenAt: number | undefined,
+  givenIndex: readonly number[],
+): EntryReport {
+  // The latest set or revert per entry and field, apart for what's held and what isn't.
+  const standing = new Map<string, { action: SetFieldValue; index: number }>();
+  const held = new Map<string, { action: SetFieldValue; index: number }>();
+  for (const { action, index } of mine) {
+    if (
+      action.type !== "set-field-value" &&
+      action.type !== "revert-field-value"
+    ) {
+      continue;
+    }
+    const key = JSON.stringify([action.entryId, action.fieldId]);
+    const into = frozenAt !== undefined && index > frozenAt ? held : standing;
+    if (action.type === "set-field-value") into.set(key, { action, index });
+    else into.delete(key);
+  }
+  const corrections: CorrectionReport[] = [];
+  for (const [map, isHeld] of [
+    [standing, false],
+    [held, true],
+  ] as const) {
+    for (const { action, index } of map.values()) {
+      const on = entrantEntries.find((e) => e.id === action.entryId);
+      if (!on || on.id === undefined) continue;
+      corrections.push({
+        actionIndex: givenIndex[index] ?? index,
+        entryId: on.id,
+        fieldId: action.fieldId,
+        value: action.value,
+        original: on.values[action.fieldId] ?? null,
+        state: isHeld
+          ? "held"
+          : on.id === counting.id
+            ? "applied"
+            : "superseded",
+      });
+    }
+  }
+  corrections.sort((a, b) => a.actionIndex - b.actionIndex);
+  const judges = new Set(
+    entrantEntries.flatMap((e) => (e.judgeId === undefined ? [] : [e.judgeId])),
+  );
+  return {
+    ...(counting.id !== undefined && { entryId: counting.id }),
+    values,
+    corrections,
+    conflict: judges.size > 1 ? "unresolved" : "none",
   };
 }
 
@@ -90,6 +165,7 @@ function validActions(input: ScoringInput): {
 export function scoreEvent(given: ScoringInput): EventResults {
   const checked = validActions(given);
   const input = { ...given, actions: checked.actions };
+  const givenIndex = checked.givenIndex;
   const activityById = new Map(input.activities.map((a) => [a.id, a]));
   const ranking = rankingFor(input.event.tieNumbering);
   const competitionById = new Map(
@@ -138,13 +214,29 @@ export function scoreEvent(given: ScoringInput): EventResults {
         )
         .map(({ action }) => action);
 
-    // An Official's corrections are laid over each entry's values before listing and totalling.
-    const entries = input.entries
-      .filter((e) => e.activityId === activityId)
-      .map((e) => ({
-        ...e,
-        values: correctedValues(e, actionsFor(e.entrantId)),
-      }));
+    // Every entry for the Activity, in received order; per entrant the newest counts (ADR-0019, #42).
+    const here = input.entries.filter((e) => e.activityId === activityId);
+    const reports = new Map<string, EntryReport>();
+    // An Official's corrections are laid over the counting entry's values before listing and totalling.
+    const entries = newestEntries(here).map((e) => {
+      const values = correctedValues(e, actionsFor(e.entrantId));
+      reports.set(
+        e.entrantId,
+        entryReport(
+          e,
+          here.filter((x) => x.entrantId === e.entrantId),
+          values,
+          forThisActivity.filter(
+            ({ action }) => action.entrantId === e.entrantId,
+          ),
+          frozen?.index,
+          givenIndex,
+        ),
+      );
+      return { ...e, values };
+    });
+    const reportOf = (entrantId: string): EntryReport =>
+      reports.get(entrantId) ?? NO_REPORT;
     warnings.push(...unreadablePrimaryTimes(activity, entries));
     const scored = listed(activity, entries).map((e) => {
       const actions = actionsFor(e.entrantId);
@@ -154,6 +246,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
         entrantId: e.entrantId,
         total: entryTotal(fields, e.values) + adjustment,
         actions,
+        report: reportOf(e.entrantId),
       };
     });
     // DQ'd entries are removed before ranking, so everyone below moves up (ADR-0019).
@@ -163,9 +256,9 @@ export function scoreEvent(given: ScoringInput): EventResults {
       scored.filter((e) => !isDisqualified(e.actions)).map((e) => e.total),
     );
     const recomputed = scored.map(
-      ({ entrantId, total, actions }): EntryResult => {
+      ({ entrantId, total, actions, report }): EntryResult => {
         if (isDisqualified(actions)) {
-          return { entrantId, total, points: 0, disqualified: true, ...STUB };
+          return { entrantId, total, points: 0, disqualified: true, ...report };
         }
         const provisionalRank = rankOf(total);
         const finalRank =
@@ -182,7 +275,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
               competition.placementPoints ?? DEFAULT_PLACEMENT_POINTS,
             ),
           disqualified: false,
-          ...STUB,
+          ...report,
         };
       },
     );
@@ -195,7 +288,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       });
       continue;
     }
-    const stored = storedResults(frozen.action, scored, ranking);
+    const stored = storedResults(frozen.action, scored, ranking, reportOf);
     const differ = differences(stored, recomputed);
     if (differ.length > 0) {
       warnings.push({
@@ -493,6 +586,7 @@ function storedResults(
   { ranking }: Finalize,
   scored: readonly { entrantId: string; total: number }[],
   rankingOf: ReturnType<typeof rankingFor>,
+  reportOf: (entrantId: string) => EntryReport,
 ): EntryResult[] {
   const totalOf = (entrantId: string): number =>
     scored.find((s) => s.entrantId === entrantId)?.total ?? 0;
@@ -507,7 +601,7 @@ function storedResults(
         total,
         points: 0,
         disqualified: true,
-        ...STUB,
+        ...reportOf(r.entrantId),
       };
     }
     return {
@@ -517,7 +611,7 @@ function storedResults(
       finalRank: r.rank,
       points: r.points,
       disqualified: false,
-      ...STUB,
+      ...reportOf(r.entrantId),
     };
   });
 }
