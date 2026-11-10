@@ -34,6 +34,13 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
    add an Official on site. The list travels in the **event-day** cartridge profile (ADR-0012) only: it is
    not part of the Event document and never goes into a design cartridge or a Template (ADR-0026 keeps
    contacts out of those). (#42; the export side is #8)
+   _2026-11-10 (#42 PR 5):_ **adding an Official on site** is a command on the box's console, with no sign-in:
+   physical access to the box is the trust (Jim, 2026-11-06). It's the fix for a mistyped Director email in the
+   cartridge. Officials added there are kept in their own append-only log on the box (email, name, role, when),
+   tied to the loaded Event, and laid over the cartridge's list. The cartridge's `officials` document stays
+   exactly as loaded (ADR-0012). For the same email, the newest addition wins, so adding an email again
+   updates its name or role. There's no removal: an Official added by mistake is harmless, because the gate
+   only lets listed emails in.
 6. **Judges have no accounts and no pre-list** (ADR-0023). They identify themselves on the phone, can score
    any Activity, and can switch Activities. ADR-0023's "selects the Challenge they're assigned to" means
    the Judge chooses; nothing enforces an assignment. (#41)
