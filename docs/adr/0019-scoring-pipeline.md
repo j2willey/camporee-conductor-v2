@@ -161,3 +161,32 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
   kept in `legacy.v1Weight`.
 - **Conversions** (step 2 above, not built yet) will carry a direction **per rule**, on the rule itself, not
   on the Activity. A v1 `timed_asc` Activity can suggest a default when an Official first writes one.
+
+## Amendment 2026-11-10 (issue #42): an Official corrects a field
+
+- **Logged Official action `set-field-value`** (Activity, entrant, **score entry id**, field, value, optional notes):
+  an Official's value for one field of one Judge's score entry. The Judge's entry is kept as entered; scoring
+  overlays the corrected value on it before totalling and listing. It is also how an Official fills an `official`
+  audience field. _(Jim, 2026-11-07: a logged action, not an Official-authored score entry, which would blur who
+  scored what.)_
+- **Logged Official action `revert-field-value`** (Activity, entrant, score entry id, field, optional notes): undoes a
+  correction; the Judge's value counts again. For each entry and field, the **latest** `set-field-value` or
+  `revert-field-value` wins, as Reinstate undoes a DQ. Nothing is ever deleted from the log.
+- **A correction belongs to the entry it corrects**, not to the entrant. If the Judge (or another Judge) later
+  sends a newer entry for that entrant, the newer entry counts as entered and the correction no longer applies. The
+  Collator shows it as **superseded**, so an Official looks again: they corrected what they saw, and a new entry is new
+  information that neither silently inherits an old fix nor is silently overwritten by one.
+  So scoring entries carry their ids (`ScoreEntry.id`, optional for fixtures without them).
+- **Checks (one place, #24):** `actionProblem` refuses an unknown Activity or field (Common Fields included), an
+  entrant outside the Activity's Competition, and a value of the wrong kind for its field (not a number for a number
+  field, not one of the options for a select). A value **outside a number field's min/max is allowed**, with a
+  warning shown to the Official: a range is design guidance, and the Official on the spot decides. That the entry id
+  exists and is for that Activity and entrant is checked by the Collator, which holds every entry (scoring sees only
+  the entries that count). In `scoreEvent` an invalid effective correction is left out with a warning, as for DQ.
+- **Finalized Activities:** a correction is an action on the Activity, so while it's finalized it waits for
+  `unfinalize`, like every other action (Finalization amendment).
+- **Any Official can take any Official action.** No roles and no Director-only actions: few Officials work an Event,
+  often only the Director, and the action log (who, when, why) with undo is the control. _(Jim, 2026-11-10.)_
+- **Resolving a conflict** (two Judges scored the same entrant; the newest counts, ADR-0027 item 9) is a separate
+  action and PR: an Official chooses which entry counts. Choosing needs every entry in the scoring input, not only the
+  newest the Collator picks today.
