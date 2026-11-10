@@ -8,6 +8,7 @@ import {
   valueProblem,
   type EntryResult,
   type FieldValue,
+  type FinalizedResult,
   type ScoringInput,
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
@@ -63,6 +64,8 @@ export interface OfficialEvent {
     conflicts: number;
     /** When the newest entry here was received (ISO), or null with none. */
     lastReceivedAt: string | null;
+    /** An Official has finalized the Activity (ADR-0019). */
+    finalized: boolean;
   })[];
 }
 
@@ -147,6 +150,7 @@ export function officialEvent(
               (e) => e.conflict === "unresolved" || e.conflict === "reopened",
             ).length ?? 0,
         lastReceivedAt: newest ? newest.toISOString() : null,
+        finalized: false,
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };
@@ -163,8 +167,21 @@ export interface MatrixRow {
   place: number | null;
   total: number | null;
   disqualified: boolean;
-  /** Who DQ'd it and when, from the latest logged `disqualify` here (ADR-0019); null when not DQ'd. */
-  dq: { by: string; at: string; notes?: string } | null;
+  /**
+   * Placement points at this Activity (0 when DQ'd); null when unscored.
+   */
+  points: number | null;
+  /** Rank by total before any Official override; null when DQ'd or unscored. */
+  provisionalRank: number | null;
+  /** The Official's `set-final-rank` for this entrant here, with who and when; null with none. */
+  rankOverride: (Acted & { rank: number; state: "applied" | "held" }) | null;
+  /** The Official's `adjust-points`; null with none. */
+  adjustment: (Acted & { points: number; state: "applied" | "held" }) | null;
+  /**
+   * The latest per-Activity `disqualify` with who and when (ADR-0019). Null with none, and for a reinstate that
+   * applies (nothing to show); a held reinstate or DQ is there, with state "held".
+   */
+  dq: (Acted & { disqualified: boolean; state: "applied" | "held" }) | null;
   /** False for an entry whose entrant isn't on the roster: shown, but not ranked and not DQ-able. */
   onRoster: boolean;
   /** The counting (newest) entry's id; null when unscored. Corrections name it. */
@@ -208,6 +225,13 @@ export interface MatrixRow {
   judges: { name: string; homeGroup?: string }[];
 }
 
+/** Who logged an action and when (ISO), with their reason. */
+export interface Acted {
+  by: string;
+  at: string;
+  notes?: string;
+}
+
 /** An Official's value for one field of the counting entry, with the Judge's original. */
 export interface FieldCorrection {
   /** The Judge's value; null when blank or missing. */
@@ -233,6 +257,10 @@ export interface SupersededCorrection {
 
 export interface OfficialActivity {
   activity: OfficialEvent["activities"][number];
+  /** Who finalized the Activity and when; null when it isn't finalized. */
+  finalized: Acted | null;
+  /** The ranking the Official would freeze now: the laptop sends it back with `finalize` (ADR-0019 2026-11-10). */
+  finalizeRanking: FinalizedResult[];
   /** Every field scored at the Activity, Common Fields included, to show values by label. */
   fields: {
     id: string;
@@ -337,6 +365,7 @@ export function officialActivity(
   );
   const entrants = competition?.level === "team" ? teams : groups;
   const dqOf = (entrantId: string): MatrixRow["dq"] => {
+    const stub = { disqualified: true, state: "applied" as const };
     const latest = logged.findLast(
       (a) =>
         a.action.type === "disqualify" &&
@@ -347,6 +376,7 @@ export function officialActivity(
     if (!latest.action.disqualified) return null;
     const official = officialByEmail(bundle, latest.officialEmail);
     return {
+      ...stub,
       by: official?.name ?? latest.officialEmail,
       at: latest.receivedAt.toISOString(),
       ...(latest.action.notes !== undefined && { notes: latest.action.notes }),
@@ -423,6 +453,10 @@ export function officialActivity(
       place: result && !result.disqualified ? result.finalRank : null,
       total: result ? result.total : null,
       disqualified: result?.disqualified ?? false,
+      points: null,
+      provisionalRank: null,
+      rankOverride: null,
+      adjustment: null,
       dq: result?.disqualified ? dqOf(entrantId) : null,
       onRoster: true,
       entryId: entry ? (result?.entryId ?? entry.id) : null,
@@ -467,6 +501,8 @@ export function officialActivity(
   ];
   return {
     activity: listed,
+    finalized: null,
+    finalizeRanking: [],
     fields: fieldList.map((f) => ({
       id: f.id,
       label: f.label,
