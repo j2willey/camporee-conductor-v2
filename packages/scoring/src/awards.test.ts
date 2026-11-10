@@ -35,8 +35,7 @@ function standings(ranks: number[]): RankedStanding[] {
 }
 
 /** Just the recipients, for tests that log only valid actions. */
-const recipients = (...args: Parameters<typeof awardRecipients>) =>
-  awardRecipients(...args).recipients;
+const recipients = awardRecipients;
 
 const dq = (entrantId: string): OfficialAction => ({
   type: "disqualify",
@@ -227,8 +226,27 @@ describe("set-award place: a manual recipient of a named-places Award shows the 
     ).toContainEqual({ entrantId: "t2", place: "Gold Axe", manual: true });
   });
 
+  /** The Award's recipients and the warnings when scoreEvent runs a small Event with these `set-award` actions. */
+  const viaScoreEvent = (
+    rule: Award["rule"],
+    scores: Record<string, number>,
+    actions: OfficialAction[],
+  ) => {
+    const results = scoreEvent(
+      smallEvent({
+        scores: [scores],
+        awards: [{ ...award(rule), competitionId: COMPETITION }],
+        actions,
+      }),
+    );
+    return {
+      recipients: results.awards[0]?.recipients ?? [],
+      warnings: results.warnings,
+    };
+  };
+
   it("a bad action replaced by a good one scores fine, with no warning", () => {
-    const result = awardRecipients(AXES, standings([1]), [
+    const result = viaScoreEvent(AXES.rule, { t1: 20, t2: 10 }, [
       withPlace("t2", "Bronze Saw"),
       withPlace("t2", "Gold Axe"),
     ]);
@@ -242,7 +260,7 @@ describe("set-award place: a manual recipient of a named-places Award shows the 
 
   it("a bad effective place is left out with a warning; the automatic result stays", () => {
     const bad = withPlace("t1", "Bronze Saw");
-    expect(awardRecipients(AXES, standings([1, 2]), [bad])).toEqual({
+    expect(viaScoreEvent(AXES.rule, { t1: 20, t2: 10 }, [bad])).toEqual({
       recipients: [
         { entrantId: "t1", place: "Gold Axe", manual: false },
         { entrantId: "t2", place: "Silver Hatchet", manual: false },
@@ -263,7 +281,7 @@ describe("set-award place: a manual recipient of a named-places Award shows the 
       { type: "top-percent", percent: 25 },
       { type: "manual" },
     ] as const) {
-      const result = awardRecipients(award(rule), standings([1]), [
+      const result = viaScoreEvent(rule, { t1: 20, t9: 10 }, [
         withPlace("t9", "Gold Axe"),
       ]);
       expect(result.recipients.map((r) => r.entrantId)).not.toContain("t9");

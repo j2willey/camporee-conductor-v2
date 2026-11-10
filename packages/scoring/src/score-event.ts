@@ -47,8 +47,11 @@ function latest<T extends OfficialAction["type"]>(
 
 /**
  * The key an action is effective under: the latest `disqualify` per entrant and Activity (or overall), and
- * the latest `choose-entry` per entrant and Activity, and the latest `set-field-value` or
- * `revert-field-value` per entry and field. Undefined for other types.
+ * the latest `choose-entry` per entrant and Activity, the latest `set-field-value` or
+ * `revert-field-value` per entry and field, the latest `adjust-points`, `set-final-rank` or
+ * `set-placement-points` per type, Activity and entrant, the latest `set-overall-rank` per Competition and
+ * entrant, and the latest `set-award` per Award and entrant. Undefined for `finalize` and `unfinalize`,
+ * which `finalizations` checks itself.
  */
 function effectiveKey(a: OfficialAction): string | undefined {
   if (a.type === "disqualify") {
@@ -60,12 +63,24 @@ function effectiveKey(a: OfficialAction): string | undefined {
   if (a.type === "set-field-value" || a.type === "revert-field-value") {
     return `correction ${a.activityId} ${a.entrantId} ${a.entryId} ${a.fieldId}`;
   }
+  if (
+    a.type === "adjust-points" ||
+    a.type === "set-final-rank" ||
+    a.type === "set-placement-points"
+  ) {
+    return `${a.type} ${a.activityId} ${a.entrantId}`;
+  }
+  if (a.type === "set-overall-rank") {
+    return `overall-rank ${a.competitionId} ${a.entrantId}`;
+  }
+  if (a.type === "set-award") return `award ${a.awardId} ${a.entrantId}`;
   return undefined;
 }
 
 /**
- * Leaves out each invalid effective `disqualify`, `choose-entry` and field correction (the latest for its key) with a
- * warning from `actionProblem`; every other action passes through in log order (ADR-0019, #24).
+ * Leaves out each invalid effective action (the latest for its key) with one warning from `actionProblem`, the
+ * single check the Collator also uses when it writes an action; `finalize` and `unfinalize` pass through in log
+ * order (ADR-0019, #24). Everything after this can trust the actions it's given.
  */
 function validActions(input: ScoringInput): {
   actions: readonly OfficialAction[];
@@ -139,6 +154,8 @@ function entryReport(
       standing.delete(key);
     }
   }
+  // A held choice doesn't decide yet: the choice before the freeze still does.
+  const standingChoice = choice?.state === "held" ? choice.standing : choice;
   const corrections: CorrectionReport[] = [];
   for (const [map, isHeld] of [
     [standing, false],
@@ -158,7 +175,7 @@ function entryReport(
           ? "held"
           : on.id === counting.id
             ? "applied"
-            : choice?.state === "applied"
+            : standingChoice?.state === "applied"
               ? "not-counting"
               : "superseded",
       });
@@ -169,7 +186,6 @@ function entryReport(
     entrantEntries.flatMap((e) => (e.judgeId === undefined ? [] : [e.judgeId])),
   );
   const conflicted = judges.size > 1;
-  const standingChoice = choice?.state === "held" ? choice.standing : choice;
   const conflict: EntryReport["conflict"] = !conflicted
     ? "none"
     : standingChoice?.state === "applied"
@@ -263,7 +279,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
     input.event.competitions.map((c) => [c.id, c]),
   );
 
-  const finalization = finalizations(input, activityById);
+  const finalization = finalizations(input);
   const finalized = finalization.finalized;
   const warnings: ScoringWarning[] = [
     ...checked.warnings,
@@ -393,7 +409,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
     });
   }
 
-  const overrides = overallRankOverrides(input);
+  const overallRanks = overallRankOverrides(input);
   const standings = input.event.competitions.map((c) =>
     competitionStandings(
       c.id,
@@ -401,12 +417,12 @@ export function scoreEvent(given: ScoringInput): EventResults {
       activityById,
       activities,
       ranking,
-      overrides.ranks,
+      overallRanks,
     ),
   );
   const awards = (input.event.awards ?? []).map((award) => ({
     awardId: award.id,
-    ...awardRecipients(
+    recipients: awardRecipients(
       award,
       standings.find((s) => s.competitionId === award.competitionId)
         ?.entrants ?? [],
@@ -417,62 +433,24 @@ export function scoreEvent(given: ScoringInput): EventResults {
     activities,
     standings,
     awards: awards.map(({ awardId, recipients }) => ({ awardId, recipients })),
-    warnings: [
-      ...warnings,
-      ...overrides.warnings,
-      ...awards.flatMap((a) => a.warnings),
-    ],
+    warnings,
   };
 }
 
-type SetOverallRank = Extract<OfficialAction, { type: "set-overall-rank" }>;
-
 /**
- * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` →
- * rank. Only the effective one is checked: an invalid one is left out with a warning, never an error,
- * since the log is append-only (ADR-0019).
+ * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` → rank.
+ * The actions are already checked by `validActions`.
  */
-function overallRankOverrides(input: ScoringInput): {
-  ranks: ReadonlyMap<string, number>;
-  warnings: ScoringWarning[];
-} {
-  const latestByKey = new Map<string, SetOverallRank>();
+function overallRankOverrides(
+  input: ScoringInput,
+): ReadonlyMap<string, number> {
+  const ranks = new Map<string, number>();
   for (const a of input.actions) {
     if (a.type === "set-overall-rank") {
-      latestByKey.set(`${a.competitionId} ${a.entrantId}`, a);
+      ranks.set(`${a.competitionId} ${a.entrantId}`, a.rank);
     }
   }
-  const ranks = new Map<string, number>();
-  const warnings: ScoringWarning[] = [];
-  for (const [key, action] of latestByKey) {
-    const problem = overallRankProblem(input, action);
-    if (problem) warnings.push({ action, message: problem });
-    else ranks.set(key, action.rank);
-  }
-  return { ranks, warnings };
-}
-
-function overallRankProblem(
-  input: ScoringInput,
-  { competitionId, entrantId, rank }: SetOverallRank,
-): string | undefined {
-  const competition = input.event.competitions.find(
-    (c) => c.id === competitionId,
-  );
-  if (!competition) {
-    return `set-overall-rank: no Competition ${competitionId} in the Event; left out`;
-  }
-  if (
-    !input.entrants.some(
-      (e) => e.id === entrantId && e.competitionId === competitionId,
-    )
-  ) {
-    return `set-overall-rank: ${entrantId} isn't in Competition ${competition.slug}; left out`;
-  }
-  if (!Number.isInteger(rank) || rank < 1) {
-    return `set-overall-rank: rank ${rank} for ${entrantId} isn't a whole number from 1; left out`;
-  }
-  return undefined;
+  return ranks;
 }
 
 /** Each entrant's sum of placement points over the Competition's ranked Activities, ranked by the Event's tie numbering. */
@@ -588,10 +566,7 @@ type Finalize = ActionOf<"finalize">;
  * stays frozen with the latest valid `finalize` since the last `unfinalize`, if there is one: finalized
  * results are what's printed on ribbons, and only an explicit `unfinalize` reopens (ADR-0019).
  */
-function finalizations(
-  input: ScoringInput,
-  activityById: ReadonlyMap<string, Activity>,
-): {
+function finalizations(input: ScoringInput): {
   finalized: ReadonlyMap<string, { action: Finalize; index: number }>;
   warnings: ScoringWarning[];
 } {
@@ -611,21 +586,18 @@ function finalizations(
   for (const [activityId, log] of logByActivity) {
     const latestAction = log.at(-1)?.action;
     if (!latestAction) continue;
-    const activity = input.event.activities.some(
-      (a) => a.activityId === activityId,
-    )
-      ? activityById.get(activityId)
-      : undefined;
-    if (!activity) {
-      warnings.push({
-        action: latestAction,
-        message: `${latestAction.type}: no Activity ${activityId} in the Event; left out`,
-      });
+    // An `unfinalize` ends the loop below at once, so it's checked here; a `finalize` is checked in it.
+    const unknown =
+      latestAction.type === "unfinalize"
+        ? actionProblem(input, latestAction)
+        : undefined;
+    if (unknown !== undefined) {
+      warnings.push({ action: latestAction, message: unknown });
       continue;
     }
     for (const [i, { action, index }] of [...log.entries()].reverse()) {
       if (action.type === "unfinalize") break;
-      const problem = finalizeProblem(input, activity, action);
+      const problem = actionProblem(input, action);
       if (!problem) {
         finalized.set(activityId, { action, index });
         break;
@@ -635,36 +607,6 @@ function finalizations(
     }
   }
   return { finalized, warnings };
-}
-
-function finalizeProblem(
-  input: ScoringInput,
-  activity: Activity,
-  { ranking }: Finalize,
-): string | undefined {
-  const seen = new Set<string>();
-  for (const r of ranking) {
-    const who = r.entrantId;
-    if (
-      !input.entries.some(
-        (e) => e.activityId === activity.id && e.entrantId === who,
-      )
-    ) {
-      return `finalize: ${who} has no entry at ${activity.slug}; left out`;
-    }
-    if (seen.has(who)) {
-      return `finalize: ${who} is listed twice at ${activity.slug}; left out`;
-    }
-    seen.add(who);
-    if (r.disqualified) continue;
-    if (!Number.isInteger(r.rank) || r.rank < 1) {
-      return `finalize: rank ${r.rank} for ${who} at ${activity.slug} isn't a whole number from 1; left out`;
-    }
-    if (!Number.isFinite(r.points) || r.points < 0) {
-      return `finalize: points ${r.points} for ${who} at ${activity.slug} aren't a number from 0; left out`;
-    }
-  }
-  return undefined;
 }
 
 /**
