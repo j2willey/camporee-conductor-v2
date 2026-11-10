@@ -78,6 +78,7 @@ export function recordOfficialAction(
     {
       event: bundle.event,
       activities: bundle.activities,
+      commonFieldSets: bundle.commonFieldSets,
       entrants: scoringEntrants(bundle, roster(db)),
     },
     submission.action,

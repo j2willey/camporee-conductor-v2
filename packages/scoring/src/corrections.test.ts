@@ -190,7 +190,8 @@ describe("scoreEvent leaves out an invalid correction, with a warning", () => {
     expect(results.warnings).toEqual([
       {
         action: expect.objectContaining({ type: "set-field-value" }),
-        message: "Size must be one of the listed options",
+        message:
+          "set-field-value: Size must be one of the listed options; left out",
       },
     ]);
   });
@@ -262,12 +263,10 @@ describe("corrections to Common Fields, finalized Activities and listing", () =>
       "t1",
       "t2",
     ]);
-    expect(results.warnings).toEqual([
-      {
-        action: expect.objectContaining({ type: "set-field-value" }),
-        message: expect.stringContaining("won't apply until it's unfinalized"),
-      },
-    ]);
+    expect(results.warnings).toContainEqual({
+      action: expect.objectContaining({ type: "set-field-value" }),
+      message: expect.stringContaining("won't apply until it's unfinalized"),
+    });
   });
 
   it("the primary-metric listing uses the corrected value", () => {

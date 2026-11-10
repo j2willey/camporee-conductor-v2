@@ -209,9 +209,19 @@ export function fieldCorrections(
   entry: Pick<ScoreEntry, "id">,
   actions: readonly OfficialAction[],
 ): Map<string, SetFieldValue> {
-  void entry;
-  void actions;
-  return new Map<string, SetFieldValue>();
+  const corrections = new Map<string, SetFieldValue>();
+  if (entry.id === undefined) return corrections;
+  for (const a of actions) {
+    if (
+      (a.type !== "set-field-value" && a.type !== "revert-field-value") ||
+      a.entryId !== entry.id
+    ) {
+      continue;
+    }
+    if (a.type === "set-field-value") corrections.set(a.fieldId, a);
+    else corrections.delete(a.fieldId);
+  }
+  return corrections;
 }
 
 /** The entry's values with its effective corrections laid over them. */
@@ -219,6 +229,9 @@ export function correctedValues(
   entry: Pick<ScoreEntry, "id" | "values">,
   actions: readonly OfficialAction[],
 ): Record<string, FieldValue> {
-  void actions;
-  return { ...entry.values };
+  const values: Record<string, FieldValue> = { ...entry.values };
+  for (const [fieldId, a] of fieldCorrections(entry, actions)) {
+    values[fieldId] = a.value;
+  }
+  return values;
 }
