@@ -5,11 +5,12 @@ import {
 } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
-import { officialActions, scoreEntries } from "./db/schema.ts";
+import { officialActions } from "./db/schema.ts";
 import {
   conflict,
   invalid,
   roster,
+  scoreEntries,
   scoringEntrants,
   type Recorded,
 } from "./roster-and-scores.ts";
@@ -75,31 +76,13 @@ export function recordOfficialAction(
       : conflict("Official action", submission.id);
   }
   const { action } = submission;
-  if (
-    action.type === "set-field-value" ||
-    action.type === "revert-field-value"
-  ) {
-    const entry = db
-      .select()
-      .from(scoreEntries)
-      .where(eq(scoreEntries.id, action.entryId))
-      .get();
-    if (
-      !entry ||
-      entry.activityId !== action.activityId ||
-      entry.entrantId !== action.entrantId
-    ) {
-      return invalid(
-        `${action.type}: there's no score entry ${action.entryId} for that entrant at that Activity; left out`,
-      );
-    }
-  }
   const problem = actionProblem(
     {
       event: bundle.event,
       activities: bundle.activities,
       commonFieldSets: bundle.commonFieldSets,
       entrants: scoringEntrants(bundle, roster(db)),
+      entries: scoreEntries(db),
     },
     submission.action,
   );

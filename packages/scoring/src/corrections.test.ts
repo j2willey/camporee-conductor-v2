@@ -107,10 +107,10 @@ describe("scoreEvent applies corrections", () => {
     expect(ranks).toEqual({ t1: 1, t2: 2, t3: 3 });
   });
 
-  it("a correction naming another entry changes nothing", () => {
+  it("a correction naming an entry that isn't there changes nothing, and warns", () => {
     const { totals, results } = run([set("t3", 50, "score", "superseded")]);
     expect(totals["t3"]).toBe(10);
-    expect(results.warnings).toEqual([]);
+    expect(results.warnings).toHaveLength(1);
   });
 
   it("a value outside min/max is applied, with no warning from scoring", () => {

@@ -35,6 +35,7 @@ type ActionOf<T extends OfficialAction["type"]> = Extract<
 >;
 
 type SetFieldValue = ActionOf<"set-field-value">;
+type RevertFieldValue = ActionOf<"revert-field-value">;
 
 /** The latest logged action of this type, or undefined. Later actions supersede earlier ones. */
 function latest<T extends OfficialAction["type"]>(
@@ -46,11 +47,15 @@ function latest<T extends OfficialAction["type"]>(
 
 /**
  * The key an action is effective under: the latest `disqualify` per entrant and Activity (or overall), and
- * the latest `set-field-value` or `revert-field-value` per entry and field. Undefined for other types.
+ * the latest `choose-entry` per entrant and Activity, and the latest `set-field-value` or
+ * `revert-field-value` per entry and field. Undefined for other types.
  */
 function effectiveKey(a: OfficialAction): string | undefined {
   if (a.type === "disqualify") {
     return `disqualify ${a.activityId ?? ""} ${a.entrantId}`;
+  }
+  if (a.type === "choose-entry") {
+    return `choice ${a.activityId} ${a.entrantId}`;
   }
   if (a.type === "set-field-value" || a.type === "revert-field-value") {
     return `correction ${a.activityId} ${a.entrantId} ${a.entryId} ${a.fieldId}`;
@@ -59,7 +64,7 @@ function effectiveKey(a: OfficialAction): string | undefined {
 }
 
 /**
- * Leaves out each invalid effective `disqualify` and field correction (the latest for its key) with a
+ * Leaves out each invalid effective `disqualify`, `choose-entry` and field correction (the latest for its key) with a
  * warning from `actionProblem`; every other action passes through in log order (ADR-0019, #24).
  */
 function validActions(input: ScoringInput): {
@@ -100,21 +105,24 @@ const NO_REPORT: EntryReport = {
 
 /**
  * What scoring used for one entrant at one Activity: the counting entry's id and values, every effective
- * correction on the entrant's entries here with its state, and the conflict state (ADR-0019 2026-11-10).
- * `mine` is the entrant's actions at the Activity with their index in the (filtered) log; `frozenAt` is
- * that index for the `finalize` freezing it, if any.
+ * correction on the entrant's entries here with its state, the choice and the conflict state (ADR-0019
+ * 2026-11-10). `mine` is the entrant's actions at the Activity with their index in the (filtered) log;
+ * `frozenAt` is that index for the `finalize` freezing it, if any.
  */
 function entryReport(
   counting: ScoreEntry,
   entrantEntries: readonly ScoreEntry[],
   values: Record<string, FieldValue>,
+  choice: Choice | undefined,
   mine: readonly { action: OfficialAction; index: number }[],
   frozenAt: number | undefined,
   givenIndex: readonly number[],
 ): EntryReport {
-  // The latest set or revert per entry and field, apart for what's held and what isn't.
-  const standing = new Map<string, { action: SetFieldValue; index: number }>();
-  const held = new Map<string, { action: SetFieldValue; index: number }>();
+  type Held = { action: SetFieldValue | RevertFieldValue; index: number };
+  // The latest set or revert per entry and field, apart for what's held and what isn't. A held revert
+  // is kept, so it can be reported: the standing correction it will undo still applies for now.
+  const standing = new Map<string, Held>();
+  const held = new Map<string, Held>();
   for (const { action, index } of mine) {
     if (
       action.type !== "set-field-value" &&
@@ -123,9 +131,13 @@ function entryReport(
       continue;
     }
     const key = JSON.stringify([action.entryId, action.fieldId]);
-    const into = frozenAt !== undefined && index > frozenAt ? held : standing;
-    if (action.type === "set-field-value") into.set(key, { action, index });
-    else into.delete(key);
+    if (frozenAt !== undefined && index > frozenAt) {
+      held.set(key, { action, index });
+    } else if (action.type === "set-field-value") {
+      standing.set(key, { action, index });
+    } else {
+      standing.delete(key);
+    }
   }
   const corrections: CorrectionReport[] = [];
   for (const [map, isHeld] of [
@@ -135,17 +147,20 @@ function entryReport(
     for (const { action, index } of map.values()) {
       const on = entrantEntries.find((e) => e.id === action.entryId);
       if (!on || on.id === undefined) continue;
+      const original = on.values[action.fieldId] ?? null;
       corrections.push({
         actionIndex: givenIndex[index] ?? index,
         entryId: on.id,
         fieldId: action.fieldId,
-        value: action.value,
-        original: on.values[action.fieldId] ?? null,
+        value: action.type === "set-field-value" ? action.value : original,
+        original,
         state: isHeld
           ? "held"
           : on.id === counting.id
             ? "applied"
-            : "superseded",
+            : choice?.state === "applied"
+              ? "not-counting"
+              : "superseded",
       });
     }
   }
@@ -153,12 +168,88 @@ function entryReport(
   const judges = new Set(
     entrantEntries.flatMap((e) => (e.judgeId === undefined ? [] : [e.judgeId])),
   );
+  const conflicted = judges.size > 1;
+  const standingChoice = choice?.state === "held" ? choice.standing : choice;
+  const conflict: EntryReport["conflict"] = !conflicted
+    ? "none"
+    : standingChoice?.state === "applied"
+      ? "resolved"
+      : standingChoice?.state === "reopened"
+        ? "reopened"
+        : "unresolved";
   return {
     ...(counting.id !== undefined && { entryId: counting.id }),
     values,
     corrections,
-    conflict: judges.size > 1 ? "unresolved" : "none",
+    conflict,
+    ...(choice && {
+      choice: {
+        actionIndex: givenIndex[choice.index] ?? choice.index,
+        entryId: choice.entryId,
+        state: choice.state,
+      },
+    }),
   };
+}
+
+/** An entrant's latest `choose-entry` at an Activity and what became of it. */
+interface Choice {
+  index: number;
+  entryId: string;
+  state: "applied" | "reopened" | "held";
+  /** For a held choice: the latest choice before the freeze, which still decides. */
+  standing?: Choice | undefined;
+}
+
+/**
+ * Which entry counts for one entrant at one Activity, and the choice behind it. The newest counts unless
+ * the latest standing `choose-entry` names another entry and that choice's `newestEntryId` is still the
+ * newest; then the choice is reopened and the newest counts. A choice logged after the freeze is held:
+ * the choice before it, if any, still decides (ADR-0019 2026-11-10).
+ */
+function counting(
+  entrantEntries: readonly ScoreEntry[],
+  mine: readonly { action: OfficialAction; index: number }[],
+  frozenAt: number | undefined,
+): { entry: ScoreEntry; choice: Choice | undefined } {
+  const newest = entrantEntries[entrantEntries.length - 1];
+  if (!newest) throw new Error("an entrant with no entries");
+  const choices = mine.flatMap(({ action, index }) =>
+    action.type === "choose-entry" ? [{ action, index }] : [],
+  );
+  const standing = choices.filter(
+    ({ index }) => frozenAt === undefined || index < frozenAt,
+  );
+  const decide = (
+    c: { action: ActionOf<"choose-entry">; index: number } | undefined,
+  ): { entry: ScoreEntry; choice: Choice | undefined } => {
+    if (!c) return { entry: newest, choice: undefined };
+    const chosen = entrantEntries.find((e) => e.id === c.action.entryId);
+    if (!chosen) return { entry: newest, choice: undefined };
+    const stale = c.action.newestEntryId !== newest.id;
+    return {
+      entry: stale ? newest : chosen,
+      choice: {
+        index: c.index,
+        entryId: c.action.entryId,
+        state: stale ? "reopened" : "applied",
+      },
+    };
+  };
+  const decided = decide(standing.at(-1));
+  const latestHeld = choices.at(-1);
+  if (latestHeld && !standing.includes(latestHeld)) {
+    return {
+      entry: decided.entry,
+      choice: {
+        index: latestHeld.index,
+        entryId: latestHeld.action.entryId,
+        state: "held",
+        standing: decided.choice,
+      },
+    };
+  }
+  return decided;
 }
 
 /** Scores a whole Event. Pure: the same input always gives the same results (ADR-0019). */
@@ -217,21 +308,19 @@ export function scoreEvent(given: ScoringInput): EventResults {
     // Every entry for the Activity, in received order; per entrant the newest counts (ADR-0019, #42).
     const here = input.entries.filter((e) => e.activityId === activityId);
     const reports = new Map<string, EntryReport>();
-    // An Official's corrections are laid over the counting entry's values before listing and totalling.
-    const entries = newestEntries(here).map((e) => {
-      const values = correctedValues(e, actionsFor(e.entrantId));
+    // Per entrant, the counting entry: the newest, or the one an Official chose. An Official's corrections
+    // are laid over its values before listing and totalling.
+    const entrantIds = newestEntries(here).map((e) => e.entrantId);
+    const entries = entrantIds.map((entrantId) => {
+      const theirs = here.filter((x) => x.entrantId === entrantId);
+      const mine = forThisActivity.filter(
+        ({ action }) => action.entrantId === entrantId,
+      );
+      const { entry: e, choice } = counting(theirs, mine, frozen?.index);
+      const values = correctedValues(e, actionsFor(entrantId));
       reports.set(
-        e.entrantId,
-        entryReport(
-          e,
-          here.filter((x) => x.entrantId === e.entrantId),
-          values,
-          forThisActivity.filter(
-            ({ action }) => action.entrantId === e.entrantId,
-          ),
-          frozen?.index,
-          givenIndex,
-        ),
+        entrantId,
+        entryReport(e, theirs, values, choice, mine, frozen?.index, givenIndex),
       );
       return { ...e, values };
     });

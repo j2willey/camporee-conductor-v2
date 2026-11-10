@@ -3,7 +3,13 @@ import { actionProblem, scoreEvent, type OfficialAction } from "./index.ts";
 import { activityId, smallEvent } from "./test-support.ts";
 
 // One check for an Official action, shared by the box (refuses when written) and scoreEvent (warns) (#24).
-const context = smallEvent({ scores: [{ t1: 30, t2: 20 }] });
+const context = {
+  ...smallEvent({ scores: [{ t1: 30, t2: 20 }] }),
+  // Entries the corrections below name.
+  entries: [
+    { id: "e1", activityId: activityId(0), entrantId: "t1", values: {} },
+  ],
+};
 
 const dq = (
   entrantId: string,
