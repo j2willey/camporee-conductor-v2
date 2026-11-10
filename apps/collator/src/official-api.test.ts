@@ -12,6 +12,8 @@ import {
   circusCartridge,
   CLOWN_CAR,
   DIRECTOR_EMAIL,
+  editFields,
+  HIGH_WIRE,
   testDb,
 } from "./test-support.ts";
 
@@ -225,7 +227,7 @@ describe("GET /api/official/event: the Activities to pick from", () => {
 
 interface OfficialActivity {
   activity: { id: string; title: string };
-  fields: { id: string; label: string }[];
+  fields: { id: string; label: string; type: string; options?: string[] }[];
   matrix: MatrixRow[];
   entries: {
     id: string;
@@ -309,10 +311,49 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
     const { fields } = await clownCar();
     expect(fields).toEqual(
       expect.arrayContaining([
-        { id: CLOWN_CAR.ownField, label: "Big Top Cruiser Clowns" },
-        { id: CLOWN_CAR.commonField, label: "Patrol Flag" },
+        {
+          id: CLOWN_CAR.ownField,
+          label: "Big Top Cruiser Clowns",
+          type: "number",
+        },
+        { id: CLOWN_CAR.commonField, label: "Patrol Flag", type: "number" },
       ]),
     );
+  });
+
+  it("gives a select field's options, so the laptop can show the right input", async () => {
+    const selectDb = testDb();
+    const selectApp = createApp({ db: selectDb });
+    const loaded = loadEventCartridge(
+      selectDb,
+      circusCartridge({
+        editActivity: editFields(CLOWN_CAR.id, (fields) => [
+          ...fields,
+          {
+            id: "size",
+            label: "Size",
+            type: "select",
+            kind: "info",
+            audience: "judge",
+            sortOrder: 99,
+            weight: 1,
+            config: { options: ["small", "large"] },
+          },
+        ]),
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    const res = await selectApp.request(
+      `/api/official/activities/${CLOWN_CAR.id}`,
+      { headers: { [OFFICIAL_EMAIL_HEADER]: OFFICIAL } },
+    );
+    const { fields } = (await res.json()) as OfficialActivity;
+    expect(fields.find((f) => f.id === "size")).toEqual({
+      id: "size",
+      label: "Size",
+      type: "select",
+      options: ["small", "large"],
+    });
   });
 
   it("is 404 for an Activity the Event doesn't have", async () => {
@@ -332,7 +373,27 @@ interface MatrixRow {
   disqualified: boolean;
   dq: { by: string; at: string; notes?: string } | null;
   onRoster: boolean;
+  entryId: string | null;
   values: Record<string, unknown> | null;
+  corrections: Record<
+    string,
+    {
+      original: unknown;
+      by: string;
+      at: string;
+      notes?: string;
+      warning?: string;
+    }
+  >;
+  superseded: {
+    entryId: string;
+    fieldId: string;
+    label: string;
+    value: unknown;
+    by: string;
+    at: string;
+    notes?: string;
+  }[];
   judge: { name: string; homeGroup?: string } | null;
   receivedAt: string | null;
   entryCount: number;
@@ -599,6 +660,188 @@ describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
       )
     ).json()) as OfficialActivity;
     expect(after.entries).toEqual(before.entries);
+  });
+});
+
+describe("PUT /api/official/actions/:id: an Official corrects a field (#42 PR 3)", () => {
+  beforeEach(withScores);
+
+  // Scores: Flaming Arrows (score-1) 9 clowns + flag 5 = 14, 1st; Owls (score-3, Sam's, the newest) 4 + 5 = 9, 2nd.
+  const FLAG = CLOWN_CAR.commonField;
+  const CLOWNS = CLOWN_CAR.ownField;
+  const body = (action: Record<string, unknown>) => ({
+    action: { activityId: CLOWN_CAR.id, entrantId: "team-1", ...action },
+    clientCreatedAt: "2027-05-15T10:00:00Z",
+  });
+  const setField = (
+    entryId: string,
+    fieldId: string,
+    value: unknown,
+    more: Record<string, unknown> = {},
+  ) => body({ type: "set-field-value", entryId, fieldId, value, ...more });
+  const revertField = (entryId: string, fieldId: string) =>
+    body({ type: "revert-field-value", entryId, fieldId });
+
+  const act = (id: string, payload: unknown) =>
+    app.request(`/api/official/actions/${id}`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        [OFFICIAL_EMAIL_HEADER]: DIRECTOR_EMAIL,
+      },
+      body: JSON.stringify(payload),
+    });
+  const view = async () =>
+    (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as OfficialActivity;
+  const row = async (id: string) =>
+    (await view()).matrix.find((r) => r.entrantId === id);
+
+  it("changes the row's value, total and place, and shows the original, who and why", async () => {
+    const res = await act(
+      "fix-1",
+      setField("score-1", CLOWNS, 2, { notes: "Recount" }),
+    );
+    expect(res.status).toBe(201);
+    expect(await row("team-1")).toMatchObject({
+      entryId: "score-1",
+      values: { [CLOWNS]: 2, [FLAG]: 5 },
+      total: 7,
+      place: 2,
+      corrections: {
+        [CLOWNS]: { original: 9, by: "Pat Director", notes: "Recount" },
+      },
+      superseded: [],
+    });
+    expect(await row("team-2")).toMatchObject({ place: 1, total: 9 });
+  });
+
+  it("a revert restores the Judge's value, total and place", async () => {
+    await act("fix-1", setField("score-1", CLOWNS, 2));
+    expect((await act("fix-2", revertField("score-1", CLOWNS))).status).toBe(
+      201,
+    );
+    expect(await row("team-1")).toMatchObject({
+      values: { [CLOWNS]: 9 },
+      total: 14,
+      place: 1,
+      corrections: {},
+    });
+  });
+
+  it("accepts a value outside the field's range, with a warning on the correction", async () => {
+    const res = await act("fix-1", setField("score-1", FLAG, 7));
+    expect(res.status).toBe(201);
+    const found = await row("team-1");
+    expect(found?.total).toBe(16);
+    expect(found?.corrections[FLAG]).toMatchObject({
+      original: 5,
+      warning: "Patrol Flag must be from 0 to 5",
+    });
+    expect(found?.corrections[CLOWNS]).toBeUndefined();
+  });
+
+  it("refuses an entry id the box doesn't have, or that is for another entrant or Activity (400)", async () => {
+    await put("/api/scores/score-hw", {
+      judge: ALEX,
+      activityId: HIGH_WIRE.id,
+      entrantId: "team-1",
+      values: { [HIGH_WIRE.judgeField]: 1 },
+      phoneCreatedAt: "2027-05-15T09:30:00Z",
+    });
+    for (const entryId of ["score-99", "score-2", "score-hw"]) {
+      const res = await act(`fix-${entryId}`, setField(entryId, CLOWNS, 2));
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: expect.stringMatching(/\S/) });
+    }
+    expect((await act("fix-r", revertField("score-99", CLOWNS))).status).toBe(
+      400,
+    );
+    expect(loggedActions(db)).toEqual([]);
+  });
+
+  it("refuses an unknown field and a non-number on a number field (400)", async () => {
+    const unknown = await act("fix-1", setField("score-1", "nope", 2));
+    expect(unknown.status).toBe(400);
+    expect(await unknown.json()).toEqual({
+      error: expect.stringMatching(/no field nope/),
+    });
+    const text = await act("fix-2", setField("score-1", CLOWNS, "lots"));
+    expect(text.status).toBe(400);
+    expect(await text.json()).toEqual({
+      error: expect.stringMatching(/must be a number/),
+    });
+    expect(loggedActions(db)).toEqual([]);
+  });
+
+  it("refuses notes that are only spaces, for a correction and a DQ (400)", async () => {
+    expect(
+      (await act("fix-1", setField("score-1", CLOWNS, 2, { notes: "   " })))
+        .status,
+    ).toBe(400);
+    expect(
+      (
+        await act(
+          "dq-1",
+          body({ type: "disqualify", disqualified: true, notes: "  " }),
+        )
+      ).status,
+    ).toBe(400);
+    expect(loggedActions(db)).toEqual([]);
+  });
+
+  it("a newer entry for the entrant supersedes the correction; dismissing it empties the list", async () => {
+    await act("fix-1", setField("score-1", CLOWNS, 2, { notes: "Recount" }));
+    const entriesBefore = (await view()).entries;
+    expect(
+      (
+        await put("/api/scores/score-4", {
+          judge: ALEX,
+          activityId: CLOWN_CAR.id,
+          entrantId: "team-1",
+          values: { [CLOWNS]: 6, [FLAG]: 5 },
+          phoneCreatedAt: "2027-05-15T09:50:00Z",
+        })
+      ).status,
+    ).toBe(201);
+    const found = await row("team-1");
+    expect(found).toMatchObject({
+      entryId: "score-4",
+      values: { [CLOWNS]: 6, [FLAG]: 5 },
+      total: 11,
+      corrections: {},
+      superseded: [
+        {
+          entryId: "score-1",
+          fieldId: CLOWNS,
+          label: "Big Top Cruiser Clowns",
+          value: 2,
+          by: "Pat Director",
+          notes: "Recount",
+        },
+      ],
+    });
+    // The Judge's entries are kept as entered.
+    expect((await view()).entries.slice(0, entriesBefore.length)).toEqual(
+      entriesBefore.map((e) => ({ ...e, counts: e.id === "score-3" })),
+    );
+    await act("fix-2", revertField("score-1", CLOWNS));
+    expect((await row("team-1"))?.superseded).toEqual([]);
+  });
+
+  it("never touches the Judge's entry, and a resend of the same id is a repeat", async () => {
+    const before = (await view()).entries;
+    const payload = setField("score-1", CLOWNS, 2);
+    expect((await act("fix-1", payload)).status).toBe(201);
+    const again = await act("fix-1", payload);
+    expect(again.status).toBe(200);
+    expect(await again.json()).toEqual({ status: "repeat" });
+    expect(loggedActions(db)).toHaveLength(1);
+    expect((await view()).entries).toEqual(before);
   });
 });
 

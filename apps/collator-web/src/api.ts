@@ -90,15 +90,33 @@ export const officialApi = {
     ),
 };
 
-/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement at an Activity. */
+/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement, and a field correction or its revert. */
 export interface OfficialActionBody {
-  action: {
-    type: "disqualify";
-    activityId: string;
-    entrantId: string;
-    disqualified: boolean;
-    notes?: string;
-  };
+  action:
+    | {
+        type: "disqualify";
+        activityId: string;
+        entrantId: string;
+        disqualified: boolean;
+        notes?: string;
+      }
+    | {
+        type: "set-field-value";
+        activityId: string;
+        entrantId: string;
+        entryId: string;
+        fieldId: string;
+        value: number | string | boolean | null;
+        notes?: string;
+      }
+    | {
+        type: "revert-field-value";
+        activityId: string;
+        entrantId: string;
+        entryId: string;
+        fieldId: string;
+        notes?: string;
+      };
   clientCreatedAt: string;
 }
 

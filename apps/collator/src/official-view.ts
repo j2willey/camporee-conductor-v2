@@ -1,17 +1,21 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import type { Official } from "@camporee-conductor/schema";
 import {
+  correctedValues,
+  fieldCorrections,
   fillVariables,
   inRankOrder,
   newestEntries,
   scoreEvent,
+  valueProblem,
   type FieldValue,
+  type OfficialAction,
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
-import { loggedActions } from "./official-actions.ts";
+import { loggedActions, type LoggedAction } from "./official-actions.ts";
 import {
   judgeList,
   roster,
@@ -135,8 +139,14 @@ export interface MatrixRow {
   dq: { by: string; at: string; notes?: string } | null;
   /** False for an entry whose entrant isn't on the roster: shown, but not ranked and not DQ-able. */
   onRoster: boolean;
-  /** The counting (newest) entry's values; null when unscored. */
+  /** The counting (newest) entry's id; null when unscored. Corrections name it. */
+  entryId: string | null;
+  /** The counting entry's values with the Officials' corrections laid over them; null when unscored. */
   values: Record<string, FieldValue> | null;
+  /** The corrections in effect on the counting entry, by field id (ADR-0019). */
+  corrections: Record<string, FieldCorrection>;
+  /** Corrections made to an older entry of this entrant: a newer entry counts now, so an Official looks again. */
+  superseded: SupersededCorrection[];
   /** The counting entry's Judge: name and home unit, never the email. */
   judge: { name: string; homeGroup?: string } | null;
   /** When the box received the counting entry (ISO). */
@@ -148,10 +158,39 @@ export interface MatrixRow {
   judges: { name: string; homeGroup?: string }[];
 }
 
+/** An Official's value for one field of the counting entry, with the Judge's original. */
+export interface FieldCorrection {
+  /** The Judge's value; null when blank or missing. */
+  original: FieldValue;
+  by: string;
+  /** When the box received the correction (ISO). */
+  at: string;
+  notes?: string;
+  /** What's off about the value, e.g. outside the field's range. It's allowed: the Official decides. */
+  warning?: string;
+}
+
+/** An effective correction whose entry no longer counts. */
+export interface SupersededCorrection {
+  entryId: string;
+  fieldId: string;
+  label: string;
+  value: FieldValue;
+  by: string;
+  at: string;
+  notes?: string;
+}
+
 export interface OfficialActivity {
   activity: OfficialEvent["activities"][number];
   /** Every field scored at the Activity, Common Fields included, to show values by label. */
-  fields: { id: string; label: string }[];
+  fields: {
+    id: string;
+    label: string;
+    type: string;
+    /** A select field's choices. */
+    options?: string[];
+  }[];
   /**
    * The score matrix (#42 PR 2a): one row per entrant of the Activity's Competition. Scored rows come first in
    * ranking order (from packages/scoring: `scoreEvent`, listed by `inRankOrder`), then unscored ones in roster
@@ -257,6 +296,77 @@ export function officialActivity(
       ...(latest.action.notes !== undefined && { notes: latest.action.notes }),
     };
   };
+  const fieldList = fillVariables(found.fields, found.activity.variables ?? {});
+  const officialName = (a: LoggedAction): string =>
+    officialByEmail(bundle, a.officialEmail)?.name ?? a.officialEmail;
+  // Corrections here, by entrant, with the logged action that made each.
+  const correctionsHere = logged.flatMap((row) =>
+    (row.action.type === "set-field-value" ||
+      row.action.type === "revert-field-value") &&
+    row.action.activityId === activityId
+      ? [{ row, action: row.action }]
+      : [],
+  );
+  const loggedOf = new Map<OfficialAction, LoggedAction>(
+    correctionsHere.map(({ row, action }) => [action, row]),
+  );
+  const actionsOf = (entrantId: string) =>
+    correctionsHere
+      .filter(({ action }) => action.entrantId === entrantId)
+      .map(({ action }) => action);
+  const correctionsOf = (
+    entrantId: string,
+    entry: { id: string; values: Record<string, FieldValue> },
+  ): MatrixRow["corrections"] => {
+    const result: MatrixRow["corrections"] = {};
+    for (const [fieldId, action] of fieldCorrections(
+      entry,
+      actionsOf(entrantId),
+    )) {
+      const row = loggedOf.get(action);
+      if (!row) continue;
+      const field = fieldList.find((f) => f.id === fieldId);
+      const warning = field ? valueProblem(field, action.value) : undefined;
+      result[fieldId] = {
+        original: entry.values[fieldId] ?? null,
+        by: officialName(row),
+        at: row.receivedAt.toISOString(),
+        ...(action.notes !== undefined && { notes: action.notes }),
+        ...(warning !== undefined && { warning }),
+      };
+    }
+    return result;
+  };
+  const supersededOf = (
+    entrantId: string,
+    countingId: string | undefined,
+  ): SupersededCorrection[] => {
+    const latestByKey = new Map<string, LoggedAction>();
+    for (const { row, action } of correctionsHere) {
+      if (action.entrantId === entrantId) {
+        latestByKey.set(JSON.stringify([action.entryId, action.fieldId]), row);
+      }
+    }
+    return [...latestByKey.values()].flatMap((row) => {
+      const { action } = row;
+      if (action.type !== "set-field-value" || action.entryId === countingId) {
+        return [];
+      }
+      return [
+        {
+          entryId: action.entryId,
+          fieldId: action.fieldId,
+          label:
+            fieldList.find((f) => f.id === action.fieldId)?.label ??
+            action.fieldId,
+          value: action.value,
+          by: officialName(row),
+          at: row.receivedAt.toISOString(),
+          ...(action.notes !== undefined && { notes: action.notes }),
+        },
+      ];
+    });
+  };
   const matrixRow = (entrantId: string): MatrixRow => {
     const result = resultById.get(entrantId);
     const entry = countingByEntrant.get(entrantId);
@@ -269,7 +379,10 @@ export function officialActivity(
       disqualified: result?.disqualified ?? false,
       dq: result?.disqualified ? dqOf(entrantId) : null,
       onRoster: true,
-      values: entry ? entry.values : null,
+      entryId: entry ? entry.id : null,
+      values: entry ? correctedValues(entry, actionsOf(entrantId)) : null,
+      corrections: entry ? correctionsOf(entrantId, entry) : {},
+      superseded: supersededOf(entrantId, entry?.id),
       judge: entry
         ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
         : null,
@@ -299,9 +412,12 @@ export function officialActivity(
   ];
   return {
     activity: listed,
-    fields: fillVariables(found.fields, found.activity.variables ?? {}).map(
-      (f) => ({ id: f.id, label: f.label }),
-    ),
+    fields: fieldList.map((f) => ({
+      id: f.id,
+      label: f.label,
+      type: f.type,
+      ...(f.type === "select" && { options: f.config?.options ?? [] }),
+    })),
     matrix,
     entries: here.map((e) => ({
       id: e.id,

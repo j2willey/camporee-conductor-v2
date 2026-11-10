@@ -2,6 +2,7 @@ import type { Activity } from "@camporee-conductor/schema";
 import { actionProblem } from "./action-checks.ts";
 import { awardRecipients } from "./awards.ts";
 import {
+  correctedValues,
   entryTotal,
   mergeCommonFields,
   metricValue,
@@ -38,18 +39,31 @@ function latest<T extends OfficialAction["type"]>(
 }
 
 /**
- * Leaves out each invalid effective `disqualify` (the latest for its entrant and Activity, or overall) with
- * a warning from `actionProblem`; every other action passes through in log order (ADR-0019, #24).
+ * The key an action is effective under: the latest `disqualify` per entrant and Activity (or overall), and
+ * the latest `set-field-value` or `revert-field-value` per entry and field. Undefined for other types.
  */
-function validDisqualifications(input: ScoringInput): {
+function effectiveKey(a: OfficialAction): string | undefined {
+  if (a.type === "disqualify") {
+    return `disqualify ${a.activityId ?? ""} ${a.entrantId}`;
+  }
+  if (a.type === "set-field-value" || a.type === "revert-field-value") {
+    return `correction ${a.activityId} ${a.entrantId} ${a.entryId} ${a.fieldId}`;
+  }
+  return undefined;
+}
+
+/**
+ * Leaves out each invalid effective `disqualify` and field correction (the latest for its key) with a
+ * warning from `actionProblem`; every other action passes through in log order (ADR-0019, #24).
+ */
+function validActions(input: ScoringInput): {
   actions: readonly OfficialAction[];
   warnings: ScoringWarning[];
 } {
   const effective = new Map<string, OfficialAction>();
   for (const a of input.actions) {
-    if (a.type === "disqualify") {
-      effective.set(`${a.activityId ?? ""} ${a.entrantId}`, a);
-    }
+    const key = effectiveKey(a);
+    if (key !== undefined) effective.set(key, a);
   }
   const warnings: ScoringWarning[] = [];
   const invalid = new Set<string>();
@@ -60,18 +74,17 @@ function validDisqualifications(input: ScoringInput): {
     warnings.push({ action, message });
   }
   return {
-    actions: input.actions.filter(
-      (a) =>
-        a.type !== "disqualify" ||
-        !invalid.has(`${a.activityId ?? ""} ${a.entrantId}`),
-    ),
+    actions: input.actions.filter((a) => {
+      const key = effectiveKey(a);
+      return key === undefined || !invalid.has(key);
+    }),
     warnings,
   };
 }
 
 /** Scores a whole Event. Pure: the same input always gives the same results (ADR-0019). */
 export function scoreEvent(given: ScoringInput): EventResults {
-  const checked = validDisqualifications(given);
+  const checked = validActions(given);
   const input = { ...given, actions: checked.actions };
   const activityById = new Map(input.activities.map((a) => [a.id, a]));
   const ranking = rankingFor(input.event.tieNumbering);
@@ -121,7 +134,13 @@ export function scoreEvent(given: ScoringInput): EventResults {
         )
         .map(({ action }) => action);
 
-    const entries = input.entries.filter((e) => e.activityId === activityId);
+    // An Official's corrections are laid over each entry's values before listing and totalling.
+    const entries = input.entries
+      .filter((e) => e.activityId === activityId)
+      .map((e) => ({
+        ...e,
+        values: correctedValues(e, actionsFor(e.entrantId)),
+      }));
     warnings.push(...unreadablePrimaryTimes(activity, entries));
     const scored = listed(activity, entries).map((e) => {
       const actions = actionsFor(e.entrantId);

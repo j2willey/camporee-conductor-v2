@@ -2,27 +2,69 @@ import type {
   JudgeLabels,
   OfficialActivity,
 } from "@camporee-conductor/collator/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { errorMessage, newId, officialApi } from "../api.ts";
 import { clock, entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
 
 type MatrixRow = OfficialActivity["matrix"][number];
 
+type FieldInfo = OfficialActivity["fields"][number];
+type FieldValue = number | string | boolean | null;
+
 /**
- * An Official confirming a DQ or reinstatement on one row. The id and `clientCreatedAt` are made once and kept, so
- * a retry resends exactly the same action and the box answers "repeat", even if the first send landed and only
- * the reply was lost. Changing the reason makes it a new action, with a new id.
+ * An Official confirming something on one row: a DQ or reinstatement, a field correction, or the revert of one.
+ * Only one is open at a time. The id and `clientCreatedAt` are made once and kept, so a retry resends exactly
+ * the same action and the box answers "repeat", even if the first send landed and only the reply was lost.
+ * Changing the value or the reason makes it a new action, with a new id.
  */
-interface Pending {
+type Pending = {
   entrantId: string;
-  disqualified: boolean;
   id: string;
   clientCreatedAt: string;
   reason: string;
   busy: boolean;
   problem: string | null;
+} & (
+  | { kind: "dq"; disqualified: boolean }
+  | {
+      kind: "correct";
+      entryId: string;
+      field: FieldInfo;
+      input: string | boolean;
+    }
+  | { kind: "revert"; entryId: string; field: FieldInfo }
+);
+
+const fresh = () => ({
+  id: newId(),
+  clientCreatedAt: new Date().toISOString(),
+});
+
+/** What the editor starts with: the value now counting. */
+const inputOf = (field: FieldInfo, value: FieldValue | undefined) =>
+  field.type === "checkbox"
+    ? value === true
+    : value === null || value === undefined
+      ? ""
+      : String(value);
+
+/**
+ * What the box is sent for an editor's input: a number field's text as a number when it reads as one, null when
+ * blank, and otherwise as typed, so the box's message explains the problem.
+ */
+function valueOf(field: FieldInfo, input: string | boolean): FieldValue {
+  if (typeof input === "boolean") return input;
+  if (input.trim() === "") return null;
+  if (field.type !== "number") return input;
+  const n = Number(input);
+  return Number.isFinite(n) ? n : input;
 }
+
+const show = (value: unknown) =>
+  value === null || value === undefined || value === ""
+    ? "blank"
+    : String(value);
 
 const judgeText = (j: { name: string; homeGroup?: string }) =>
   j.homeGroup ? `${j.name} (${j.homeGroup})` : j.name;
@@ -30,7 +72,8 @@ const judgeText = (j: { name: string; homeGroup?: string }) =>
 /**
  * One Activity for an Official (#42 PR 2a): the score matrix, then every score entry received. The matrix is
  * the box's, from packages/scoring, shown in the order given; nothing is re-sorted or re-totalled here. An
- * Official can DQ or reinstate a row (PR 2b): that logs an action on the box and the matrix is read again.
+ * Official can DQ or reinstate a row (PR 2b) and correct a field's value (PR 3): each logs an action on the box
+ * and the matrix is read again.
  */
 export function OfficialActivityView({
   email,
@@ -62,15 +105,30 @@ export function OfficialActivityView({
   const confirm = async (p: Pending) => {
     setPending({ ...p, busy: true, problem: null });
     const notes = p.reason.trim();
+    const base = {
+      activityId,
+      entrantId: p.entrantId,
+      ...(notes !== "" && { notes }),
+    };
     try {
       await officialApi.act(email, p.id, {
-        action: {
-          type: "disqualify",
-          activityId,
-          entrantId: p.entrantId,
-          disqualified: p.disqualified,
-          ...(notes !== "" && { notes }),
-        },
+        action:
+          p.kind === "dq"
+            ? { type: "disqualify", ...base, disqualified: p.disqualified }
+            : p.kind === "correct"
+              ? {
+                  type: "set-field-value",
+                  ...base,
+                  entryId: p.entryId,
+                  fieldId: p.field.id,
+                  value: valueOf(p.field, p.input),
+                }
+              : {
+                  type: "revert-field-value",
+                  ...base,
+                  entryId: p.entryId,
+                  fieldId: p.field.id,
+                },
         clientCreatedAt: p.clientCreatedAt,
       });
       setView(await officialApi.activity(email, activityId));
@@ -81,49 +139,50 @@ export function OfficialActivityView({
     }
   };
 
+  /** The Reason box and Confirm / Cancel buttons, shared by every kind of confirmation. */
+  const confirmBar = (p: Pending, confirmText: string, before?: ReactNode) => (
+    <div className="flex min-w-40 flex-col gap-2">
+      {before}
+      <label className={ui.label}>
+        Reason (optional)
+        <input
+          className={ui.input}
+          value={p.reason}
+          disabled={p.busy}
+          onChange={(e) =>
+            setPending({ ...p, reason: e.target.value, ...fresh() })
+          }
+        />
+      </label>
+      {p.problem && (
+        <p className={ui.error} role="alert">
+          {p.problem}
+        </p>
+      )}
+      <div className="flex gap-2">
+        <button
+          className={ui.button}
+          disabled={p.busy}
+          onClick={() => void confirm(p)}
+        >
+          {confirmText}
+        </button>
+        <button
+          className={ui.buttonQuiet}
+          disabled={p.busy}
+          onClick={() => setPending(null)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+
   const officialCell = (r: MatrixRow) => {
-    if (pending?.entrantId === r.entrantId) {
-      const verb = pending.disqualified ? "DQ" : "reinstate";
-      return (
-        <div className="flex min-w-40 flex-col gap-2">
-          <label className={ui.label}>
-            Reason
-            <input
-              className={ui.input}
-              value={pending.reason}
-              disabled={pending.busy}
-              onChange={(e) =>
-                setPending({
-                  ...pending,
-                  reason: e.target.value,
-                  id: newId(),
-                  clientCreatedAt: new Date().toISOString(),
-                })
-              }
-            />
-          </label>
-          {pending.problem && (
-            <p className={ui.error} role="alert">
-              {pending.problem}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <button
-              className={ui.button}
-              disabled={pending.busy}
-              onClick={() => void confirm(pending)}
-            >
-              Confirm {verb}
-            </button>
-            <button
-              className={ui.buttonQuiet}
-              disabled={pending.busy}
-              onClick={() => setPending(null)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+    if (pending?.kind === "dq" && pending.entrantId === r.entrantId) {
+      return confirmBar(
+        pending,
+        `Confirm ${pending.disqualified ? "DQ" : "reinstate"}`,
       );
     }
     if (!r.onRoster || !r.scored) return null;
@@ -133,10 +192,10 @@ export function OfficialActivityView({
         className={ui.buttonQuiet}
         onClick={() =>
           setPending({
+            kind: "dq",
             entrantId: r.entrantId,
             disqualified,
-            id: newId(),
-            clientCreatedAt: new Date().toISOString(),
+            ...fresh(),
             reason: "",
             busy: false,
             problem: null,
@@ -147,6 +206,177 @@ export function OfficialActivityView({
       </button>
     );
   };
+
+  const revertPending = (
+    r: MatrixRow,
+    field: FieldInfo,
+    entryId: string,
+    reason = "",
+  ): Pending => ({
+    kind: "revert",
+    entrantId: r.entrantId,
+    entryId,
+    field,
+    ...fresh(),
+    reason,
+    busy: false,
+    problem: null,
+  });
+
+  /** A value cell: a button that opens the correction editor in place, and "was …" under a corrected value. */
+  const valueCell = (r: MatrixRow, f: FieldInfo) => {
+    const value = r.values?.[f.id];
+    if (
+      pending?.kind === "correct" &&
+      pending.entrantId === r.entrantId &&
+      pending.field.id === f.id
+    ) {
+      const set = (input: string | boolean) =>
+        setPending({ ...pending, input, ...fresh() });
+      const name = `${f.label} for ${entrantLabel(r.entrantId, r.entrant)}`;
+      return confirmBar(
+        pending,
+        "Confirm correction",
+        f.type === "checkbox" ? (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              aria-label={name}
+              checked={pending.input === true}
+              disabled={pending.busy}
+              onChange={(e) => set(e.target.checked)}
+            />
+            {f.label}
+          </label>
+        ) : f.type === "select" ? (
+          <select
+            className={ui.input}
+            aria-label={name}
+            value={String(pending.input)}
+            disabled={pending.busy}
+            onChange={(e) => set(e.target.value)}
+          >
+            <option value=""></option>
+            {(f.options ?? []).map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            className={`${ui.input} text-right`}
+            aria-label={name}
+            value={String(pending.input)}
+            disabled={pending.busy}
+            onChange={(e) => set(e.target.value)}
+          />
+        ),
+      );
+    }
+    const text = value === null || value === undefined ? "" : String(value);
+    const correction = r.corrections[f.id];
+    if (!r.onRoster || r.entryId === null) return text;
+    const entryId = r.entryId;
+    return (
+      <>
+        <button
+          className="min-w-8 rounded px-1 underline decoration-dotted underline-offset-2 hover:bg-stone-100"
+          aria-label={`Correct ${f.label} for ${entrantLabel(r.entrantId, r.entrant)}`}
+          onClick={() =>
+            setPending({
+              kind: "correct",
+              entrantId: r.entrantId,
+              entryId,
+              field: f,
+              input: inputOf(f, value),
+              ...fresh(),
+              reason: "",
+              busy: false,
+              problem: null,
+            })
+          }
+        >
+          {text || "\u00a0"}
+        </button>
+        {correction && (
+          <p className="text-xs text-stone-500">
+            was {show(correction.original)}
+          </p>
+        )}
+      </>
+    );
+  };
+
+  /** The lines under an entrant's name about corrections: made ones (with Revert) and superseded ones (Dismiss). */
+  const correctionLines = (r: MatrixRow) => (
+    <>
+      {Object.entries(r.corrections).map(([fieldId, c]) => {
+        const field = view?.fields.find((f) => f.id === fieldId);
+        if (!field || r.entryId === null) return null;
+        const entryId = r.entryId;
+        const reverting =
+          pending?.kind === "revert" &&
+          pending.entrantId === r.entrantId &&
+          pending.field.id === fieldId;
+        return (
+          <div key={fieldId} className="mt-1 text-xs">
+            <p className="text-stone-700">
+              Corrected {field.label}: {show(c.original)} →{" "}
+              {show(r.values?.[fieldId])} by {c.by}, {clock(c.at)}
+              {c.notes && `: ${c.notes}`}
+            </p>
+            {c.warning && (
+              <p className="font-medium text-amber-900">{c.warning}</p>
+            )}
+            {reverting ? (
+              confirmBar(pending, "Confirm revert")
+            ) : (
+              <button
+                className={ui.link}
+                onClick={() => setPending(revertPending(r, field, entryId))}
+              >
+                Revert
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {r.superseded.map((s) => {
+        const field = view?.fields.find((f) => f.id === s.fieldId);
+        const dismissing =
+          pending?.kind === "revert" &&
+          pending.entrantId === r.entrantId &&
+          pending.entryId === s.entryId &&
+          pending.field.id === s.fieldId;
+        return (
+          <div
+            key={`${s.entryId} ${s.fieldId}`}
+            className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-amber-900"
+          >
+            <p>
+              {s.by}'s correction of {s.label} to {show(s.value)} was on an
+              older entry; a newer entry counts now.
+            </p>
+            {dismissing
+              ? confirmBar(pending, "Confirm dismiss")
+              : field && (
+                  <button
+                    className={ui.link}
+                    onClick={() => {
+                      const p = revertPending(r, field, s.entryId);
+                      setPending(p);
+                      void confirm(p);
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                )}
+          </div>
+        );
+      })}
+    </>
+  );
 
   const back = (
     <button className={`${ui.link} self-start`} onClick={onBack}>
@@ -242,6 +472,7 @@ export function OfficialActivityView({
                         Not on roster
                       </p>
                     )}
+                    {correctionLines(r)}
                     {r.dq && (
                       <p className="text-xs font-medium text-red-800">
                         DQ by {r.dq.by}, {clock(r.dq.at)}
@@ -262,19 +493,14 @@ export function OfficialActivityView({
                   </th>
                   {r.scored ? (
                     <>
-                      {view.fields.map((f) => {
-                        const value = r.values?.[f.id];
-                        return (
-                          <td
-                            key={f.id}
-                            className="py-2 pr-2 text-right tabular-nums"
-                          >
-                            {value === null || value === undefined
-                              ? ""
-                              : String(value)}
-                          </td>
-                        );
-                      })}
+                      {view.fields.map((f) => (
+                        <td
+                          key={f.id}
+                          className="py-2 pr-2 text-right align-top tabular-nums"
+                        >
+                          {valueCell(r, f)}
+                        </td>
+                      ))}
                       <td className="py-2 pr-2 text-right tabular-nums">
                         {r.total}
                       </td>

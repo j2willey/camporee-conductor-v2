@@ -19,10 +19,21 @@ import Database from "better-sqlite3";
 // scores the same Patrol.
 // #42 PR 2a: an Activity's Scores matrix: a row per Patrol, a conflict marked, unscored Patrols listed.
 // #42 PR 2b: an Official DQs the Patrol in 1st and reinstates it; everyone below moves up, and the row says who.
+// #42 PR 3: an Official corrects the 2nd-placed Patrol's flag to take 1st, reverts it, and dismisses a correction
+// once a newer score has made it stale.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
 const DB = resolve(import.meta.dirname, "../test-results/judge.db");
+/** The first row of a read-only query on the box's database. */
+const firstRow = (sql: string, ...params: string[]) => {
+  const db = new Database(DB, { readonly: true });
+  try {
+    return db.prepare(sql).get(...params) as Record<string, string>;
+  } finally {
+    db.close();
+  }
+};
 const count = (table: string) => {
   const db = new Database(DB, { readonly: true });
   try {
@@ -727,6 +738,92 @@ test("an Official DQs the Patrol in 1st with a reason, everyone below moves up, 
   await expect(placeOf(rowFor(first))).toHaveText("1st");
   await expect(rowFor(first)).not.toContainText("DQ by");
   await expect(placeOf(rowFor(second))).toHaveText(secondPlaceBefore);
+});
+
+test("an Official corrects the 2nd-placed Patrol's flag to take 1st, reverts it, and dismisses a correction a newer score made stale", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+
+  const scores = page.getByRole("table").first();
+  const rows = scores.locator("tbody tr");
+  const nameOf = (row: ReturnType<typeof rows.nth>) =>
+    row.getByRole("rowheader");
+  const second = (await nameOf(rows.nth(1)).innerText()).split("\n")[0] ?? "";
+  const rowFor = (name: string) =>
+    scores
+      .getByRole("row")
+      // The name starts the row header ("Owls" must not match "Night Owls").
+      .filter({
+        has: page.getByRole("rowheader", {
+          name: new RegExp(`^${name.replace(/[()]/g, "\\$&")}`),
+        }),
+      });
+  const placeOf = (name: string) => rowFor(name).getByRole("cell").first();
+  const secondPlace = await placeOf(second).innerText();
+  expect(secondPlace).toBe("2nd");
+
+  // Correct the Patrol Flag (the clowns are 0 to 9, the flag 0 to 5; past the range is allowed, with a warning).
+  const correctFlag = async () => {
+    await rowFor(second)
+      .getByRole("button", { name: `Correct Patrol Flag for ${second}` })
+      .click();
+    await rowFor(second)
+      .getByRole("textbox", { name: `Patrol Flag for ${second}` })
+      .fill("99");
+    await rowFor(second).getByLabel("Reason").fill("Flag re-counted");
+    await rowFor(second)
+      .getByRole("button", { name: "Confirm correction" })
+      .click();
+  };
+  await correctFlag();
+  await expect(placeOf(second)).toHaveText("1st");
+  await expect(rowFor(second)).toContainText("was ");
+  await expect(rowFor(second)).toContainText("Corrected Patrol Flag:");
+  await expect(rowFor(second)).toContainText("by lead.judge@example.com");
+  await expect(rowFor(second)).toContainText("Flag re-counted");
+  await expect(rowFor(second)).toContainText("Patrol Flag must be from 0 to 5");
+
+  // Revert: the Judge's value counts again.
+  await rowFor(second).getByRole("button", { name: "Revert" }).click();
+  await rowFor(second).getByRole("button", { name: "Confirm revert" }).click();
+  await expect(placeOf(second)).toHaveText(secondPlace);
+  await expect(rowFor(second)).not.toContainText("Corrected Patrol Flag:");
+
+  // Correct again, then a newer score for that Patrol arrives: the correction was on the older entry.
+  await correctFlag();
+  await expect(placeOf(second)).toHaveText("1st");
+  const name = second.split(" (")[0] ?? "";
+  const { entrant_id: entrantId, activity_id: activityId } = firstRow(
+    "SELECT se.entrant_id, se.activity_id FROM score_entries se JOIN teams t ON t.id = se.entrant_id WHERE t.name = ? LIMIT 1",
+    name,
+  );
+  expect(
+    (
+      await page.request.put("/api/scores/score-newer-1", {
+        data: {
+          judge: {
+            id: "judge-late",
+            name: "Late Judge",
+            email: "late@example.com",
+          },
+          activityId,
+          entrantId,
+          values: { scouts_balanced: 5, p_flag: 4 },
+          phoneCreatedAt: new Date().toISOString(),
+        },
+      })
+    ).ok(),
+  ).toBe(true);
+  await page.reload();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(rowFor(second)).toContainText("was on an older entry");
+  await rowFor(second).getByRole("button", { name: "Dismiss" }).click();
+  await expect(rowFor(second)).not.toContainText("was on an older entry");
 });
 
 test.describe("without the service worker", () => {
