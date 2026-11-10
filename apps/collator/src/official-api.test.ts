@@ -339,6 +339,124 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
   });
 });
 
+interface MatrixRow {
+  entrantId: string;
+  entrant: { name: string | null; group: string | null };
+  scored: boolean;
+  place: number | null;
+  total: number | null;
+  disqualified: boolean;
+  values: Record<string, unknown> | null;
+  judge: { name: string; homeGroup?: string } | null;
+  receivedAt: string | null;
+  entryCount: number;
+  conflict: boolean;
+  judges: { name: string; homeGroup?: string }[];
+}
+
+describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () => {
+  beforeEach(async () => {
+    await withScores();
+    // A third Team nobody has scored.
+    await put("/api/teams/team-3", { groupId: "group-1", name: "Night Owls" });
+    await put("/api/groups/group-2", { name: "Troop 202" });
+  });
+
+  const view = async (id = CLOWN_CAR.id) => {
+    const res = await asOfficial(`/api/official/activities/${id}`);
+    expect(res.status).toBe(200);
+    return (await res.json()) as OfficialActivity & { matrix: MatrixRow[] };
+  };
+
+  it("has one row per Team of the Competition, unscored ones included, with nothing filled in", async () => {
+    const { matrix } = await view();
+    expect(matrix.map((r) => r.entrantId).sort()).toEqual([
+      "team-1",
+      "team-2",
+      "team-3",
+    ]);
+    expect(matrix.find((r) => r.entrantId === "team-3")).toMatchObject({
+      scored: false,
+      place: null,
+      total: null,
+      values: null,
+      judge: null,
+      receivedAt: null,
+      entryCount: 0,
+      conflict: false,
+      judges: [],
+    });
+  });
+
+  it("lists the scored rows in ranking order with the ranking's place and total, then unscored in roster order", async () => {
+    const { matrix, ranking } = await view();
+    const scored = matrix.filter((r) => r.scored);
+    expect(scored.map((r) => r.entrantId)).toEqual(
+      ranking.map((r) => r.entrantId),
+    );
+    expect(scored.map((r) => [r.place, r.total])).toEqual(
+      ranking.map((r) => [r.place, r.total]),
+    );
+    expect(matrix.map((r) => r.scored)).toEqual([true, true, false]);
+  });
+
+  it("shows the newest entry's values when one Judge scored again: more versions, not a conflict", async () => {
+    const again = await put("/api/scores/score-4", {
+      judge: ALEX,
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-1",
+      values: { [CLOWN_CAR.ownField]: 8, [CLOWN_CAR.commonField]: 5 },
+      phoneCreatedAt: "2027-05-15T09:40:00Z",
+    });
+    expect(again.status).toBe(201);
+    const row = (await view()).matrix.find((r) => r.entrantId === "team-1");
+    expect(row).toMatchObject({
+      entryCount: 2,
+      conflict: false,
+      total: 13,
+      values: { [CLOWN_CAR.ownField]: 8, [CLOWN_CAR.commonField]: 5 },
+      judge: { name: "Alex Judge" },
+      judges: [{ name: "Alex Judge" }],
+    });
+    expect(Number.isNaN(Date.parse(row?.receivedAt ?? ""))).toBe(false);
+  });
+
+  it("marks an entrant two Judges scored a conflict, lists both, and shows the newer entry", async () => {
+    const row = (await view()).matrix.find((r) => r.entrantId === "team-2");
+    expect(row).toMatchObject({
+      conflict: true,
+      entryCount: 2,
+      values: { [CLOWN_CAR.ownField]: 4, [CLOWN_CAR.commonField]: 5 },
+      judge: { name: "Sam Judge", homeGroup: "Troop 7" },
+      judges: [
+        { name: "Alex Judge" },
+        { name: "Sam Judge", homeGroup: "Troop 7" },
+      ],
+    });
+    const other = (await view()).matrix.find((r) => r.entrantId === "team-1");
+    expect(other?.conflict).toBe(false);
+  });
+
+  it("has Groups as the rows of a group-level Competition", async () => {
+    const group = "01a18a1b-3000-7c87-9082-21de7512b1ac";
+    const { matrix } = await view(group);
+    expect(matrix.map((r) => r.entrantId).sort()).toEqual([
+      "group-1",
+      "group-2",
+    ]);
+    expect(matrix.every((r) => !r.scored)).toBe(true);
+    expect(matrix.map((r) => r.entrant.name)).toEqual([
+      "Troop 101",
+      "Troop 202",
+    ]);
+  });
+
+  it("serves no Judge email anywhere in the matrix", async () => {
+    const res = await asOfficial(`/api/official/activities/${CLOWN_CAR.id}`);
+    expect(await res.text()).not.toMatch(/@example\.com/);
+  });
+});
+
 describe("the page's own paths, such as /official, get the web app", () => {
   it("serves index.html for a deep link when the built app is served", async () => {
     const webRoot = mkdtempSync(join(tmpdir(), "collator-web-"));
