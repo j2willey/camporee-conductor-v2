@@ -26,7 +26,7 @@ type Pending = {
   reason: string;
   busy: boolean;
   problem: string | null;
-  /** The box refused a choice made on a stale view (409): Reload, then choose again. */
+  /** The box refused an action made on a stale view (409): Reload, then try again. */
   stale?: boolean;
 } & (
   | { kind: "dq"; disqualified: boolean }
@@ -38,6 +38,13 @@ type Pending = {
     }
   | { kind: "revert"; entryId: string; field: FieldInfo }
   | { kind: "choose"; entryId: string; newestEntryId: string }
+  // Finalize and unfinalize are about the whole Activity: their `entrantId` is "". The ranking is the box's,
+  // taken when the button was pressed and sent back as is.
+  | { kind: "finalize"; ranking: OfficialActivity["finalizeRanking"] }
+  | { kind: "unfinalize" }
+  // A manual rank or Official points for one row: the number as typed.
+  | { kind: "rank"; input: string }
+  | { kind: "points"; input: string }
 );
 
 const fresh = () => ({
@@ -64,6 +71,12 @@ function valueOf(field: FieldInfo, input: string | boolean): FieldValue {
   const n = Number(input);
   return Number.isFinite(n) ? n : input;
 }
+
+/** A typed number as a number; as typed when it isn't one, so the box's message explains. */
+const numberOf = (input: string): number | string => {
+  const n = Number(input);
+  return Number.isFinite(n) ? n : input;
+};
 
 const show = (value: unknown) =>
   value === null || value === undefined || value === ""
@@ -109,6 +122,10 @@ export function OfficialActivityView({
   const confirm = async (p: Pending) => {
     setPending({ ...p, busy: true, problem: null });
     const notes = p.reason.trim();
+    if ((p.kind === "rank" || p.kind === "points") && p.input.trim() === "") {
+      setPending({ ...p, busy: false, problem: "Enter a number" });
+      return;
+    }
     const base = {
       activityId,
       entrantId: p.entrantId,
@@ -117,29 +134,58 @@ export function OfficialActivityView({
     try {
       await officialApi.act(email, p.id, {
         action:
-          p.kind === "dq"
-            ? { type: "disqualify", ...base, disqualified: p.disqualified }
-            : p.kind === "correct"
+          p.kind === "finalize"
+            ? {
+                type: "finalize",
+                activityId,
+                ranking: p.ranking,
+                ...(notes !== "" && { notes }),
+              }
+            : p.kind === "unfinalize"
               ? {
-                  type: "set-field-value",
-                  ...base,
-                  entryId: p.entryId,
-                  fieldId: p.field.id,
-                  value: valueOf(p.field, p.input),
+                  type: "unfinalize",
+                  activityId,
+                  ...(notes !== "" && { notes }),
                 }
-              : p.kind === "choose"
+              : p.kind === "rank"
                 ? {
-                    type: "choose-entry",
+                    type: "set-final-rank",
                     ...base,
-                    entryId: p.entryId,
-                    newestEntryId: p.newestEntryId,
+                    rank: numberOf(p.input),
                   }
-                : {
-                    type: "revert-field-value",
-                    ...base,
-                    entryId: p.entryId,
-                    fieldId: p.field.id,
-                  },
+                : p.kind === "points"
+                  ? {
+                      type: "adjust-points",
+                      ...base,
+                      points: numberOf(p.input),
+                    }
+                  : p.kind === "dq"
+                    ? {
+                        type: "disqualify",
+                        ...base,
+                        disqualified: p.disqualified,
+                      }
+                    : p.kind === "correct"
+                      ? {
+                          type: "set-field-value",
+                          ...base,
+                          entryId: p.entryId,
+                          fieldId: p.field.id,
+                          value: valueOf(p.field, p.input),
+                        }
+                      : p.kind === "choose"
+                        ? {
+                            type: "choose-entry",
+                            ...base,
+                            entryId: p.entryId,
+                            newestEntryId: p.newestEntryId,
+                          }
+                        : {
+                            type: "revert-field-value",
+                            ...base,
+                            entryId: p.entryId,
+                            fieldId: p.field.id,
+                          },
         clientCreatedAt: p.clientCreatedAt,
       });
       setView(await officialApi.activity(email, activityId));
@@ -150,7 +196,10 @@ export function OfficialActivityView({
         ...p,
         busy: false,
         problem: errorMessage(e),
-        stale: p.kind === "choose" && e instanceof ApiError && e.status === 409,
+        stale:
+          (p.kind === "choose" || p.kind === "finalize") &&
+          e instanceof ApiError &&
+          e.status === 409,
       });
     }
   };
@@ -204,32 +253,88 @@ export function OfficialActivityView({
     </div>
   );
 
+  const numberPending = (
+    r: MatrixRow,
+    kind: "rank" | "points",
+    input = "",
+  ): Pending => ({
+    kind,
+    entrantId: r.entrantId,
+    input,
+    ...fresh(),
+    reason: "",
+    busy: false,
+    problem: null,
+  });
+
   const officialCell = (r: MatrixRow) => {
-    if (pending?.kind === "dq" && pending.entrantId === r.entrantId) {
-      return confirmBar(
-        pending,
-        `Confirm ${pending.disqualified ? "DQ" : "reinstate"}`,
-      );
+    if (pending?.entrantId === r.entrantId) {
+      if (pending.kind === "dq") {
+        return confirmBar(
+          pending,
+          `Confirm ${pending.disqualified ? "DQ" : "reinstate"}`,
+        );
+      }
+      if (pending.kind === "rank" || pending.kind === "points") {
+        const name = `${pending.kind === "rank" ? "Rank" : "Points"} for ${entrantLabel(r.entrantId, r.entrant)}`;
+        return confirmBar(
+          pending,
+          `Confirm ${pending.kind}`,
+          <input
+            className={`${ui.input} text-right`}
+            type="number"
+            inputMode="decimal"
+            aria-label={name}
+            min={pending.kind === "rank" ? 1 : undefined}
+            step={pending.kind === "rank" ? 1 : "any"}
+            value={pending.input}
+            disabled={pending.busy}
+            onChange={(e) =>
+              setPending({ ...pending, input: e.target.value, ...fresh() })
+            }
+          />,
+        );
+      }
     }
     if (!r.onRoster || !r.scored) return null;
     const disqualified = !r.disqualified;
     return (
-      <button
-        className={ui.buttonQuiet}
-        onClick={() =>
-          setPending({
-            kind: "dq",
-            entrantId: r.entrantId,
-            disqualified,
-            ...fresh(),
-            reason: "",
-            busy: false,
-            problem: null,
-          })
-        }
-      >
-        {disqualified ? "DQ" : "Reinstate"}
-      </button>
+      <div className="flex flex-wrap gap-1">
+        <button
+          className={ui.buttonQuiet}
+          onClick={() =>
+            setPending({
+              kind: "dq",
+              entrantId: r.entrantId,
+              disqualified,
+              ...fresh(),
+              reason: "",
+              busy: false,
+              problem: null,
+            })
+          }
+        >
+          {disqualified ? "DQ" : "Reinstate"}
+        </button>
+        {!r.disqualified && (
+          <>
+            <button
+              className={ui.buttonQuiet}
+              aria-label={`Rank for ${entrantLabel(r.entrantId, r.entrant)}`}
+              onClick={() => setPending(numberPending(r, "rank"))}
+            >
+              Rank
+            </button>
+            <button
+              className={ui.buttonQuiet}
+              aria-label={`Points for ${entrantLabel(r.entrantId, r.entrant)}`}
+              onClick={() => setPending(numberPending(r, "points"))}
+            >
+              Points
+            </button>
+          </>
+        )}
+      </div>
     );
   };
 
@@ -509,6 +614,44 @@ export function OfficialActivityView({
       <header>
         <h1 className={ui.h1}>{view.activity.title}</h1>
         <p className={ui.muted}>{view.activity.competition.label}</p>
+        <p className="mt-1 text-sm">
+          {view.finalized
+            ? `Finalized by ${view.finalized.by}, ${clock(view.finalized.at)}${view.finalized.notes ? `: ${view.finalized.notes}` : ""}`
+            : "Not finalized"}
+        </p>
+        {view.finalized && (
+          <p className={ui.muted}>Changes wait until it's unfinalized.</p>
+        )}
+        {pending?.entrantId === "" &&
+        (pending.kind === "finalize" || pending.kind === "unfinalize") ? (
+          <div className="mt-2">
+            {confirmBar(
+              pending,
+              `Confirm ${pending.kind === "finalize" ? "finalize" : "unfinalize"}`,
+            )}
+          </div>
+        ) : (
+          <button
+            className={`${ui.buttonQuiet} mt-2`}
+            onClick={() =>
+              setPending({
+                entrantId: "",
+                ...fresh(),
+                reason: "",
+                busy: false,
+                problem: null,
+                ...(view.finalized
+                  ? { kind: "unfinalize" as const }
+                  : {
+                      kind: "finalize" as const,
+                      ranking: view.finalizeRanking,
+                    }),
+              })
+            }
+          >
+            {view.finalized ? "Unfinalize" : "Finalize"}
+          </button>
+        )}
       </header>
 
       <section className="flex flex-col gap-2">
@@ -573,6 +716,9 @@ export function OfficialActivityView({
                       : r.place === null
                         ? "—"
                         : ordinal(r.place)}
+                    {r.rankOverride?.state === "applied" &&
+                      r.provisionalRank !== null &&
+                      ` (auto ${ordinal(r.provisionalRank)})`}
                   </td>
                   <th scope="row" className="py-2 pr-2 font-normal">
                     {entrantLabel(r.entrantId, r.entrant)}
@@ -584,9 +730,32 @@ export function OfficialActivityView({
                     {choiceLines(r)}
                     {correctionLines(r)}
                     {r.dq && (
-                      <p className="text-xs font-medium text-red-800">
-                        DQ by {r.dq.by}, {clock(r.dq.at)}
+                      <p
+                        className={`text-xs ${r.dq.state === "held" ? "text-stone-700" : "font-medium text-red-800"}`}
+                      >
+                        {r.dq.disqualified ? "DQ" : "Reinstated"} by {r.dq.by},{" "}
+                        {clock(r.dq.at)}
                         {r.dq.notes && `: ${r.dq.notes}`}
+                        {r.dq.state === "held" && " (waits until unfinalized)"}
+                      </p>
+                    )}
+                    {r.rankOverride && (
+                      <p className="text-xs text-stone-700">
+                        Manual rank {r.rankOverride.rank} by {r.rankOverride.by}
+                        , {clock(r.rankOverride.at)}
+                        {r.rankOverride.notes && `: ${r.rankOverride.notes}`}
+                        {r.rankOverride.state === "held" &&
+                          " (waits until unfinalized)"}
+                      </p>
+                    )}
+                    {r.adjustment && (
+                      <p className="text-xs text-stone-700">
+                        Official points {r.adjustment.points >= 0 && "+"}
+                        {r.adjustment.points} by {r.adjustment.by},{" "}
+                        {clock(r.adjustment.at)}
+                        {r.adjustment.notes && `: ${r.adjustment.notes}`}
+                        {r.adjustment.state === "held" &&
+                          " (waits until unfinalized)"}
                       </p>
                     )}
                     {(r.conflict === "unresolved" ||

@@ -51,6 +51,8 @@ export function OfficialOverview({
         },
       );
     };
+    // Coming back from an Activity page, what the Official just did shows at once, not 15 s later.
+    refresh();
     const timer = setInterval(refresh, REFRESH_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
@@ -102,6 +104,7 @@ export function OfficialOverview({
                   <th className="px-3 py-2 font-medium">Closures</th>
                   <th className="px-3 py-2 font-medium">Conflicts</th>
                   <th className="px-3 py-2 font-medium">Last score</th>
+                  <th className="px-3 py-2 font-medium">Finalized</th>
                 </tr>
               </thead>
               <tbody>
@@ -143,6 +146,9 @@ export function OfficialOverview({
                         {a.lastReceivedAt
                           ? clock(new Date(a.lastReceivedAt))
                           : "—"}
+                      </td>
+                      <td className="px-3 py-2">
+                        {a.finalized ? "Final" : ""}
                       </td>
                     </tr>
                   ))}

@@ -94,7 +94,7 @@ export const officialApi = {
     ),
 };
 
-/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement, and a field correction or its revert, and a choice of which entry counts. */
+/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement, and a field correction or its revert, and a choice of which entry counts, finalize and unfinalize, a manual rank and Official points. A number is sent as typed when it isn't one, so the box's message explains. */
 export interface OfficialActionBody {
   action:
     | {
@@ -127,6 +127,27 @@ export interface OfficialActionBody {
         entrantId: string;
         entryId: string;
         newestEntryId: string;
+        notes?: string;
+      }
+    | {
+        type: "finalize";
+        activityId: string;
+        ranking: OfficialActivity["finalizeRanking"];
+        notes?: string;
+      }
+    | { type: "unfinalize"; activityId: string; notes?: string }
+    | {
+        type: "set-final-rank";
+        activityId: string;
+        entrantId: string;
+        rank: number | string;
+        notes?: string;
+      }
+    | {
+        type: "adjust-points";
+        activityId: string;
+        entrantId: string;
+        points: number | string;
         notes?: string;
       };
   clientCreatedAt: string;
