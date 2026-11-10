@@ -44,6 +44,37 @@ export function officialByEmail(
   );
 }
 
+/** An entrant's name from the roster: a Team with its Group, or a Group; null names for an id that isn't on it. */
+export function entrantNamer(db: Db): (id: string) => EntrantName {
+  const { groups, teams } = roster(db);
+  const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+  return (id) => {
+    const team = teamById.get(id);
+    if (team) {
+      return { name: team.name, group: groupName.get(team.groupId) ?? null };
+    }
+    return { name: groupName.get(id) ?? null, group: null };
+  };
+}
+
+/** Who logged the action at an index in the log, and when and why; blank for an index past the log. */
+export function actedOnLog(
+  bundle: CheckedBundle,
+  logged: LoggedAction[],
+): (actionIndex: number) => Acted {
+  return (actionIndex) => {
+    const row = logged[actionIndex];
+    if (!row) return { by: "", at: "" };
+    const notes = (row.action as { notes?: string }).notes;
+    return {
+      by: officialByEmail(bundle, row.officialEmail)?.name ?? row.officialEmail,
+      at: row.receivedAt.toISOString(),
+      ...(notes !== undefined && { notes }),
+    };
+  };
+}
+
 /** A Team (with its Group) or a Group, by name; null names for an id that isn't on the roster. */
 export interface EntrantName {
   name: string | null;
@@ -275,16 +306,7 @@ export function officialActivity(
   if (!listed) return undefined;
 
   const { groups, teams } = roster(db);
-  const groupName = new Map(groups.map((g) => [g.id, g.name]));
-  const teamById = new Map(teams.map((t) => [t.id, t]));
-  const entrantName = (id: string): EntrantName => {
-    const team = teamById.get(id);
-    if (team) {
-      return { name: team.name, group: groupName.get(team.groupId) ?? null };
-    }
-    return { name: groupName.get(id) ?? null, group: null };
-  };
-
+  const entrantName = entrantNamer(db);
   const newest = newestEntries(all);
   const logged = loggedActions(db);
   const input = scoringInput(db, bundle, all, logged);
@@ -333,17 +355,7 @@ export function officialActivity(
   const fieldList = fillVariables(found.fields, found.activity.variables ?? {});
   const officialName = (a: LoggedAction): string =>
     officialByEmail(bundle, a.officialEmail)?.name ?? a.officialEmail;
-  /** Who and when for the action at this index in the log. */
-  const actedOn = (actionIndex: number): Acted => {
-    const row = logged[actionIndex];
-    if (!row) return { by: "", at: "" };
-    const notes = (row.action as { notes?: string }).notes;
-    return {
-      by: officialName(row),
-      at: row.receivedAt.toISOString(),
-      ...(notes !== undefined && { notes }),
-    };
-  };
+  const actedOn = actedOnLog(bundle, logged);
   const originOf = (r: EntryResult): MatrixRow["corrections"] => {
     const result: MatrixRow["corrections"] = {};
     for (const c of r.corrections) {

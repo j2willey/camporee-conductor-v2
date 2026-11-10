@@ -1,6 +1,7 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import { serveStatic } from "@hono/node-server/serve-static";
 import type { Official } from "@camporee-conductor/schema";
+import type { OfficialAction } from "@camporee-conductor/scoring";
 import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
@@ -11,6 +12,7 @@ import { recordClosure } from "./closures.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
+import { officialStandings } from "./standings.ts";
 import {
   normalEmail,
   officialActivity,
@@ -78,8 +80,8 @@ const Notes = z.string().trim().min(1).max(500).optional();
 
 /**
  * An Official's action (#42): a per-Activity `disqualify` (PR 2b), an Official's correction of a field (PR 3), a
- * `choose-entry` (which entry counts), and `finalize`, `unfinalize`, `set-final-rank` and `adjust-points` (PR 4).
- * Other types and the overall DQ come with later slices, and answer 400 until then.
+ * `choose-entry` (which entry counts), `finalize`, `unfinalize`, `set-final-rank` and `adjust-points` (PR 4), and the
+ * overall `disqualify` (no activityId) and `set-overall-rank`. Other types come with later slices, and answer 400.
  */
 const ActionBody = z.strictObject({
   action: z.discriminatedUnion(
@@ -87,12 +89,8 @@ const ActionBody = z.strictObject({
     [
       z.strictObject({
         type: z.literal("disqualify"),
-        activityId: z
-          .string({
-            error:
-              "A disqualify needs an activityId (an overall DQ comes later)",
-          })
-          .min(1),
+        // Left out for an overall DQ (ADR-0019).
+        activityId: z.string().min(1).optional(),
         entrantId: PhoneId,
         disqualified: z.boolean(),
         notes: Notes,
@@ -154,6 +152,13 @@ const ActionBody = z.strictObject({
         notes: Notes,
       }),
       z.strictObject({
+        type: z.literal("set-overall-rank"),
+        competitionId: z.string().min(1),
+        entrantId: PhoneId,
+        rank: z.number().int().positive(),
+        notes: Notes,
+      }),
+      z.strictObject({
         type: z.literal("adjust-points"),
         activityId: z.string().min(1),
         entrantId: PhoneId,
@@ -163,7 +168,7 @@ const ActionBody = z.strictObject({
     ],
     {
       error:
-        "Only a disqualify, set-field-value, revert-field-value, choose-entry, finalize, unfinalize, set-final-rank or adjust-points action is accepted so far",
+        "Only a disqualify, set-field-value, revert-field-value, choose-entry, finalize, unfinalize, set-final-rank, set-overall-rank or adjust-points action is accepted so far",
     },
   ),
   clientCreatedAt: z.iso.datetime({ offset: true }),
@@ -235,6 +240,10 @@ function officialRoutes(db: Db) {
 
   routes.get("/event", (c) => c.json(officialEvent(db, c.get("bundle"))));
 
+  routes.get("/standings", (c) =>
+    c.json(officialStandings(db, c.get("bundle"))),
+  );
+
   routes.get("/activities/:id", (c) => {
     const found = officialActivity(db, c.get("bundle"), c.req.param("id"));
     return found
@@ -249,8 +258,10 @@ function officialRoutes(db: Db) {
     jsonBody(ActionBody),
     (c) => {
       const { action: given, clientCreatedAt } = c.req.valid("json");
-      const { notes, ...rest } = given;
-      const action = { ...rest, ...(notes !== undefined && { notes }) };
+      // Left-out optional fields stay out of the logged action (an overall DQ has no activityId).
+      const action = Object.fromEntries(
+        Object.entries(given).filter(([, v]) => v !== undefined),
+      ) as OfficialAction;
       return reply(
         c,
         recordOfficialAction(db, c.get("bundle"), {

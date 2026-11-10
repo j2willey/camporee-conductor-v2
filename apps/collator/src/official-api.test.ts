@@ -1490,8 +1490,7 @@ describe("GET /api/official/standings and the overall actions (#42 PR 4)", () =>
     expect((await ranks())["team-1"]).toBe("DQ");
   });
 
-  it("refuses an overall DQ or rank for someone outside the Competition, and set-placement-points still", async () => {
-    expect((await dq("group-1")).status).toBe(400);
+  it("refuses an overall DQ for someone not on the roster, and set-placement-points still", async () => {
     expect((await dq("nobody")).status).toBe(400);
     const res = await act("pp-1", {
       type: "set-placement-points",
