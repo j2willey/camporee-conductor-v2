@@ -25,3 +25,9 @@ export type {
   TeamSubmission,
 } from "./roster-and-scores.ts";
 export type { CompetitionStandingsView, StandingsRow } from "./standings.ts";
+export type {
+  MergedEntrant,
+  OfficialRoster,
+  RosterHistoryItem,
+} from "./roster-view.ts";
+export type { RosterChange } from "./roster.ts";

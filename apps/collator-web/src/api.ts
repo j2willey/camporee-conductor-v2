@@ -6,7 +6,9 @@ import {
   type OfficialActivity,
   type OfficialEvent,
   type CompetitionStandingsView,
+  type OfficialRoster,
   type Roster,
+  type RosterChange,
   type ScoreSubmission,
   type SignedInOfficial,
   type Team,
@@ -82,6 +84,25 @@ export const officialApi = {
     ),
   standings: (email: string) =>
     asOfficial<CompetitionStandingsView[]>(email, "/standings"),
+  /** The roster as Officials see it, with what is merged and the log (#42 PR 6). */
+  roster: (email: string) => asOfficial<OfficialRoster>(email, "/roster"),
+  /** Add, rename, merge or unmerge a Group or Team. Resending the same id is safe: the box answers "repeat". */
+  changeRoster: (
+    email: string,
+    id: string,
+    body: { change: RosterChange; notes?: string; clientCreatedAt: string },
+  ) =>
+    call<{ status: "created" | "repeat" }>(
+      `/api/official/roster-changes/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: email,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
   /** Log an Official action (#42 PR 2b). Resending the same id is safe: the box answers "repeat". */
   act: (email: string, id: string, body: OfficialActionBody) =>
     call<{ status: "created" | "repeat" }>(

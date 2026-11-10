@@ -27,6 +27,8 @@ import Database from "better-sqlite3";
 // and unfinalizing applies it.
 // #42 PR 4 (2): an Official opens Standings, DQs the top Patrol overall (the next is 1st), reinstates it, and sets an
 // overall rank, which says what the box gave.
+// #42 PR 6: two Judges each add the same Patrol under nearly the same name and score it; an Official merges them on
+// the Roster page (one row, a conflict, one Standings row), unmerges (two again), and merges again.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -1059,6 +1061,129 @@ test("an Official opens Standings, DQs the top Patrol overall, reinstates it, an
   await rowFor(last).getByRole("button", { name: "Confirm rank" }).click();
   await expect(rowFor(last)).toContainText("Rank set to 1 by");
   await expect(rowFor(last).getByRole("cell").first()).toContainText("(auto");
+});
+
+test("an Official merges a Patrol two Judges added under nearly the same name: one row and a conflict, one Standings row; unmerge brings both back", async ({
+  page,
+}) => {
+  // Two phones, offline, each add the Patrol under a slightly different name in the same Troop, and score it.
+  const put = async (path: string, data: unknown) => {
+    const res = await page.request.put(path, { data });
+    expect(res.ok(), await res.text()).toBe(true);
+  };
+  await put("/api/groups/group-foo", { name: "Troop 505" });
+  await put("/api/teams/team-foo-a", {
+    groupId: "group-foo",
+    name: "Foo fighters",
+  });
+  await put("/api/teams/team-foo-b", {
+    groupId: "group-foo",
+    name: "Foo Fighters",
+  });
+  const event = (await (await page.request.get("/api/event")).json()) as {
+    activities: { id: string; title: string }[];
+  };
+  const clownCar = event.activities.find((a) => a.title === "Clown Car");
+  expect(clownCar).toBeDefined();
+  const score = (id: string, judge: string, entrantId: string, n: number) =>
+    put(`/api/scores/${id}`, {
+      judge: {
+        id: `judge-${judge}`,
+        name: judge,
+        email: `${judge}@example.com`,
+      },
+      activityId: clownCar?.id,
+      entrantId,
+      values: { scouts_balanced: n, p_flag: 4 },
+      phoneCreatedAt: new Date().toISOString(),
+    });
+  await score("score-foo-a", "Ferris", "team-foo-a", 7);
+  await score("score-foo-b", "Gale", "team-foo-b", 6);
+
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Roster" }).click();
+  await expect(page.getByRole("heading", { name: "Roster" })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Merge Foo fighters into…", exact: true })
+    .click();
+  await page
+    .getByLabel("Merge Foo fighters into", { exact: true })
+    .selectOption({
+      label: "Foo Fighters",
+    });
+  await expect(
+    page.getByText(
+      "Foo fighters's scores will count for Foo Fighters from now on. Standings change at once. You can unmerge later.",
+    ),
+  ).toBeVisible();
+  await page.getByLabel("Reason").fill("Same Patrol, typed twice");
+  await page.getByRole("button", { name: "Confirm merge" }).click();
+  await expect(
+    page.getByText(
+      /Foo fighters → Foo Fighters, by .*: Same Patrol, typed twice/,
+    ),
+  ).toBeVisible();
+
+  // Clown Car: one row, marked a conflict of two Judges.
+  let scope = page.getByRole("table").first();
+  const foo = (name: RegExp) => scope.getByRole("row", { name });
+  const openClownCar = async () => {
+    await page.reload();
+    await page.getByRole("button", { name: "Clown Car" }).click();
+    await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+    scope = page.getByRole("table").first();
+  };
+  await openClownCar();
+  await expect(foo(/Foo Fighters \(Troop 505\)/)).toHaveCount(1);
+  await expect(foo(/Foo fighters/)).toHaveCount(0);
+  await expect(foo(/Foo Fighters \(Troop 505\)/)).toContainText(
+    "Conflict: scored by Ferris and Gale",
+  );
+
+  // Standings: one row.
+  const standingsRows = async () => {
+    await page.reload();
+    await page.getByRole("button", { name: "Standings" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Standings" }),
+    ).toBeVisible();
+    scope = page.getByRole("table").first();
+    await expect(scope).toBeVisible();
+  };
+  await standingsRows();
+  await expect(foo(/Foo Fighters \(Troop 505\)/)).toHaveCount(1);
+  await expect(foo(/Foo fighters/)).toHaveCount(0);
+
+  // Unmerge: two rows again.
+  await page.reload();
+  await page.getByRole("button", { name: "Roster" }).click();
+  await page
+    .getByRole("button", { name: "Unmerge Foo fighters", exact: true })
+    .click();
+  await expect(page.getByText("Nothing merged.")).toBeVisible();
+  await openClownCar();
+  await expect(foo(/Foo fighters \(Troop 505\)/)).toHaveCount(1);
+  await expect(foo(/Foo Fighters \(Troop 505\)/)).toHaveCount(1);
+  await standingsRows();
+  await expect(foo(/Foo fighters \(Troop 505\)/)).toHaveCount(1);
+  await expect(foo(/Foo Fighters \(Troop 505\)/)).toHaveCount(1);
+
+  // Merged again, so the box ends in a clean state: a merged Patrol is one row, and the History lists the lot.
+  await page.reload();
+  await page.getByRole("button", { name: "Roster" }).click();
+  await page
+    .getByRole("button", { name: "Merge Foo fighters into…", exact: true })
+    .click();
+  await page
+    .getByLabel("Merge Foo fighters into", { exact: true })
+    .selectOption({
+      label: "Foo Fighters",
+    });
+  await page.getByRole("button", { name: "Confirm merge" }).click();
+  await expect(page.getByText("Foo fighters → Foo Fighters")).toBeVisible();
+  await expect(page.getByText(/^Unmerged Foo fighters, by /)).toBeVisible();
 });
 
 test.describe("without the service worker", () => {

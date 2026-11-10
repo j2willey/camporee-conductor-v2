@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ApiError, errorMessage, newId, officialApi } from "../api.ts";
 import { clock, entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
+import { AddToRoster } from "./AddToRoster.tsx";
 
 type MatrixRow = OfficialActivity["matrix"][number];
 
@@ -296,7 +297,18 @@ export function OfficialActivityView({
         );
       }
     }
-    if (!r.onRoster || !r.scored) return null;
+    if (!r.onRoster) {
+      return (
+        <AddToRoster
+          email={email}
+          entrantId={r.entrantId}
+          level={view?.activity.competition.level ?? "team"}
+          labels={labels}
+          onAdded={() => void reload()}
+        />
+      );
+    }
+    if (!r.scored) return null;
     const disqualified = !r.disqualified;
     return (
       <div className="flex flex-wrap gap-1">
