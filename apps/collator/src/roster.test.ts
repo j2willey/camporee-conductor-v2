@@ -481,4 +481,61 @@ describe("merging", () => {
     };
     expect(after.merged).toEqual([]);
   });
+  it("refuses a merge or unmerge of an entrant in a finalized Activity's ranking, until it is unfinalized", async () => {
+    await clowns("s1", ALEX, "team-a", 9);
+    await clowns("s2", ALEX, "team-b", 7);
+    const act = (id: string, action: Record<string, unknown>) =>
+      put(
+        `/api/official/actions/${id}`,
+        {
+          action: { activityId: CLOWN_CAR.id, ...action },
+          clientCreatedAt: "2027-05-15T10:00:00Z",
+        },
+        OFFICIAL,
+      );
+    const view = async () =>
+      (await (
+        await asOfficial(`/api/official/activities/${CLOWN_CAR.id}`)
+      ).json()) as { finalizeRanking: unknown[] };
+    await ok(
+      act("fin-1", {
+        type: "finalize",
+        ranking: (await view()).finalizeRanking,
+      }),
+    );
+    const logged = () => resolvedRoster(db).history.length;
+    const before = logged();
+
+    for (const [id, intoId, name] of [
+      ["team-a", "team-b", "Foo fighters"],
+      ["team-b", "team-a", "Foo Fighters"],
+    ] as const) {
+      const res = await merge(id, intoId);
+      expect(res.status).toBe(409);
+      expect(((await res.json()) as { error: string }).error).toBe(
+        `Clown Car is finalized with ${name} in its ranking; unfinalize it first.`,
+      );
+    }
+    expect(logged()).toBe(before);
+    expect((await matrix()).map((r) => r.entrantId)).toEqual([
+      "team-a",
+      "team-b",
+    ]);
+
+    await ok(act("unfin-1", { type: "unfinalize" }));
+    await ok(merge("team-a", "team-b"));
+
+    // Finalize again with only B in the ranking; unmerging A (which counts for B) is refused too.
+    await ok(
+      act("fin-2", {
+        type: "finalize",
+        ranking: (await view()).finalizeRanking,
+      }),
+    );
+    const res = await unmerge("team-a");
+    expect(res.status).toBe(409);
+    expect(logged()).toBe(before + 1);
+    await ok(act("unfin-2", { type: "unfinalize" }));
+    await ok(unmerge("team-a"));
+  });
 });
