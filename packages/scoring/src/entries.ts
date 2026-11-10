@@ -3,6 +3,7 @@ import type {
   CompetitionStandings,
   EntryResult,
   FinalizedResult,
+  RankedStanding,
   ScoreEntry,
   Standing,
 } from "./types.ts";
@@ -57,10 +58,17 @@ export function finalizeRanking(results: ActivityResults): FinalizedResult[] {
 
 /**
  * A Competition's standings in the order to list them: by rank, best first (an Official's `set-overall-rank`
- * included), ties in listing order, then the entrants DQ'd overall. Not implemented yet (red).
+ * included), ties in listing order, then the entrants DQ'd overall. `scoreEvent` gives standings in roster
+ * order, so every view lists them through this (ADR-0019).
  */
 export function standingsInRankOrder(
   standings: CompetitionStandings,
 ): Standing[] {
-  return [...standings.entrants];
+  const ranked = standings.entrants.filter(
+    (s): s is RankedStanding => !s.disqualified,
+  );
+  return [
+    ...ranked.sort((a, b) => a.rank - b.rank),
+    ...standings.entrants.filter((s) => s.disqualified),
+  ];
 }

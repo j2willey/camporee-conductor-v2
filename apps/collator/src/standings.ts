@@ -1,5 +1,9 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
-import { scoreEvent, type Standing } from "@camporee-conductor/scoring";
+import {
+  scoreEvent,
+  standingsInRankOrder,
+  type Standing,
+} from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import {
   actedOnLog,
@@ -85,18 +89,13 @@ export function officialStandings(
         ? { ...actedOn(s.rankOverride.actionIndex), rank: s.rankOverride.rank }
         : null,
     });
-    // Scoring lists standings in roster order, not rank order, so the box orders them for display: by rank
-    // (an Official's override included; ties keep scoring's order), then the DQ'd rows. No score is recomputed.
-    const rows = (
-      results.standings.find((s) => s.competitionId === competition.id)
-        ?.entrants ?? []
-    )
-      .map(row)
-      .sort(
-        (a, b) =>
-          (a.rank ?? Number.POSITIVE_INFINITY) -
-            (b.rank ?? Number.POSITIVE_INFINITY) || 0,
-      );
+    // Listed in rank order by packages/scoring (an override included, then the DQ'd); never re-sorted here.
+    const competitionStandings = results.standings.find(
+      (s) => s.competitionId === competition.id,
+    );
+    const rows = competitionStandings
+      ? standingsInRankOrder(competitionStandings).map(row)
+      : [];
     return {
       competition: {
         id: competition.id,
