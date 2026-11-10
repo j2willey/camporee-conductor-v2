@@ -49,7 +49,8 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
 
 9. **Two Judges score the same Team in the same Activity:** keep both, flag the conflict for Officials, and
    use the newest meanwhile. "Newest" is the order the box received them; the phone's timestamp is kept
-   for information only. (#41, #42)
+   for information only. (#41, #42) _2026-11-10:_ `packages/scoring` now picks the counting entry, and an
+   Official resolves a conflict with a logged `choose-entry` (ADR-0019 amendment of that date).
 10. **Judge corrections:**
     - **Open Activity:** resubmit freely; every version is kept.
     - **Closed Activity:** a resubmit reopens it and flags it for Officials.

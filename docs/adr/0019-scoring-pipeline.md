@@ -190,3 +190,39 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **Resolving a conflict** (two Judges scored the same entrant; the newest counts, ADR-0027 item 9) is a separate
   action and PR: an Official chooses which entry counts. Choosing needs every entry in the scoring input, not only the
   newest the Collator picks today.
+
+## Amendment 2026-11-10 (issue #42): an Official chooses which entry counts
+
+- **Scoring picks the counting entry.** `scoreEvent` now takes **every** score entry, in the order the box received
+  them, and picks the one that counts per entrant and Activity. Until now the Collator did (ADR-0027 item 9). The
+  default is unchanged: the newest counts.
+- **Logged Official action `choose-entry`** (Activity, entrant, entry id, `newestEntryId`, optional notes): this entry
+  counts. `newestEntryId` is the newest entry the Official saw. The latest `choose-entry` for an entrant and Activity
+  wins. Choosing the newest entry is how an Official accepts the default.
+- **A choice covers the entries that existed when it was made.** If an entry newer than `newestEntryId` arrives, the
+  newest counts again and the conflict **reopens**: new information gets an Official's eyes, the same principle as a
+  superseded correction. The Collator refuses a choice whose `newestEntryId` isn't the newest it holds, because the
+  Official saw a stale view.
+- **Corrections follow their entry.** Choosing entry A brings back A's corrections. A correction on an entry that
+  doesn't count is reported as **not counting** when an Official chose another entry on purpose, and as
+  **superseded** when a newer entry took over by default (PR 3's amendment).
+- **Conflict state** per entrant and Activity, reported by scoring:
+  - **none:** a single Judge;
+  - **unresolved:** two or more different Judges and no standing choice;
+  - **resolved:** a standing choice;
+  - **reopened:** a choice made before a newer entry arrived.
+
+  Officials' counts of conflicts are of unresolved and reopened ones. Score entries carry their Judge's id
+  (`ScoreEntry.judgeId`) for this.
+
+- **Scoring reports what it used.** For each entrant at each Activity, it returns:
+  - the counting entry's id;
+  - the values it used, with corrections applied;
+  - the state of each correction: applied, superseded, not counting, or held while the Activity is finalized;
+  - the choice and the conflict state.
+
+  The Collator shows only that and never applies actions itself, so the cells, the total and the place can't
+  disagree. That includes a finalized Activity, where later actions are held.
+
+- **Entry ids are checked in one place.** Now that scoring sees every entry, `actionProblem` checks that a
+  correction's or choice's entry exists for that Activity and entrant (#24).
