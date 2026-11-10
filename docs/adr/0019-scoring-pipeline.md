@@ -226,3 +226,22 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 
 - **Entry ids are checked in one place.** Now that scoring sees every entry, `actionProblem` checks that a
   correction's or choice's entry exists for that Activity and entrant (#24).
+
+## Amendment 2026-11-10 (issue #42): finalize and standings on event day
+
+- **What the laptop sends with `finalize`:** the ranking the Official saw (each entrant's Final Ranking and placement
+  points, or DQ), as the Finalization amendment requires. The Collator **refuses a stale `finalize`** with a 409 when
+  that ranking differs from what scoring gives now: a score arrived, or another Official acted, since the page loaded.
+  This is the same rule as a stale `choose-entry`. The Official reloads and finalizes what they now see.
+- **Event-day overrides (v1 parity):** an Official can enter a manual rank (`set-final-rank`, v1 `manual_rank`) and an
+  Official's points (`adjust-points`, v1 `off_score`) per Activity, and an overall DQ and `set-overall-rank` per
+  Competition. **`set-placement-points` stays refused on the box:** event-day placement-points changes are #23, not
+  parity.
+- **Standings include every Activity, finalized or not,** as v1's leaderboard did. v1 had no freeze and summed every
+  game. An Activity that isn't finalized counts with its current results and is marked **provisional** in the
+  Standings view, so an Official sees how much is still open. Standings are never finalized (Finalization
+  amendment).
+- **Scoring reports the actions behind each result,** as it does for corrections and choices (the 2026-11-10 "chooses
+  which entry counts" amendment). That covers the finalize behind a finalized Activity, each entrant's manual rank and
+  Official points, and the overall DQ and rank override, each with its action index and whether it's applied or held.
+  The Collator renders only that.

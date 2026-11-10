@@ -23,6 +23,10 @@ import Database from "better-sqlite3";
 // once a newer score has made it stale.
 // #42 PR 4: an Official resolves Night Owls' conflict by choosing Alex's older entry, a newer score reopens it,
 // and choosing the newest accepts it; the Overview's Conflicts count follows.
+// #42 PR 5: an Official sets a manual rank, finalizes Clown Car (the Overview says Final), a correction then waits,
+// and unfinalizing applies it.
+// #42 PR 4 (2): an Official opens Standings, DQs the top Patrol overall (the next is 1st), reinstates it, and sets an
+// overall rank, which says what the box gave.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -716,9 +720,11 @@ test("an Official DQs the Patrol in 1st with a reason, everyone below moves up, 
   const second = (await nameOf(rows.nth(1)).innerText()).split("\n")[0] ?? "";
   expect(first).not.toBe(second);
   const rowFor = (name: string) =>
-    scores
-      .getByRole("row")
-      .filter({ has: page.getByRole("rowheader", { name }) });
+    scores.getByRole("row").filter({
+      has: page.getByRole("rowheader", {
+        name: new RegExp(`^${name.replace(/[()]/g, "\\$&")}`),
+      }),
+    });
   await expect(placeOf(rowFor(first))).toHaveText("1st");
   await expect(placeOf(rowFor(second))).not.toHaveText("DQ");
   const secondPlaceBefore = await placeOf(rowFor(second)).innerText();
@@ -912,6 +918,147 @@ test("an Official resolves Night Owls' conflict with Use this entry, a newer sco
   await expect(owls).toContainText("Resolved:");
   await expect(owls).not.toContainText("A newer entry arrived after");
   await expect(valueIn("Big Top Cruiser Clowns")).toHaveText("7");
+});
+
+test("an Official sets a manual rank, finalizes Clown Car, sees a correction wait, and unfinalizing applies it", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+  await expect(page.getByText("Not finalized")).toBeVisible();
+
+  const scores = page.getByRole("table").first();
+  const rows = scores.locator("tbody tr");
+  const nameOf = (n: number) =>
+    rows
+      .nth(n)
+      .getByRole("rowheader")
+      .innerText()
+      .then((t) => t.split("\n")[0] ?? "");
+  const first = await nameOf(0);
+  const second = await nameOf(1);
+  // The name as the start of the row header ("Owls" is also in "Night Owls").
+  const rowFor = (name: string) =>
+    scores.getByRole("row").filter({
+      has: page.getByRole("rowheader", {
+        name: new RegExp(`^${name.replace(/[()]/g, "\\$&")}`),
+      }),
+    });
+  const place = (name: string) => rowFor(name).getByRole("cell").first();
+  const headers = await scores.getByRole("columnheader").allTextContents();
+  const totalOf = (name: string) =>
+    rowFor(name)
+      .getByRole("cell")
+      .nth(headers.indexOf("Total") - 1);
+  const secondBefore = await place(second).innerText();
+
+  // A manual rank: the 2nd-placed row takes 1st, and says what the box gave on its own.
+  const official = rowFor(second).getByRole("cell").last();
+  await official.getByRole("button", { name: `Rank for ${second}` }).click();
+  await official.getByLabel(`Rank for ${second}`).fill("1");
+  await official.getByLabel("Reason").fill("Tie-break by time");
+  await official.getByRole("button", { name: "Confirm rank" }).click();
+  await expect(place(second)).toHaveText(`1st (auto ${secondBefore})`);
+  await expect(rowFor(second)).toContainText("Manual rank 1 by");
+  await expect(rowFor(second)).toContainText("Tie-break by time");
+
+  // Finalize: the header and the Overview say so.
+  await page.getByRole("button", { name: "Finalize", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm finalize" }).click();
+  await expect(page.getByText(/^Finalized by /)).toBeVisible();
+  await expect(
+    page.getByText("Changes wait until it's unfinalized."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "← All Activities" }).click();
+  await expect(page.getByRole("row", { name: /Clown Car/ })).toContainText(
+    "Final",
+  );
+  await page.getByRole("button", { name: "Clown Car" }).click();
+
+  // A correction waits: the total and place don't move.
+  const totalBefore = await totalOf(first).innerText();
+  const placeBefore = await place(first).innerText();
+  await rowFor(first)
+    .getByRole("button", { name: `Correct Patrol Flag for ${first}` })
+    .click();
+  await rowFor(first).getByLabel(`Patrol Flag for ${first}`).fill("9");
+  await rowFor(first)
+    .getByRole("button", { name: "Confirm correction" })
+    .click();
+  await expect(rowFor(first)).toContainText(
+    "waits until the Activity is unfinalized",
+  );
+  await expect(totalOf(first)).toHaveText(totalBefore);
+  await expect(place(first)).toHaveText(placeBefore);
+
+  // Unfinalize: the correction applies.
+  await page.getByRole("button", { name: "Unfinalize" }).click();
+  await page.getByRole("button", { name: "Confirm unfinalize" }).click();
+  await expect(page.getByText("Not finalized")).toBeVisible();
+  await expect(rowFor(first)).toContainText("Corrected Patrol Flag");
+  await expect(rowFor(first)).not.toContainText("waits until");
+});
+
+test("an Official opens Standings, DQs the top Patrol overall, reinstates it, and sets an overall rank", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Standings" }).click();
+  await expect(page.getByRole("heading", { name: "Standings" })).toBeVisible();
+
+  const table = page.getByRole("table").first();
+  await expect(
+    table.getByRole("columnheader", { name: "Clown Car (provisional)" }),
+  ).toBeVisible();
+  const rows = table.locator("tbody tr");
+  const headers = await table.getByRole("columnheader").allTextContents();
+  const clownCol = headers.findIndex((h) => h.startsWith("Clown Car"));
+  expect(
+    await rows.first().getByRole("cell").nth(clownCol).innerText(),
+  ).toMatch(/\d/);
+  const nameOf = async (n: number) =>
+    (await rows.nth(n).getByRole("cell").nth(1).innerText()).split("\n")[0] ??
+    "";
+  const top = await nameOf(0);
+  const next = await nameOf(1);
+  const rowFor = (name: string) =>
+    rows.filter({
+      has: page.getByRole("cell", {
+        name: new RegExp(`^${name.replace(/[()]/g, "\\$&")}`),
+      }),
+    });
+
+  // An overall DQ: the row says so, and the next one is 1st.
+  await rowFor(top)
+    .getByRole("button", { name: `DQ ${top} overall` })
+    .click();
+  await rowFor(top).getByLabel("Reason").fill("Left early");
+  await rowFor(top).getByRole("button", { name: "Confirm DQ" }).click();
+  await expect(rowFor(top)).toContainText("DQ overall by");
+  await expect(rowFor(top)).toContainText("Left early");
+  await expect(rowFor(next).getByRole("cell").first()).toHaveText(/^1st/);
+
+  // Reinstated.
+  await rowFor(top)
+    .getByRole("button", { name: `Reinstate ${top} overall` })
+    .click();
+  await rowFor(top).getByRole("button", { name: "Confirm reinstate" }).click();
+  await expect(rowFor(top)).not.toContainText("DQ overall by");
+
+  // An overall rank on the last row says what the box gave.
+  const last = await nameOf((await rows.count()) - 1);
+  await rowFor(last)
+    .getByRole("button", { name: `Overall rank for ${last}` })
+    .click();
+  await rowFor(last).getByLabel(`Overall rank for ${last}`).fill("1");
+  await rowFor(last).getByRole("button", { name: "Confirm rank" }).click();
+  await expect(rowFor(last)).toContainText("Rank set to 1 by");
+  await expect(rowFor(last).getByRole("cell").first()).toContainText("(auto");
 });
 
 test.describe("without the service worker", () => {

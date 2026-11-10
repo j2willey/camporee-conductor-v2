@@ -171,6 +171,24 @@ export interface EntryReport {
     entryId: string;
     state: "applied" | "reopened" | "held";
   };
+  /** The effective set-final-rank for this entrant here, if any. */
+  rankOverride?: {
+    actionIndex: number;
+    rank: number;
+    state: "applied" | "held";
+  };
+  /** The effective adjust-points, if any. */
+  adjustment?: {
+    actionIndex: number;
+    points: number;
+    state: "applied" | "held";
+  };
+  /** The effective per-Activity disqualify, if any (DQ or reinstated). */
+  dq?: {
+    actionIndex: number;
+    disqualified: boolean;
+    state: "applied" | "held";
+  };
 }
 
 /** One effective field correction and what became of it. */
@@ -215,6 +233,8 @@ export interface ActivityResults {
   competitionId: string;
   /** Finalized by an Official: `entries` are the stored Final Ranking, in its order (ADR-0019). */
   finalized: boolean;
+  /** The finalize behind a finalized Activity: its index in `ScoringInput.actions` as given. */
+  finalizedBy?: { actionIndex: number };
   entries: EntryResult[];
 }
 
@@ -230,6 +250,10 @@ export interface RankedStanding {
   /** The Official's `set-overall-rank` if one is logged, otherwise the provisional rank. Awards use it. */
   rank: number;
   disqualified: false;
+  /** The effective overall `disqualify`, if any: here a reinstate. Never held (overall actions don't wait for `unfinalize`). */
+  dq?: { actionIndex: number; disqualified: boolean; state: "applied" };
+  /** The effective `set-overall-rank`, if any: its index in `ScoringInput.actions` as given. */
+  rankOverride?: { actionIndex: number; rank: number; state: "applied" };
 }
 
 /** DQ'd overall: keeps its total, removed before ranking, no automatic Award (ADR-0019). */
@@ -237,6 +261,9 @@ export interface DisqualifiedStanding {
   entrantId: string;
   total: number;
   disqualified: true;
+  /** The effective overall `disqualify`: its index in `ScoringInput.actions` as given. */
+  dq?: { actionIndex: number; disqualified: boolean; state: "applied" };
+  rankOverride?: { actionIndex: number; rank: number; state: "applied" };
 }
 
 export interface CompetitionStandings {

@@ -7,7 +7,9 @@ import type { Db } from "./db/open.ts";
 import { officialActions, scoreEntries } from "./db/schema.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
-import { loggedActions } from "./official-actions.ts";
+import { loadedEvent } from "./load-event.ts";
+import { loggedActions, scoringInput } from "./scoring-input.ts";
+import { scoreEvent, inRankOrder } from "@camporee-conductor/scoring";
 import {
   circusCartridge,
   CLOWN_CAR,
@@ -230,7 +232,9 @@ interface OfficialEvent {
 }
 
 interface OfficialActivity {
-  activity: { id: string; title: string };
+  activity: { id: string; title: string; finalized: boolean };
+  finalized: { by: string; at: string; notes?: string } | null;
+  finalizeRanking: unknown[];
   fields: { id: string; label: string; type: string; options?: string[] }[];
   matrix: MatrixRow[];
   entries: {
@@ -393,7 +397,29 @@ interface MatrixRow {
   place: number | null;
   total: number | null;
   disqualified: boolean;
-  dq: { by: string; at: string; notes?: string } | null;
+  dq: {
+    by: string;
+    at: string;
+    notes?: string;
+    disqualified: boolean;
+    state: "applied" | "held";
+  } | null;
+  points: number | null;
+  provisionalRank: number | null;
+  rankOverride: {
+    rank: number;
+    by: string;
+    at: string;
+    notes?: string;
+    state: "applied" | "held";
+  } | null;
+  adjustment: {
+    points: number;
+    by: string;
+    at: string;
+    notes?: string;
+    state: "applied" | "held";
+  } | null;
   onRoster: boolean;
   entryId: string | null;
   values: Record<string, unknown> | null;
@@ -639,25 +665,18 @@ describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
     });
   });
 
-  it("refuses an action type other than disqualify, and a disqualify with no Activity (400)", async () => {
+  it("refuses an action type the box doesn't take yet (400)", async () => {
     const other = await act("act-1", {
       action: {
-        type: "adjust-points",
-        activityId: CLOWN_CAR.id,
+        type: "set-award",
+        awardId: "an-award",
         entrantId: "team-1",
-        points: 5,
+        place: "1st",
       },
       clientCreatedAt: "2027-05-15T10:00:00Z",
     });
     expect(other.status).toBe(400);
     expect(await other.text()).toMatch(/\S/);
-    const body = dqBody("team-1");
-    const noActivity = Object.fromEntries(
-      Object.entries(body.action).filter(([key]) => key !== "activityId"),
-    );
-    const overall = await act("act-2", { ...body, action: noActivity });
-    expect(overall.status).toBe(400);
-    expect(await overall.text()).toMatch(/\S/);
   });
 
   it("keeps out an email that isn't on the Officials list (403) and logs nothing", async () => {
@@ -1061,6 +1080,426 @@ describe("PUT /api/official/actions/:id: an Official chooses which entry counts 
       ],
       superseded: [],
     });
+  });
+});
+
+describe("PUT /api/official/actions/:id: finalize, manual rank and Official points (#42 PR 4)", () => {
+  beforeEach(withScores);
+
+  // Scores: Flaming Arrows (team-1) 14, 1st; Owls (team-2) 9, 2nd.
+  const act = (id: string, action: Record<string, unknown>) =>
+    app.request(`/api/official/actions/${id}`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        [OFFICIAL_EMAIL_HEADER]: DIRECTOR_EMAIL,
+      },
+      body: JSON.stringify({
+        action: { activityId: CLOWN_CAR.id, ...action },
+        clientCreatedAt: "2027-05-15T10:00:00Z",
+      }),
+    });
+  const view = async () =>
+    (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as OfficialActivity & { matrix: MatrixRow[] };
+  const row = async (id: string) =>
+    (await view()).matrix.find((r) => r.entrantId === id);
+  const finalize = async (id = "fin-1", notes?: string) =>
+    act(id, {
+      type: "finalize",
+      ranking: (await view()).finalizeRanking,
+      ...(notes !== undefined && { notes }),
+    });
+  const rank = (entrantId: string, n: number, notes?: string) =>
+    act(`rank-${entrantId}-${n}`, {
+      type: "set-final-rank",
+      entrantId,
+      rank: n,
+      ...(notes !== undefined && { notes }),
+    });
+  const dq = (entrantId: string, disqualified = true) =>
+    act(`dq-${entrantId}-${disqualified}`, {
+      type: "disqualify",
+      entrantId,
+      disqualified,
+    });
+  const fix = (id: string) =>
+    act(id, {
+      type: "set-field-value",
+      entrantId: "team-1",
+      entryId: "score-1",
+      fieldId: CLOWN_CAR.ownField,
+      value: 2,
+    });
+
+  it("has the ranking to freeze and no finalize before one is logged", async () => {
+    const v = await view();
+    expect(v.finalized).toBeNull();
+    expect(v.activity.finalized).toBe(false);
+    expect(v.finalizeRanking).toEqual([
+      expect.objectContaining({ entrantId: "team-1", rank: 1 }),
+      expect.objectContaining({ entrantId: "team-2", rank: 2 }),
+    ]);
+  });
+
+  it("finalizes: 201, and the view shows who and when, and the Overview says finalized", async () => {
+    const res = await finalize("fin-1", "All scores in");
+    expect(res.status).toBe(201);
+    const v = await view();
+    expect(v.finalized).toMatchObject({
+      by: "Pat Director",
+      notes: "All scores in",
+    });
+    expect(Number.isNaN(Date.parse(v.finalized?.at ?? ""))).toBe(false);
+    expect(v.activity.finalized).toBe(true);
+    const overview = (await (
+      await asOfficial("/api/official/event", DIRECTOR_EMAIL)
+    ).json()) as { activities: { id: string; finalized: boolean }[] };
+    expect(
+      overview.activities.find((a) => a.id === CLOWN_CAR.id)?.finalized,
+    ).toBe(true);
+    expect(
+      overview.activities.filter((a) => a.finalized).map((a) => a.id),
+    ).toEqual([CLOWN_CAR.id]);
+  });
+
+  it("an unfinalize reopens it", async () => {
+    await finalize();
+    expect((await act("unfin-1", { type: "unfinalize" })).status).toBe(201);
+    expect((await view()).finalized).toBeNull();
+  });
+
+  it("refuses a stale ranking (409) and logs nothing: a score arrived after the page loaded", async () => {
+    const stale = (await view()).finalizeRanking;
+    expect(
+      (
+        await put("/api/scores/score-4", {
+          judge: ALEX,
+          activityId: CLOWN_CAR.id,
+          entrantId: "team-1",
+          values: { [CLOWN_CAR.ownField]: 1, [CLOWN_CAR.commonField]: 1 },
+          phoneCreatedAt: "2027-05-15T09:40:00Z",
+        })
+      ).status,
+    ).toBe(201);
+    const res = await act("fin-1", { type: "finalize", ranking: stale });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      error: expect.stringMatching(/results changed/),
+    });
+    expect((await view()).finalized).toBeNull();
+    expect((await finalize("fin-2")).status).toBe(201);
+  });
+
+  it("a resend of an accepted finalize is a repeat even after the results change", async () => {
+    await finalize("fin-1");
+    await act("fix-x", { type: "unfinalize" });
+    expect((await finalize("fin-1")).status).toBe(200);
+  });
+
+  it("set-final-rank changes the row's place and points, not its total, and shows who and why", async () => {
+    const before = await row("team-1");
+    expect((await rank("team-2", 1, "Tie-break by time")).status).toBe(201);
+    expect(await row("team-2")).toMatchObject({
+      place: 1,
+      total: 9,
+      provisionalRank: 2,
+      points: before?.points,
+      rankOverride: {
+        rank: 1,
+        by: "Pat Director",
+        notes: "Tie-break by time",
+        state: "applied",
+      },
+    });
+    expect(await row("team-1")).toMatchObject({
+      place: 1,
+      provisionalRank: 1,
+      rankOverride: null,
+    });
+  });
+
+  it("adjust-points changes the total and so the place, and shows who and why", async () => {
+    expect(
+      (
+        await act("adj-1", {
+          type: "adjust-points",
+          entrantId: "team-2",
+          points: 20,
+          notes: "Bonus",
+        })
+      ).status,
+    ).toBe(201);
+    expect(await row("team-2")).toMatchObject({
+      total: 29,
+      place: 1,
+      adjustment: {
+        points: 20,
+        by: "Pat Director",
+        notes: "Bonus",
+        state: "applied",
+      },
+    });
+    expect(await row("team-1")).toMatchObject({ total: 14, place: 2 });
+  });
+
+  it("refuses a rank that isn't a whole number from 1, and points that aren't a number (400)", async () => {
+    expect((await rank("team-1", 0)).status).toBe(400);
+    expect((await rank("team-1", 1.5)).status).toBe(400);
+    expect(
+      (
+        await act("adj-1", {
+          type: "adjust-points",
+          entrantId: "team-1",
+          points: "lots",
+        })
+      ).status,
+    ).toBe(400);
+  });
+
+  it("after finalize a correction, a manual rank and a DQ are held and the place doesn't move; unfinalize applies them", async () => {
+    await finalize();
+    expect((await fix("fix-1")).status).toBe(201);
+    expect((await rank("team-2", 1)).status).toBe(201);
+    expect((await dq("team-1")).status).toBe(201);
+    expect(await row("team-1")).toMatchObject({
+      place: 1,
+      total: 14,
+      disqualified: false,
+      held: [expect.objectContaining({ fieldId: CLOWN_CAR.ownField })],
+      dq: { disqualified: true, state: "held", by: "Pat Director" },
+    });
+    expect(await row("team-2")).toMatchObject({
+      place: 2,
+      rankOverride: { rank: 1, state: "held" },
+    });
+    expect((await act("unfin-1", { type: "unfinalize" })).status).toBe(201);
+    expect(await row("team-1")).toMatchObject({
+      disqualified: true,
+      place: null,
+      held: [],
+    });
+    expect(await row("team-2")).toMatchObject({
+      place: 1,
+      rankOverride: { rank: 1, state: "applied" },
+    });
+  });
+
+  it("refuses set-placement-points with a plain 400", async () => {
+    const res = await act("pp-1", {
+      type: "set-placement-points",
+      entrantId: "team-1",
+      points: 5,
+    });
+    expect(res.status).toBe(400);
+    expect(await res.text()).toMatch(
+      /placement-points changes aren't supported \(#23\)/,
+    );
+  });
+});
+
+interface StandingsRow {
+  entrantId: string;
+  entrant: { name: string | null; group: string | null };
+  rank: number | null;
+  provisionalRank: number | null;
+  total: number;
+  disqualified: boolean;
+  points: Record<string, number | null>;
+  dq: { by: string; at: string; notes?: string } | null;
+  rankOverride: { rank: number; by: string; at: string; notes?: string } | null;
+}
+interface StandingsView {
+  competition: { id: string; label: string; level: string };
+  activities: { id: string; title: string; finalized: boolean }[];
+  rows: StandingsRow[];
+  finalizedCount: number;
+}
+
+describe("GET /api/official/standings and the overall actions (#42 PR 4)", () => {
+  // Flaming Arrows 14, Owls 9 and Night Owls 9 at Clown Car: a tie for second.
+  beforeEach(async () => {
+    await withScores();
+    await put("/api/teams/team-3", { groupId: "group-1", name: "Night Owls" });
+    await put("/api/scores/score-t3", {
+      judge: ALEX,
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-3",
+      values: { [CLOWN_CAR.ownField]: 4, [CLOWN_CAR.commonField]: 5 },
+      phoneCreatedAt: "2027-05-15T09:45:00Z",
+    });
+  });
+
+  const act = (id: string, action: Record<string, unknown>) =>
+    app.request(`/api/official/actions/${id}`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        [OFFICIAL_EMAIL_HEADER]: DIRECTOR_EMAIL,
+      },
+      body: JSON.stringify({
+        action,
+        clientCreatedAt: "2027-05-15T10:00:00Z",
+      }),
+    });
+  const standings = async (): Promise<StandingsView> => {
+    const res = await asOfficial("/api/official/standings", DIRECTOR_EMAIL);
+    expect(res.status).toBe(200);
+    const all = (await res.json()) as StandingsView[];
+    const found = all.find((s) =>
+      s.activities.some((a) => a.id === CLOWN_CAR.id),
+    );
+    if (!found) throw new Error("no Competition with Clown Car");
+    return found;
+  };
+  const ranks = async () =>
+    Object.fromEntries(
+      (await standings()).rows.map((r) => [
+        r.entrantId,
+        r.disqualified ? "DQ" : r.rank,
+      ]),
+    );
+  const dq = (entrantId: string, disqualified = true, notes?: string) =>
+    act(`odq-${entrantId}-${disqualified}`, {
+      type: "disqualify",
+      entrantId,
+      disqualified,
+      ...(notes !== undefined && { notes }),
+    });
+  const overallRank = async (entrantId: string, rank: number) =>
+    act(`orank-${entrantId}-${rank}`, {
+      type: "set-overall-rank",
+      competitionId: (await standings()).competition.id,
+      entrantId,
+      rank,
+    });
+
+  it("needs the Official gate", async () => {
+    expect((await asOfficial("/api/official/standings", null)).status).toBe(
+      401,
+    );
+    expect(
+      (await asOfficial("/api/official/standings", "alex@example.com")).status,
+    ).toBe(403);
+  });
+
+  it("matches scoreEvent: totals, dense ranks with a tie, points per Activity, in rank order", async () => {
+    const view = await standings();
+    const bundle = loadedEvent(db)?.bundle;
+    if (!bundle) throw new Error("no Event");
+    const results = scoreEvent(scoringInput(db, bundle));
+    const expected = results.standings.find(
+      (s) => s.competitionId === view.competition.id,
+    );
+    expect(view.competition.label).toMatch(/\S/);
+    expect(view.rows.map((r) => r.entrantId)).toEqual(
+      expect.arrayContaining(["team-1", "team-2", "team-3"]),
+    );
+    for (const row of view.rows) {
+      const s = expected?.entrants.find((e) => e.entrantId === row.entrantId);
+      expect(row.total).toBe(s?.total);
+      expect(row.rank).toBe(s && !s.disqualified ? s.rank : null);
+      expect(row.entrant.name).not.toBeUndefined();
+    }
+    const clownResults = results.activities.find(
+      (a) => a.activityId === CLOWN_CAR.id,
+    );
+    if (!clownResults) throw new Error("no Clown Car results");
+    const clown = inRankOrder(clownResults);
+    for (const r of clown) {
+      expect(
+        view.rows.find((x) => x.entrantId === r.entrantId)?.points[
+          CLOWN_CAR.id
+        ],
+      ).toBe(r.points);
+    }
+    // Rows in rank order, with the tie shared.
+    const first3 = view.rows.slice(0, 3);
+    expect(first3.map((r) => r.entrantId)[0]).toBe("team-1");
+    expect(first3.map((r) => r.rank)).toEqual([1, 2, 2]);
+    // An Activity with no result for an entrant gives null.
+    const other = view.activities.find((a) => a.id !== CLOWN_CAR.id);
+    expect(view.rows[0]?.points[other?.id ?? ""] ?? null).toBeNull();
+  });
+
+  it("counts a provisional Activity: not finalized, and finalizedCount is 0", async () => {
+    const view = await standings();
+    expect(view.activities.find((a) => a.id === CLOWN_CAR.id)?.finalized).toBe(
+      false,
+    );
+    expect(view.finalizedCount).toBe(0);
+    expect(view.rows[0]?.total).toBeGreaterThan(0);
+  });
+
+  it("an overall DQ takes the entrant out of the ranking and the others move up; a reinstate puts it back", async () => {
+    expect((await dq("team-1", true, "Left early")).status).toBe(201);
+    const view = await standings();
+    expect(await ranks()).toEqual({ "team-1": "DQ", "team-2": 1, "team-3": 1 });
+    const row = view.rows.find((r) => r.entrantId === "team-1");
+    expect(row).toMatchObject({
+      rank: null,
+      disqualified: true,
+      dq: { by: "Pat Director", notes: "Left early" },
+    });
+    expect(row?.total).toBeGreaterThan(0);
+    // DQ'd rows come last.
+    expect(view.rows.at(-1)?.entrantId).toBe("team-1");
+    expect((await dq("team-1", false)).status).toBe(201);
+    expect(await ranks()).toEqual({ "team-1": 1, "team-2": 2, "team-3": 2 });
+    expect(
+      (await standings()).rows.find((r) => r.entrantId === "team-1")?.dq,
+    ).toBeNull();
+  });
+
+  it("set-overall-rank shows the override and the automatic rank, and nobody else is re-sorted", async () => {
+    expect((await overallRank("team-3", 1)).status).toBe(201);
+    const view = await standings();
+    expect(await ranks()).toEqual({ "team-1": 1, "team-2": 2, "team-3": 1 });
+    expect(view.rows.find((r) => r.entrantId === "team-3")).toMatchObject({
+      rank: 1,
+      provisionalRank: 2,
+      rankOverride: { rank: 1, by: "Pat Director" },
+    });
+    expect(
+      view.rows.find((r) => r.entrantId === "team-2")?.rankOverride,
+    ).toBeNull();
+  });
+
+  it("a finalized Activity is counted, and an overall action still applies after it", async () => {
+    const v = (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as { finalizeRanking: unknown[] };
+    expect(
+      (
+        await act("fin-1", {
+          type: "finalize",
+          activityId: CLOWN_CAR.id,
+          ranking: v.finalizeRanking,
+        })
+      ).status,
+    ).toBe(201);
+    expect((await standings()).finalizedCount).toBe(1);
+    expect((await dq("team-1")).status).toBe(201);
+    expect((await ranks())["team-1"]).toBe("DQ");
+  });
+
+  it("refuses an overall DQ for someone not on the roster, and set-placement-points still", async () => {
+    expect((await dq("nobody")).status).toBe(400);
+    const res = await act("pp-1", {
+      type: "set-placement-points",
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-1",
+      points: 5,
+    });
+    expect(res.status).toBe(400);
+    expect(await res.text()).toMatch(/\(#23\)/);
   });
 });
 

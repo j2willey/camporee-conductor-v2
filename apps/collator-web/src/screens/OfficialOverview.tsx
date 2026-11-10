@@ -21,11 +21,13 @@ export function OfficialOverview({
   event: first,
   onPick,
   onPrint,
+  onStandings,
 }: {
   email: string;
   event: OfficialEvent;
   onPick: (activity: Activity) => void;
   onPrint: () => void;
+  onStandings: () => void;
 }) {
   const [event, setEvent] = useState(first);
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
@@ -51,6 +53,8 @@ export function OfficialOverview({
         },
       );
     };
+    // Coming back from an Activity page, what the Official just did shows at once, not 15 s later.
+    refresh();
     const timer = setInterval(refresh, REFRESH_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
@@ -102,6 +106,7 @@ export function OfficialOverview({
                   <th className="px-3 py-2 font-medium">Closures</th>
                   <th className="px-3 py-2 font-medium">Conflicts</th>
                   <th className="px-3 py-2 font-medium">Last score</th>
+                  <th className="px-3 py-2 font-medium">Finalized</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,6 +149,9 @@ export function OfficialOverview({
                           ? clock(new Date(a.lastReceivedAt))
                           : "—"}
                       </td>
+                      <td className="px-3 py-2">
+                        {a.finalized ? "Final" : ""}
+                      </td>
                     </tr>
                   ))}
               </tbody>
@@ -151,9 +159,14 @@ export function OfficialOverview({
           </div>
         </section>
       ))}
-      <button className={`${ui.buttonQuiet} mt-2 w-full`} onClick={onPrint}>
-        QR codes to print
-      </button>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onStandings}>
+          Standings
+        </button>
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onPrint}>
+          QR codes to print
+        </button>
+      </div>
     </section>
   );
 }

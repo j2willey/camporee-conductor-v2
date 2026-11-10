@@ -2,26 +2,29 @@ import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import type { Official } from "@camporee-conductor/schema";
 import {
   fillVariables,
+  finalizeRanking,
   inRankOrder,
   newestEntries,
   scoreEvent,
   valueProblem,
   type EntryResult,
   type FieldValue,
-  type ScoringInput,
+  type FinalizedResult,
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
-import { loggedActions, type LoggedAction } from "./official-actions.ts";
+import {
+  loggedActions,
+  scoringInput,
+  type LoggedAction,
+} from "./scoring-input.ts";
 import {
   judgeList,
   roster,
   scoreEntries,
-  scoringEntrants,
   type JudgeIdentity,
-  type ScoreEntryRow,
 } from "./roster-and-scores.ts";
 
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Every ranking comes from
@@ -39,6 +42,37 @@ export function officialByEmail(
   return bundle.officials?.officials.find(
     (o) => normalEmail(o.email) === wanted,
   );
+}
+
+/** An entrant's name from the roster: a Team with its Group, or a Group; null names for an id that isn't on it. */
+export function entrantNamer(db: Db): (id: string) => EntrantName {
+  const { groups, teams } = roster(db);
+  const groupName = new Map(groups.map((g) => [g.id, g.name]));
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+  return (id) => {
+    const team = teamById.get(id);
+    if (team) {
+      return { name: team.name, group: groupName.get(team.groupId) ?? null };
+    }
+    return { name: groupName.get(id) ?? null, group: null };
+  };
+}
+
+/** Who logged the action at an index in the log, and when and why; blank for an index past the log. */
+export function actedOnLog(
+  bundle: CheckedBundle,
+  logged: LoggedAction[],
+): (actionIndex: number) => Acted {
+  return (actionIndex) => {
+    const row = logged[actionIndex];
+    if (!row) return { by: "", at: "" };
+    const notes = (row.action as { notes?: string }).notes;
+    return {
+      by: officialByEmail(bundle, row.officialEmail)?.name ?? row.officialEmail,
+      at: row.receivedAt.toISOString(),
+      ...(notes !== undefined && { notes }),
+    };
+  };
 }
 
 /** A Team (with its Group) or a Group, by name; null names for an id that isn't on the roster. */
@@ -63,6 +97,8 @@ export interface OfficialEvent {
     conflicts: number;
     /** When the newest entry here was received (ISO), or null with none. */
     lastReceivedAt: string | null;
+    /** An Official has finalized the Activity (ADR-0019). */
+    finalized: boolean;
   })[];
 }
 
@@ -77,42 +113,6 @@ export function judgesByEntrant(
     byEntrant.set(e.entrantId, set);
   }
   return byEntrant;
-}
-
-/**
- * The one input to packages/scoring for the Event, so the Overview and the matrix can't drift (#42): every
- * on-roster entry, in the order received, with its id and Judge, and every logged action. An entry for
- * someone not on the roster isn't scored; the matrix shows it on a row of its own.
- */
-export function scoringInput(
-  db: Db,
-  bundle: CheckedBundle,
-  entries: ScoreEntryRow[] = scoreEntries(db),
-  logged: LoggedAction[] = loggedActions(db),
-): ScoringInput {
-  const entrants = scoringEntrants(bundle, roster(db));
-  const rosterIds = new Set(entrants.map((e) => `${e.competitionId} ${e.id}`));
-  const competitionOf = new Map(
-    bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
-  );
-  return {
-    event: bundle.event,
-    activities: bundle.activities,
-    commonFieldSets: bundle.commonFieldSets,
-    entrants,
-    entries: entries
-      .filter((e) =>
-        rosterIds.has(`${competitionOf.get(e.activityId)} ${e.entrantId}`),
-      )
-      .map(({ id, judgeId, activityId, entrantId, values }) => ({
-        id,
-        judgeId,
-        activityId,
-        entrantId,
-        values,
-      })),
-    actions: logged.map((a) => a.action),
-  };
 }
 
 export function officialEvent(
@@ -147,6 +147,7 @@ export function officialEvent(
               (e) => e.conflict === "unresolved" || e.conflict === "reopened",
             ).length ?? 0,
         lastReceivedAt: newest ? newest.toISOString() : null,
+        finalized: scored.find((a) => a.activityId === id)?.finalized ?? false,
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };
@@ -163,8 +164,21 @@ export interface MatrixRow {
   place: number | null;
   total: number | null;
   disqualified: boolean;
-  /** Who DQ'd it and when, from the latest logged `disqualify` here (ADR-0019); null when not DQ'd. */
-  dq: { by: string; at: string; notes?: string } | null;
+  /**
+   * Placement points at this Activity (0 when DQ'd); null when unscored.
+   */
+  points: number | null;
+  /** Rank by total before any Official override; null when DQ'd or unscored. */
+  provisionalRank: number | null;
+  /** The Official's `set-final-rank` for this entrant here, with who and when; null with none. */
+  rankOverride: (Acted & { rank: number; state: "applied" | "held" }) | null;
+  /** The Official's `adjust-points`; null with none. */
+  adjustment: (Acted & { points: number; state: "applied" | "held" }) | null;
+  /**
+   * The latest per-Activity `disqualify` with who and when (ADR-0019). Null with none, and for a reinstate that
+   * applies (nothing to show); a held reinstate or DQ is there, with state "held".
+   */
+  dq: (Acted & { disqualified: boolean; state: "applied" | "held" }) | null;
   /** False for an entry whose entrant isn't on the roster: shown, but not ranked and not DQ-able. */
   onRoster: boolean;
   /** The counting (newest) entry's id; null when unscored. Corrections name it. */
@@ -208,6 +222,13 @@ export interface MatrixRow {
   judges: { name: string; homeGroup?: string }[];
 }
 
+/** Who logged an action and when (ISO), with their reason. */
+export interface Acted {
+  by: string;
+  at: string;
+  notes?: string;
+}
+
 /** An Official's value for one field of the counting entry, with the Judge's original. */
 export interface FieldCorrection {
   /** The Judge's value; null when blank or missing. */
@@ -233,6 +254,10 @@ export interface SupersededCorrection {
 
 export interface OfficialActivity {
   activity: OfficialEvent["activities"][number];
+  /** Who finalized the Activity and when; null when it isn't finalized. */
+  finalized: Acted | null;
+  /** The ranking the Official would freeze now: the laptop sends it back with `finalize` (ADR-0019 2026-11-10). */
+  finalizeRanking: FinalizedResult[];
   /** Every field scored at the Activity, Common Fields included, to show values by label. */
   fields: {
     id: string;
@@ -281,16 +306,7 @@ export function officialActivity(
   if (!listed) return undefined;
 
   const { groups, teams } = roster(db);
-  const groupName = new Map(groups.map((g) => [g.id, g.name]));
-  const teamById = new Map(teams.map((t) => [t.id, t]));
-  const entrantName = (id: string): EntrantName => {
-    const team = teamById.get(id);
-    if (team) {
-      return { name: team.name, group: groupName.get(team.groupId) ?? null };
-    }
-    return { name: groupName.get(id) ?? null, group: null };
-  };
-
+  const entrantName = entrantNamer(db);
   const newest = newestEntries(all);
   const logged = loggedActions(db);
   const input = scoringInput(db, bundle, all, logged);
@@ -336,25 +352,10 @@ export function officialActivity(
     (c) => c.id === listed.competition.id,
   );
   const entrants = competition?.level === "team" ? teams : groups;
-  const dqOf = (entrantId: string): MatrixRow["dq"] => {
-    const latest = logged.findLast(
-      (a) =>
-        a.action.type === "disqualify" &&
-        a.action.activityId === activityId &&
-        a.action.entrantId === entrantId,
-    );
-    if (!latest || latest.action.type !== "disqualify") return null;
-    if (!latest.action.disqualified) return null;
-    const official = officialByEmail(bundle, latest.officialEmail);
-    return {
-      by: official?.name ?? latest.officialEmail,
-      at: latest.receivedAt.toISOString(),
-      ...(latest.action.notes !== undefined && { notes: latest.action.notes }),
-    };
-  };
   const fieldList = fillVariables(found.fields, found.activity.variables ?? {});
   const officialName = (a: LoggedAction): string =>
     officialByEmail(bundle, a.officialEmail)?.name ?? a.officialEmail;
+  const actedOn = actedOnLog(bundle, logged);
   const originOf = (r: EntryResult): MatrixRow["corrections"] => {
     const result: MatrixRow["corrections"] = {};
     for (const c of r.corrections) {
@@ -423,7 +424,32 @@ export function officialActivity(
       place: result && !result.disqualified ? result.finalRank : null,
       total: result ? result.total : null,
       disqualified: result?.disqualified ?? false,
-      dq: result?.disqualified ? dqOf(entrantId) : null,
+      points: result ? result.points : null,
+      provisionalRank:
+        result && !result.disqualified ? result.provisionalRank : null,
+      rankOverride: result?.rankOverride
+        ? {
+            ...actedOn(result.rankOverride.actionIndex),
+            rank: result.rankOverride.rank,
+            state: result.rankOverride.state,
+          }
+        : null,
+      adjustment: result?.adjustment
+        ? {
+            ...actedOn(result.adjustment.actionIndex),
+            points: result.adjustment.points,
+            state: result.adjustment.state,
+          }
+        : null,
+      // A reinstate that applies has nothing to show; a held one (either way) does.
+      dq:
+        result?.dq && (result.dq.disqualified || result.dq.state === "held")
+          ? {
+              ...actedOn(result.dq.actionIndex),
+              disqualified: result.dq.disqualified,
+              state: result.dq.state,
+            }
+          : null,
       onRoster: true,
       entryId: entry ? (result?.entryId ?? entry.id) : null,
       // Everything below comes from scoring's report. An off-roster entry isn't scored: shown as entered.
@@ -467,6 +493,10 @@ export function officialActivity(
   ];
   return {
     activity: listed,
+    finalized: results?.finalizedBy
+      ? actedOn(results.finalizedBy.actionIndex)
+      : null,
+    finalizeRanking: results ? finalizeRanking(results) : [],
     fields: fieldList.map((f) => ({
       id: f.id,
       label: f.label,

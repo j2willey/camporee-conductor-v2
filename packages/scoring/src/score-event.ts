@@ -198,11 +198,56 @@ function entryReport(
     values,
     corrections,
     conflict,
+    ...overrideReports(mine, frozenAt, givenIndex),
     ...(choice && {
       choice: {
         actionIndex: givenIndex[choice.index] ?? choice.index,
         entryId: choice.entryId,
         state: choice.state,
+      },
+    }),
+  };
+}
+
+/**
+ * The effective `set-final-rank`, `adjust-points` and per-Activity `disqualify` for one entrant: the latest
+ * of each type, "held" when it was logged after the `finalize` freezing the Activity (the one before the
+ * freeze still decides the result, so the held one is reported in its place).
+ */
+function overrideReports(
+  mine: readonly { action: OfficialAction; index: number }[],
+  frozenAt: number | undefined,
+  givenIndex: readonly number[],
+): Pick<EntryReport, "rankOverride" | "adjustment" | "dq"> {
+  const state = (index: number): "applied" | "held" =>
+    frozenAt !== undefined && index > frozenAt ? "held" : "applied";
+  const last = <T extends OfficialAction["type"]>(type: T) => {
+    const found = mine.findLast(({ action }) => action.type === type);
+    return found && { action: found.action as ActionOf<T>, index: found.index };
+  };
+  const rank = last("set-final-rank");
+  const adjust = last("adjust-points");
+  const dq = last("disqualify");
+  return {
+    ...(rank && {
+      rankOverride: {
+        actionIndex: givenIndex[rank.index] ?? rank.index,
+        rank: rank.action.rank,
+        state: state(rank.index),
+      },
+    }),
+    ...(adjust && {
+      adjustment: {
+        actionIndex: givenIndex[adjust.index] ?? adjust.index,
+        points: adjust.action.points,
+        state: state(adjust.index),
+      },
+    }),
+    ...(dq && {
+      dq: {
+        actionIndex: givenIndex[dq.index] ?? dq.index,
+        disqualified: dq.action.disqualified,
+        state: state(dq.index),
       },
     }),
   };
@@ -405,6 +450,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       activityId,
       competitionId,
       finalized: true,
+      finalizedBy: { actionIndex: givenIndex[frozen.index] ?? frozen.index },
       entries: stored,
     });
   }
@@ -418,6 +464,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       activities,
       ranking,
       overallRanks,
+      givenIndex,
     ),
   );
   const awards = (input.event.awards ?? []).map((award) => ({
@@ -438,18 +485,18 @@ export function scoreEvent(given: ScoringInput): EventResults {
 }
 
 /**
- * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` → rank.
+ * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` → rank and its index in the (filtered) actions.
  * The actions are already checked by `validActions`.
  */
 function overallRankOverrides(
   input: ScoringInput,
-): ReadonlyMap<string, number> {
-  const ranks = new Map<string, number>();
-  for (const a of input.actions) {
+): ReadonlyMap<string, { rank: number; index: number }> {
+  const ranks = new Map<string, { rank: number; index: number }>();
+  input.actions.forEach((a, index) => {
     if (a.type === "set-overall-rank") {
-      ranks.set(`${a.competitionId} ${a.entrantId}`, a.rank);
+      ranks.set(`${a.competitionId} ${a.entrantId}`, { rank: a.rank, index });
     }
-  }
+  });
   return ranks;
 }
 
@@ -460,7 +507,8 @@ function competitionStandings(
   activityById: ReadonlyMap<string, Activity>,
   activities: readonly ActivityResults[],
   ranking: ReturnType<typeof rankingFor>,
-  overallRanks: ReadonlyMap<string, number>,
+  overallRanks: ReadonlyMap<string, { rank: number; index: number }>,
+  givenIndex: readonly number[],
 ): CompetitionStandings {
   const ranked = activities.filter(
     (a) =>
@@ -481,34 +529,58 @@ function competitionStandings(
       ),
     }));
   // An overall DQ is an action with no Activity; the latest one for the entrant wins.
+  const dqOf = (entrantId: string) => {
+    const index = input.actions.findLastIndex(
+      (a) =>
+        a.type === "disqualify" &&
+        !("activityId" in a) &&
+        a.entrantId === entrantId,
+    );
+    const action = input.actions[index];
+    return action?.type === "disqualify"
+      ? {
+          actionIndex: givenIndex[index] ?? index,
+          disqualified: action.disqualified,
+          state: "applied" as const,
+        }
+      : undefined;
+  };
   const isDisqualified = (entrantId: string): boolean =>
-    latest(
-      input.actions.filter(
-        (a) => !("activityId" in a) && a.entrantId === entrantId,
-      ),
-      "disqualify",
-    )?.disqualified === true;
+    dqOf(entrantId)?.disqualified === true;
   // DQ'd entrants keep their total but are removed before ranking (ADR-0019).
   const rankOf = ranking(
     totals.filter((t) => !isDisqualified(t.entrantId)).map((t) => t.total),
   );
   // An Official's override sets only that entrant's rank; nobody else is re-sorted. A DQ beats it.
-  const rankedStanding = (
-    t: { entrantId: string; total: number },
-    provisionalRank: number,
-  ): Standing => ({
-    ...t,
-    provisionalRank,
-    rank:
-      overallRanks.get(`${competitionId} ${t.entrantId}`) ?? provisionalRank,
-    disqualified: false,
-  });
+  // Overall actions are never held by a finalize, so their state is always "applied".
+  const reported = (entrantId: string) => {
+    const dq = dqOf(entrantId);
+    const override = overallRanks.get(`${competitionId} ${entrantId}`);
+    return {
+      ...(dq && { dq }),
+      ...(override && {
+        rankOverride: {
+          actionIndex: givenIndex[override.index] ?? override.index,
+          rank: override.rank,
+          state: "applied" as const,
+        },
+      }),
+    };
+  };
   return {
     competitionId,
     entrants: totals.map((t): Standing =>
       isDisqualified(t.entrantId)
-        ? { ...t, disqualified: true }
-        : rankedStanding(t, rankOf(t.total)),
+        ? { ...t, disqualified: true, ...reported(t.entrantId) }
+        : {
+            ...t,
+            provisionalRank: rankOf(t.total),
+            rank:
+              overallRanks.get(`${competitionId} ${t.entrantId}`)?.rank ??
+              rankOf(t.total),
+            disqualified: false,
+            ...reported(t.entrantId),
+          },
     ),
   };
 }
