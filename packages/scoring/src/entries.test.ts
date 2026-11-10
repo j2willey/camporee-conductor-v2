@@ -50,6 +50,7 @@ describe("inRankOrder: an Activity's results in the order to list them", () => {
     values: {},
     corrections: [],
     conflict: "none" as const,
+    reassignments: [],
   };
   const ranked = (entrantId: string, finalRank: number, total = 0) => ({
     entrantId,
@@ -75,6 +76,7 @@ describe("inRankOrder: an Activity's results in the order to list them", () => {
     competitionId: "games",
     finalized,
     entries,
+    offRoster: [],
   });
 
   it("lists by Final Ranking, best first", () => {

@@ -200,7 +200,7 @@ export interface EntryReport {
    * The effective `reassign-entry` actions into or out of this entrant here (one per entry; an entry moved back to
    * where it was scored isn't listed). held: logged after the `finalize`.
    */
-  reassignments?: {
+  reassignments: {
     actionIndex: number;
     entryId: string;
     fromEntrantId: string;
@@ -261,7 +261,7 @@ export interface ActivityResults {
   finalizedBy?: { actionIndex: number };
   entries: EntryResult[];
   /** Entries for someone who isn't an entrant of the Competition: not scored, the newest per entrant. */
-  offRoster?: { entrantId: string; entryId: string }[];
+  offRoster: { entrantId: string; entryId: string }[];
 }
 
 /** One entrant's place in a Competition overall: ranked, or DQ'd overall (no rank). */

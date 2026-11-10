@@ -88,23 +88,73 @@ function validActions(input: ScoringInput): {
   givenIndex: readonly number[];
   warnings: ScoringWarning[];
 } {
-  const effective = new Map<string, OfficialAction>();
-  for (const a of input.actions) {
-    const key = effectiveKey(a);
-    if (key !== undefined) effective.set(key, a);
-  }
   const warnings: ScoringWarning[] = [];
+  // A reassign is checked in log order against the reassigns before it that were valid, since "the entry's current
+  // entrant" depends on them; every other action is then checked knowing where each entry counted at that point.
+  const validReassigns: { action: OfficialAction; index: number }[] = [];
+  const badReassign = new Set<number>();
+  const latestReassign = new Map<string, number>();
+  input.actions.forEach((action, index) => {
+    if (action.type !== "reassign-entry") return;
+    latestReassign.set(`${action.activityId} ${action.entryId}`, index);
+    const message = actionProblem(
+      { ...input, actions: validReassigns.map((r) => r.action) },
+      action,
+    );
+    if (message === undefined) validReassigns.push({ action, index });
+    else badReassign.add(index);
+  });
+  for (const index of badReassign) {
+    const action = input.actions[index];
+    if (
+      action?.type !== "reassign-entry" ||
+      latestReassign.get(`${action.activityId} ${action.entryId}`) !== index
+    ) {
+      continue;
+    }
+    const message = actionProblem(
+      {
+        ...input,
+        actions: validReassigns
+          .filter((r) => r.index < index)
+          .map((r) => r.action),
+      },
+      action,
+    );
+    if (message !== undefined) warnings.push({ action, message });
+  }
+  const effective = new Map<
+    string,
+    { action: OfficialAction; index: number }
+  >();
+  input.actions.forEach((action, index) => {
+    const key = effectiveKey(action);
+    if (key !== undefined) effective.set(key, { action, index });
+  });
   const invalid = new Set<string>();
-  for (const [key, action] of effective) {
-    const message = actionProblem(input, action);
+  for (const [key, { action, index }] of effective) {
+    const message = actionProblem(
+      {
+        ...input,
+        actions: validReassigns
+          .filter((r) => r.index < index)
+          .map((r) => r.action),
+      },
+      action,
+    );
     if (message === undefined) continue;
     invalid.add(key);
     warnings.push({ action, message });
   }
-  const kept = input.actions.flatMap((action, index) => {
-    const key = effectiveKey(action);
-    return key === undefined || !invalid.has(key) ? [{ action, index }] : [];
-  });
+  const kept = input.actions.flatMap(
+    (action, index): { action: OfficialAction; index: number }[] => {
+      if (action.type === "reassign-entry") {
+        return badReassign.has(index) ? [] : [{ action, index }];
+      }
+      const key = effectiveKey(action);
+      return key === undefined || !invalid.has(key) ? [{ action, index }] : [];
+    },
+  );
   return {
     actions: kept.map((k) => k.action),
     givenIndex: kept.map((k) => k.index),
@@ -116,7 +166,18 @@ const NO_REPORT: EntryReport = {
   values: {},
   corrections: [],
   conflict: "none",
+  reassignments: [],
 };
+
+/** One effective reassign of an entry at an Activity, where it stands. */
+interface Move {
+  /** Index in the (filtered) actions. */
+  index: number;
+  entryId: string;
+  from: string;
+  to: string;
+  state: "applied" | "held";
+}
 
 /**
  * What scoring used for one entrant at one Activity: the counting entry's id and values, every effective
@@ -132,6 +193,7 @@ function entryReport(
   mine: readonly { action: OfficialAction; index: number }[],
   frozenAt: number | undefined,
   givenIndex: readonly number[],
+  reassignments: EntryReport["reassignments"],
 ): EntryReport {
   type Held = { action: SetFieldValue | RevertFieldValue; index: number };
   // The latest set or revert per entry and field, apart for what's held and what isn't. A held revert
@@ -198,6 +260,7 @@ function entryReport(
     values,
     corrections,
     conflict,
+    reassignments,
     ...overrideReports(mine, frozenAt, givenIndex),
     ...(choice && {
       choice: {
@@ -286,7 +349,17 @@ function counting(
   ): { entry: ScoreEntry; choice: Choice | undefined } => {
     if (!c) return { entry: newest, choice: undefined };
     const chosen = entrantEntries.find((e) => e.id === c.action.entryId);
-    if (!chosen) return { entry: newest, choice: undefined };
+    // The choice stays with its entrant: if the chosen entry was moved away, it reopens and the newest counts.
+    if (!chosen) {
+      return {
+        entry: newest,
+        choice: {
+          index: c.index,
+          entryId: c.action.entryId,
+          state: "reopened",
+        },
+      };
+    }
     const stale = c.action.newestEntryId !== newest.id;
     return {
       entry: stale ? newest : chosen,
@@ -358,16 +431,80 @@ export function scoreEvent(given: ScoringInput): EventResults {
         });
       }
     }
+    // Every entry for the Activity, in received order. A reassign laid over an entry before anything else looks at
+    // it: the entry counts for the entrant it was moved to. One logged after the freeze is held (ADR-0019).
+    const original = input.entries.filter((e) => e.activityId === activityId);
+    const counted = new Map<string, string>();
+    const moves = new Map<string, Move>();
+    const heldMoves = new Map<string, Move>();
+    for (const { action, index } of forThisActivity) {
+      if (action.type !== "reassign-entry") continue;
+      const from =
+        counted.get(action.entryId) ??
+        original.find((e) => e.id === action.entryId)?.entrantId ??
+        action.entrantId;
+      const held = frozen !== undefined && index > frozen.index;
+      const move: Move = {
+        index,
+        entryId: action.entryId,
+        from,
+        to: action.toEntrantId,
+        state: held ? "held" : "applied",
+      };
+      if (held) heldMoves.set(action.entryId, move);
+      else {
+        counted.set(action.entryId, action.toEntrantId);
+        moves.set(action.entryId, move);
+      }
+    }
+    const moved = original.map((e) => {
+      const to = e.id === undefined ? undefined : counted.get(e.id);
+      return to === undefined ? e : { ...e, entrantId: to };
+    });
+    // Entries for someone who isn't an entrant of the Competition aren't scored; the newest per entrant is reported.
+    const rosterIds = new Set(
+      input.entrants
+        .filter((e) => e.competitionId === competitionId)
+        .map((e) => e.id),
+    );
+    const here = moved.filter((e) => rosterIds.has(e.entrantId));
+    const offRoster = newestEntries(
+      moved.filter((e) => !rosterIds.has(e.entrantId)),
+    ).map((e) => ({ entrantId: e.entrantId, entryId: e.id ?? "" }));
+    // A correction follows its entry, wherever the entry counts now.
+    const entrantOf = (a: OfficialAction & { entrantId: string }): string =>
+      a.type === "set-field-value" || a.type === "revert-field-value"
+        ? (moved.find((e) => e.id === a.entryId)?.entrantId ?? a.entrantId)
+        : a.entrantId;
     const actionsFor = (entrantId: string): OfficialAction[] =>
       forThisActivity
         .filter(
           ({ action, index }) =>
-            action.entrantId === entrantId && (!frozen || index < frozen.index),
+            entrantOf(action) === entrantId &&
+            (!frozen || index < frozen.index),
         )
         .map(({ action }) => action);
+    const original0 = new Map(original.map((e) => [e.id, e.entrantId]));
+    // What each entrant's report says about moves into or out of it. An entry moved back to where it was scored
+    // isn't listed: there's nothing left to undo.
+    const reassignmentsFor = (
+      entrantId: string,
+    ): EntryReport["reassignments"] =>
+      [...moves.values(), ...heldMoves.values()]
+        .filter(
+          (m) =>
+            (m.from === entrantId || m.to === entrantId) &&
+            (m.state === "held" || original0.get(m.entryId) !== m.to),
+        )
+        .sort((a, b) => a.index - b.index)
+        .map((m) => ({
+          actionIndex: givenIndex[m.index] ?? m.index,
+          entryId: m.entryId,
+          fromEntrantId: m.from,
+          toEntrantId: m.to,
+          state: m.state,
+        }));
 
-    // Every entry for the Activity, in received order; per entrant the newest counts (ADR-0019, #42).
-    const here = input.entries.filter((e) => e.activityId === activityId);
     const reports = new Map<string, EntryReport>();
     // Per entrant, the counting entry: the newest, or the one an Official chose. An Official's corrections
     // are laid over its values before listing and totalling.
@@ -375,13 +512,22 @@ export function scoreEvent(given: ScoringInput): EventResults {
     const entries = entrantIds.map((entrantId) => {
       const theirs = here.filter((x) => x.entrantId === entrantId);
       const mine = forThisActivity.filter(
-        ({ action }) => action.entrantId === entrantId,
+        ({ action }) => entrantOf(action) === entrantId,
       );
       const { entry: e, choice } = counting(theirs, mine, frozen?.index);
       const values = correctedValues(e, actionsFor(entrantId));
       reports.set(
         entrantId,
-        entryReport(e, theirs, values, choice, mine, frozen?.index, givenIndex),
+        entryReport(
+          e,
+          theirs,
+          values,
+          choice,
+          mine,
+          frozen?.index,
+          givenIndex,
+          reassignmentsFor(entrantId),
+        ),
       );
       return { ...e, values };
     });
@@ -435,6 +581,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
         competitionId,
         finalized: false,
         entries: recomputed,
+        offRoster,
       });
       continue;
     }
@@ -452,6 +599,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       finalized: true,
       finalizedBy: { actionIndex: givenIndex[frozen.index] ?? frozen.index },
       entries: stored,
+      offRoster,
     });
   }
 
@@ -669,7 +817,10 @@ function finalizations(input: ScoringInput): {
     }
     for (const [i, { action, index }] of [...log.entries()].reverse()) {
       if (action.type === "unfinalize") break;
-      const problem = actionProblem(input, action);
+      const problem = actionProblem(
+        { ...input, actions: input.actions.slice(0, index) },
+        action,
+      );
       if (!problem) {
         finalized.set(activityId, { action, index });
         break;
