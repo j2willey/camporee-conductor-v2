@@ -250,6 +250,10 @@ export interface RankedStanding {
   /** The Official's `set-overall-rank` if one is logged, otherwise the provisional rank. Awards use it. */
   rank: number;
   disqualified: false;
+  /** The effective overall `disqualify`, if any: here a reinstate. Never held (overall actions don't wait for `unfinalize`). */
+  dq?: { actionIndex: number; disqualified: boolean; state: "applied" };
+  /** The effective `set-overall-rank`, if any: its index in `ScoringInput.actions` as given. */
+  rankOverride?: { actionIndex: number; rank: number; state: "applied" };
 }
 
 /** DQ'd overall: keeps its total, removed before ranking, no automatic Award (ADR-0019). */
@@ -257,6 +261,9 @@ export interface DisqualifiedStanding {
   entrantId: string;
   total: number;
   disqualified: true;
+  /** The effective overall `disqualify`: its index in `ScoringInput.actions` as given. */
+  dq?: { actionIndex: number; disqualified: boolean; state: "applied" };
+  rankOverride?: { actionIndex: number; rank: number; state: "applied" };
 }
 
 export interface CompetitionStandings {
