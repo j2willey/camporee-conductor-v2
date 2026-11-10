@@ -262,6 +262,11 @@ export interface ActivityResults {
   entries: EntryResult[];
   /** Entries for someone who isn't an entrant of the Competition: not scored, the newest per entrant. */
   offRoster: { entrantId: string; entryId: string }[];
+  /**
+   * Every entry here (by id) and the entrant it counts for now: its own, or where an applied, valid
+   * `reassign-entry` moved it (ADR-0019). Views list entries by entrant from this, never by applying moves.
+   */
+  countsFor: Record<string, string>;
 }
 
 /** One entrant's place in a Competition overall: ranked, or DQ'd overall (no rank). */

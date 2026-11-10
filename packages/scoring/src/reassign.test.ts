@@ -227,4 +227,22 @@ describe("reassign-entry", () => {
       /already counts for/,
     );
   });
+
+  it("reports where each entry counts (countsFor), so a view never applies moves itself", () => {
+    // Applied: e-t1 counts for t3.
+    expect(first(build([move("e-t1", "t3")])).activity.countsFor).toEqual({
+      "e-t1": "t3",
+      "e-t2": "t2",
+    });
+    // Invalid (left out by scoring): nothing moves.
+    expect(
+      first(build([move("e-t1", "nobody")])).activity.countsFor["e-t1"],
+    ).toBe("t1");
+    // Held by finalize: nothing moves yet.
+    const ranking = finalizeRanking(first(build()).activity);
+    const held = first(
+      build([{ type: "finalize", activityId: A, ranking }, move("e-t1", "t3")]),
+    );
+    expect(held.activity.countsFor["e-t1"]).toBe("t1");
+  });
 });

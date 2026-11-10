@@ -582,6 +582,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
         finalized: false,
         entries: recomputed,
         offRoster,
+        countsFor: {},
       });
       continue;
     }
@@ -600,6 +601,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       finalizedBy: { actionIndex: givenIndex[frozen.index] ?? frozen.index },
       entries: stored,
       offRoster,
+      countsFor: {},
     });
   }
 

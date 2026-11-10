@@ -77,6 +77,7 @@ describe("inRankOrder: an Activity's results in the order to list them", () => {
     finalized,
     entries,
     offRoster: [],
+    countsFor: {},
   });
 
   it("lists by Final Ranking, best first", () => {
