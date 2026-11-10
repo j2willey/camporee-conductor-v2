@@ -77,7 +77,7 @@ const Notes = z.string().trim().min(1).max(500).optional();
 
 /**
  * An Official's action (#42): a per-Activity `disqualify` (PR 2b), an Official's correction of a field (PR 3), a
- * `choose-entry` (which entry counts), `finalize`, `unfinalize`, `set-final-rank` and `adjust-points` (PR 4), and the
+ * `choose-entry` (which entry counts), `reassign-entry`, `finalize`, `unfinalize`, `set-final-rank` and `adjust-points` (PR 4), and the
  * overall `disqualify` (no activityId) and `set-overall-rank`. Other types come with later slices, and answer 400.
  */
 const ActionBody = z.strictObject({
@@ -137,6 +137,14 @@ const ActionBody = z.strictObject({
         notes: Notes,
       }),
       z.strictObject({
+        type: z.literal("reassign-entry"),
+        activityId: z.string().min(1),
+        entrantId: PhoneId,
+        entryId: PhoneId,
+        toEntrantId: PhoneId,
+        notes: Notes,
+      }),
+      z.strictObject({
         type: z.literal("unfinalize"),
         activityId: z.string().min(1),
         notes: Notes,
@@ -165,7 +173,7 @@ const ActionBody = z.strictObject({
     ],
     {
       error:
-        "Only a disqualify, set-field-value, revert-field-value, choose-entry, finalize, unfinalize, set-final-rank, set-overall-rank or adjust-points action is accepted so far",
+        "Only a disqualify, set-field-value, revert-field-value, choose-entry, reassign-entry, finalize, unfinalize, set-final-rank, set-overall-rank or adjust-points action is accepted so far",
     },
   ),
   clientCreatedAt: z.iso.datetime({ offset: true }),

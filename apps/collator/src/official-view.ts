@@ -17,6 +17,7 @@ import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
 import { resolvedRoster } from "./roster.ts";
 import {
+  countedEntries,
   loggedActions,
   resolvedEntries,
   scoringInput,
@@ -107,12 +108,15 @@ export function officialEvent(
   entries = resolvedEntries(db),
 ): OfficialEvent {
   const { event, activities } = judgeEvent(bundle);
-  const scored = scoreEvent(scoringInput(db, bundle, entries)).activities;
+  const input = scoringInput(db, bundle, entries);
+  const results = scoreEvent(input);
+  const scored = results.activities;
+  const counted = countedEntries(entries, input, results);
   return {
     event,
     activities: activities.map(({ id, title, competition }) => {
       const closures = closuresAt(db, id);
-      const here = entries.filter((e) => e.activityId === id);
+      const here = counted.filter((e) => e.activityId === id);
       const scoredEntrants = new Set(here.map((e) => e.entrantId));
       const newest = here.reduce<Date | null>(
         (latest, e) =>
@@ -195,7 +199,7 @@ export interface MatrixRow {
     newest: boolean;
   }[];
   /** Reassignments into or out of this row's entrant here, with who and when (ADR-0019). */
-  moves?: {
+  moves: {
     entryId: string;
     /** "here": an entry moved onto this row; "away": one moved off it. */
     direction: "here" | "away";
@@ -299,27 +303,26 @@ export function officialActivity(
 ): OfficialActivity | undefined {
   const found = activityFields(bundle, activityId);
   if (!found) return undefined;
-  const all = resolvedEntries(db);
-  const listed = officialEvent(db, bundle, all).activities.find(
+  const original = resolvedEntries(db);
+  const listed = officialEvent(db, bundle, original).activities.find(
     (a) => a.id === activityId,
   );
   if (!listed) return undefined;
 
   const { groups, teams } = resolvedRoster(db);
   const entrantName = entrantNamer(db);
-  const newest = newestEntries(all);
   const logged = loggedActions(db);
-  const input = scoringInput(db, bundle, all, logged);
-  const rosterIds = new Set(
-    input.entrants.map((e) => `${e.competitionId} ${e.id}`),
-  );
-  const competitionOf = new Map(
-    bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
-  );
-  const onRoster = (activity: string, entrantId: string): boolean =>
-    rosterIds.has(`${competitionOf.get(activity)} ${entrantId}`);
-  const results = scoreEvent(input).activities.find(
+  const input = scoringInput(db, bundle, original, logged);
+  const scoredEvent = scoreEvent(input);
+  // Where each entry counts now (reassigns applied), for listing entries by entrant.
+  const all = countedEntries(original, input, scoredEvent);
+  const newest = newestEntries(all);
+  const results = scoredEvent.activities.find(
     (a) => a.activityId === activityId,
+  );
+  // Entries for someone who isn't on the roster aren't scored; scoring reports them (ADR-0019).
+  const offRosterIds = new Set(
+    (results?.offRoster ?? []).map((o) => o.entryId),
   );
 
   const judgeById = new Map(judgeList(db).map((j) => [j.id, j]));
@@ -331,7 +334,6 @@ export function officialActivity(
       .filter((e) => e.activityId === activityId)
       .map((e) => [e.entrantId, e]),
   );
-  const newestIds = new Set(newest.map((e) => e.id));
   const countingIds = new Set(
     (results?.entries ?? []).flatMap((r) =>
       r.entryId === undefined ? [] : [r.entryId],
@@ -465,6 +467,20 @@ export function officialActivity(
         counts: e.id === entry?.id,
         newest: e.id === newestHere?.id,
       })),
+      moves: (result?.reassignments ?? []).map((m) => {
+        const acted = actedOn(m.actionIndex);
+        return {
+          entryId: m.entryId,
+          direction:
+            m.toEntrantId === entrantId ? ("here" as const) : ("away" as const),
+          fromId: m.fromEntrantId,
+          fromName: entrantName(m.fromEntrantId).name,
+          toId: m.toEntrantId,
+          toName: entrantName(m.toEntrantId).name,
+          ...acted,
+          state: m.state,
+        };
+      }),
       notCounting: result ? listOf(result, "not-counting") : [],
       judge: entry
         ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
@@ -476,9 +492,7 @@ export function officialActivity(
     };
   };
   const rankOrder = ordered.map((r) => r.entrantId);
-  const offRoster = [...countingByEntrant.keys()].filter(
-    (id) => !onRoster(activityId, id),
-  );
+  const offRoster = (results?.offRoster ?? []).map((o) => o.entrantId);
   const matrix = [
     ...[
       ...rankOrder,
@@ -512,9 +526,7 @@ export function officialActivity(
       entrant: entrantName(e.entrantId),
       values: e.values,
       phoneCreatedAt: e.phoneCreatedAt,
-      counts: onRoster(activityId, e.entrantId)
-        ? countingIds.has(e.id)
-        : newestIds.has(e.id),
+      counts: countingIds.has(e.id) || offRosterIds.has(e.id),
     })),
     closures: closuresAt(db, activityId).map(({ judgeId, ...closure }) => ({
       judge: judgeShown(judgeById.get(judgeId), judgeId),

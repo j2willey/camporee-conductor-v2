@@ -1,6 +1,7 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import {
   actionProblem,
+  applyReassignments,
   finalizeRanking,
   scoreEvent,
   type OfficialAction,
@@ -9,6 +10,7 @@ import { eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
 import {
+  loggedActions,
   resolveAction,
   resolvedEntries,
   scoringInput,
@@ -76,6 +78,9 @@ export function recordOfficialAction(
   const roster = resolvedRoster(db);
   const action = resolveAction(submission.action, roster.resolve);
   const entries = resolvedEntries(db);
+  const earlier = loggedActions(db).map((a) =>
+    resolveAction(a.action, roster.resolve),
+  );
   const problem = actionProblem(
     {
       event: bundle.event,
@@ -83,13 +88,14 @@ export function recordOfficialAction(
       commonFieldSets: bundle.commonFieldSets,
       entrants: scoringEntrants(bundle, roster),
       entries,
+      actions: earlier,
     },
     action,
   );
   if (problem !== undefined) return invalid(problem);
   // A choice covers the entries the Official saw: a newer one means a stale view (ADR-0019 2026-11-10).
   if (action.type === "choose-entry") {
-    const newest = entries.findLast(
+    const newest = applyReassignments(entries, earlier).findLast(
       (e) =>
         e.activityId === action.activityId && e.entrantId === action.entrantId,
     );
