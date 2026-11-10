@@ -86,6 +86,10 @@ export interface OfficialEvent {
     lastReceivedAt: string | null;
     /** An Official has finalized the Activity (ADR-0019). */
     finalized: boolean;
+    /** Exhibitions are recorded as results, not scored (ADR-0027). */
+    scoringType: "ranked" | "exhibition";
+    /** Exhibitions only: rows in the latest saved results. */
+    resultCount?: number;
   })[];
 }
 
@@ -138,6 +142,7 @@ export function officialEvent(
             ).length ?? 0,
         lastReceivedAt: newest ? newest.toISOString() : null,
         finalized: scored.find((a) => a.activityId === id)?.finalized ?? false,
+        scoringType: "ranked",
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };

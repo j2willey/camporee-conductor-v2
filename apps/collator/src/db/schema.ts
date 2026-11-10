@@ -166,3 +166,27 @@ export const rosterChanges = sqliteTable("roster_changes", {
   clientCreatedAt: text("client_created_at").notNull(),
   receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+/**
+ * Exhibition results (ADR-0027, #42 PR 7): each save is the whole list for one Exhibition, as an Official gave it.
+ * Append-only: never updated or deleted, and the newest save for an Activity is its current list. Keyed by an id
+ * the laptop made, so a resend is a repeat.
+ */
+export const exhibitionResultSaves = sqliteTable(
+  "exhibition_result_saves",
+  {
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    id: text("id").notNull().unique(),
+    activityId: text("activity_id").notNull(),
+    /** `normalEmail()` of who saved it. */
+    officialEmail: text("official_email").notNull(),
+    /** JSON: an `ExhibitionRow[]`, in the order the Official gave. */
+    rows: text("rows").notNull(),
+    /** The save this one replaces; null when there was none. */
+    replacesId: text("replaces_id"),
+    /** The laptop's clock, for information. */
+    clientCreatedAt: text("client_created_at").notNull(),
+    receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("exhibition_result_saves_activity").on(t.activityId)],
+);

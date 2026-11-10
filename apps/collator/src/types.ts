@@ -31,3 +31,7 @@ export type {
   RosterHistoryItem,
 } from "./roster-view.ts";
 export type { RosterChange } from "./roster.ts";
+export type {
+  ExhibitionResultsView,
+  ExhibitionRow,
+} from "./exhibition-results.ts";
