@@ -226,13 +226,7 @@ describe("GET /api/official/event: the Activities to pick from", () => {
 interface OfficialActivity {
   activity: { id: string; title: string };
   fields: { id: string; label: string }[];
-  ranking: {
-    entrantId: string;
-    entrant: { name: string | null; group: string | null };
-    place: number | null;
-    total: number;
-    disqualified: boolean;
-  }[];
+  matrix: MatrixRow[];
   entries: {
     id: string;
     receivedSeq: number;
@@ -255,25 +249,13 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
   };
 
   it("ranks the entrants with packages/scoring, best first, using the newest entry for each", async () => {
-    const { ranking } = await clownCar();
+    const { matrix } = await clownCar();
     // Flaming Arrows: 9 clowns + 5 flag; the Owls: Sam's newer 4 + 5, not Alex's 3 + 5.
-    expect(ranking).toEqual([
-      {
-        entrantId: "team-1",
-        entrant: { name: "Flaming Arrows", group: "Troop 101" },
-        place: 1,
-        total: 14,
-        points: 100,
-        disqualified: false,
-      },
-      {
-        entrantId: "team-2",
-        entrant: { name: "Owls", group: "Troop 101" },
-        place: 2,
-        total: 9,
-        points: 90,
-        disqualified: false,
-      },
+    expect(
+      matrix.map((r) => [r.entrantId, r.entrant, r.place, r.total]),
+    ).toEqual([
+      ["team-1", { name: "Flaming Arrows", group: "Troop 101" }, 1, 14],
+      ["team-2", { name: "Owls", group: "Troop 101" }, 2, 9],
     ]);
   });
 
@@ -348,6 +330,8 @@ interface MatrixRow {
   place: number | null;
   total: number | null;
   disqualified: boolean;
+  dq: { by: string; at: string; notes?: string } | null;
+  onRoster: boolean;
   values: Record<string, unknown> | null;
   judge: { name: string; homeGroup?: string } | null;
   receivedAt: string | null;
@@ -391,14 +375,12 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
   });
 
   it("lists the scored rows in ranking order with the ranking's place and total, then unscored in roster order", async () => {
-    const { matrix, ranking } = await view();
+    const { matrix } = await view();
     const scored = matrix.filter((r) => r.scored);
-    expect(scored.map((r) => r.entrantId)).toEqual(
-      ranking.map((r) => r.entrantId),
-    );
-    expect(scored.map((r) => [r.place, r.total])).toEqual(
-      ranking.map((r) => [r.place, r.total]),
-    );
+    expect(scored.map((r) => [r.entrantId, r.place, r.total])).toEqual([
+      ["team-1", 1, 14],
+      ["team-2", 2, 9],
+    ]);
     expect(matrix.map((r) => r.scored)).toEqual([true, true, false]);
   });
 
@@ -459,12 +441,6 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
   });
 });
 
-/** What #42 PR 2b adds to a matrix row, read loosely so these tests compile before the code does. */
-type RowPlus = MatrixRow & {
-  onRoster?: boolean;
-  dq?: { by: string; at: string; notes?: string } | null;
-};
-
 describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
   beforeEach(withScores);
 
@@ -493,12 +469,12 @@ describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
       body: JSON.stringify(body),
     });
 
-  const matrix = async (): Promise<RowPlus[]> => {
+  const matrix = async (): Promise<MatrixRow[]> => {
     const res = await asOfficial(
       `/api/official/activities/${CLOWN_CAR.id}`,
       DIRECTOR_EMAIL,
     );
-    return ((await res.json()) as { matrix: RowPlus[] }).matrix;
+    return ((await res.json()) as { matrix: MatrixRow[] }).matrix;
   };
   const row = async (id: string) =>
     (await matrix()).find((r) => r.entrantId === id);
@@ -642,7 +618,7 @@ describe("the matrix shows an entry whose entrant isn't on the roster (#42 PR 2b
       })
       .run();
     const res = await asOfficial(`/api/official/activities/${CLOWN_CAR.id}`);
-    const { matrix } = (await res.json()) as { matrix: RowPlus[] };
+    const { matrix } = (await res.json()) as { matrix: MatrixRow[] };
     expect(matrix.map((r) => r.entrantId)).toEqual([
       "team-1",
       "team-2",

@@ -11,15 +11,17 @@ import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
+import { loggedActions } from "./official-actions.ts";
 import {
   judgeList,
   roster,
   scoreEntries,
+  scoringEntrants,
   type JudgeIdentity,
 } from "./roster-and-scores.ts";
 
-// What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Read-only;
-// edits, DQ, finalize, conflicts and standings are #42. Every ranking comes from packages/scoring.
+// What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Every ranking comes from
+// packages/scoring; Official actions are logged in official-actions.ts.
 
 /** An email as Officials are matched: trimmed, any case. */
 export const normalEmail = (email: string) => email.trim().toLowerCase();
@@ -129,6 +131,10 @@ export interface MatrixRow {
   place: number | null;
   total: number | null;
   disqualified: boolean;
+  /** Who DQ'd it and when, from the latest logged `disqualify` here (ADR-0019); null when not DQ'd. */
+  dq: { by: string; at: string; notes?: string } | null;
+  /** False for an entry whose entrant isn't on the roster: shown, but not ranked and not DQ-able. */
+  onRoster: boolean;
   /** The counting (newest) entry's values; null when unscored. */
   values: Record<string, FieldValue> | null;
   /** The counting entry's Judge: name and home unit, never the email. */
@@ -146,20 +152,10 @@ export interface OfficialActivity {
   activity: OfficialEvent["activities"][number];
   /** Every field scored at the Activity, Common Fields included, to show values by label. */
   fields: { id: string; label: string }[];
-  /** Best first, from packages/scoring (`scoreEvent`, listed by `inRankOrder`). */
-  ranking: {
-    entrantId: string;
-    entrant: EntrantName;
-    /** The Final Ranking; null when DQ'd. */
-    place: number | null;
-    total: number;
-    /** Placement points. */
-    points: number;
-    disqualified: boolean;
-  }[];
   /**
    * The score matrix (#42 PR 2a): one row per entrant of the Activity's Competition. Scored rows come first in
-   * ranking order, then unscored ones in roster order. Place, total and DQ are from packages/scoring.
+   * ranking order (from packages/scoring: `scoreEvent`, listed by `inRankOrder`), then unscored ones in roster
+   * order, then entries whose entrant isn't on the roster (PR 2b). Place, total and DQ are from packages/scoring.
    */
   matrix: MatrixRow[];
   /** Every score entry received, in the order received. */
@@ -207,19 +203,25 @@ export function officialActivity(
   };
 
   const newest = newestEntries(all);
+  const logged = loggedActions(db);
+  const rosterIds = new Set(
+    scoringEntrants(bundle, { groups, teams }).map(
+      (e) => `${e.competitionId} ${e.id}`,
+    ),
+  );
+  const competitionOf = new Map(
+    bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
+  );
+  const onRoster = (activity: string, entrantId: string): boolean =>
+    rosterIds.has(`${competitionOf.get(activity)} ${entrantId}`);
   const results = scoreEvent({
     event: bundle.event,
     activities: bundle.activities,
     commonFieldSets: bundle.commonFieldSets,
-    entrants: bundle.event.competitions.flatMap((c) =>
-      (c.level === "team" ? teams : groups).map((e) => ({
-        id: e.id,
-        competitionId: c.id,
-      })),
-    ),
-    entries: newest,
-    // Official actions are logged on the box with #42.
-    actions: [],
+    entrants: scoringEntrants(bundle, { groups, teams }),
+    // An entry for someone not on the roster isn't ranked; the matrix shows it on a row of its own.
+    entries: newest.filter((e) => onRoster(e.activityId, e.entrantId)),
+    actions: logged.map((a) => a.action),
   }).activities.find((a) => a.activityId === activityId);
 
   const judgeById = new Map(judgeList(db).map((j) => [j.id, j]));
@@ -239,6 +241,22 @@ export function officialActivity(
     (c) => c.id === listed.competition.id,
   );
   const entrants = competition?.level === "team" ? teams : groups;
+  const dqOf = (entrantId: string): MatrixRow["dq"] => {
+    const latest = logged.findLast(
+      (a) =>
+        a.action.type === "disqualify" &&
+        a.action.activityId === activityId &&
+        a.action.entrantId === entrantId,
+    );
+    if (!latest || latest.action.type !== "disqualify") return null;
+    if (!latest.action.disqualified) return null;
+    const official = officialByEmail(bundle, latest.officialEmail);
+    return {
+      by: official?.name ?? latest.officialEmail,
+      at: latest.receivedAt.toISOString(),
+      ...(latest.action.notes !== undefined && { notes: latest.action.notes }),
+    };
+  };
   const matrixRow = (entrantId: string): MatrixRow => {
     const result = resultById.get(entrantId);
     const entry = countingByEntrant.get(entrantId);
@@ -249,6 +267,8 @@ export function officialActivity(
       place: result && !result.disqualified ? result.finalRank : null,
       total: result ? result.total : null,
       disqualified: result?.disqualified ?? false,
+      dq: result?.disqualified ? dqOf(entrantId) : null,
+      onRoster: true,
       values: entry ? entry.values : null,
       judge: entry
         ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
@@ -262,23 +282,26 @@ export function officialActivity(
     };
   };
   const rankOrder = ordered.map((r) => r.entrantId);
+  const offRoster = [...countingByEntrant.keys()].filter(
+    (id) => !onRoster(activityId, id),
+  );
   const matrix = [
-    ...rankOrder,
-    ...entrants.map((e) => e.id).filter((id) => !resultById.has(id)),
-  ].map(matrixRow);
+    ...[
+      ...rankOrder,
+      ...entrants.map((e) => e.id).filter((id) => !resultById.has(id)),
+    ].map(matrixRow),
+    ...offRoster.map((id): MatrixRow => ({
+      ...matrixRow(id),
+      place: null,
+      total: null,
+      onRoster: false,
+    })),
+  ];
   return {
     activity: listed,
     fields: fillVariables(found.fields, found.activity.variables ?? {}).map(
       (f) => ({ id: f.id, label: f.label }),
     ),
-    ranking: (results ? inRankOrder(results) : []).map((r) => ({
-      entrantId: r.entrantId,
-      entrant: entrantName(r.entrantId),
-      place: r.disqualified ? null : r.finalRank,
-      total: r.total,
-      points: r.points,
-      disqualified: r.disqualified,
-    })),
     matrix,
     entries: here.map((e) => ({
       id: e.id,
