@@ -3,19 +3,34 @@ import type {
   OfficialActivity,
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
-import { errorMessage, officialApi } from "../api.ts";
-import { entrantLabel, levelLabel, ordinal } from "../format.ts";
+import { errorMessage, newId, officialApi } from "../api.ts";
+import { clock, entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
 
-const clock = (at: Date) =>
-  at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+type MatrixRow = OfficialActivity["matrix"][number];
+
+/**
+ * An Official confirming a DQ or reinstatement on one row. The id and `clientCreatedAt` are made once and kept, so
+ * a retry resends exactly the same action and the box answers "repeat", even if the first send landed and only
+ * the reply was lost. Changing the reason makes it a new action, with a new id.
+ */
+interface Pending {
+  entrantId: string;
+  disqualified: boolean;
+  id: string;
+  clientCreatedAt: string;
+  reason: string;
+  busy: boolean;
+  problem: string | null;
+}
 
 const judgeText = (j: { name: string; homeGroup?: string }) =>
   j.homeGroup ? `${j.name} (${j.homeGroup})` : j.name;
 
 /**
  * One Activity for an Official (#42 PR 2a): the score matrix, then every score entry received. The matrix is
- * the box's, from packages/scoring, shown in the order given; nothing is re-sorted or re-totalled here.
+ * the box's, from packages/scoring, shown in the order given; nothing is re-sorted or re-totalled here. An
+ * Official can DQ or reinstate a row (PR 2b): that logs an action on the box and the matrix is read again.
  */
 export function OfficialActivityView({
   email,
@@ -31,6 +46,8 @@ export function OfficialActivityView({
   const [view, setView] = useState<OfficialActivity | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
+  const [pending, setPending] = useState<Pending | null>(null);
+
   useEffect(() => {
     let current = true;
     officialApi.activity(email, activityId).then(
@@ -41,6 +58,95 @@ export function OfficialActivityView({
       current = false;
     };
   }, [email, activityId]);
+
+  const confirm = async (p: Pending) => {
+    setPending({ ...p, busy: true, problem: null });
+    const notes = p.reason.trim();
+    try {
+      await officialApi.act(email, p.id, {
+        action: {
+          type: "disqualify",
+          activityId,
+          entrantId: p.entrantId,
+          disqualified: p.disqualified,
+          ...(notes !== "" && { notes }),
+        },
+        clientCreatedAt: p.clientCreatedAt,
+      });
+      setView(await officialApi.activity(email, activityId));
+      setPending(null);
+    } catch (e) {
+      // The id stays, so a retry resends the same action (safe).
+      setPending({ ...p, busy: false, problem: errorMessage(e) });
+    }
+  };
+
+  const officialCell = (r: MatrixRow) => {
+    if (pending?.entrantId === r.entrantId) {
+      const verb = pending.disqualified ? "DQ" : "reinstate";
+      return (
+        <div className="flex min-w-40 flex-col gap-2">
+          <label className={ui.label}>
+            Reason
+            <input
+              className={ui.input}
+              value={pending.reason}
+              disabled={pending.busy}
+              onChange={(e) =>
+                setPending({
+                  ...pending,
+                  reason: e.target.value,
+                  id: newId(),
+                  clientCreatedAt: new Date().toISOString(),
+                })
+              }
+            />
+          </label>
+          {pending.problem && (
+            <p className={ui.error} role="alert">
+              {pending.problem}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button
+              className={ui.button}
+              disabled={pending.busy}
+              onClick={() => void confirm(pending)}
+            >
+              Confirm {verb}
+            </button>
+            <button
+              className={ui.buttonQuiet}
+              disabled={pending.busy}
+              onClick={() => setPending(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (!r.onRoster || !r.scored) return null;
+    const disqualified = !r.disqualified;
+    return (
+      <button
+        className={ui.buttonQuiet}
+        onClick={() =>
+          setPending({
+            entrantId: r.entrantId,
+            disqualified,
+            id: newId(),
+            clientCreatedAt: new Date().toISOString(),
+            reason: "",
+            busy: false,
+            problem: null,
+          })
+        }
+      >
+        {disqualified ? "DQ" : "Reinstate"}
+      </button>
+    );
+  };
 
   const back = (
     <button className={`${ui.link} self-start`} onClick={onBack}>
@@ -102,8 +208,11 @@ export function OfficialActivityView({
                 <th scope="col" className="py-1 pr-2 font-medium">
                   Judge
                 </th>
-                <th scope="col" className="py-1 font-medium">
+                <th scope="col" className="py-1 pr-2 font-medium">
                   Received
+                </th>
+                <th scope="col" className="py-1 font-medium">
+                  Official
                 </th>
               </tr>
             </thead>
@@ -112,7 +221,7 @@ export function OfficialActivityView({
                 <tr
                   key={r.entrantId}
                   className={`border-t border-stone-200 ${
-                    r.conflict
+                    r.conflict || !r.onRoster
                       ? "bg-amber-50"
                       : r.scored
                         ? ""
@@ -128,6 +237,17 @@ export function OfficialActivityView({
                   </td>
                   <th scope="row" className="py-2 pr-2 font-normal">
                     {entrantLabel(r.entrantId, r.entrant)}
+                    {!r.onRoster && (
+                      <p className="text-xs font-medium text-amber-900">
+                        Not on roster
+                      </p>
+                    )}
+                    {r.dq && (
+                      <p className="text-xs font-medium text-red-800">
+                        DQ by {r.dq.by}, {clock(r.dq.at)}
+                        {r.dq.notes && `: ${r.dq.notes}`}
+                      </p>
+                    )}
                     {r.conflict && (
                       <p className="text-xs font-medium text-amber-900">
                         Conflict: scored by{" "}
@@ -161,8 +281,8 @@ export function OfficialActivityView({
                       <td className="py-2 pr-2">
                         {r.judge && judgeText(r.judge)}
                       </td>
-                      <td className="py-2 tabular-nums">
-                        {r.receivedAt && clock(new Date(r.receivedAt))}
+                      <td className="py-2 pr-2 tabular-nums">
+                        {r.receivedAt && clock(r.receivedAt)}
                       </td>
                     </>
                   ) : (
@@ -170,6 +290,7 @@ export function OfficialActivityView({
                       Not scored
                     </td>
                   )}
+                  <td className="py-2 align-top">{officialCell(r)}</td>
                 </tr>
               ))}
             </tbody>

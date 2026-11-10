@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { entrantLabel, levelLabel, ordinal } from "./format.ts";
+import { clock, entrantLabel, levelLabel, ordinal } from "./format.ts";
 
 describe("ordinal", () => {
   it("names places as people say them", () => {
@@ -45,5 +45,28 @@ describe("levelLabel", () => {
   it("names who's scored at a Competition's level, in the event's words", () => {
     expect(levelLabel("team", labels)).toBe("Patrol");
     expect(levelLabel("group", labels)).toBe("Troop");
+  });
+});
+
+describe("clock", () => {
+  const at = new Date("2027-05-15T14:07:09Z");
+
+  it("shows hours and minutes, the same from a Date or its ISO time", () => {
+    expect(clock(at)).toBe(clock(at.toISOString()));
+    expect(clock(at)).toMatch(/^\d{1,2}[:.]\d{2}/);
+    expect(clock(at)).toBe(
+      at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    );
+  });
+
+  it("can add seconds", () => {
+    expect(clock(at, true)).toBe(
+      at.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      }),
+    );
+    expect(clock(at, true)).not.toBe(clock(at));
   });
 });

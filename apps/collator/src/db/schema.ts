@@ -113,3 +113,17 @@ export const activityClosures = sqliteTable(
   },
   (t) => [index("activity_closures_activity").on(t.activityId)],
 );
+
+/** Logged Official actions (ADR-0019), oldest first. Keyed by an id the laptop made, so a resend is a repeat. Never updated or deleted. */
+export const officialActions = sqliteTable("official_actions", {
+  /** Log order: what "latest" means. */
+  seq: integer("seq").primaryKey({ autoIncrement: true }),
+  id: text("id").notNull().unique(),
+  /** `normalEmail()` of who did it. */
+  officialEmail: text("official_email").notNull(),
+  /** JSON: the OfficialAction exactly as packages/scoring takes it. */
+  action: text("action").notNull(),
+  /** The laptop's clock, for information. */
+  clientCreatedAt: text("client_created_at").notNull(),
+  receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+});

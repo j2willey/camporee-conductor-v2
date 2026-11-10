@@ -27,3 +27,12 @@ export function levelLabel(
 ): string {
   return level === "team" ? labels.team : labels.group;
 }
+
+/** A time of day as "HH:MM" in the viewer's locale, from a Date or an ISO time; `seconds` adds the seconds. */
+export function clock(at: Date | string, seconds = false): string {
+  return new Date(at).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    ...(seconds && { second: "2-digit" }),
+  });
+}

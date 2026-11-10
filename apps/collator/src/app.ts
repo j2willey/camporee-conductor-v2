@@ -10,6 +10,7 @@ import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { recordClosure } from "./closures.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
+import { recordOfficialAction } from "./official-actions.ts";
 import {
   normalEmail,
   officialActivity,
@@ -72,6 +73,27 @@ const idParam = validator("param", (value: Record<string, string>) => {
   return { id: id.data };
 });
 
+/**
+ * An Official's action (#42 PR 2b). Only a per-Activity `disqualify` for now; other types and the overall DQ
+ * come with later slices, and answer 400 until then.
+ */
+const ActionBody = z.strictObject({
+  action: z.strictObject({
+    type: z.literal("disqualify", {
+      error: "Only a disqualify action is accepted so far",
+    }),
+    activityId: z
+      .string({
+        error: "A disqualify needs an activityId (an overall DQ comes later)",
+      })
+      .min(1),
+    entrantId: PhoneId,
+    disqualified: z.boolean(),
+    notes: z.string().trim().max(500).optional(),
+  }),
+  clientCreatedAt: z.iso.datetime({ offset: true }),
+});
+
 /** What `/api/official/me` answers: who's signed in on the Official page. */
 export interface SignedInOfficial {
   email: string;
@@ -81,7 +103,6 @@ export interface SignedInOfficial {
 
 /**
  * The Official view's API (#40 PR 3). Every call is checked against the loaded Event's Officials list.
- * Read-only: edits, DQ, finalize and conflicts are #42.
  */
 function officialRoutes(db: Db) {
   const routes = new Hono<{
@@ -131,6 +152,21 @@ function officialRoutes(db: Db) {
     return found
       ? c.json(found)
       : c.json({ error: "no such Activity in the loaded Event" }, 404);
+  });
+
+  routes.put("/actions/:id", idParam, jsonBody(ActionBody), (c) => {
+    const { action: given, clientCreatedAt } = c.req.valid("json");
+    const { notes, ...rest } = given;
+    const action = { ...rest, ...(notes !== undefined && { notes }) };
+    return reply(
+      c,
+      recordOfficialAction(db, c.get("bundle"), {
+        id: c.req.valid("param").id,
+        officialEmail: normalEmail(c.get("official").email),
+        action,
+        clientCreatedAt,
+      }),
+    );
   });
 
   return routes;

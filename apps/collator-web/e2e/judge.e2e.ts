@@ -18,6 +18,7 @@ import Database from "better-sqlite3";
 // #42 PR 1: the Official's Overview shows each Activity's counts, and a conflict when a second Judge
 // scores the same Patrol.
 // #42 PR 2a: an Activity's Scores matrix: a row per Patrol, a conflict marked, unscored Patrols listed.
+// #42 PR 2b: an Official DQs the Patrol in 1st and reinstates it; everyone below moves up, and the row says who.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -680,6 +681,52 @@ test("an Official opens Clown Car and sees its Scores matrix: the conflict marke
   await expect(scores.getByRole("row", { name: /Quiet Foxes/ })).toContainText(
     "Not scored",
   );
+});
+
+test("an Official DQs the Patrol in 1st with a reason, everyone below moves up, and reinstating brings its place back", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+
+  const scores = page.getByRole("table").first();
+  const rows = scores.locator("tbody tr");
+  const placeOf = (row: ReturnType<typeof rows.nth>) =>
+    row.getByRole("cell").first();
+  const nameOf = (row: ReturnType<typeof rows.nth>) =>
+    row.getByRole("rowheader");
+  // The first two rows, best first; each is found again by name once the table is re-ordered.
+  const first = (await nameOf(rows.nth(0)).innerText()).split("\n")[0] ?? "";
+  const second = (await nameOf(rows.nth(1)).innerText()).split("\n")[0] ?? "";
+  expect(first).not.toBe(second);
+  const rowFor = (name: string) =>
+    scores
+      .getByRole("row")
+      .filter({ has: page.getByRole("rowheader", { name }) });
+  await expect(placeOf(rowFor(first))).toHaveText("1st");
+  await expect(placeOf(rowFor(second))).not.toHaveText("DQ");
+  const secondPlaceBefore = await placeOf(rowFor(second)).innerText();
+  expect(secondPlaceBefore).not.toBe("");
+
+  const official = rowFor(first).getByRole("cell").last();
+  await official.getByRole("button", { name: "DQ", exact: true }).click();
+  await official.getByLabel("Reason").fill("Left the station early");
+  await official.getByRole("button", { name: "Confirm DQ" }).click();
+
+  await expect(placeOf(rowFor(first))).toHaveText("DQ");
+  await expect(rowFor(first)).toContainText("DQ by lead.judge@example.com");
+  await expect(rowFor(first)).toContainText("Left the station early");
+  await expect(placeOf(rowFor(second))).toHaveText("1st");
+
+  const reinstate = rowFor(first).getByRole("cell").last();
+  await reinstate.getByRole("button", { name: "Reinstate" }).click();
+  await reinstate.getByRole("button", { name: "Confirm reinstate" }).click();
+  await expect(placeOf(rowFor(first))).toHaveText("1st");
+  await expect(rowFor(first)).not.toContainText("DQ by");
+  await expect(placeOf(rowFor(second))).toHaveText(secondPlaceBefore);
 });
 
 test.describe("without the service worker", () => {

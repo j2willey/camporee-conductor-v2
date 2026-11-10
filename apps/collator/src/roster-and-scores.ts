@@ -1,6 +1,8 @@
+import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import {
   fillVariables,
   valueProblem,
+  type Entrant,
   type FieldValue,
 } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
@@ -286,6 +288,19 @@ export function roster(db: Db): Roster {
     groups: db.select().from(groups).orderBy(asc(groups.name)).all(),
     teams: db.select().from(teams).orderBy(asc(teams.name)).all(),
   };
+}
+
+/** Who enters each Competition, as packages/scoring takes them: Teams or Groups by the Competition's level. */
+export function scoringEntrants(
+  bundle: CheckedBundle,
+  { groups, teams }: Roster,
+): Entrant[] {
+  return bundle.event.competitions.flatMap((c) =>
+    (c.level === "team" ? teams : groups).map((e) => ({
+      id: e.id,
+      competitionId: c.id,
+    })),
+  );
 }
 
 /** Judges, with their emails: never served without the Official gate (#40 PR 3). */

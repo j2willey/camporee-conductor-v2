@@ -141,9 +141,10 @@ view=$(api GET "/api/official/activities/$activity")
 # shellcheck disable=SC2016 # JavaScript, not shell
 counts=$(body_of "$view" | node -e '
   const v = JSON.parse(require("fs").readFileSync(0, "utf8"));
-  console.log(`${v.entries.length} ${v.ranking.length} ${v.entries[0]?.id} ${v.ranking[0]?.place}`);')
+  const scored = v.matrix.filter((r) => r.scored);
+  console.log(`${v.entries.length} ${scored.length} ${v.entries[0]?.id} ${scored[0]?.place}`);')
 [ "$counts" = "1 1 rehearsal-score-1 1" ] ||
-  fail "Official view: expected 1 entry and 1 ranked row in 1st place, got (entries ranking id place) $counts"
+  fail "Official view: expected 1 entry and 1 ranked row in 1st place, got (entries scored-rows id place) $counts"
 pass "Official view: one entry, one ranked row in 1st place"
 
 echo "== 6. backups"

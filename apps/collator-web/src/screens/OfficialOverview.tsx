@@ -1,20 +1,13 @@
 import type { OfficialEvent } from "@camporee-conductor/collator/types";
 import { useEffect, useRef, useState } from "react";
 import { officialApi } from "../api.ts";
-import { levelLabel } from "../format.ts";
+import { clock, levelLabel } from "../format.ts";
 import { ui } from "../ui.ts";
 
 type Activity = OfficialEvent["activities"][number];
 
 /** How often the Overview asks the box again while the page is showing. */
 export const REFRESH_MS = 15_000;
-
-const clock = (at: Date, seconds = false) =>
-  at.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    ...(seconds && { second: "2-digit" }),
-  });
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
