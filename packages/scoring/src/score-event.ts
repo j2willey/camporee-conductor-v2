@@ -464,6 +464,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       activities,
       ranking,
       overallRanks,
+      givenIndex,
     ),
   );
   const awards = (input.event.awards ?? []).map((award) => ({
@@ -484,18 +485,18 @@ export function scoreEvent(given: ScoringInput): EventResults {
 }
 
 /**
- * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` → rank.
+ * The effective (latest) `set-overall-rank` per Competition and entrant, as `competitionId entrantId` → rank and its index in the (filtered) actions.
  * The actions are already checked by `validActions`.
  */
 function overallRankOverrides(
   input: ScoringInput,
-): ReadonlyMap<string, number> {
-  const ranks = new Map<string, number>();
-  for (const a of input.actions) {
+): ReadonlyMap<string, { rank: number; index: number }> {
+  const ranks = new Map<string, { rank: number; index: number }>();
+  input.actions.forEach((a, index) => {
     if (a.type === "set-overall-rank") {
-      ranks.set(`${a.competitionId} ${a.entrantId}`, a.rank);
+      ranks.set(`${a.competitionId} ${a.entrantId}`, { rank: a.rank, index });
     }
-  }
+  });
   return ranks;
 }
 
@@ -506,7 +507,8 @@ function competitionStandings(
   activityById: ReadonlyMap<string, Activity>,
   activities: readonly ActivityResults[],
   ranking: ReturnType<typeof rankingFor>,
-  overallRanks: ReadonlyMap<string, number>,
+  overallRanks: ReadonlyMap<string, { rank: number; index: number }>,
+  givenIndex: readonly number[],
 ): CompetitionStandings {
   const ranked = activities.filter(
     (a) =>
@@ -527,34 +529,58 @@ function competitionStandings(
       ),
     }));
   // An overall DQ is an action with no Activity; the latest one for the entrant wins.
+  const dqOf = (entrantId: string) => {
+    const index = input.actions.findLastIndex(
+      (a) =>
+        a.type === "disqualify" &&
+        !("activityId" in a) &&
+        a.entrantId === entrantId,
+    );
+    const action = input.actions[index];
+    return action?.type === "disqualify"
+      ? {
+          actionIndex: givenIndex[index] ?? index,
+          disqualified: action.disqualified,
+          state: "applied" as const,
+        }
+      : undefined;
+  };
   const isDisqualified = (entrantId: string): boolean =>
-    latest(
-      input.actions.filter(
-        (a) => !("activityId" in a) && a.entrantId === entrantId,
-      ),
-      "disqualify",
-    )?.disqualified === true;
+    dqOf(entrantId)?.disqualified === true;
   // DQ'd entrants keep their total but are removed before ranking (ADR-0019).
   const rankOf = ranking(
     totals.filter((t) => !isDisqualified(t.entrantId)).map((t) => t.total),
   );
   // An Official's override sets only that entrant's rank; nobody else is re-sorted. A DQ beats it.
-  const rankedStanding = (
-    t: { entrantId: string; total: number },
-    provisionalRank: number,
-  ): Standing => ({
-    ...t,
-    provisionalRank,
-    rank:
-      overallRanks.get(`${competitionId} ${t.entrantId}`) ?? provisionalRank,
-    disqualified: false,
-  });
+  // Overall actions are never held by a finalize, so their state is always "applied".
+  const reported = (entrantId: string) => {
+    const dq = dqOf(entrantId);
+    const override = overallRanks.get(`${competitionId} ${entrantId}`);
+    return {
+      ...(dq && { dq }),
+      ...(override && {
+        rankOverride: {
+          actionIndex: givenIndex[override.index] ?? override.index,
+          rank: override.rank,
+          state: "applied" as const,
+        },
+      }),
+    };
+  };
   return {
     competitionId,
     entrants: totals.map((t): Standing =>
       isDisqualified(t.entrantId)
-        ? { ...t, disqualified: true }
-        : rankedStanding(t, rankOf(t.total)),
+        ? { ...t, disqualified: true, ...reported(t.entrantId) }
+        : {
+            ...t,
+            provisionalRank: rankOf(t.total),
+            rank:
+              overallRanks.get(`${competitionId} ${t.entrantId}`)?.rank ??
+              rankOf(t.total),
+            disqualified: false,
+            ...reported(t.entrantId),
+          },
     ),
   };
 }
