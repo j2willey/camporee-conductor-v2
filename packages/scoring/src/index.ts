@@ -2,6 +2,7 @@
 export { actionProblem } from "./action-checks.ts";
 export { awardRecipients } from "./awards.ts";
 export {
+  applyReassignments,
   finalizeRanking,
   inRankOrder,
   newestEntries,

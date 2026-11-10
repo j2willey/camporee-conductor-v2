@@ -3,6 +3,7 @@ import type {
   CompetitionStandings,
   EntryResult,
   FinalizedResult,
+  OfficialAction,
   RankedStanding,
   ScoreEntry,
   Standing,
@@ -24,6 +25,24 @@ export function newestEntries<
     newest.set(key, e);
   }
   return [...newest.values()];
+}
+
+/**
+ * The entries with each `reassign-entry` laid over them, in log order: an entry's entrant becomes the latest
+ * `toEntrantId` logged for its id (ADR-0019). The caller decides which actions to pass (valid ones, before a
+ * freeze); nothing is checked here.
+ */
+export function applyReassignments<
+  T extends Pick<ScoreEntry, "id" | "entrantId">,
+>(entries: readonly T[], actions: readonly OfficialAction[]): T[] {
+  const moved = new Map<string, string>();
+  for (const a of actions) {
+    if (a.type === "reassign-entry") moved.set(a.entryId, a.toEntrantId);
+  }
+  return entries.map((e) => {
+    const to = e.id === undefined ? undefined : moved.get(e.id);
+    return to === undefined ? e : { ...e, entrantId: to };
+  });
 }
 
 /**

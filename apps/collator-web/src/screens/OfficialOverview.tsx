@@ -22,12 +22,14 @@ export function OfficialOverview({
   onPick,
   onPrint,
   onStandings,
+  onRoster,
 }: {
   email: string;
   event: OfficialEvent;
   onPick: (activity: Activity) => void;
   onPrint: () => void;
   onStandings: () => void;
+  onRoster: () => void;
 }) {
   const [event, setEvent] = useState(first);
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
@@ -162,6 +164,9 @@ export function OfficialOverview({
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <button className={`${ui.buttonQuiet} w-full`} onClick={onStandings}>
           Standings
+        </button>
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onRoster}>
+          Roster
         </button>
         <button className={`${ui.buttonQuiet} w-full`} onClick={onPrint}>
           QR codes to print

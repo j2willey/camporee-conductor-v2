@@ -147,3 +147,22 @@ export const addedOfficials = sqliteTable(
     check("added_officials_role", oneOf("role", ["director", "official"])),
   ],
 );
+
+/**
+ * The roster log (ADR-0027, roster changes on the box): adds, renames, merges and unmerges Officials made on the
+ * laptop. Append-only: never updated or deleted, and the latest rename, or merge or unmerge, of an entrant wins.
+ * Keyed by an id the laptop made, so a resend is a repeat. The Groups and Teams tables keep what phones sent.
+ */
+export const rosterChanges = sqliteTable("roster_changes", {
+  seq: integer("seq").primaryKey({ autoIncrement: true }),
+  id: text("id").notNull().unique(),
+  /** `normalEmail()` of who did it. */
+  officialEmail: text("official_email").notNull(),
+  /** JSON: a `RosterChange`. */
+  change: text("change").notNull(),
+  /** The Official's reason. */
+  notes: text("notes"),
+  /** The laptop's clock, for information. */
+  clientCreatedAt: text("client_created_at").notNull(),
+  receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+});

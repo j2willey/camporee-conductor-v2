@@ -1,6 +1,7 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import {
   actionProblem,
+  applyReassignments,
   finalizeRanking,
   scoreEvent,
   type OfficialAction,
@@ -8,12 +9,16 @@ import {
 import { eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
-import { scoringInput } from "./scoring-input.ts";
+import {
+  loggedActions,
+  resolveAction,
+  resolvedEntries,
+  scoringInput,
+} from "./scoring-input.ts";
+import { resolvedRoster } from "./roster.ts";
 import {
   conflict,
   invalid,
-  roster,
-  scoreEntries,
   scoringEntrants,
   type Recorded,
 } from "./roster-and-scores.ts";
@@ -68,22 +73,29 @@ export function recordOfficialAction(
       ? { ok: true, status: "repeat" }
       : conflict("Official action", submission.id);
   }
-  const { action } = submission;
-  const entries = scoreEntries(db);
+  // Checked as scoring will see it: merges applied to the entries and to the entrants the action names. The
+  // action itself is logged as the Official sent it.
+  const roster = resolvedRoster(db);
+  const action = resolveAction(submission.action, roster.resolve);
+  const entries = resolvedEntries(db);
+  const earlier = loggedActions(db).map((a) =>
+    resolveAction(a.action, roster.resolve),
+  );
   const problem = actionProblem(
     {
       event: bundle.event,
       activities: bundle.activities,
       commonFieldSets: bundle.commonFieldSets,
-      entrants: scoringEntrants(bundle, roster(db)),
+      entrants: scoringEntrants(bundle, roster),
       entries,
+      actions: earlier,
     },
-    submission.action,
+    action,
   );
   if (problem !== undefined) return invalid(problem);
   // A choice covers the entries the Official saw: a newer one means a stale view (ADR-0019 2026-11-10).
   if (action.type === "choose-entry") {
-    const newest = entries.findLast(
+    const newest = applyReassignments(entries, earlier).findLast(
       (e) =>
         e.activityId === action.activityId && e.entrantId === action.entrantId,
     );

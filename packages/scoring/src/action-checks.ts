@@ -1,10 +1,17 @@
 import { mergeCommonFields, valueProblem } from "./fields.ts";
+import { applyReassignments } from "./entries.ts";
 import type { OfficialAction, ScoringInput } from "./types.ts";
 
 type Context = Pick<
   ScoringInput,
   "event" | "activities" | "commonFieldSets" | "entrants" | "entries"
->;
+> & {
+  /**
+   * The actions logged before the one being checked. Only `reassign-entry` matters here: it says which entrant
+   * each entry counts for now (ADR-0019).
+   */
+  actions?: readonly OfficialAction[];
+};
 
 /** Why this Official action is invalid for this Event and roster, or undefined if it's valid (ADR-0019, #24). */
 export function actionProblem(
@@ -20,6 +27,7 @@ export function actionProblem(
   }
   if (action.type === "choose-entry")
     return chooseEntryProblem(context, action);
+  if (action.type === "reassign-entry") return reassignProblem(context, action);
   switch (action.type) {
     case "adjust-points":
     case "set-final-rank":
@@ -169,7 +177,7 @@ function finalizeProblem(
   for (const r of ranking) {
     const who = r.entrantId;
     if (
-      !context.entries.some(
+      !currentEntries(context).some(
         (e) => e.activityId === activityId && e.entrantId === who,
       )
     ) {
@@ -223,12 +231,13 @@ function disqualifyProblem(
  * checked. Its entry must be one of the entrant's at the Activity (ADR-0019 2026-11-10).
  */
 function fieldValueProblem(
-  { event, activities, commonFieldSets, entrants, entries }: Context,
+  context: Context,
   action: Extract<
     OfficialAction,
     { type: "set-field-value" | "revert-field-value" }
   >,
 ): string | undefined {
+  const { event, activities, commonFieldSets, entrants } = context;
   const { type, entrantId, activityId, fieldId } = action;
   const listing = event.activities.find((a) => a.activityId === activityId);
   const activity = activities.find((a) => a.id === activityId);
@@ -248,7 +257,7 @@ function fieldValueProblem(
   ) {
     return `${type}: ${entrantId} isn't in Competition ${competition.slug}; left out`;
   }
-  const missing = entryMissing(entries, action, action.entryId);
+  const missing = entryMissing(context, action, action.entryId, false);
   if (missing !== undefined) return `${type}: ${missing}; left out`;
   const field = mergeCommonFields(activity, competition, commonFieldSets).find(
     (f) => f.id === fieldId,
@@ -263,27 +272,72 @@ function fieldValueProblem(
   return problem === undefined ? undefined : `${type}: ${problem}; left out`;
 }
 
-/** Why `entryId` isn't one of the entrant's entries at the Activity, or undefined when it is. */
+/** The entries as they count now: with the reassignments logged before the action being checked laid over them. */
+function currentEntries(context: Context): Context["entries"] {
+  return applyReassignments(context.entries, context.actions ?? []);
+}
+
+/**
+ * Why `entryId` isn't one of the entrant's entries at the Activity, or undefined when it is. `strict` takes only
+ * the entrant it counts for now; otherwise the one it was scored for is fine too, since a correction follows its
+ * entry.
+ */
 function entryMissing(
-  entries: Context["entries"],
+  context: Context,
   { activityId, entrantId }: { activityId: string; entrantId: string },
   entryId: string,
+  strict: boolean,
 ): string | undefined {
-  return entries.some(
-    (e) =>
-      e.id === entryId &&
-      e.activityId === activityId &&
-      e.entrantId === entrantId,
-  )
+  const entry = context.entries.find(
+    (e) => e.id === entryId && e.activityId === activityId,
+  );
+  const now = currentEntries(context).find(
+    (e) => e.id === entryId && e.activityId === activityId,
+  );
+  return entry &&
+    now &&
+    (now.entrantId === entrantId || (!strict && entry.entrantId === entrantId))
     ? undefined
     : `there's no score entry ${entryId} for ${entrantId} at that Activity`;
 }
 
+/**
+ * A reassign names an Activity, one of its entries (by the entrant it was scored for or counts for now) and an
+ * entrant of the Activity's Competition that the entry doesn't already count for.
+ */
+function reassignProblem(
+  context: Context,
+  action: Extract<OfficialAction, { type: "reassign-entry" }>,
+): string | undefined {
+  const { activityId, entrantId, entryId, toEntrantId } = action;
+  const missing = activityProblem(context, action.type, activityId);
+  if (missing !== undefined) return missing;
+  const listing = context.event.activities.find(
+    (a) => a.activityId === activityId,
+  );
+  if (!listing) return undefined;
+  const noEntry = entryMissing(context, action, entryId, false);
+  if (noEntry !== undefined) return `reassign-entry: ${noEntry}; left out`;
+  const outside = entrantProblem(
+    context,
+    action.type,
+    toEntrantId,
+    listing.competitionId,
+  );
+  if (outside !== undefined) return outside;
+  const now = currentEntries(context).find((e) => e.id === entryId);
+  if (now?.entrantId === toEntrantId) {
+    return `reassign-entry: entry ${entryId} already counts for ${entrantId === toEntrantId ? entrantId : toEntrantId}; left out`;
+  }
+  return undefined;
+}
+
 /** A choice names an Activity of the Event, an entrant of its Competition, and two of the entrant's entries there. */
 function chooseEntryProblem(
-  { event, entrants, entries }: Context,
+  context: Context,
   action: Extract<OfficialAction, { type: "choose-entry" }>,
 ): string | undefined {
+  const { event, entrants } = context;
   const { entrantId, activityId } = action;
   const listing = event.activities.find((a) => a.activityId === activityId);
   if (!listing) {
@@ -300,7 +354,7 @@ function chooseEntryProblem(
     return `choose-entry: ${entrantId} isn't in Competition ${competition?.slug ?? listing.competitionId}; left out`;
   }
   for (const id of [action.entryId, action.newestEntryId]) {
-    const missing = entryMissing(entries, action, id);
+    const missing = entryMissing(context, action, id, true);
     if (missing !== undefined) return `choose-entry: ${missing}; left out`;
   }
   return undefined;

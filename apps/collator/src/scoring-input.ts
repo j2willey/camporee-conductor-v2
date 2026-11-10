@@ -1,10 +1,14 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
-import type { OfficialAction, ScoringInput } from "@camporee-conductor/scoring";
+import type {
+  EventResults,
+  OfficialAction,
+  ScoringInput,
+} from "@camporee-conductor/scoring";
 import { asc } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
+import { resolvedRoster } from "./roster.ts";
 import {
-  roster,
   scoreEntries,
   scoringEntrants,
   type ScoreEntryRow,
@@ -36,38 +40,84 @@ export function loggedActions(db: Db): LoggedAction[] {
     }));
 }
 
+/** Every score entry, in the order received, with its entrant resolved through the roster's merges (ADR-0027). */
+export function resolvedEntries(db: Db): ScoreEntryRow[] {
+  const { resolve } = resolvedRoster(db);
+  return scoreEntries(db).map((e) => ({
+    ...e,
+    entrantId: resolve(e.entrantId),
+  }));
+}
+
+/** An Official action with every entrant it names resolved through merges: a DQ on A applies to B once A is merged. */
+export function resolveAction(
+  action: OfficialAction,
+  resolve: (id: string) => string,
+): OfficialAction {
+  if (action.type === "finalize") {
+    return {
+      ...action,
+      ranking: action.ranking.map((r) => ({
+        ...r,
+        entrantId: resolve(r.entrantId),
+      })),
+    };
+  }
+  if (action.type === "reassign-entry") {
+    return {
+      ...action,
+      entrantId: resolve(action.entrantId),
+      toEntrantId: resolve(action.toEntrantId),
+    };
+  }
+  if ("entrantId" in action) {
+    return { ...action, entrantId: resolve(action.entrantId) };
+  }
+  return action;
+}
+
+/**
+ * The entries with each one's entrant as scoring counts it now (`ActivityResults.countsFor`: applied, valid
+ * reassigns; held ones wait). For the views that list entries by entrant. The box never applies moves itself
+ * (ADR-0019, 2026-11-10).
+ */
+export function countedEntries(
+  entries: ScoreEntryRow[],
+  results: EventResults,
+): ScoreEntryRow[] {
+  const countsFor = new Map(
+    results.activities.flatMap((a) => Object.entries(a.countsFor)),
+  );
+  return entries.map((e) => {
+    const to = countsFor.get(e.id);
+    return to === undefined || to === e.entrantId ? e : { ...e, entrantId: to };
+  });
+}
+
 /**
  * The one input to packages/scoring for the Event, so the Overview and the matrix can't drift (#42): every
- * on-roster entry, in the order received, with its id and Judge, and every logged action. An entry for
- * someone not on the roster isn't scored; the matrix shows it on a row of its own.
+ * entry, in the order received, with its id and Judge, and every logged action. Scoring decides which entries
+ * count: it leaves out an entry for someone not on the roster (reporting it) and applies reassigns (ADR-0019).
  */
 export function scoringInput(
   db: Db,
   bundle: CheckedBundle,
-  entries: ScoreEntryRow[] = scoreEntries(db),
+  entries: ScoreEntryRow[] = resolvedEntries(db),
   logged: LoggedAction[] = loggedActions(db),
 ): ScoringInput {
-  const entrants = scoringEntrants(bundle, roster(db));
-  const rosterIds = new Set(entrants.map((e) => `${e.competitionId} ${e.id}`));
-  const competitionOf = new Map(
-    bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
-  );
+  const roster = resolvedRoster(db);
   return {
     event: bundle.event,
     activities: bundle.activities,
     commonFieldSets: bundle.commonFieldSets,
-    entrants,
-    entries: entries
-      .filter((e) =>
-        rosterIds.has(`${competitionOf.get(e.activityId)} ${e.entrantId}`),
-      )
-      .map(({ id, judgeId, activityId, entrantId, values }) => ({
-        id,
-        judgeId,
-        activityId,
-        entrantId,
-        values,
-      })),
-    actions: logged.map((a) => a.action),
+    entrants: scoringEntrants(bundle, roster),
+    entries: entries.map(({ id, judgeId, activityId, entrantId, values }) => ({
+      id,
+      judgeId,
+      activityId,
+      entrantId,
+      values,
+    })),
+    actions: logged.map((a) => resolveAction(a.action, roster.resolve)),
   };
 }

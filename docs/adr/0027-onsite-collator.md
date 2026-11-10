@@ -64,6 +64,29 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
     - **Finalized Activity:** the phone refuses. Changes are logged Official actions only (ADR-0019,
       Finalization amendment). (#41, #42)
 
+## Roster changes on the box (2026-11-10, #42 PR 6)
+
+- **Officials add, rename and merge Groups and Teams on the laptop** (ADR-0026: rosters live only in the Collator).
+  Any Official can do it (ADR-0019, 2026-11-10). Every change is a row in an append-only **roster log** on the box,
+  with who, when and an optional reason. The Groups and Teams tables keep what the phones sent, so a phone resending
+  a Team it added stays a repeat (item 8), even after an Official renames it.
+- **Rename:** the latest rename gives the name shown everywhere: the judge page's roster, the Official view,
+  Standings.
+- **Merge** (Jim, 2026-11-08): Team A **merged into** Team B is a roster change. A's score entries count for B, and
+  nobody edits a Judge's entry. A disappears from the judge page's roster, but a phone that still scores A offline
+  is fine: the entry counts for B. Two Judges who scored A and B at the same Activity become a conflict on B, and an
+  Official resolves it as usual (`choose-entry`). Groups merge the same way: A's Teams then show under B, and for a
+  Group-level Competition, A's entries count for B. Merges chain (A into B, B into C means A counts for C). A merge
+  that would make a loop is refused.
+- **A merge is reversible.** Nothing is rewritten, so **unmerge** is just a later row in the log: the latest merge or
+  unmerge for a Team or Group wins. The laptop still asks for a confirmation before merging, because standings move
+  at once.
+- **Applying the log:** the box applies it when it builds the scoring input. Entries and Official actions naming a
+  merged-away entrant count for the surviving one, and the merged-away one isn't an entrant. `packages/scoring` sees
+  the resolved roster only.
+- **Reassigning one score** to another Team is a logged Official action, not a roster change (ADR-0019 amendment,
+  2026-11-10, `reassign-entry`).
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge

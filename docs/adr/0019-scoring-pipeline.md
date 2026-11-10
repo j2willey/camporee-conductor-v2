@@ -245,3 +245,17 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
   which entry counts" amendment). That covers the finalize behind a finalized Activity, each entrant's manual rank and
   Official points, and the overall DQ and rank override, each with its action index and whether it's applied or held.
   The Collator renders only that.
+
+## Amendment 2026-11-10 (issue #42): reassign one score entry
+
+- **Logged Official action `reassign-entry`** (Activity, entrant, score entry id, `toEntrantId`, optional notes): the
+  entry counts for `toEntrantId`, e.g. when a Judge picked the wrong Patrol. The Judge's entry is kept as entered.
+  The latest `reassign-entry` for an entry wins. Reassigning it back to the original entrant undoes it.
+- It applies **before** scoring picks the counting entry, so a reassigned entry can be newer than the target's own
+  entries and count, or create a conflict there. Corrections and choices that name the entry by id follow it to its
+  new entrant.
+- **Checks (`actionProblem`):** the entry exists for that Activity and entrant, and `toEntrantId` is an entrant of
+  the Activity's Competition.
+- **While the Activity is finalized,** a later `reassign-entry` waits for `unfinalize`, like every per-Activity
+  action.
+- A whole Team entered twice is a **merge** (ADR-0027, roster changes), not many reassignments.

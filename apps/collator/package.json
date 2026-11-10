@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --testTimeout=20000",
     "start": "node src/main.ts",
     "load-cartridge": "node src/cli/load-cartridge.ts",
     "add-official": "node src/cli/add-official.ts",

@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ApiError, errorMessage, newId, officialApi } from "../api.ts";
 import { clock, entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
+import { AddToRoster } from "./AddToRoster.tsx";
 
 type MatrixRow = OfficialActivity["matrix"][number];
 
@@ -38,6 +39,15 @@ type Pending = {
     }
   | { kind: "revert"; entryId: string; field: FieldInfo }
   | { kind: "choose"; entryId: string; newestEntryId: string }
+  // Moves one entry to another entrant. `entrantId` above is the entrant it counts for now; `where` is the list it
+  // was started from, so only that one shows the form. `back` is a Move back, which starts with the entrant it came from.
+  | {
+      kind: "move";
+      entryId: string;
+      toEntrantId: string;
+      where: "row" | "history";
+      back: boolean;
+    }
   // Finalize and unfinalize are about the whole Activity: their `entrantId` is "". The ranking is the box's,
   // taken when the button was pressed and sent back as is.
   | { kind: "finalize"; ranking: OfficialActivity["finalizeRanking"] }
@@ -126,6 +136,10 @@ export function OfficialActivityView({
       setPending({ ...p, busy: false, problem: "Enter a number" });
       return;
     }
+    if (p.kind === "move" && p.toEntrantId === "") {
+      setPending({ ...p, busy: false, problem: "Choose who it moves to" });
+      return;
+    }
     const base = {
       activityId,
       entrantId: p.entrantId,
@@ -173,19 +187,26 @@ export function OfficialActivityView({
                           fieldId: p.field.id,
                           value: valueOf(p.field, p.input),
                         }
-                      : p.kind === "choose"
+                      : p.kind === "move"
                         ? {
-                            type: "choose-entry",
+                            type: "reassign-entry",
                             ...base,
                             entryId: p.entryId,
-                            newestEntryId: p.newestEntryId,
+                            toEntrantId: p.toEntrantId,
                           }
-                        : {
-                            type: "revert-field-value",
-                            ...base,
-                            entryId: p.entryId,
-                            fieldId: p.field.id,
-                          },
+                        : p.kind === "choose"
+                          ? {
+                              type: "choose-entry",
+                              ...base,
+                              entryId: p.entryId,
+                              newestEntryId: p.newestEntryId,
+                            }
+                          : {
+                              type: "revert-field-value",
+                              ...base,
+                              entryId: p.entryId,
+                              fieldId: p.field.id,
+                            },
         clientCreatedAt: p.clientCreatedAt,
       });
       setView(await officialApi.activity(email, activityId));
@@ -253,6 +274,52 @@ export function OfficialActivityView({
     </div>
   );
 
+  const movePending = (
+    entrantId: string,
+    entryId: string,
+    where: "row" | "history",
+    toEntrantId = "",
+    back = false,
+  ): Pending => ({
+    kind: "move",
+    entrantId,
+    entryId,
+    toEntrantId,
+    where,
+    back,
+    ...fresh(),
+    reason: "",
+    busy: false,
+    problem: null,
+  });
+
+  /** The form for a move: who the entry moves to (the Competition's entrants), a reason, Confirm. */
+  const moveBar = (p: Pending & { kind: "move" }) =>
+    confirmBar(
+      p,
+      p.back ? "Confirm move back" : "Confirm move",
+      <label className={ui.label}>
+        Move to
+        <select
+          className={ui.input}
+          value={p.toEntrantId}
+          disabled={p.busy}
+          onChange={(e) =>
+            setPending({ ...p, toEntrantId: e.target.value, ...fresh() })
+          }
+        >
+          <option value="">Choose…</option>
+          {(view?.matrix ?? [])
+            .filter((m) => m.onRoster && m.entrantId !== p.entrantId)
+            .map((m) => (
+              <option key={m.entrantId} value={m.entrantId}>
+                {entrantLabel(m.entrantId, m.entrant)}
+              </option>
+            ))}
+        </select>
+      </label>,
+    );
+
   const numberPending = (
     r: MatrixRow,
     kind: "rank" | "points",
@@ -296,7 +363,36 @@ export function OfficialActivityView({
         );
       }
     }
-    if (!r.onRoster || !r.scored) return null;
+    if (!r.onRoster) {
+      const entryId = r.entryId;
+      return (
+        <div className="flex flex-wrap gap-1">
+          <AddToRoster
+            email={email}
+            entrantId={r.entrantId}
+            level={view?.activity.competition.level ?? "team"}
+            labels={labels}
+            onAdded={() => void reload()}
+          />
+          {entryId !== null &&
+            (pending?.kind === "move" &&
+            pending.where === "row" &&
+            pending.entrantId === r.entrantId ? (
+              moveBar(pending)
+            ) : (
+              <button
+                className={ui.buttonQuiet}
+                onClick={() =>
+                  setPending(movePending(r.entrantId, entryId, "row"))
+                }
+              >
+                Move to…
+              </button>
+            ))}
+        </div>
+      );
+    }
+    if (!r.scored) return null;
     const disqualified = !r.disqualified;
     return (
       <div className="flex flex-wrap gap-1">
@@ -526,6 +622,69 @@ export function OfficialActivityView({
     </>
   );
 
+  /** Move to… for one entry, or its form when this entry's move is open in this list. */
+  const moveButton = (
+    entrantId: string,
+    entryId: string,
+    where: "row" | "history",
+  ) =>
+    pending?.kind === "move" &&
+    pending.where === where &&
+    pending.entryId === entryId &&
+    pending.entrantId === entrantId ? (
+      moveBar(pending)
+    ) : (
+      <button
+        className={ui.link}
+        onClick={() => setPending(movePending(entrantId, entryId, where))}
+      >
+        Move to…
+      </button>
+    );
+
+  /** "Moved here from A" / "Moved to B" lines for a row, with Move back on an entry moved here. */
+  const moveLines = (r: MatrixRow) =>
+    r.moves.map((m) => {
+      const moving =
+        pending?.kind === "move" &&
+        pending.where === "row" &&
+        pending.entryId === m.entryId &&
+        pending.entrantId === r.entrantId;
+      const other = m.direction === "here" ? m.fromName : m.toName;
+      return (
+        <div key={m.entryId} className="mt-1 text-xs">
+          <p className="text-stone-700">
+            Moved {m.direction === "here" ? "here from" : "to"}{" "}
+            {other ?? (m.direction === "here" ? m.fromId : m.toId)} by {m.by},{" "}
+            {clock(m.at)}
+            {m.notes && `: ${m.notes}`}
+            {m.state === "held" && " (waits until unfinalized)"}
+          </p>
+          {moving && pending.kind === "move"
+            ? moveBar(pending)
+            : m.direction === "here" &&
+              m.state === "applied" && (
+                <button
+                  className={ui.link}
+                  onClick={() =>
+                    setPending(
+                      movePending(
+                        r.entrantId,
+                        m.entryId,
+                        "row",
+                        m.fromId,
+                        true,
+                      ),
+                    )
+                  }
+                >
+                  Move back
+                </button>
+              )}
+        </div>
+      );
+    });
+
   /** Who scored each candidate entry, with Use this entry; the choice confirms in place like any other action. */
   const choiceLines = (r: MatrixRow) => {
     const newest = r.candidates.find((c) => c.newest);
@@ -580,6 +739,7 @@ export function OfficialActivityView({
                           Use this entry
                         </button>
                       )}
+                  {moveButton(r.entrantId, c.entryId, "row")}
                 </li>
               );
             })}
@@ -729,6 +889,7 @@ export function OfficialActivityView({
                     )}
                     {choiceLines(r)}
                     {correctionLines(r)}
+                    {moveLines(r)}
                     {r.dq && (
                       <p
                         className={`text-xs ${r.dq.state === "held" ? "text-stone-700" : "font-medium text-red-800"}`}
@@ -861,6 +1022,9 @@ export function OfficialActivityView({
                 {!e.counts &&
                   " · another entry for this " + entrantWord + " counts"}
               </p>
+              <div className="mt-1">
+                {moveButton(e.entrantId, e.id, "history")}
+              </div>
               <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-sm">
                 {Object.entries(e.values).map(([id, value]) => (
                   <div key={id} className="contents">

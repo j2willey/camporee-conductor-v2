@@ -129,6 +129,19 @@ export type OfficialAction =
       notes?: string;
     }
   | {
+      /**
+       * Moves one score entry to another entrant of the Competition, as the Judge scored the wrong one. The entry
+       * is kept as entered; scoring counts it for `toEntrantId` from then on. `entrantId` is the entry's original
+       * or current entrant. The latest for an entry wins; moving it back is another reassign (ADR-0019).
+       */
+      type: "reassign-entry";
+      activityId: string;
+      entrantId: string;
+      entryId: string;
+      toEntrantId: string;
+      notes?: string;
+    }
+  | {
       /** Reopens a finalized Activity; actions held back since `finalize` then apply (ADR-0019). */
       type: "unfinalize";
       activityId: string;
@@ -183,6 +196,17 @@ export interface EntryReport {
     points: number;
     state: "applied" | "held";
   };
+  /**
+   * The effective `reassign-entry` actions into or out of this entrant here (one per entry; an entry moved back to
+   * where it was scored isn't listed). held: logged after the `finalize`.
+   */
+  reassignments: {
+    actionIndex: number;
+    entryId: string;
+    fromEntrantId: string;
+    toEntrantId: string;
+    state: "applied" | "held";
+  }[];
   /** The effective per-Activity disqualify, if any (DQ or reinstated). */
   dq?: {
     actionIndex: number;
@@ -236,6 +260,13 @@ export interface ActivityResults {
   /** The finalize behind a finalized Activity: its index in `ScoringInput.actions` as given. */
   finalizedBy?: { actionIndex: number };
   entries: EntryResult[];
+  /** Entries for someone who isn't an entrant of the Competition: not scored, the newest per entrant. */
+  offRoster: { entrantId: string; entryId: string }[];
+  /**
+   * Every entry here (by id) and the entrant it counts for now: its own, or where an applied, valid
+   * `reassign-entry` moved it (ADR-0019). Views list entries by entrant from this, never by applying moves.
+   */
+  countsFor: Record<string, string>;
 }
 
 /** One entrant's place in a Competition overall: ranked, or DQ'd overall (no rank). */

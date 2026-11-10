@@ -12,6 +12,7 @@ import {
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialOverview } from "./screens/OfficialOverview.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
+import { RosterPage } from "./screens/RosterPage.tsx";
 import { QrCodesPage } from "./screens/QrCodesPage.tsx";
 import { StandingsPage } from "./screens/StandingsPage.tsx";
 import { ui } from "./ui.ts";
@@ -31,6 +32,7 @@ export function OfficialApp() {
   const [activity, setActivity] = useState<Activity | null>(null);
   const [printing, setPrinting] = useState(false);
   const [standings, setStandings] = useState(false);
+  const [rosterOpen, setRosterOpen] = useState(false);
 
   // Signing in, or coming back with a saved email: the box checks it, as it does on every call.
   useEffect(() => {
@@ -66,6 +68,7 @@ export function OfficialApp() {
     setActivity(null);
     setPrinting(false);
     setStandings(false);
+    setRosterOpen(false);
     setProblem(null);
   };
 
@@ -113,6 +116,12 @@ export function OfficialApp() {
           labels={event.event.labels}
           onBack={() => setStandings(false)}
         />
+      ) : rosterOpen ? (
+        <RosterPage
+          email={email}
+          labels={event.event.labels}
+          onBack={() => setRosterOpen(false)}
+        />
       ) : activity ? (
         <OfficialActivityView
           email={email}
@@ -127,6 +136,7 @@ export function OfficialApp() {
           onPick={setActivity}
           onPrint={() => setPrinting(true)}
           onStandings={() => setStandings(true)}
+          onRoster={() => setRosterOpen(true)}
         />
       )}
     </Shell>
