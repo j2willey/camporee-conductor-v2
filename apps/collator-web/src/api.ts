@@ -155,6 +155,14 @@ export interface OfficialActionBody {
         notes?: string;
       }
     | {
+        type: "reassign-entry";
+        activityId: string;
+        entrantId: string;
+        entryId: string;
+        toEntrantId: string;
+        notes?: string;
+      }
+    | {
         type: "finalize";
         activityId: string;
         ranking: OfficialActivity["finalizeRanking"];

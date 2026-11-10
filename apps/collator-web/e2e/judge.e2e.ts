@@ -1186,6 +1186,73 @@ test("an Official merges a Patrol two Judges added under nearly the same name: o
   await expect(page.getByText(/^Unmerged Foo fighters, by /)).toBeVisible();
 });
 
+test("an Official moves an entry a Judge scored for the wrong Patrol: its values count for the right one; Move back undoes it", async ({
+  page,
+}) => {
+  const put = async (path: string, data: unknown) => {
+    const res = await page.request.put(path, { data });
+    expect(res.ok(), await res.text()).toBe(true);
+  };
+  await put("/api/groups/group-move", { name: "Troop 606" });
+  await put("/api/teams/team-wrong", {
+    groupId: "group-move",
+    name: "Wrong Wolves",
+  });
+  await put("/api/teams/team-right", {
+    groupId: "group-move",
+    name: "Right Rams",
+  });
+  const event = (await (await page.request.get("/api/event")).json()) as {
+    activities: { id: string; title: string }[];
+  };
+  const clownCar = event.activities.find((a) => a.title === "Clown Car");
+  expect(clownCar).toBeDefined();
+  await put("/api/scores/score-wrong", {
+    judge: { id: "judge-Hale", name: "Hale", email: "Hale@example.com" },
+    activityId: clownCar?.id,
+    entrantId: "team-wrong",
+    values: { scouts_balanced: 8, p_flag: 4 },
+    phoneCreatedAt: new Date().toISOString(),
+  });
+
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+  const scores = page.getByRole("table").first();
+  const row = (name: string) =>
+    scores.getByRole("row", { name: new RegExp(`^.*${name} \\(Troop 606\\)`) });
+  await expect(row("Wrong Wolves")).not.toContainText("Not scored");
+  await expect(row("Right Rams")).toContainText("Not scored");
+
+  // Move it from the entries list.
+  const entry = page.locator("ol > li").filter({ hasText: "Wrong Wolves" });
+  await entry.getByRole("button", { name: "Move to…" }).click();
+  await entry
+    .getByLabel("Move to")
+    .selectOption({ label: "Right Rams (Troop 606)" });
+  await entry.getByLabel("Reason").fill("Scored the wrong Patrol");
+  await entry.getByRole("button", { name: "Confirm move" }).click();
+
+  await expect(row("Right Rams")).not.toContainText("Not scored");
+  await expect(row("Right Rams")).toContainText(
+    "Moved here from Wrong Wolves by",
+  );
+  await expect(row("Right Rams")).toContainText("Scored the wrong Patrol");
+  await expect(row("Right Rams")).toContainText("Hale");
+  await expect(row("Wrong Wolves")).toContainText("Not scored");
+
+  // Move back.
+  await row("Right Rams").getByRole("button", { name: "Move back" }).click();
+  await row("Right Rams")
+    .getByRole("button", { name: "Confirm move back" })
+    .click();
+  await expect(row("Right Rams")).toContainText("Not scored");
+  await expect(row("Right Rams")).not.toContainText("Moved here from");
+  await expect(row("Wrong Wolves")).not.toContainText("Not scored");
+});
+
 test.describe("without the service worker", () => {
   // Playwright can't route the page's requests once the service worker controls it, and these checks are
   // the page's own: run them with the service worker blocked.
