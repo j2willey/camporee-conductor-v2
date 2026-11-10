@@ -73,24 +73,52 @@ const idParam = validator("param", (value: Record<string, string>) => {
   return { id: id.data };
 });
 
+/** The Official's reason: optional, but not blank (spaces only is refused). */
+const Notes = z.string().trim().min(1).max(500).optional();
+
 /**
- * An Official's action (#42 PR 2b). Only a per-Activity `disqualify` for now; other types and the overall DQ
- * come with later slices, and answer 400 until then.
+ * An Official's action (#42): a per-Activity `disqualify` (PR 2b) and an Official's correction of a field
+ * (PR 3). Other types and the overall DQ come with later slices, and answer 400 until then.
  */
 const ActionBody = z.strictObject({
-  action: z.strictObject({
-    type: z.literal("disqualify", {
-      error: "Only a disqualify action is accepted so far",
-    }),
-    activityId: z
-      .string({
-        error: "A disqualify needs an activityId (an overall DQ comes later)",
-      })
-      .min(1),
-    entrantId: PhoneId,
-    disqualified: z.boolean(),
-    notes: z.string().trim().max(500).optional(),
-  }),
+  action: z.discriminatedUnion(
+    "type",
+    [
+      z.strictObject({
+        type: z.literal("disqualify"),
+        activityId: z
+          .string({
+            error:
+              "A disqualify needs an activityId (an overall DQ comes later)",
+          })
+          .min(1),
+        entrantId: PhoneId,
+        disqualified: z.boolean(),
+        notes: Notes,
+      }),
+      z.strictObject({
+        type: z.literal("set-field-value"),
+        activityId: z.string().min(1),
+        entrantId: PhoneId,
+        entryId: PhoneId,
+        fieldId: z.string().min(1),
+        value: z.union([z.number(), z.string(), z.boolean(), z.null()]),
+        notes: Notes,
+      }),
+      z.strictObject({
+        type: z.literal("revert-field-value"),
+        activityId: z.string().min(1),
+        entrantId: PhoneId,
+        entryId: PhoneId,
+        fieldId: z.string().min(1),
+        notes: Notes,
+      }),
+    ],
+    {
+      error:
+        "Only a disqualify, set-field-value or revert-field-value action is accepted so far",
+    },
+  ),
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
 

@@ -5,7 +5,7 @@ import {
 } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
-import { officialActions } from "./db/schema.ts";
+import { officialActions, scoreEntries } from "./db/schema.ts";
 import {
   conflict,
   invalid,
@@ -73,6 +73,26 @@ export function recordOfficialAction(
     return same
       ? { ok: true, status: "repeat" }
       : conflict("Official action", submission.id);
+  }
+  const { action } = submission;
+  if (
+    action.type === "set-field-value" ||
+    action.type === "revert-field-value"
+  ) {
+    const entry = db
+      .select()
+      .from(scoreEntries)
+      .where(eq(scoreEntries.id, action.entryId))
+      .get();
+    if (
+      !entry ||
+      entry.activityId !== action.activityId ||
+      entry.entrantId !== action.entrantId
+    ) {
+      return invalid(
+        `${action.type}: there's no score entry ${action.entryId} for that entrant at that Activity; left out`,
+      );
+    }
   }
   const problem = actionProblem(
     {
