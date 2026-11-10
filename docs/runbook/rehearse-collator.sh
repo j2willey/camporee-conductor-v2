@@ -7,7 +7,8 @@
 #   3. Load the Circus 2026 event-day cartridge (with its Officials list) into the running container.
 #   4. Over https://judge.camporeeconductor.com, trusting only Caddy's own root CA (taken from the caddy
 #      container; no -k): add a Group and a Team, submit a score, resend it (a repeat, not a duplicate).
-#   5. The Official view for that Activity shows exactly one entry and one ranked row.
+#   5. The Official view for that Activity shows exactly one entry and one ranked row; an Official added with
+#      add-official in the container signs in (#42).
 #   6. The backup timer wrote a backup to the backup folder that opens and contains the score; backup-now
 #      works too.
 #
@@ -146,6 +147,23 @@ counts=$(body_of "$view" | node -e '
 [ "$counts" = "1 1 rehearsal-score-1 1" ] ||
   fail "Official view: expected 1 entry and 1 ranked row in 1st place, got (entries scored-rows id place) $counts"
 pass "Official view: one entry, one ranked row in 1st place"
+
+echo "== 5b. an Official added from the console can sign in"
+newcomer=console.added@example.com
+me() { # me <email> -> "<body> <status>" from the Official page's sign-in check
+  curl -sS --max-time 10 --cacert "$work/root.crt" --resolve "$host:$https_port:127.0.0.1" \
+    -H "x-official-email: $1" -w ' %{http_code}' "https://$host:$https_port/api/official/me"
+}
+[ "$(status_of "$(me "$newcomer")")" = 403 ] || fail "an email nobody added got into the Official view"
+compose exec -T collator node apps/collator/src/cli/add-official.ts "$newcomer" --name "Casey Console" --director ||
+  fail "add-official"
+signed_in=$(me "$newcomer")
+expect "sign in as the added Official" 200 "$signed_in"
+[ "$(body_of "$signed_in")" = '{"email":"console.added@example.com","role":"director","name":"Casey Console"}' ] ||
+  fail "the added Official's sign-in answered: $(body_of "$signed_in")"
+compose exec -T collator node apps/collator/src/cli/list-officials.ts | grep -q "$newcomer.*box, added" ||
+  fail "list-officials doesn't show the added Official"
+pass "add-official and list-officials work in the container"
 
 echo "== 6. backups"
 has_score() { # has_score <file in the backup folder>: opens it inside the container, as a restore would
