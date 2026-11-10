@@ -9,6 +9,11 @@ import { z } from "zod";
 import type { Db } from "./db/open.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { recordClosure } from "./closures.ts";
+import {
+  exhibitionResults,
+  notExhibition,
+  recordExhibitionResults,
+} from "./exhibition-results.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
@@ -215,6 +220,21 @@ const RosterChangeBody = z.strictObject({
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
 
+/** An Official's whole results list for one Exhibition (#42 PR 7). Rules are checked in exhibition-results.ts. */
+const ExhibitionSaveBody = z.strictObject({
+  rows: z.array(
+    z.strictObject({
+      participantName: z.string(),
+      group: z.string(),
+      team: z.string(),
+      place: z.string(),
+      notes: z.string(),
+    }),
+  ),
+  replacesId: PhoneId.nullable(),
+  clientCreatedAt: z.iso.datetime({ offset: true }),
+});
+
 /** Named, so the refusal says why: placement points are #23, not parity. Runs before `ActionBody` is checked. */
 const refusePlacementPoints: MiddlewareHandler = async (c, next) => {
   const body = (await c.req.json().catch(() => null)) as {
@@ -300,6 +320,37 @@ function officialRoutes(db: Db) {
           officialEmail: normalEmail(c.get("official").email),
           change,
           notes,
+          clientCreatedAt,
+        }),
+      );
+    },
+  );
+
+  routes.get("/exhibitions/:activityId", (c) => {
+    const bundle = c.get("bundle");
+    const activityId = c.req.param("activityId");
+    const found = exhibitionResults(db, bundle, activityId);
+    if (!found) {
+      return c.json({ error: "no such Activity in the loaded Event" }, 404);
+    }
+    const problem = notExhibition(bundle, activityId);
+    return problem ? c.json({ error: problem }, 400) : c.json(found);
+  });
+
+  routes.put(
+    "/exhibitions/:activityId/saves/:id",
+    idParam,
+    jsonBody(ExhibitionSaveBody),
+    (c) => {
+      const { rows, replacesId, clientCreatedAt } = c.req.valid("json");
+      return reply(
+        c,
+        recordExhibitionResults(db, c.get("bundle"), {
+          id: c.req.valid("param").id,
+          officialEmail: normalEmail(c.get("official").email),
+          activityId: c.req.param("activityId"),
+          rows,
+          replacesId,
           clientCreatedAt,
         }),
       );
