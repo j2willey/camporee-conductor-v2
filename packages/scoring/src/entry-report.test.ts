@@ -298,6 +298,23 @@ describe("an Official chooses which entry counts", () => {
     expect(states).toEqual({ a: "applied", b: "not-counting" });
   });
 
+  it("a correction on an entry the standing choice doesn't count is not-counting, even when a newer choice is held", () => {
+    const finalize: OfficialAction = {
+      type: "finalize",
+      activityId: A,
+      ranking: [{ entrantId: "t1", rank: 1, points: 10, disqualified: false }],
+    };
+    const { of } = run(two(), [
+      set("b", 7),
+      choose("a", "b"),
+      finalize,
+      choose("b", "b"),
+    ]);
+    expect(of("t1")?.corrections).toMatchObject([
+      { entryId: "b", state: "not-counting" },
+    ]);
+  });
+
   it("a reopened choice leaves the older entry's corrections superseded", () => {
     const { of } = run(
       [...two(), entry("c", "t1", 9, "j1")],
