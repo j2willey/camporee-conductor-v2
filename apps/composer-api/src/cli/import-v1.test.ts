@@ -202,8 +202,7 @@ describe("import-v1 CLI", () => {
       );
       expect(result.stdout).toContain("  - Jugglers (jugglers)");
     }
-    // Three imports in one test: past vitest's 5 s default on a loaded CI runner (#78, #79).
-  }, 20_000);
+  });
 
   it("refuses the import when the overlay names a game that's gone from the cartridge", () => {
     const removed = circusZip({
