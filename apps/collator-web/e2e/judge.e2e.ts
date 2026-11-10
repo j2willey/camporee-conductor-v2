@@ -17,6 +17,7 @@ import Database from "better-sqlite3";
 // the judge page at that Activity, and an old printout's code falls back to the list.
 // #42 PR 1: the Official's Overview shows each Activity's counts, and a conflict when a second Judge
 // scores the same Patrol.
+// #42 PR 2a: an Activity's Scores matrix: a row per Patrol, a conflict marked, unscored Patrols listed.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -177,17 +178,20 @@ test("an Official on the cartridge's list sees the score ranked; an unlisted ema
   const rows = page.getByRole("table").getByRole("row");
   await expect(rows).toHaveCount(2);
   // 7 clowns + 5 for the flag + Midway Mite's default 6, totalled by packages/scoring.
-  await expect(rows.nth(1).getByRole("cell")).toHaveText([
-    "1st",
+  await expect(rows.nth(1).getByRole("rowheader")).toHaveText(
     "Flaming Arrows (Troop 101)",
-    "18",
-  ]);
+  );
+  const cells = rows.nth(1).getByRole("cell");
+  await expect(cells.first()).toHaveText("1st");
+  await expect(cells.filter({ hasText: /^18$/ })).toHaveCount(1);
   await expect(
-    page.getByRole("columnheader", { name: "Patrol" }),
+    page.getByRole("columnheader", { name: "Patrol", exact: true }),
   ).toBeVisible();
   // The raw entry, with the Judge's name and the values as entered.
   await expect(page.getByText("from Alex Judge")).toBeVisible();
-  await expect(page.getByText("Big Top Cruiser Clowns")).toBeVisible();
+  await expect(
+    page.getByText("Big Top Cruiser Clowns", { exact: true }).first(),
+  ).toBeVisible();
 
   // The email is kept on this device: a reload stays signed in, checked again by the box.
   await page.reload();
@@ -624,6 +628,58 @@ test("the Official's Overview shows Clown Car's counts, refreshes by itself, and
   await expect(row.getByRole("cell").nth(5)).toHaveText(String(conflicts + 1));
   await alex.close();
   await quinn.close();
+});
+
+test("an Official opens Clown Car and sees its Scores matrix: the conflict marked, the newest values, and Patrols not yet scored", async ({
+  page,
+}) => {
+  // A Patrol nobody has scored, added the way a phone adds one.
+  expect(
+    (
+      await page.request.put("/api/groups/group-unscored", {
+        data: { name: "Troop 909" },
+      })
+    ).ok(),
+  ).toBe(true);
+  expect(
+    (
+      await page.request.put("/api/teams/team-unscored", {
+        data: { groupId: "group-unscored", name: "Quiet Foxes" },
+      })
+    ).ok(),
+  ).toBe(true);
+
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+
+  const scores = page.getByRole("table").first();
+  await expect(
+    scores.getByRole("columnheader", { name: "Big Top Cruiser Clowns" }),
+  ).toBeVisible();
+  await expect(
+    scores.getByRole("columnheader", { name: "Patrol Flag" }),
+  ).toBeVisible();
+
+  // Alex and Quinn both scored Night Owls; Quinn's, received last, counts.
+  const conflict = scores.getByRole("row", {
+    name: /Night Owls \(Troop 101\)/,
+  });
+  await expect(conflict).toContainText("Conflict");
+  await expect(conflict).toContainText("Alex Judge");
+  await expect(conflict).toContainText("Quinn Judge");
+  // The cell in each field's column, found by the header's position (the entrant is a row header, not a cell).
+  const headers = await scores.getByRole("columnheader").allTextContents();
+  const valueIn = (label: string) =>
+    conflict.getByRole("cell").nth(headers.indexOf(label) - 1);
+  await expect(valueIn("Big Top Cruiser Clowns")).toHaveText("6");
+  await expect(valueIn("Patrol Flag")).toHaveText("3");
+
+  await expect(scores.getByRole("row", { name: /Quiet Foxes/ })).toContainText(
+    "Not scored",
+  );
 });
 
 test.describe("without the service worker", () => {

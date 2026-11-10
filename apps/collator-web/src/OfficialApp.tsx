@@ -88,7 +88,7 @@ export function OfficialApp() {
   }
 
   return (
-    <Shell wide={printing || !activity}>
+    <Shell wide>
       <header className="mb-4 flex flex-col gap-1 print:hidden">
         <p className={ui.muted}>{event.event.title}</p>
         <p className="text-sm">

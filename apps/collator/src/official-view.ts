@@ -60,6 +60,33 @@ export interface OfficialEvent {
   })[];
 }
 
+/** The distinct Judges who scored each entrant, by entrant id, in the order their first entries were received. */
+export function judgesByEntrant(
+  entries: { entrantId: string; judgeId: string }[],
+): Map<string, Set<string>> {
+  const byEntrant = new Map<string, Set<string>>();
+  for (const e of entries) {
+    const set = byEntrant.get(e.entrantId) ?? new Set<string>();
+    set.add(e.judgeId);
+    byEntrant.set(e.entrantId, set);
+  }
+  return byEntrant;
+}
+
+/**
+ * Entrants scored by more than one different Judge: both entries kept, the newest counts until an Official
+ * resolves it (ADR-0027 item 9). One Judge scoring again is a correction, not a conflict.
+ */
+export function conflictedEntrants(
+  entries: { entrantId: string; judgeId: string }[],
+): Set<string> {
+  return new Set(
+    [...judgesByEntrant(entries)]
+      .filter(([, judges]) => judges.size > 1)
+      .map(([entrantId]) => entrantId),
+  );
+}
+
 export function officialEvent(
   db: Db,
   bundle: CheckedBundle,
@@ -71,12 +98,7 @@ export function officialEvent(
     activities: activities.map(({ id, title, competition }) => {
       const closures = closuresAt(db, id);
       const here = entries.filter((e) => e.activityId === id);
-      const judgesByEntrant = new Map<string, Set<string>>();
-      for (const e of here) {
-        const set = judgesByEntrant.get(e.entrantId) ?? new Set<string>();
-        set.add(e.judgeId);
-        judgesByEntrant.set(e.entrantId, set);
-      }
+      const scoredEntrants = new Set(here.map((e) => e.entrantId));
       const newest = here.reduce<Date | null>(
         (latest, e) =>
           latest && latest >= e.receivedAt ? latest : e.receivedAt,
@@ -87,16 +109,37 @@ export function officialEvent(
         title,
         competition,
         entryCount: here.length,
-        entrantsScored: judgesByEntrant.size,
+        entrantsScored: scoredEntrants.size,
         judges: new Set(here.map((e) => e.judgeId)).size,
-        conflicts: [...judgesByEntrant.values()].filter((j) => j.size > 1)
-          .length,
+        conflicts: conflictedEntrants(here).size,
         lastReceivedAt: newest ? newest.toISOString() : null,
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };
     }),
   };
+}
+
+export interface MatrixRow {
+  entrantId: string;
+  entrant: EntrantName;
+  /** At least one entry here. */
+  scored: boolean;
+  /** The Final Ranking; null when DQ'd or unscored. */
+  place: number | null;
+  total: number | null;
+  disqualified: boolean;
+  /** The counting (newest) entry's values; null when unscored. */
+  values: Record<string, FieldValue> | null;
+  /** The counting entry's Judge: name and home unit, never the email. */
+  judge: { name: string; homeGroup?: string } | null;
+  /** When the box received the counting entry (ISO). */
+  receivedAt: string | null;
+  /** All entries for this entrant here: every version is kept. */
+  entryCount: number;
+  conflict: boolean;
+  /** Distinct Judges who scored it, first received first. */
+  judges: { name: string; homeGroup?: string }[];
 }
 
 export interface OfficialActivity {
@@ -114,6 +157,11 @@ export interface OfficialActivity {
     points: number;
     disqualified: boolean;
   }[];
+  /**
+   * The score matrix (#42 PR 2a): one row per entrant of the Activity's Competition. Scored rows come first in
+   * ranking order, then unscored ones in roster order. Place, total and DQ are from packages/scoring.
+   */
+  matrix: MatrixRow[];
   /** Every score entry received, in the order received. */
   entries: {
     id: string;
@@ -176,6 +224,48 @@ export function officialActivity(
 
   const judgeById = new Map(judgeList(db).map((j) => [j.id, j]));
   const counting = new Set(newest.map((e) => e.id));
+
+  const here = all.filter((e) => e.activityId === activityId);
+  const conflicts = conflictedEntrants(here);
+  const judgeIdsByEntrant = judgesByEntrant(here);
+  const countingByEntrant = new Map(
+    newest
+      .filter((e) => e.activityId === activityId)
+      .map((e) => [e.entrantId, e]),
+  );
+  const ordered = results ? inRankOrder(results) : [];
+  const resultById = new Map(ordered.map((r) => [r.entrantId, r]));
+  const competition = bundle.event.competitions.find(
+    (c) => c.id === listed.competition.id,
+  );
+  const entrants = competition?.level === "team" ? teams : groups;
+  const matrixRow = (entrantId: string): MatrixRow => {
+    const result = resultById.get(entrantId);
+    const entry = countingByEntrant.get(entrantId);
+    return {
+      entrantId,
+      entrant: entrantName(entrantId),
+      scored: entry !== undefined,
+      place: result && !result.disqualified ? result.finalRank : null,
+      total: result ? result.total : null,
+      disqualified: result?.disqualified ?? false,
+      values: entry ? entry.values : null,
+      judge: entry
+        ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
+        : null,
+      receivedAt: entry ? entry.receivedAt.toISOString() : null,
+      entryCount: here.filter((e) => e.entrantId === entrantId).length,
+      conflict: conflicts.has(entrantId),
+      judges: [...(judgeIdsByEntrant.get(entrantId) ?? [])].map((id) =>
+        judgeShown(judgeById.get(id), id),
+      ),
+    };
+  };
+  const rankOrder = ordered.map((r) => r.entrantId);
+  const matrix = [
+    ...rankOrder,
+    ...entrants.map((e) => e.id).filter((id) => !resultById.has(id)),
+  ].map(matrixRow);
   return {
     activity: listed,
     fields: fillVariables(found.fields, found.activity.variables ?? {}).map(
@@ -189,18 +279,17 @@ export function officialActivity(
       points: r.points,
       disqualified: r.disqualified,
     })),
-    entries: all
-      .filter((e) => e.activityId === activityId)
-      .map((e) => ({
-        id: e.id,
-        receivedSeq: e.receivedSeq,
-        judge: judgeShown(judgeById.get(e.judgeId), e.judgeId),
-        entrantId: e.entrantId,
-        entrant: entrantName(e.entrantId),
-        values: e.values,
-        phoneCreatedAt: e.phoneCreatedAt,
-        counts: counting.has(e.id),
-      })),
+    matrix,
+    entries: here.map((e) => ({
+      id: e.id,
+      receivedSeq: e.receivedSeq,
+      judge: judgeShown(judgeById.get(e.judgeId), e.judgeId),
+      entrantId: e.entrantId,
+      entrant: entrantName(e.entrantId),
+      values: e.values,
+      phoneCreatedAt: e.phoneCreatedAt,
+      counts: counting.has(e.id),
+    })),
     closures: closuresAt(db, activityId).map(({ judgeId, ...closure }) => ({
       judge: judgeShown(judgeById.get(judgeId), judgeId),
       ...closure,

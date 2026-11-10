@@ -7,9 +7,15 @@ import { errorMessage, officialApi } from "../api.ts";
 import { entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
 
+const clock = (at: Date) =>
+  at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+const judgeText = (j: { name: string; homeGroup?: string }) =>
+  j.homeGroup ? `${j.name} (${j.homeGroup})` : j.name;
+
 /**
- * One Activity for an Official: its ranking, then every score entry received. The ranking is the box's,
- * from packages/scoring, shown in the order given; nothing is re-sorted or re-totalled here.
+ * One Activity for an Official (#42 PR 2a): the score matrix, then every score entry received. The matrix is
+ * the box's, from packages/scoring, shown in the order given; nothing is re-sorted or re-totalled here.
  */
 export function OfficialActivityView({
   email,
@@ -64,33 +70,111 @@ export function OfficialActivityView({
       </header>
 
       <section className="flex flex-col gap-2">
-        <h2 className={ui.h2}>Ranking</h2>
-        {view.ranking.length === 0 ? (
-          <p className={ui.muted}>No scores yet.</p>
-        ) : (
+        <h2 className={ui.h2}>Scores</h2>
+        {view.matrix.some((r) => r.conflict) && (
+          <p className={ui.warning}>
+            A {entrantWord.toLowerCase()} marked Conflict was scored by more
+            than one Judge: the newest counts until an Official resolves it.
+          </p>
+        )}
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="text-stone-500">
               <tr>
-                <th className="py-1 pr-2 font-medium">Place</th>
-                <th className="py-1 pr-2 font-medium">{entrantWord}</th>
-                <th className="py-1 text-right font-medium">Score</th>
+                <th scope="col" className="py-1 pr-2 font-medium">
+                  Place
+                </th>
+                <th scope="col" className="py-1 pr-2 font-medium">
+                  {entrantWord}
+                </th>
+                {view.fields.map((f) => (
+                  <th
+                    key={f.id}
+                    scope="col"
+                    className="py-1 pr-2 text-right font-medium"
+                  >
+                    {f.label}
+                  </th>
+                ))}
+                <th scope="col" className="py-1 pr-2 text-right font-medium">
+                  Total
+                </th>
+                <th scope="col" className="py-1 pr-2 font-medium">
+                  Judge
+                </th>
+                <th scope="col" className="py-1 font-medium">
+                  Received
+                </th>
               </tr>
             </thead>
             <tbody>
-              {view.ranking.map((r) => (
-                <tr key={r.entrantId} className="border-t border-stone-200">
+              {view.matrix.map((r) => (
+                <tr
+                  key={r.entrantId}
+                  className={`border-t border-stone-200 ${
+                    r.conflict
+                      ? "bg-amber-50"
+                      : r.scored
+                        ? ""
+                        : "text-stone-400"
+                  }`}
+                >
                   <td className="py-2 pr-2">
-                    {r.place === null ? "DQ" : ordinal(r.place)}
+                    {r.disqualified
+                      ? "DQ"
+                      : r.place === null
+                        ? "—"
+                        : ordinal(r.place)}
                   </td>
-                  <td className="py-2 pr-2">
+                  <th scope="row" className="py-2 pr-2 font-normal">
                     {entrantLabel(r.entrantId, r.entrant)}
-                  </td>
-                  <td className="py-2 text-right tabular-nums">{r.total}</td>
+                    {r.conflict && (
+                      <p className="text-xs font-medium text-amber-900">
+                        Conflict: scored by{" "}
+                        {r.judges.map(judgeText).join(" and ")}
+                      </p>
+                    )}
+                    {r.entryCount > 1 && (
+                      <p className="text-xs text-stone-500">
+                        {r.entryCount} versions
+                      </p>
+                    )}
+                  </th>
+                  {r.scored ? (
+                    <>
+                      {view.fields.map((f) => {
+                        const value = r.values?.[f.id];
+                        return (
+                          <td
+                            key={f.id}
+                            className="py-2 pr-2 text-right tabular-nums"
+                          >
+                            {value === null || value === undefined
+                              ? ""
+                              : String(value)}
+                          </td>
+                        );
+                      })}
+                      <td className="py-2 pr-2 text-right tabular-nums">
+                        {r.total}
+                      </td>
+                      <td className="py-2 pr-2">
+                        {r.judge && judgeText(r.judge)}
+                      </td>
+                      <td className="py-2 tabular-nums">
+                        {r.receivedAt && clock(new Date(r.receivedAt))}
+                      </td>
+                    </>
+                  ) : (
+                    <td colSpan={view.fields.length + 3} className="py-2">
+                      Not scored
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
+        </div>
       </section>
 
       <section className="flex flex-col gap-2">
