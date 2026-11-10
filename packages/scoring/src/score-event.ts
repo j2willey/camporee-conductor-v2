@@ -1,4 +1,5 @@
 import type { Activity } from "@camporee-conductor/schema";
+import { actionProblem } from "./action-checks.ts";
 import { awardRecipients } from "./awards.ts";
 import {
   entryTotal,
@@ -36,8 +37,42 @@ function latest<T extends OfficialAction["type"]>(
   return actions.findLast((a): a is ActionOf<T> => a.type === type);
 }
 
+/**
+ * Leaves out each invalid effective `disqualify` (the latest for its entrant and Activity, or overall) with
+ * a warning from `actionProblem`; every other action passes through in log order (ADR-0019, #24).
+ */
+function validDisqualifications(input: ScoringInput): {
+  actions: readonly OfficialAction[];
+  warnings: ScoringWarning[];
+} {
+  const effective = new Map<string, OfficialAction>();
+  for (const a of input.actions) {
+    if (a.type === "disqualify") {
+      effective.set(`${a.activityId ?? ""} ${a.entrantId}`, a);
+    }
+  }
+  const warnings: ScoringWarning[] = [];
+  const invalid = new Set<string>();
+  for (const [key, action] of effective) {
+    const message = actionProblem(input, action);
+    if (message === undefined) continue;
+    invalid.add(key);
+    warnings.push({ action, message });
+  }
+  return {
+    actions: input.actions.filter(
+      (a) =>
+        a.type !== "disqualify" ||
+        !invalid.has(`${a.activityId ?? ""} ${a.entrantId}`),
+    ),
+    warnings,
+  };
+}
+
 /** Scores a whole Event. Pure: the same input always gives the same results (ADR-0019). */
-export function scoreEvent(input: ScoringInput): EventResults {
+export function scoreEvent(given: ScoringInput): EventResults {
+  const checked = validDisqualifications(given);
+  const input = { ...given, actions: checked.actions };
   const activityById = new Map(input.activities.map((a) => [a.id, a]));
   const ranking = rankingFor(input.event.tieNumbering);
   const competitionById = new Map(
@@ -46,7 +81,10 @@ export function scoreEvent(input: ScoringInput): EventResults {
 
   const finalization = finalizations(input, activityById);
   const finalized = finalization.finalized;
-  const warnings: ScoringWarning[] = [...finalization.warnings];
+  const warnings: ScoringWarning[] = [
+    ...checked.warnings,
+    ...finalization.warnings,
+  ];
   const activities: ActivityResults[] = [];
   for (const { activityId, competitionId } of input.event.activities) {
     const activity = activityById.get(activityId);
