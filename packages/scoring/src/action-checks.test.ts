@@ -138,7 +138,7 @@ describe("scoreEvent warns on an invalid effective disqualify", () => {
     expect(message).toBeDefined();
     expect(results.warnings).toEqual([{ action: bad, message }]);
     // The valid DQ still applies.
-    expect(results.activities[0]?.entries).toEqual([
+    expect(results.activities[0]?.entries).toMatchObject([
       { entrantId: "t1", total: 30, points: 0, disqualified: true },
       expect.objectContaining({ entrantId: "t2", finalRank: 1 }),
     ]);

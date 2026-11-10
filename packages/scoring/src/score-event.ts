@@ -16,6 +16,7 @@ import {
 import type {
   ActivityResults,
   CompetitionStandings,
+  EntryReport,
   EntryResult,
   EventResults,
   OfficialAction,
@@ -24,6 +25,9 @@ import type {
   ScoringWarning,
   Standing,
 } from "./types.ts";
+
+// Stub until the report is built (red commit).
+const STUB: EntryReport = { values: {}, corrections: [], conflict: "none" };
 
 type ActionOf<T extends OfficialAction["type"]> = Extract<
   OfficialAction,
@@ -161,7 +165,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
     const recomputed = scored.map(
       ({ entrantId, total, actions }): EntryResult => {
         if (isDisqualified(actions)) {
-          return { entrantId, total, points: 0, disqualified: true };
+          return { entrantId, total, points: 0, disqualified: true, ...STUB };
         }
         const provisionalRank = rankOf(total);
         const finalRank =
@@ -178,6 +182,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
               competition.placementPoints ?? DEFAULT_PLACEMENT_POINTS,
             ),
           disqualified: false,
+          ...STUB,
         };
       },
     );
@@ -497,7 +502,13 @@ function storedResults(
   return ranking.map((r): EntryResult => {
     const total = totalOf(r.entrantId);
     if (r.disqualified) {
-      return { entrantId: r.entrantId, total, points: 0, disqualified: true };
+      return {
+        entrantId: r.entrantId,
+        total,
+        points: 0,
+        disqualified: true,
+        ...STUB,
+      };
     }
     return {
       entrantId: r.entrantId,
@@ -506,6 +517,7 @@ function storedResults(
       finalRank: r.rank,
       points: r.points,
       disqualified: false,
+      ...STUB,
     };
   });
 }
