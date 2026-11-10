@@ -41,6 +41,14 @@ export function inRankOrder(results: ActivityResults): EntryResult[] {
  * `inRankOrder` order. A `finalize` that stores it differs from a recompute in nothing (ADR-0019).
  */
 export function finalizeRanking(results: ActivityResults): FinalizedResult[] {
-  void results;
-  return [];
+  return inRankOrder(results).map((e): FinalizedResult =>
+    e.disqualified
+      ? { entrantId: e.entrantId, disqualified: true }
+      : {
+          entrantId: e.entrantId,
+          rank: e.finalRank,
+          points: e.points,
+          disqualified: false,
+        },
+  );
 }

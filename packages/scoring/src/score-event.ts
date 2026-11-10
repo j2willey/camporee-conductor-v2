@@ -198,11 +198,56 @@ function entryReport(
     values,
     corrections,
     conflict,
+    ...overrideReports(mine, frozenAt, givenIndex),
     ...(choice && {
       choice: {
         actionIndex: givenIndex[choice.index] ?? choice.index,
         entryId: choice.entryId,
         state: choice.state,
+      },
+    }),
+  };
+}
+
+/**
+ * The effective `set-final-rank`, `adjust-points` and per-Activity `disqualify` for one entrant: the latest
+ * of each type, "held" when it was logged after the `finalize` freezing the Activity (the one before the
+ * freeze still decides the result, so the held one is reported in its place).
+ */
+function overrideReports(
+  mine: readonly { action: OfficialAction; index: number }[],
+  frozenAt: number | undefined,
+  givenIndex: readonly number[],
+): Pick<EntryReport, "rankOverride" | "adjustment" | "dq"> {
+  const state = (index: number): "applied" | "held" =>
+    frozenAt !== undefined && index > frozenAt ? "held" : "applied";
+  const last = <T extends OfficialAction["type"]>(type: T) => {
+    const found = mine.findLast(({ action }) => action.type === type);
+    return found && { action: found.action as ActionOf<T>, index: found.index };
+  };
+  const rank = last("set-final-rank");
+  const adjust = last("adjust-points");
+  const dq = last("disqualify");
+  return {
+    ...(rank && {
+      rankOverride: {
+        actionIndex: givenIndex[rank.index] ?? rank.index,
+        rank: rank.action.rank,
+        state: state(rank.index),
+      },
+    }),
+    ...(adjust && {
+      adjustment: {
+        actionIndex: givenIndex[adjust.index] ?? adjust.index,
+        points: adjust.action.points,
+        state: state(adjust.index),
+      },
+    }),
+    ...(dq && {
+      dq: {
+        actionIndex: givenIndex[dq.index] ?? dq.index,
+        disqualified: dq.action.disqualified,
+        state: state(dq.index),
       },
     }),
   };
@@ -405,6 +450,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       activityId,
       competitionId,
       finalized: true,
+      finalizedBy: { actionIndex: givenIndex[frozen.index] ?? frozen.index },
       entries: stored,
     });
   }

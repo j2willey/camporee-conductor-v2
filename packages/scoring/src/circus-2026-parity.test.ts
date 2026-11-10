@@ -208,6 +208,7 @@ describe("Circus 2026 finalized as v1's Officials left it", () => {
           ? {
               ...a,
               finalized: true,
+              finalizedBy: expect.any(Object) as { actionIndex: number },
               entries: expect.arrayContaining(a.entries) as EntryResult[],
             }
           : a,
