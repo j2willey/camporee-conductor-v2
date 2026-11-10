@@ -173,3 +173,44 @@ describe("scoreEvent warns on an invalid effective disqualify", () => {
     ]);
   });
 });
+
+describe("actionProblem: choose-entry and entry ids", () => {
+  const withEntries = {
+    ...context,
+    entries: [
+      { id: "a", activityId: activityId(0), entrantId: "t1", values: {} },
+      { id: "b", activityId: activityId(0), entrantId: "t2", values: {} },
+    ],
+  };
+  const choose = (entryId: string, newestEntryId = "a"): OfficialAction => ({
+    type: "choose-entry",
+    activityId: activityId(0),
+    entrantId: "t1",
+    entryId,
+    newestEntryId,
+  });
+
+  it("accepts entries of that entrant at that Activity", () => {
+    expect(actionProblem(withEntries, choose("a"))).toBeUndefined();
+  });
+
+  it("refuses an unknown entry, another entrant's entry, or an unknown newest entry", () => {
+    expect(actionProblem(withEntries, choose("zz"))).toMatch(/choose-entry/);
+    expect(actionProblem(withEntries, choose("b"))).toMatch(/choose-entry/);
+    expect(actionProblem(withEntries, choose("a", "zz"))).toMatch(
+      /choose-entry/,
+    );
+  });
+
+  it("refuses a correction of an entry that isn't there", () => {
+    expect(
+      actionProblem(withEntries, {
+        type: "revert-field-value",
+        activityId: activityId(0),
+        entrantId: "t1",
+        entryId: "b",
+        fieldId: "score",
+      }),
+    ).toMatch(/revert-field-value/);
+  });
+});

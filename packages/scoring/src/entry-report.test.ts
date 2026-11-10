@@ -223,3 +223,169 @@ describe("conflict", () => {
     expect(of("t1")).toMatchObject({ conflict: "unresolved", entryId: "b" });
   });
 });
+
+const choose = (
+  entryId: string,
+  newestEntryId: string,
+  entrantId = "t1",
+): OfficialAction => ({
+  type: "choose-entry",
+  activityId: A,
+  entrantId,
+  entryId,
+  newestEntryId,
+});
+
+describe("an Official chooses which entry counts", () => {
+  const two = () => [entry("a", "t1", 5, "j1"), entry("b", "t1", 8, "j2")];
+
+  it("choosing the older entry: its values and total count, and the conflict is resolved", () => {
+    const { of } = run(two(), [choose("a", "b")]);
+    expect(of("t1")).toMatchObject({
+      entryId: "a",
+      total: 5,
+      values: { score: 5 },
+      conflict: "resolved",
+      choice: { actionIndex: 0, entryId: "a", state: "applied" },
+    });
+  });
+
+  it("a newer entry after the choice reopens it, and the newest counts", () => {
+    const { of } = run(
+      [...two(), entry("c", "t1", 9, "j1")],
+      [choose("a", "b")],
+    );
+    expect(of("t1")).toMatchObject({
+      entryId: "c",
+      total: 9,
+      conflict: "reopened",
+      choice: { actionIndex: 0, entryId: "a", state: "reopened" },
+    });
+  });
+
+  it("choosing the newest is resolved", () => {
+    const { of } = run(two(), [choose("b", "b")]);
+    expect(of("t1")).toMatchObject({
+      entryId: "b",
+      total: 8,
+      conflict: "resolved",
+      choice: { state: "applied" },
+    });
+  });
+
+  it("with a single Judge a choice is reported and the conflict stays none", () => {
+    const { of } = run(
+      [entry("a", "t1", 5, "j1"), entry("b", "t1", 8, "j1")],
+      [choose("a", "b")],
+    );
+    expect(of("t1")).toMatchObject({
+      entryId: "a",
+      conflict: "none",
+      choice: { state: "applied" },
+    });
+  });
+
+  it("corrections follow their entry: choosing A brings back A's, and B's are not-counting", () => {
+    const { of } = run(two(), [set("a", 6), set("b", 7), choose("a", "b")]);
+    expect(of("t1")).toMatchObject({
+      entryId: "a",
+      total: 6,
+      values: { score: 6 },
+    });
+    const states = Object.fromEntries(
+      (of("t1")?.corrections ?? []).map((c) => [c.entryId, c.state]),
+    );
+    expect(states).toEqual({ a: "applied", b: "not-counting" });
+  });
+
+  it("a reopened choice leaves the older entry's corrections superseded", () => {
+    const { of } = run(
+      [...two(), entry("c", "t1", 9, "j1")],
+      [set("a", 6), choose("a", "b")],
+    );
+    expect(of("t1")?.corrections).toMatchObject([
+      { entryId: "a", state: "superseded" },
+    ]);
+  });
+
+  it("a choice logged after a finalize is held, and the default still counts", () => {
+    const finalize: OfficialAction = {
+      type: "finalize",
+      activityId: A,
+      ranking: [
+        { entrantId: "t1", rank: 1, points: 10, disqualified: false },
+        { entrantId: "t2", rank: 2, points: 8, disqualified: false },
+      ],
+    };
+    const { of } = run(
+      [...two(), entry("x", "t2", 1)],
+      [finalize, choose("a", "b")],
+    );
+    expect(of("t1")).toMatchObject({
+      entryId: "b",
+      total: 8,
+      conflict: "unresolved",
+      choice: { actionIndex: 1, entryId: "a", state: "held" },
+    });
+  });
+
+  it("an unknown entry, or another entrant's entry, is left out with a warning", () => {
+    const { of, results } = run(
+      [...two(), entry("z", "t2", 3, "j1")],
+      [choose("nope", "b"), choose("z", "b")],
+    );
+    expect(of("t1")).toMatchObject({ entryId: "b", conflict: "unresolved" });
+    expect(of("t1")?.choice).toBeUndefined();
+    expect(results.warnings.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("an invalid latest choice is left out and warns; the earlier valid one doesn't come back", () => {
+    const { of, results } = run(two(), [choose("a", "b"), choose("nope", "b")]);
+    expect(results.warnings).toHaveLength(1);
+    expect(of("t1")?.choice).toBeUndefined();
+  });
+
+  it("the latest choice wins", () => {
+    const { of } = run(two(), [choose("a", "b"), choose("b", "b")]);
+    expect(of("t1")).toMatchObject({
+      entryId: "b",
+      choice: { actionIndex: 1, entryId: "b", state: "applied" },
+    });
+  });
+});
+
+describe("a revert held by finalize", () => {
+  it("is reported as held with the Judge's original, while the earlier correction still applies", () => {
+    const finalize: OfficialAction = {
+      type: "finalize",
+      activityId: A,
+      ranking: [{ entrantId: "t1", rank: 1, points: 10, disqualified: false }],
+    };
+    const { of } = run(
+      [entry("a", "t1", 5)],
+      [
+        set("a", 9),
+        finalize,
+        {
+          type: "revert-field-value",
+          activityId: A,
+          entrantId: "t1",
+          entryId: "a",
+          fieldId: "score",
+        },
+      ],
+    );
+    expect(of("t1")?.values).toEqual({ score: 9 });
+    expect(of("t1")?.corrections).toMatchObject([
+      { actionIndex: 0, value: 9, state: "applied" },
+      {
+        actionIndex: 2,
+        entryId: "a",
+        fieldId: "score",
+        value: 5,
+        original: 5,
+        state: "held",
+      },
+    ]);
+  });
+});

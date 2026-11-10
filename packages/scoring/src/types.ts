@@ -107,6 +107,19 @@ export type OfficialAction =
     }
   | {
       /**
+       * An Official's choice of which of an entrant's entries counts at an Activity. `newestEntryId` is
+       * the newest entry the Official saw: if a newer one arrives, the choice reopens and the newest
+       * counts again. Choosing the newest accepts the default (ADR-0019 2026-11-10).
+       */
+      type: "choose-entry";
+      activityId: string;
+      entrantId: string;
+      entryId: string;
+      newestEntryId: string;
+      notes?: string;
+    }
+  | {
+      /**
        * Freezes the Activity's Final Ranking as `ranking`, which stores what the Official saw. Until
        * `unfinalize`, scoring returns it as stored and never re-sorts it (ADR-0019).
        */
@@ -149,6 +162,15 @@ export interface EntryReport {
   corrections: CorrectionReport[];
   /** Conflict state (ADR-0019 2026-11-10). Without an Official's choice: "none" or "unresolved". */
   conflict: "none" | "unresolved" | "resolved" | "reopened";
+  /**
+   * The latest `choose-entry` for the entrant here, if any. applied: it decides which entry counts.
+   * reopened: a newer entry arrived after it, so the newest counts. held: logged after the `finalize`.
+   */
+  choice?: {
+    actionIndex: number;
+    entryId: string;
+    state: "applied" | "reopened" | "held";
+  };
 }
 
 /** One effective field correction and what became of it. */
