@@ -171,6 +171,24 @@ export interface EntryReport {
     entryId: string;
     state: "applied" | "reopened" | "held";
   };
+  /** The effective set-final-rank for this entrant here, if any. */
+  rankOverride?: {
+    actionIndex: number;
+    rank: number;
+    state: "applied" | "held";
+  };
+  /** The effective adjust-points, if any. */
+  adjustment?: {
+    actionIndex: number;
+    points: number;
+    state: "applied" | "held";
+  };
+  /** The effective per-Activity disqualify, if any (DQ or reinstated). */
+  dq?: {
+    actionIndex: number;
+    disqualified: boolean;
+    state: "applied" | "held";
+  };
 }
 
 /** One effective field correction and what became of it. */
@@ -215,6 +233,8 @@ export interface ActivityResults {
   competitionId: string;
   /** Finalized by an Official: `entries` are the stored Final Ranking, in its order (ADR-0019). */
   finalized: boolean;
+  /** The finalize behind a finalized Activity: its index in `ScoringInput.actions` as given. */
+  finalizedBy?: { actionIndex: number };
   entries: EntryResult[];
 }
 

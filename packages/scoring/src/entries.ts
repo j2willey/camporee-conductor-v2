@@ -1,4 +1,9 @@
-import type { ActivityResults, EntryResult, ScoreEntry } from "./types.ts";
+import type {
+  ActivityResults,
+  EntryResult,
+  FinalizedResult,
+  ScoreEntry,
+} from "./types.ts";
 
 /**
  * One score entry per entrant per Activity: the newest. `entries` must be in the order the box received
@@ -29,4 +34,13 @@ export function inRankOrder(results: ActivityResults): EntryResult[] {
     ...ranked.sort((a, b) => a.finalRank - b.finalRank),
     ...results.entries.filter((e) => e.disqualified),
   ];
+}
+
+/**
+ * The ranking an Official would freeze now: each listed entrant's Final Ranking and points, or DQ, in
+ * `inRankOrder` order. A `finalize` that stores it differs from a recompute in nothing (ADR-0019).
+ */
+export function finalizeRanking(results: ActivityResults): FinalizedResult[] {
+  void results;
+  return [];
 }
