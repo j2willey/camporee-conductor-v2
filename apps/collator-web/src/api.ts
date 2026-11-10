@@ -75,7 +75,32 @@ export const officialApi = {
       email,
       `/activities/${encodeURIComponent(activityId)}`,
     ),
+  /** Log an Official action (#42 PR 2b). Resending the same id is safe: the box answers "repeat". */
+  act: (email: string, id: string, body: OfficialActionBody) =>
+    call<{ status: "created" | "repeat" }>(
+      `/api/official/actions/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: email,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
 };
+
+/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement at an Activity. */
+export interface OfficialActionBody {
+  action: {
+    type: "disqualify";
+    activityId: string;
+    entrantId: string;
+    disqualified: boolean;
+    notes?: string;
+  };
+  clientCreatedAt: string;
+}
 
 export const api = {
   event: () => call<JudgeEvent>("/api/event"),
