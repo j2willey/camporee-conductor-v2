@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import type { Db } from "./db/open.ts";
-import { scoreEntries } from "./db/schema.ts";
+import { officialActions, scoreEntries } from "./db/schema.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
 import { loggedActions } from "./official-actions.ts";
@@ -394,10 +394,19 @@ interface MatrixRow {
     at: string;
     notes?: string;
   }[];
+  held: {
+    entryId: string;
+    fieldId: string;
+    label: string;
+    value: unknown;
+    by: string;
+    at: string;
+    notes?: string;
+  }[];
   judge: { name: string; homeGroup?: string } | null;
   receivedAt: string | null;
   entryCount: number;
-  conflict: boolean;
+  conflict: "none" | "unresolved" | "resolved" | "reopened";
   judges: { name: string; homeGroup?: string }[];
 }
 
@@ -430,7 +439,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
       judge: null,
       receivedAt: null,
       entryCount: 0,
-      conflict: false,
+      conflict: "none",
       judges: [],
     });
   });
@@ -457,7 +466,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
     const row = (await view()).matrix.find((r) => r.entrantId === "team-1");
     expect(row).toMatchObject({
       entryCount: 2,
-      conflict: false,
+      conflict: "none",
       total: 13,
       values: { [CLOWN_CAR.ownField]: 8, [CLOWN_CAR.commonField]: 5 },
       judge: { name: "Alex Judge" },
@@ -469,7 +478,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
   it("marks an entrant two Judges scored a conflict, lists both, and shows the newer entry", async () => {
     const row = (await view()).matrix.find((r) => r.entrantId === "team-2");
     expect(row).toMatchObject({
-      conflict: true,
+      conflict: "unresolved",
       entryCount: 2,
       values: { [CLOWN_CAR.ownField]: 4, [CLOWN_CAR.commonField]: 5 },
       judge: { name: "Sam Judge", homeGroup: "Troop 7" },
@@ -479,7 +488,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
       ],
     });
     const other = (await view()).matrix.find((r) => r.entrantId === "team-1");
-    expect(other?.conflict).toBe(false);
+    expect(other?.conflict).toBe("none");
   });
 
   it("has Groups as the rows of a group-level Competition", async () => {
@@ -833,6 +842,48 @@ describe("PUT /api/official/actions/:id: an Official corrects a field (#42 PR 3)
     expect((await row("team-1"))?.superseded).toEqual([]);
   });
 
+  it("a correction logged after a finalize is held: shown as held, and the values don't change", async () => {
+    // The API doesn't accept finalize yet, so the finalize row goes straight into the log.
+    db.insert(officialActions)
+      .values({
+        id: "finalize-1",
+        officialEmail: DIRECTOR_EMAIL,
+        action: JSON.stringify({
+          type: "finalize",
+          activityId: CLOWN_CAR.id,
+          ranking: [
+            { entrantId: "team-1", rank: 1, points: 10, disqualified: false },
+            { entrantId: "team-2", rank: 2, points: 8, disqualified: false },
+          ],
+        }),
+        clientCreatedAt: "2027-05-15T09:59:00Z",
+        receivedAt: new Date(),
+      })
+      .run();
+    expect(
+      (await act("fix-1", setField("score-1", CLOWNS, 2, { notes: "Recount" })))
+        .status,
+    ).toBe(201);
+    expect(await row("team-1")).toMatchObject({
+      entryId: "score-1",
+      values: { [CLOWNS]: 9, [FLAG]: 5 },
+      total: 14,
+      place: 1,
+      corrections: {},
+      superseded: [],
+      held: [
+        {
+          entryId: "score-1",
+          fieldId: CLOWNS,
+          label: "Big Top Cruiser Clowns",
+          value: 2,
+          by: "Pat Director",
+          notes: "Recount",
+        },
+      ],
+    });
+  });
+
   it("never touches the Judge's entry, and a resend of the same id is a repeat", async () => {
     const before = (await view()).entries;
     const payload = setField("score-1", CLOWNS, 2);
@@ -877,7 +928,7 @@ describe("the matrix shows an entry whose entrant isn't on the roster (#42 PR 2b
       values: { [CLOWN_CAR.ownField]: 7 },
       judge: { name: "Alex Judge" },
       entryCount: 1,
-      conflict: false,
+      conflict: "none",
       entrant: { name: null, group: null },
     });
   });
