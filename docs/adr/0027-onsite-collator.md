@@ -87,6 +87,20 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
 - **Reassigning one score** to another Team is a logged Official action, not a roster change (ADR-0019 amendment,
   2026-11-10, `reassign-entry`).
 
+## Exhibition results (2026-11-10, #42 PR 7)
+
+- **An Official records each Exhibition's results on the laptop.** An Exhibition is an Activity with scoring type
+  `exhibition`, recognized individually at awards and never team-scored (CONTEXT.md). The fields match v1's
+  `exhibition_results`: each row has the Participant's name, Group and Team (free text, as in v1: a Participant may
+  not be on the roster), a place (free text, e.g. "1st" or "Honorable mention") and notes. The rows keep the order the
+  Official gives them.
+- **Each save is the whole list for that Exhibition**, as in v1. It's appended to a log on the box (who, when), and the
+  latest save is the current list. Nothing is overwritten, so an earlier version can still be read. A save names the
+  save it replaces, and the Collator refuses a stale one (409, reload) when another Official saved in between. This is
+  the same rule as a stale `finalize`.
+- **These are results, not scoring:** `packages/scoring` never sees them. They're kept on the box and in its backups,
+  and the results bundle and awards printouts (#43, ADR-0015) read them from there.
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge
