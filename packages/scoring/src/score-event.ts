@@ -461,6 +461,9 @@ export function scoreEvent(given: ScoringInput): EventResults {
       const to = e.id === undefined ? undefined : counted.get(e.id);
       return to === undefined ? e : { ...e, entrantId: to };
     });
+    const countsFor: Record<string, string> = Object.fromEntries(
+      moved.flatMap((e) => (e.id === undefined ? [] : [[e.id, e.entrantId]])),
+    );
     // Entries for someone who isn't an entrant of the Competition aren't scored; the newest per entrant is reported.
     const rosterIds = new Set(
       input.entrants
@@ -582,7 +585,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
         finalized: false,
         entries: recomputed,
         offRoster,
-        countsFor: {},
+        countsFor,
       });
       continue;
     }
@@ -601,7 +604,7 @@ export function scoreEvent(given: ScoringInput): EventResults {
       finalizedBy: { actionIndex: givenIndex[frozen.index] ?? frozen.index },
       entries: stored,
       offRoster,
-      countsFor: {},
+      countsFor,
     });
   }
 

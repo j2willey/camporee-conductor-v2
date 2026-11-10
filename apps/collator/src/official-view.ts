@@ -111,7 +111,7 @@ export function officialEvent(
   const input = scoringInput(db, bundle, entries);
   const results = scoreEvent(input);
   const scored = results.activities;
-  const counted = countedEntries(entries, input, results);
+  const counted = countedEntries(entries, results);
   return {
     event,
     activities: activities.map(({ id, title, competition }) => {
@@ -315,7 +315,7 @@ export function officialActivity(
   const input = scoringInput(db, bundle, original, logged);
   const scoredEvent = scoreEvent(input);
   // Where each entry counts now (reassigns applied), for listing entries by entrant.
-  const all = countedEntries(original, input, scoredEvent);
+  const all = countedEntries(original, scoredEvent);
   const newest = newestEntries(all);
   const results = scoredEvent.activities.find(
     (a) => a.activityId === activityId,

@@ -77,31 +77,20 @@ export function resolveAction(
 }
 
 /**
- * The entries as they count now, for showing: each Activity's applied `reassign-entry` laid over them, apart from
- * the ones logged after the `finalize` freezing it (held). Scoring is given the entries as received instead, and
- * does this itself; this is for the views that list entries by entrant.
+ * The entries with each one's entrant as scoring counts it now (`ActivityResults.countsFor`: applied, valid
+ * reassigns; held ones wait). For the views that list entries by entrant. The box never applies moves itself
+ * (ADR-0019, 2026-11-10).
  */
 export function countedEntries(
   entries: ScoreEntryRow[],
-  input: ScoringInput,
   results: EventResults,
 ): ScoreEntryRow[] {
-  const frozenAt = new Map(
-    results.activities.flatMap((a) =>
-      a.finalizedBy ? [[a.activityId, a.finalizedBy.actionIndex] as const] : [],
-    ),
+  const countsFor = new Map(
+    results.activities.flatMap((a) => Object.entries(a.countsFor)),
   );
-  const moved = new Map<string, string>();
-  input.actions.forEach((a, index) => {
-    if (a.type !== "reassign-entry") return;
-    const frozen = frozenAt.get(a.activityId);
-    if (frozen === undefined || index < frozen) {
-      moved.set(a.entryId, a.toEntrantId);
-    }
-  });
   return entries.map((e) => {
-    const to = moved.get(e.id);
-    return to === undefined ? e : { ...e, entrantId: to };
+    const to = countsFor.get(e.id);
+    return to === undefined || to === e.entrantId ? e : { ...e, entrantId: to };
   });
 }
 
