@@ -9,11 +9,16 @@ import { ui } from "../ui.ts";
 
 type MatrixRow = OfficialActivity["matrix"][number];
 
-/** An Official confirming a DQ or reinstatement on one row. The id is kept for retries of the same click. */
+/**
+ * An Official confirming a DQ or reinstatement on one row. The id and `clientCreatedAt` are made once and kept, so
+ * a retry resends exactly the same action and the box answers "repeat", even if the first send landed and only
+ * the reply was lost. Changing the reason makes it a new action, with a new id.
+ */
 interface Pending {
   entrantId: string;
   disqualified: boolean;
   id: string;
+  clientCreatedAt: string;
   reason: string;
   busy: boolean;
   problem: string | null;
@@ -66,7 +71,7 @@ export function OfficialActivityView({
           disqualified: p.disqualified,
           ...(notes !== "" && { notes }),
         },
-        clientCreatedAt: new Date().toISOString(),
+        clientCreatedAt: p.clientCreatedAt,
       });
       setView(await officialApi.activity(email, activityId));
       setPending(null);
@@ -88,7 +93,12 @@ export function OfficialActivityView({
               value={pending.reason}
               disabled={pending.busy}
               onChange={(e) =>
-                setPending({ ...pending, reason: e.target.value })
+                setPending({
+                  ...pending,
+                  reason: e.target.value,
+                  id: newId(),
+                  clientCreatedAt: new Date().toISOString(),
+                })
               }
             />
           </label>
@@ -126,6 +136,7 @@ export function OfficialActivityView({
             entrantId: r.entrantId,
             disqualified,
             id: newId(),
+            clientCreatedAt: new Date().toISOString(),
             reason: "",
             busy: false,
             problem: null,
