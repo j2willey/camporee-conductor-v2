@@ -177,6 +177,25 @@ export interface MatrixRow {
   superseded: SupersededCorrection[];
   /** Corrections logged after the `finalize` that freezes the Activity: they wait for `unfinalize`. */
   held: SupersededCorrection[];
+  /** An Official's standing choice of which entry counts, with who and when; null with none (ADR-0019). */
+  choice: {
+    entryId: string;
+    judge: { name: string; homeGroup?: string };
+    by: string;
+    at: string;
+    notes?: string;
+    state: "applied" | "reopened" | "held";
+  } | null;
+  /** Every entry for this entrant here, in received order, for choosing between them. */
+  candidates: {
+    entryId: string;
+    judge: { name: string; homeGroup?: string };
+    receivedAt: string;
+    counts: boolean;
+    newest: boolean;
+  }[];
+  /** Corrections on an entry an Official chose not to count: they come back if it's chosen again. */
+  notCounting: SupersededCorrection[];
   /** The counting entry's Judge: name and home unit, never the email. */
   judge: { name: string; homeGroup?: string } | null;
   /** When the box received the counting entry (ISO). */
@@ -380,6 +399,9 @@ export function officialActivity(
       corrections: result ? originOf(result) : {},
       superseded: result ? listOf(result, "superseded") : [],
       held: result ? listOf(result, "held") : [],
+      choice: null,
+      candidates: [],
+      notCounting: [],
       judge: entry
         ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
         : null,
