@@ -1,6 +1,7 @@
+import type { Award } from "@camporee-conductor/schema";
 import { describe, expect, it } from "vitest";
 import { actionProblem, scoreEvent, type OfficialAction } from "./index.ts";
-import { activityId, smallEvent } from "./test-support.ts";
+import { activityId, COMPETITION, smallEvent } from "./test-support.ts";
 
 // One check for an Official action, shared by the box (refuses when written) and scoreEvent (warns) (#24).
 const context = {
@@ -57,16 +58,381 @@ describe("actionProblem: overall disqualify", () => {
   });
 });
 
-describe("actionProblem: other action types", () => {
-  it("returns undefined (their checks are #24, 2c)", () => {
+const MISSING = "0196cfa2-4c00-7000-8000-0000000009ff";
+const AWARD_ID = "0196cfa2-4c00-7000-8000-000000000030";
+const withAward = (rule: Award["rule"]) => ({
+  ...smallEvent({
+    scores: [{ t1: 30, t2: 20 }],
+    awards: [
+      {
+        id: AWARD_ID,
+        slug: "the-award",
+        label: "The Award",
+        competitionId: COMPETITION,
+        scope: "event",
+        rule,
+      },
+    ],
+  }),
+  entries: context.entries,
+});
+const outsider = {
+  ...context,
+  entrants: [{ id: "x1", competitionId: "some-other-competition" }],
+};
+
+describe("actionProblem: adjust-points, set-final-rank and set-placement-points", () => {
+  const adjust = (over: Record<string, unknown> = {}) =>
+    ({
+      type: "adjust-points",
+      activityId: activityId(0),
+      entrantId: "t1",
+      points: -5,
+      ...over,
+    }) as OfficialAction;
+  const finalRank = (over: Record<string, unknown> = {}) =>
+    ({
+      type: "set-final-rank",
+      activityId: activityId(0),
+      entrantId: "t1",
+      rank: 2,
+      ...over,
+    }) as OfficialAction;
+  const placement = (over: Record<string, unknown> = {}) =>
+    ({
+      type: "set-placement-points",
+      activityId: activityId(0),
+      entrantId: "t1",
+      points: 0,
+      ...over,
+    }) as OfficialAction;
+
+  it("accepts a valid action of each type (a negative adjustment, placement points of 0)", () => {
+    for (const a of [adjust(), finalRank(), placement()]) {
+      expect(actionProblem(context, a)).toBeUndefined();
+    }
+  });
+
+  it.each([
+    ["adjust-points", adjust],
+    ["set-final-rank", finalRank],
+    ["set-placement-points", placement],
+  ])("%s: refuses an Activity the Event doesn't have", (type, make) => {
+    expect(actionProblem(context, make({ activityId: MISSING }))).toBe(
+      `${type}: no Activity ${MISSING} in the Event; left out`,
+    );
+  });
+
+  it.each([
+    ["adjust-points", adjust],
+    ["set-final-rank", finalRank],
+    ["set-placement-points", placement],
+  ])("%s: refuses an entrant from another Competition", (type, make) => {
+    expect(actionProblem(outsider, make({ entrantId: "x1" }))).toBe(
+      `${type}: x1 isn't in Competition teams; left out`,
+    );
+  });
+
+  it("adjust-points: points must be a finite number", () => {
+    for (const points of [Number.NaN, Infinity]) {
+      expect(actionProblem(context, adjust({ points }))).toBe(
+        `adjust-points: points ${points} for t1 isn't a number; left out`,
+      );
+    }
+  });
+
+  it("set-final-rank: rank must be a whole number from 1", () => {
+    for (const rank of [0, 1.5, -1, Number.NaN]) {
+      expect(actionProblem(context, finalRank({ rank }))).toBe(
+        `set-final-rank: rank ${rank} for t1 isn't a whole number from 1; left out`,
+      );
+    }
+  });
+
+  it("set-placement-points: points must be a finite number from 0", () => {
+    for (const points of [-1, Number.NaN, Infinity]) {
+      expect(actionProblem(context, placement({ points }))).toBe(
+        `set-placement-points: points ${points} for t1 isn't a number from 0; left out`,
+      );
+    }
+  });
+});
+
+describe("actionProblem: set-overall-rank", () => {
+  const overall = (over: Record<string, unknown> = {}) =>
+    ({
+      type: "set-overall-rank",
+      competitionId: COMPETITION,
+      entrantId: "t1",
+      rank: 2,
+      ...over,
+    }) as OfficialAction;
+
+  it("accepts a valid rank", () => {
+    expect(actionProblem(context, overall())).toBeUndefined();
+  });
+
+  it("refuses a Competition the Event doesn't have", () => {
+    expect(actionProblem(context, overall({ competitionId: MISSING }))).toBe(
+      `set-overall-rank: no Competition ${MISSING} in the Event; left out`,
+    );
+  });
+
+  it("refuses an entrant outside the Competition", () => {
+    expect(actionProblem(outsider, overall({ entrantId: "x1" }))).toBe(
+      "set-overall-rank: x1 isn't in Competition teams; left out",
+    );
+  });
+
+  it("refuses a rank that isn't a whole number from 1", () => {
+    expect(actionProblem(context, overall({ rank: 0 }))).toBe(
+      "set-overall-rank: rank 0 for t1 isn't a whole number from 1; left out",
+    );
+  });
+});
+
+describe("actionProblem: set-award", () => {
+  const places: Award["rule"] = {
+    type: "places",
+    names: ["Gold Axe", "Silver Hatchet"],
+  };
+  const setAward = (over: Record<string, unknown> = {}) =>
+    ({
+      type: "set-award",
+      awardId: AWARD_ID,
+      entrantId: "t1",
+      awarded: true,
+      ...over,
+    }) as OfficialAction;
+
+  it("accepts an entrant of the Award's Competition, with or without a place", () => {
+    const ctx = withAward(places);
+    expect(actionProblem(ctx, setAward())).toBeUndefined();
+    expect(actionProblem(ctx, setAward({ place: "Gold Axe" }))).toBeUndefined();
+  });
+
+  it("refuses an Award the Event doesn't have", () => {
     expect(
-      actionProblem(context, {
-        type: "adjust-points",
-        activityId: "nowhere",
-        entrantId: "nobody",
-        points: 5,
-      }),
+      actionProblem(withAward(places), setAward({ awardId: MISSING })),
+    ).toBe(`set-award: no Award ${MISSING} in the Event; left out`);
+  });
+
+  it("refuses an entrant outside the Award's Competition", () => {
+    const ctx = { ...withAward(places), entrants: outsider.entrants };
+    expect(actionProblem(ctx, setAward({ entrantId: "x1" }))).toBe(
+      "set-award: x1 isn't in Competition teams; left out",
+    );
+  });
+
+  it("refuses a place that isn't one of the Award's names", () => {
+    expect(
+      actionProblem(withAward(places), setAward({ place: "Bronze Saw" })),
+    ).toBe(
+      `"Bronze Saw" isn't a place of Award the-award (Gold Axe, Silver Hatchet); left out`,
+    );
+  });
+
+  it("refuses a place on an Award that isn't named places", () => {
+    expect(
+      actionProblem(
+        withAward({ type: "manual" }),
+        setAward({ place: "Gold Axe" }),
+      ),
+    ).toBe(
+      `set-award gives place "Gold Axe" for Award the-award, but only a named-places Award takes a place; left out`,
+    );
+  });
+});
+
+describe("actionProblem: finalize and unfinalize", () => {
+  const finalize = (
+    ranking: Extract<OfficialAction, { type: "finalize" }>["ranking"],
+    id = activityId(0),
+  ): OfficialAction => ({ type: "finalize", activityId: id, ranking });
+  const row = (entrantId: string, rank = 1, points = 100) => ({
+    entrantId,
+    rank,
+    points,
+    disqualified: false as const,
+  });
+
+  it("accepts a ranking of entrants with entries", () => {
+    expect(actionProblem(context, finalize([row("t1")]))).toBeUndefined();
+  });
+
+  it("refuses an Activity the Event doesn't have", () => {
+    expect(actionProblem(context, finalize([], MISSING))).toBe(
+      `finalize: no Activity ${MISSING} in the Event; left out`,
+    );
+    expect(
+      actionProblem(context, { type: "unfinalize", activityId: MISSING }),
+    ).toBe(`unfinalize: no Activity ${MISSING} in the Event; left out`);
+  });
+
+  it("accepts unfinalize for an Activity of the Event", () => {
+    expect(
+      actionProblem(context, { type: "unfinalize", activityId: activityId(0) }),
     ).toBeUndefined();
+  });
+
+  it("refuses an entrant with no entry, one listed twice, a bad rank and bad points", () => {
+    expect(actionProblem(context, finalize([row("t9")]))).toBe(
+      "finalize: t9 has no entry at activity-0; left out",
+    );
+    expect(actionProblem(context, finalize([row("t1"), row("t1", 2)]))).toBe(
+      "finalize: t1 is listed twice at activity-0; left out",
+    );
+    expect(actionProblem(context, finalize([row("t1", 0)]))).toBe(
+      "finalize: rank 0 for t1 at activity-0 isn't a whole number from 1; left out",
+    );
+    expect(actionProblem(context, finalize([row("t1", 1, -1)]))).toBe(
+      "finalize: points -1 for t1 at activity-0 aren't a number from 0; left out",
+    );
+  });
+});
+
+describe("scoreEvent warns with actionProblem's message, once", () => {
+  const input = {
+    ...withAward({ type: "manual" }),
+    entries: [
+      {
+        id: "e1",
+        activityId: activityId(0),
+        entrantId: "t1",
+        values: { score: 30 },
+      },
+      {
+        id: "e2",
+        activityId: activityId(0),
+        entrantId: "t1",
+        values: { score: 31 },
+      },
+      {
+        id: "e3",
+        activityId: activityId(0),
+        entrantId: "t2",
+        values: { score: 20 },
+      },
+    ],
+  };
+  const A = activityId(0);
+  const bad: OfficialAction[] = [
+    { type: "disqualify", entrantId: "nobody", disqualified: true },
+    {
+      type: "adjust-points",
+      activityId: A,
+      entrantId: "t1",
+      points: Number.NaN,
+    },
+    { type: "set-final-rank", activityId: A, entrantId: "t1", rank: 0 },
+    {
+      type: "set-placement-points",
+      activityId: A,
+      entrantId: "t1",
+      points: -1,
+    },
+    { type: "set-award", awardId: MISSING, entrantId: "t1", awarded: true },
+    {
+      type: "set-overall-rank",
+      competitionId: COMPETITION,
+      entrantId: "x9",
+      rank: 1,
+    },
+    {
+      type: "choose-entry",
+      activityId: A,
+      entrantId: "t1",
+      entryId: "nope",
+      newestEntryId: "e2",
+    },
+    {
+      type: "set-field-value",
+      activityId: A,
+      entrantId: "t1",
+      entryId: "e1",
+      fieldId: "nope",
+      value: 1,
+    },
+    {
+      type: "revert-field-value",
+      activityId: A,
+      entrantId: "t1",
+      entryId: "e1",
+      fieldId: "nope",
+    },
+    {
+      type: "finalize",
+      activityId: A,
+      ranking: [{ entrantId: "t9", rank: 1, points: 1, disqualified: false }],
+    },
+    { type: "unfinalize", activityId: MISSING },
+  ];
+
+  it.each(bad.map((a) => [a.type, a] as const))("%s", (_type, action) => {
+    const message = actionProblem(input, action);
+    expect(message).toBeDefined();
+    expect(
+      scoreEvent({ ...input, actions: [action] }).warnings.map(
+        (w) => w.message,
+      ),
+    ).toEqual([message]);
+  });
+});
+
+describe("scoreEvent leaves out an invalid effective action", () => {
+  const A = activityId(0);
+  const run = (actions: OfficialAction[]) =>
+    scoreEvent({ ...smallEvent({ scores: [{ t1: 30, t2: 20 }] }), actions });
+  const ranks = (r: ReturnType<typeof run>) =>
+    r.activities[0]?.entries.map((e) => [
+      e.entrantId,
+      "finalRank" in e ? e.finalRank : "DQ",
+      e.total,
+    ]);
+
+  it("an invalid set-final-rank: the provisional rank stands, one warning", () => {
+    const r = run([
+      { type: "set-final-rank", activityId: A, entrantId: "t1", rank: 0 },
+    ]);
+    expect(ranks(r)).toEqual([
+      ["t1", 1, 30],
+      ["t2", 2, 20],
+    ]);
+    expect(r.warnings).toHaveLength(1);
+  });
+
+  it("an invalid adjust-points doesn't change the total", () => {
+    const r = run([
+      {
+        type: "adjust-points",
+        activityId: A,
+        entrantId: "t1",
+        points: Number.NaN,
+      },
+    ]);
+    expect(ranks(r)).toEqual([
+      ["t1", 1, 30],
+      ["t2", 2, 20],
+    ]);
+    expect(r.warnings).toHaveLength(1);
+  });
+
+  it("a set-award for an unknown Award gives one warning", () => {
+    const r = run([
+      { type: "set-award", awardId: MISSING, entrantId: "t1", awarded: true },
+    ]);
+    expect(r.warnings.map((w) => w.message)).toEqual([
+      `set-award: no Award ${MISSING} in the Event; left out`,
+    ]);
+  });
+
+  it("a superseded invalid action doesn't warn", () => {
+    const r = run([
+      { type: "set-final-rank", activityId: A, entrantId: "t1", rank: 0 },
+      { type: "set-final-rank", activityId: A, entrantId: "t1", rank: 2 },
+    ]);
+    expect(r.warnings).toEqual([]);
+    expect(ranks(r)?.[0]).toEqual(["t1", 2, 30]);
   });
 });
 
