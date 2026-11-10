@@ -21,6 +21,8 @@ import Database from "better-sqlite3";
 // #42 PR 2b: an Official DQs the Patrol in 1st and reinstates it; everyone below moves up, and the row says who.
 // #42 PR 3: an Official corrects the 2nd-placed Patrol's flag to take 1st, reverts it, and dismisses a correction
 // once a newer score has made it stale.
+// #42 PR 4: an Official resolves Night Owls' conflict by choosing Alex's older entry, a newer score reopens it,
+// and choosing the newest accepts it; the Overview's Conflicts count follows.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -824,6 +826,92 @@ test("an Official corrects the 2nd-placed Patrol's flag to take 1st, reverts it,
   await expect(rowFor(second)).toContainText("was on an older entry");
   await rowFor(second).getByRole("button", { name: "Dismiss" }).click();
   await expect(rowFor(second)).not.toContainText("was on an older entry");
+});
+
+test("an Official resolves Night Owls' conflict with Use this entry, a newer score reopens it, and choosing the newest resolves it again", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  const conflictsCell = async () => {
+    const cells = page
+      .getByRole("row", { name: /Clown Car/ })
+      .getByRole("cell");
+    return ((await cells.nth(5).textContent()) ?? "").trim();
+  };
+  const before = await conflictsCell();
+  const countOf = (text: string) => (text === "—" ? 0 : Number(text));
+  expect(countOf(before)).toBeGreaterThanOrEqual(1);
+
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(page.getByRole("heading", { name: "Scores" })).toBeVisible();
+  const scores = page.getByRole("table").first();
+  const owls = scores.getByRole("row").filter({
+    has: page.getByRole("rowheader", { name: /^Night Owls \(Troop 101\)/ }),
+  });
+  const headers = await scores.getByRole("columnheader").allTextContents();
+  const valueIn = (label: string) =>
+    owls.getByRole("cell").nth(headers.indexOf(label) - 1);
+  await expect(owls).toContainText("Conflict");
+
+  // Alex's entry is the older one (5 and 2); Quinn's counts now (6 and 3).
+  await owls
+    .getByRole("listitem")
+    .filter({ hasText: "Alex Judge" })
+    .getByRole("button", { name: "Use this entry" })
+    .click();
+  await owls.getByLabel("Reason").fill("Quinn scored the wrong Patrol");
+  await owls.getByRole("button", { name: "Confirm choice" }).click();
+  await expect(owls).toContainText("Resolved:");
+  await expect(owls).toContainText("Quinn scored the wrong Patrol");
+  await expect(valueIn("Big Top Cruiser Clowns")).toHaveText("5");
+  await expect(valueIn("Patrol Flag")).toHaveText("2");
+  await expect(owls).not.toHaveClass(/bg-amber-50/);
+
+  // The Overview reads the box afresh when it opens: one fewer conflict.
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  expect(countOf(await conflictsCell())).toBe(countOf(before) - 1);
+
+  // A newer score for Night Owls reopens it, and the newest counts again.
+  const { entrant_id: entrantId, activity_id: activityId } = firstRow(
+    "SELECT se.entrant_id, se.activity_id FROM score_entries se JOIN teams t ON t.id = se.entrant_id WHERE t.name = ? LIMIT 1",
+    "Night Owls",
+  );
+  expect(
+    (
+      await page.request.put("/api/scores/score-owls-newer", {
+        data: {
+          judge: {
+            id: "judge-late-2",
+            name: "Late Judge",
+            email: "late@example.com",
+          },
+          activityId,
+          entrantId,
+          values: { scouts_balanced: 7, p_flag: 1 },
+          phoneCreatedAt: new Date().toISOString(),
+        },
+      })
+    ).ok(),
+  ).toBe(true);
+  await page.reload();
+  await page.getByRole("button", { name: "Clown Car" }).click();
+  await expect(owls).toContainText("A newer entry arrived after");
+  await expect(valueIn("Big Top Cruiser Clowns")).toHaveText("7");
+
+  // Choosing the newest accepts the default: resolved.
+  await owls
+    .getByRole("listitem")
+    .filter({ hasText: "Late Judge" })
+    .getByRole("button", { name: "Use this entry" })
+    .click();
+  await owls.getByRole("button", { name: "Confirm choice" }).click();
+  await expect(owls).toContainText("Resolved:");
+  await expect(owls).not.toContainText("A newer entry arrived after");
+  await expect(valueIn("Big Top Cruiser Clowns")).toHaveText("7");
 });
 
 test.describe("without the service worker", () => {

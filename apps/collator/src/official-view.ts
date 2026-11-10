@@ -1,15 +1,14 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import type { Official } from "@camporee-conductor/schema";
 import {
-  correctedValues,
-  fieldCorrections,
   fillVariables,
   inRankOrder,
   newestEntries,
   scoreEvent,
   valueProblem,
+  type EntryResult,
   type FieldValue,
-  type OfficialAction,
+  type ScoringInput,
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
@@ -22,6 +21,7 @@ import {
   scoreEntries,
   scoringEntrants,
   type JudgeIdentity,
+  type ScoreEntryRow,
 } from "./roster-and-scores.ts";
 
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Every ranking comes from
@@ -59,7 +59,7 @@ export interface OfficialEvent {
     entrantsScored: number;
     /** Distinct Judges with score entries here. */
     judges: number;
-    /** Entrants scored by more than one Judge: both kept, newest counts, an Official looks (item 9). */
+    /** Entrants whose conflict is unresolved or reopened: two Judges scored, no standing choice (ADR-0019). */
     conflicts: number;
     /** When the newest entry here was received (ISO), or null with none. */
     lastReceivedAt: string | null;
@@ -80,17 +80,39 @@ export function judgesByEntrant(
 }
 
 /**
- * Entrants scored by more than one different Judge: both entries kept, the newest counts until an Official
- * resolves it (ADR-0027 item 9). One Judge scoring again is a correction, not a conflict.
+ * The one input to packages/scoring for the Event, so the Overview and the matrix can't drift (#42): every
+ * on-roster entry, in the order received, with its id and Judge, and every logged action. An entry for
+ * someone not on the roster isn't scored; the matrix shows it on a row of its own.
  */
-export function conflictedEntrants(
-  entries: { entrantId: string; judgeId: string }[],
-): Set<string> {
-  return new Set(
-    [...judgesByEntrant(entries)]
-      .filter(([, judges]) => judges.size > 1)
-      .map(([entrantId]) => entrantId),
+export function scoringInput(
+  db: Db,
+  bundle: CheckedBundle,
+  entries: ScoreEntryRow[] = scoreEntries(db),
+  logged: LoggedAction[] = loggedActions(db),
+): ScoringInput {
+  const entrants = scoringEntrants(bundle, roster(db));
+  const rosterIds = new Set(entrants.map((e) => `${e.competitionId} ${e.id}`));
+  const competitionOf = new Map(
+    bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
   );
+  return {
+    event: bundle.event,
+    activities: bundle.activities,
+    commonFieldSets: bundle.commonFieldSets,
+    entrants,
+    entries: entries
+      .filter((e) =>
+        rosterIds.has(`${competitionOf.get(e.activityId)} ${e.entrantId}`),
+      )
+      .map(({ id, judgeId, activityId, entrantId, values }) => ({
+        id,
+        judgeId,
+        activityId,
+        entrantId,
+        values,
+      })),
+    actions: logged.map((a) => a.action),
+  };
 }
 
 export function officialEvent(
@@ -99,6 +121,7 @@ export function officialEvent(
   entries = scoreEntries(db),
 ): OfficialEvent {
   const { event, activities } = judgeEvent(bundle);
+  const scored = scoreEvent(scoringInput(db, bundle, entries)).activities;
   return {
     event,
     activities: activities.map(({ id, title, competition }) => {
@@ -117,7 +140,12 @@ export function officialEvent(
         entryCount: here.length,
         entrantsScored: scoredEntrants.size,
         judges: new Set(here.map((e) => e.judgeId)).size,
-        conflicts: conflictedEntrants(here).size,
+        conflicts:
+          scored
+            .find((a) => a.activityId === id)
+            ?.entries.filter(
+              (e) => e.conflict === "unresolved" || e.conflict === "reopened",
+            ).length ?? 0,
         lastReceivedAt: newest ? newest.toISOString() : null,
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
@@ -147,13 +175,35 @@ export interface MatrixRow {
   corrections: Record<string, FieldCorrection>;
   /** Corrections made to an older entry of this entrant: a newer entry counts now, so an Official looks again. */
   superseded: SupersededCorrection[];
+  /** Corrections logged after the `finalize` that freezes the Activity: they wait for `unfinalize`. */
+  held: SupersededCorrection[];
+  /** An Official's standing choice of which entry counts, with who and when; null with none (ADR-0019). */
+  choice: {
+    entryId: string;
+    judge: { name: string; homeGroup?: string };
+    by: string;
+    at: string;
+    notes?: string;
+    state: "applied" | "reopened" | "held";
+  } | null;
+  /** Every entry for this entrant here, in received order, for choosing between them. */
+  candidates: {
+    entryId: string;
+    judge: { name: string; homeGroup?: string };
+    receivedAt: string;
+    counts: boolean;
+    newest: boolean;
+  }[];
+  /** Corrections on an entry an Official chose not to count: they come back if it's chosen again. */
+  notCounting: SupersededCorrection[];
   /** The counting entry's Judge: name and home unit, never the email. */
   judge: { name: string; homeGroup?: string } | null;
   /** When the box received the counting entry (ISO). */
   receivedAt: string | null;
   /** All entries for this entrant here: every version is kept. */
   entryCount: number;
-  conflict: boolean;
+  /** Scoring's conflict state for the entrant here (ADR-0019 2026-11-10). */
+  conflict: EntryResult["conflict"];
   /** Distinct Judges who scored it, first received first. */
   judges: { name: string; homeGroup?: string }[];
 }
@@ -170,7 +220,7 @@ export interface FieldCorrection {
   warning?: string;
 }
 
-/** An effective correction whose entry no longer counts. */
+/** An effective correction that isn't laid over the values: its entry doesn't count, or it's held. */
 export interface SupersededCorrection {
   entryId: string;
   fieldId: string;
@@ -243,39 +293,45 @@ export function officialActivity(
 
   const newest = newestEntries(all);
   const logged = loggedActions(db);
+  const input = scoringInput(db, bundle, all, logged);
   const rosterIds = new Set(
-    scoringEntrants(bundle, { groups, teams }).map(
-      (e) => `${e.competitionId} ${e.id}`,
-    ),
+    input.entrants.map((e) => `${e.competitionId} ${e.id}`),
   );
   const competitionOf = new Map(
     bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
   );
   const onRoster = (activity: string, entrantId: string): boolean =>
     rosterIds.has(`${competitionOf.get(activity)} ${entrantId}`);
-  const results = scoreEvent({
-    event: bundle.event,
-    activities: bundle.activities,
-    commonFieldSets: bundle.commonFieldSets,
-    entrants: scoringEntrants(bundle, { groups, teams }),
-    // An entry for someone not on the roster isn't ranked; the matrix shows it on a row of its own.
-    entries: newest.filter((e) => onRoster(e.activityId, e.entrantId)),
-    actions: logged.map((a) => a.action),
-  }).activities.find((a) => a.activityId === activityId);
+  const results = scoreEvent(input).activities.find(
+    (a) => a.activityId === activityId,
+  );
 
   const judgeById = new Map(judgeList(db).map((j) => [j.id, j]));
-  const counting = new Set(newest.map((e) => e.id));
 
   const here = all.filter((e) => e.activityId === activityId);
-  const conflicts = conflictedEntrants(here);
   const judgeIdsByEntrant = judgesByEntrant(here);
   const countingByEntrant = new Map(
     newest
       .filter((e) => e.activityId === activityId)
       .map((e) => [e.entrantId, e]),
   );
+  const newestIds = new Set(newest.map((e) => e.id));
+  const countingIds = new Set(
+    (results?.entries ?? []).flatMap((r) =>
+      r.entryId === undefined ? [] : [r.entryId],
+    ),
+  );
   const ordered = results ? inRankOrder(results) : [];
   const resultById = new Map(ordered.map((r) => [r.entrantId, r]));
+  // The entry that counts comes from scoring's report; an off-roster entry isn't scored, so the newest counts.
+  const entryById = new Map(here.map((e) => [e.id, e]));
+  const countingEntry = (entrantId: string) => {
+    const reported = resultById.get(entrantId)?.entryId;
+    return (
+      (reported === undefined ? undefined : entryById.get(reported)) ??
+      countingByEntrant.get(entrantId)
+    );
+  };
   const competition = bundle.event.competitions.find(
     (c) => c.id === listed.competition.id,
   );
@@ -299,77 +355,67 @@ export function officialActivity(
   const fieldList = fillVariables(found.fields, found.activity.variables ?? {});
   const officialName = (a: LoggedAction): string =>
     officialByEmail(bundle, a.officialEmail)?.name ?? a.officialEmail;
-  // Corrections here, by entrant, with the logged action that made each.
-  const correctionsHere = logged.flatMap((row) =>
-    (row.action.type === "set-field-value" ||
-      row.action.type === "revert-field-value") &&
-    row.action.activityId === activityId
-      ? [{ row, action: row.action }]
-      : [],
-  );
-  const loggedOf = new Map<OfficialAction, LoggedAction>(
-    correctionsHere.map(({ row, action }) => [action, row]),
-  );
-  const actionsOf = (entrantId: string) =>
-    correctionsHere
-      .filter(({ action }) => action.entrantId === entrantId)
-      .map(({ action }) => action);
-  const correctionsOf = (
-    entrantId: string,
-    entry: { id: string; values: Record<string, FieldValue> },
-  ): MatrixRow["corrections"] => {
+  const originOf = (r: EntryResult): MatrixRow["corrections"] => {
     const result: MatrixRow["corrections"] = {};
-    for (const [fieldId, action] of fieldCorrections(
-      entry,
-      actionsOf(entrantId),
-    )) {
-      const row = loggedOf.get(action);
+    for (const c of r.corrections) {
+      if (c.state !== "applied") continue;
+      const row = logged[c.actionIndex];
       if (!row) continue;
-      const field = fieldList.find((f) => f.id === fieldId);
-      const warning = field ? valueProblem(field, action.value) : undefined;
-      result[fieldId] = {
-        original: entry.values[fieldId] ?? null,
+      const field = fieldList.find((f) => f.id === c.fieldId);
+      const warning = field ? valueProblem(field, c.value) : undefined;
+      const notes = (row.action as { notes?: string }).notes;
+      result[c.fieldId] = {
+        original: c.original,
         by: officialName(row),
         at: row.receivedAt.toISOString(),
-        ...(action.notes !== undefined && { notes: action.notes }),
+        ...(notes !== undefined && { notes }),
         ...(warning !== undefined && { warning }),
       };
     }
     return result;
   };
-  const supersededOf = (
-    entrantId: string,
-    countingId: string | undefined,
-  ): SupersededCorrection[] => {
-    const latestByKey = new Map<string, LoggedAction>();
-    for (const { row, action } of correctionsHere) {
-      if (action.entrantId === entrantId) {
-        latestByKey.set(JSON.stringify([action.entryId, action.fieldId]), row);
-      }
-    }
-    return [...latestByKey.values()].flatMap((row) => {
-      const { action } = row;
-      if (action.type !== "set-field-value" || action.entryId === countingId) {
-        return [];
-      }
+  const listOf = (
+    r: EntryResult,
+    state: "superseded" | "held" | "not-counting",
+  ): SupersededCorrection[] =>
+    r.corrections.flatMap((c) => {
+      const row = logged[c.actionIndex];
+      if (c.state !== state || !row) return [];
+      const notes = (row.action as { notes?: string }).notes;
       return [
         {
-          entryId: action.entryId,
-          fieldId: action.fieldId,
-          label:
-            fieldList.find((f) => f.id === action.fieldId)?.label ??
-            action.fieldId,
-          value: action.value,
+          entryId: c.entryId,
+          fieldId: c.fieldId,
+          label: fieldList.find((f) => f.id === c.fieldId)?.label ?? c.fieldId,
+          value: c.value,
           by: officialName(row),
           at: row.receivedAt.toISOString(),
-          ...(action.notes !== undefined && { notes: action.notes }),
+          ...(notes !== undefined && { notes }),
         },
       ];
     });
+  const choiceOf = (r: EntryResult): MatrixRow["choice"] => {
+    const row = r.choice ? logged[r.choice.actionIndex] : undefined;
+    if (!r.choice || !row) return null;
+    const notes = (row.action as { notes?: string }).notes;
+    return {
+      entryId: r.choice.entryId,
+      judge: judgeShown(
+        judgeById.get(entryById.get(r.choice.entryId)?.judgeId ?? ""),
+        entryById.get(r.choice.entryId)?.judgeId ?? "",
+      ),
+      by: officialName(row),
+      at: row.receivedAt.toISOString(),
+      ...(notes !== undefined && { notes }),
+      state: r.choice.state,
+    };
   };
   const matrixRow = (entrantId: string): MatrixRow => {
     const result = resultById.get(entrantId);
-    const entry = countingByEntrant.get(entrantId);
+    const entry = countingEntry(entrantId);
+    const theirs = here.filter((e) => e.entrantId === entrantId);
+    const newestHere = theirs.at(-1);
+    const judgeIds = judgeIdsByEntrant.get(entrantId) ?? new Set<string>();
     return {
       entrantId,
       entrant: entrantName(entrantId),
@@ -379,19 +425,28 @@ export function officialActivity(
       disqualified: result?.disqualified ?? false,
       dq: result?.disqualified ? dqOf(entrantId) : null,
       onRoster: true,
-      entryId: entry ? entry.id : null,
-      values: entry ? correctedValues(entry, actionsOf(entrantId)) : null,
-      corrections: entry ? correctionsOf(entrantId, entry) : {},
-      superseded: supersededOf(entrantId, entry?.id),
+      entryId: entry ? (result?.entryId ?? entry.id) : null,
+      // Everything below comes from scoring's report. An off-roster entry isn't scored: shown as entered.
+      values: entry ? (result?.values ?? entry.values) : null,
+      corrections: result ? originOf(result) : {},
+      superseded: result ? listOf(result, "superseded") : [],
+      held: result ? listOf(result, "held") : [],
+      choice: result ? choiceOf(result) : null,
+      candidates: theirs.map((e) => ({
+        entryId: e.id,
+        judge: judgeShown(judgeById.get(e.judgeId), e.judgeId),
+        receivedAt: e.receivedAt.toISOString(),
+        counts: e.id === entry?.id,
+        newest: e.id === newestHere?.id,
+      })),
+      notCounting: result ? listOf(result, "not-counting") : [],
       judge: entry
         ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
         : null,
       receivedAt: entry ? entry.receivedAt.toISOString() : null,
       entryCount: here.filter((e) => e.entrantId === entrantId).length,
-      conflict: conflicts.has(entrantId),
-      judges: [...(judgeIdsByEntrant.get(entrantId) ?? [])].map((id) =>
-        judgeShown(judgeById.get(id), id),
-      ),
+      conflict: result?.conflict ?? (judgeIds.size > 1 ? "unresolved" : "none"),
+      judges: [...judgeIds].map((id) => judgeShown(judgeById.get(id), id)),
     };
   };
   const rankOrder = ordered.map((r) => r.entrantId);
@@ -427,7 +482,9 @@ export function officialActivity(
       entrant: entrantName(e.entrantId),
       values: e.values,
       phoneCreatedAt: e.phoneCreatedAt,
-      counts: counting.has(e.id),
+      counts: onRoster(activityId, e.entrantId)
+        ? countingIds.has(e.id)
+        : newestIds.has(e.id),
     })),
     closures: closuresAt(db, activityId).map(({ judgeId, ...closure }) => ({
       judge: judgeShown(judgeById.get(judgeId), judgeId),

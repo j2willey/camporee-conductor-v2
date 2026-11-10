@@ -40,6 +40,11 @@ describe("newestEntries: one entry per entrant per Activity, the newest received
 });
 
 describe("inRankOrder: an Activity's results in the order to list them", () => {
+  const REPORT = {
+    values: {},
+    corrections: [],
+    conflict: "none" as const,
+  };
   const ranked = (entrantId: string, finalRank: number, total = 0) => ({
     entrantId,
     total,
@@ -47,12 +52,14 @@ describe("inRankOrder: an Activity's results in the order to list them", () => {
     finalRank,
     points: 0,
     disqualified: false as const,
+    ...REPORT,
   });
   const dq = (entrantId: string) => ({
     entrantId,
     total: 0,
     points: 0 as const,
     disqualified: true as const,
+    ...REPORT,
   });
   const results = (
     entries: ActivityResults["entries"],

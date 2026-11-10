@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import type { Db } from "./db/open.ts";
-import { scoreEntries } from "./db/schema.ts";
+import { officialActions, scoreEntries } from "./db/schema.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
 import { loggedActions } from "./official-actions.ts";
@@ -225,6 +225,10 @@ describe("GET /api/official/event: the Activities to pick from", () => {
   });
 });
 
+interface OfficialEvent {
+  activities: { id: string; conflicts: number }[];
+}
+
 interface OfficialActivity {
   activity: { id: string; title: string };
   fields: { id: string; label: string; type: string; options?: string[] }[];
@@ -365,6 +369,24 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
 });
 
 interface MatrixRow {
+  choice: {
+    entryId: string;
+    judge: { name: string };
+    by: string;
+    notes?: string;
+    state: string;
+  } | null;
+  candidates: {
+    entryId: string;
+    counts: boolean;
+    newest: boolean;
+  }[];
+  notCounting: {
+    entryId: string;
+    fieldId: string;
+    value: unknown;
+    by: string;
+  }[];
   entrantId: string;
   entrant: { name: string | null; group: string | null };
   scored: boolean;
@@ -394,10 +416,19 @@ interface MatrixRow {
     at: string;
     notes?: string;
   }[];
+  held: {
+    entryId: string;
+    fieldId: string;
+    label: string;
+    value: unknown;
+    by: string;
+    at: string;
+    notes?: string;
+  }[];
   judge: { name: string; homeGroup?: string } | null;
   receivedAt: string | null;
   entryCount: number;
-  conflict: boolean;
+  conflict: "none" | "unresolved" | "resolved" | "reopened";
   judges: { name: string; homeGroup?: string }[];
 }
 
@@ -430,7 +461,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
       judge: null,
       receivedAt: null,
       entryCount: 0,
-      conflict: false,
+      conflict: "none",
       judges: [],
     });
   });
@@ -457,7 +488,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
     const row = (await view()).matrix.find((r) => r.entrantId === "team-1");
     expect(row).toMatchObject({
       entryCount: 2,
-      conflict: false,
+      conflict: "none",
       total: 13,
       values: { [CLOWN_CAR.ownField]: 8, [CLOWN_CAR.commonField]: 5 },
       judge: { name: "Alex Judge" },
@@ -469,7 +500,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
   it("marks an entrant two Judges scored a conflict, lists both, and shows the newer entry", async () => {
     const row = (await view()).matrix.find((r) => r.entrantId === "team-2");
     expect(row).toMatchObject({
-      conflict: true,
+      conflict: "unresolved",
       entryCount: 2,
       values: { [CLOWN_CAR.ownField]: 4, [CLOWN_CAR.commonField]: 5 },
       judge: { name: "Sam Judge", homeGroup: "Troop 7" },
@@ -479,7 +510,7 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
       ],
     });
     const other = (await view()).matrix.find((r) => r.entrantId === "team-1");
-    expect(other?.conflict).toBe(false);
+    expect(other?.conflict).toBe("none");
   });
 
   it("has Groups as the rows of a group-level Competition", async () => {
@@ -833,6 +864,48 @@ describe("PUT /api/official/actions/:id: an Official corrects a field (#42 PR 3)
     expect((await row("team-1"))?.superseded).toEqual([]);
   });
 
+  it("a correction logged after a finalize is held: shown as held, and the values don't change", async () => {
+    // The API doesn't accept finalize yet, so the finalize row goes straight into the log.
+    db.insert(officialActions)
+      .values({
+        id: "finalize-1",
+        officialEmail: DIRECTOR_EMAIL,
+        action: JSON.stringify({
+          type: "finalize",
+          activityId: CLOWN_CAR.id,
+          ranking: [
+            { entrantId: "team-1", rank: 1, points: 10, disqualified: false },
+            { entrantId: "team-2", rank: 2, points: 8, disqualified: false },
+          ],
+        }),
+        clientCreatedAt: "2027-05-15T09:59:00Z",
+        receivedAt: new Date(),
+      })
+      .run();
+    expect(
+      (await act("fix-1", setField("score-1", CLOWNS, 2, { notes: "Recount" })))
+        .status,
+    ).toBe(201);
+    expect(await row("team-1")).toMatchObject({
+      entryId: "score-1",
+      values: { [CLOWNS]: 9, [FLAG]: 5 },
+      total: 14,
+      place: 1,
+      corrections: {},
+      superseded: [],
+      held: [
+        {
+          entryId: "score-1",
+          fieldId: CLOWNS,
+          label: "Big Top Cruiser Clowns",
+          value: 2,
+          by: "Pat Director",
+          notes: "Recount",
+        },
+      ],
+    });
+  });
+
   it("never touches the Judge's entry, and a resend of the same id is a repeat", async () => {
     const before = (await view()).entries;
     const payload = setField("score-1", CLOWNS, 2);
@@ -842,6 +915,152 @@ describe("PUT /api/official/actions/:id: an Official corrects a field (#42 PR 3)
     expect(await again.json()).toEqual({ status: "repeat" });
     expect(loggedActions(db)).toHaveLength(1);
     expect((await view()).entries).toEqual(before);
+  });
+});
+
+describe("PUT /api/official/actions/:id: an Official chooses which entry counts (#42)", () => {
+  beforeEach(withScores);
+
+  // Owls (team-2): Alex's score-2 (3 clowns + flag 5 = 8) then Sam's score-3 (4 + 5 = 9, the newest, counts).
+  const CLOWNS = CLOWN_CAR.ownField;
+  const FLAG = CLOWN_CAR.commonField;
+  const choose = (entryId: string, newestEntryId = "score-3") => ({
+    action: {
+      type: "choose-entry",
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-2",
+      entryId,
+      newestEntryId,
+      notes: "Sam scored the wrong Team",
+    },
+    clientCreatedAt: "2027-05-15T10:00:00Z",
+  });
+  const act = (id: string, payload: unknown) =>
+    app.request(`/api/official/actions/${id}`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        [OFFICIAL_EMAIL_HEADER]: DIRECTOR_EMAIL,
+      },
+      body: JSON.stringify(payload),
+    });
+  const view = async () =>
+    (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as OfficialActivity;
+  const row = async (id: string) =>
+    (await view()).matrix.find((r) => r.entrantId === id);
+  const conflicts = async () => {
+    const res = await asOfficial("/api/official/event", DIRECTOR_EMAIL);
+    const event = (await res.json()) as OfficialEvent;
+    return event.activities.find((a) => a.id === CLOWN_CAR.id)?.conflicts;
+  };
+  const scoreAgain = (id: string, judge: typeof ALEX, clowns: number) =>
+    put(`/api/scores/${id}`, {
+      judge,
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-2",
+      values: { [CLOWNS]: clowns, [FLAG]: 5 },
+      phoneCreatedAt: "2027-05-15T09:55:00Z",
+    });
+
+  it("choosing the older entry: the row's values, total and place follow, and the conflict is resolved", async () => {
+    expect((await act("choose-1", choose("score-2"))).status).toBe(201);
+    expect(await row("team-2")).toMatchObject({
+      entryId: "score-2",
+      values: { [CLOWNS]: 3, [FLAG]: 5 },
+      total: 8,
+      place: 2,
+      conflict: "resolved",
+      judge: { name: "Alex Judge" },
+      choice: {
+        entryId: "score-2",
+        judge: { name: "Alex Judge" },
+        by: "Pat Director",
+        notes: "Sam scored the wrong Team",
+        state: "applied",
+      },
+    });
+    const candidates = (await row("team-2"))?.candidates;
+    expect(candidates).toMatchObject([
+      { entryId: "score-2", counts: true, newest: false },
+      { entryId: "score-3", counts: false, newest: true },
+    ]);
+    // The raw history marks the entry that counts, which is now the older one.
+    const counts = (await view()).entries
+      .filter((e) => e.entrantId === "team-2")
+      .map((e) => [e.id, e.counts]);
+    expect(counts).toEqual([
+      ["score-2", true],
+      ["score-3", false],
+    ]);
+  });
+
+  it("a third entry reopens it, and the newest counts", async () => {
+    await act("choose-1", choose("score-2"));
+    expect((await scoreAgain("score-4", ALEX, 6)).status).toBe(201);
+    expect(await row("team-2")).toMatchObject({
+      entryId: "score-4",
+      total: 11,
+      conflict: "reopened",
+      choice: { entryId: "score-2", state: "reopened" },
+    });
+  });
+
+  it("the Overview's conflicts drops by one when resolved, and comes back when reopened", async () => {
+    expect(await conflicts()).toBe(1);
+    await act("choose-1", choose("score-2"));
+    expect(await conflicts()).toBe(0);
+    await scoreAgain("score-4", ALEX, 6);
+    expect(await conflicts()).toBe(1);
+  });
+
+  it("refuses a choice whose newestEntryId isn't the newest the box holds (409), and logs nothing", async () => {
+    await scoreAgain("score-4", ALEX, 6);
+    const res = await act("choose-1", choose("score-2", "score-3"));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "A newer entry has arrived since you loaded this; reload and choose again.",
+    );
+    expect(loggedActions(db)).toEqual([]);
+  });
+
+  it("answers a resend of the same id 200 even after a newer entry arrived", async () => {
+    await act("choose-1", choose("score-2"));
+    await scoreAgain("score-4", ALEX, 6);
+    expect((await act("choose-1", choose("score-2"))).status).toBe(200);
+  });
+
+  it("refuses an entry the box doesn't have, or one for another entrant (400)", async () => {
+    expect((await act("c-1", choose("nope"))).status).toBe(400);
+    expect((await act("c-2", choose("score-1"))).status).toBe(400);
+  });
+
+  it("choosing A shows B's correction in notCounting", async () => {
+    await act("fix-1", {
+      action: {
+        type: "set-field-value",
+        activityId: CLOWN_CAR.id,
+        entrantId: "team-2",
+        entryId: "score-3",
+        fieldId: CLOWNS,
+        value: 7,
+      },
+      clientCreatedAt: "2027-05-15T10:00:00Z",
+    });
+    expect((await row("team-2"))?.total).toBe(12);
+    await act("choose-1", choose("score-2"));
+    expect(await row("team-2")).toMatchObject({
+      total: 8,
+      corrections: {},
+      notCounting: [
+        { entryId: "score-3", fieldId: CLOWNS, value: 7, by: "Pat Director" },
+      ],
+      superseded: [],
+    });
   });
 });
 
@@ -877,7 +1096,7 @@ describe("the matrix shows an entry whose entrant isn't on the roster (#42 PR 2b
       values: { [CLOWN_CAR.ownField]: 7 },
       judge: { name: "Alex Judge" },
       entryCount: 1,
-      conflict: false,
+      conflict: "none",
       entrant: { name: null, group: null },
     });
   });

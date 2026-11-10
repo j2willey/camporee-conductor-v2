@@ -78,7 +78,7 @@ const Notes = z.string().trim().min(1).max(500).optional();
 
 /**
  * An Official's action (#42): a per-Activity `disqualify` (PR 2b) and an Official's correction of a field
- * (PR 3). Other types and the overall DQ come with later slices, and answer 400 until then.
+ * (PR 3) and a `choose-entry` (which entry counts). Other types and the overall DQ come with later slices, and answer 400 until then.
  */
 const ActionBody = z.strictObject({
   action: z.discriminatedUnion(
@@ -113,10 +113,18 @@ const ActionBody = z.strictObject({
         fieldId: z.string().min(1),
         notes: Notes,
       }),
+      z.strictObject({
+        type: z.literal("choose-entry"),
+        activityId: z.string().min(1),
+        entrantId: PhoneId,
+        entryId: PhoneId,
+        newestEntryId: PhoneId,
+        notes: Notes,
+      }),
     ],
     {
       error:
-        "Only a disqualify, set-field-value or revert-field-value action is accepted so far",
+        "Only a disqualify, set-field-value, revert-field-value or choose-entry action is accepted so far",
     },
   ),
   clientCreatedAt: z.iso.datetime({ offset: true }),

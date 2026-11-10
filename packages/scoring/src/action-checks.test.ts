@@ -3,7 +3,13 @@ import { actionProblem, scoreEvent, type OfficialAction } from "./index.ts";
 import { activityId, smallEvent } from "./test-support.ts";
 
 // One check for an Official action, shared by the box (refuses when written) and scoreEvent (warns) (#24).
-const context = smallEvent({ scores: [{ t1: 30, t2: 20 }] });
+const context = {
+  ...smallEvent({ scores: [{ t1: 30, t2: 20 }] }),
+  // Entries the corrections below name.
+  entries: [
+    { id: "e1", activityId: activityId(0), entrantId: "t1", values: {} },
+  ],
+};
 
 const dq = (
   entrantId: string,
@@ -138,7 +144,7 @@ describe("scoreEvent warns on an invalid effective disqualify", () => {
     expect(message).toBeDefined();
     expect(results.warnings).toEqual([{ action: bad, message }]);
     // The valid DQ still applies.
-    expect(results.activities[0]?.entries).toEqual([
+    expect(results.activities[0]?.entries).toMatchObject([
       { entrantId: "t1", total: 30, points: 0, disqualified: true },
       expect.objectContaining({ entrantId: "t2", finalRank: 1 }),
     ]);
@@ -171,5 +177,46 @@ describe("scoreEvent warns on an invalid effective disqualify", () => {
     expect(results.warnings).toEqual([
       { action: last, message: expect.stringContaining("ghost") },
     ]);
+  });
+});
+
+describe("actionProblem: choose-entry and entry ids", () => {
+  const withEntries = {
+    ...context,
+    entries: [
+      { id: "a", activityId: activityId(0), entrantId: "t1", values: {} },
+      { id: "b", activityId: activityId(0), entrantId: "t2", values: {} },
+    ],
+  };
+  const choose = (entryId: string, newestEntryId = "a"): OfficialAction => ({
+    type: "choose-entry",
+    activityId: activityId(0),
+    entrantId: "t1",
+    entryId,
+    newestEntryId,
+  });
+
+  it("accepts entries of that entrant at that Activity", () => {
+    expect(actionProblem(withEntries, choose("a"))).toBeUndefined();
+  });
+
+  it("refuses an unknown entry, another entrant's entry, or an unknown newest entry", () => {
+    expect(actionProblem(withEntries, choose("zz"))).toMatch(/choose-entry/);
+    expect(actionProblem(withEntries, choose("b"))).toMatch(/choose-entry/);
+    expect(actionProblem(withEntries, choose("a", "zz"))).toMatch(
+      /choose-entry/,
+    );
+  });
+
+  it("refuses a correction of an entry that isn't there", () => {
+    expect(
+      actionProblem(withEntries, {
+        type: "revert-field-value",
+        activityId: activityId(0),
+        entrantId: "t1",
+        entryId: "b",
+        fieldId: "score",
+      }),
+    ).toMatch(/revert-field-value/);
   });
 });

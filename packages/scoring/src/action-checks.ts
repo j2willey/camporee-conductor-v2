@@ -3,7 +3,7 @@ import type { OfficialAction, ScoringInput } from "./types.ts";
 
 type Context = Pick<
   ScoringInput,
-  "event" | "activities" | "commonFieldSets" | "entrants"
+  "event" | "activities" | "commonFieldSets" | "entrants" | "entries"
 >;
 
 /** Why this Official action is invalid for this Event and roster, or undefined if it's valid (ADR-0019, #24). */
@@ -18,6 +18,8 @@ export function actionProblem(
   ) {
     return fieldValueProblem(context, action);
   }
+  if (action.type === "choose-entry")
+    return chooseEntryProblem(context, action);
   // #24: 2c adds the checks for the other action types.
   return undefined;
 }
@@ -52,10 +54,10 @@ function disqualifyProblem(
 /**
  * A correction names an Activity of the Event, an entrant of its Competition and one of its fields,
  * Common Fields included. A set value must be of the field's kind; its range is guidance, so it's not
- * checked. The entry id is the Collator's to check: scoring sees only the entries that count (ADR-0019).
+ * checked. Its entry must be one of the entrant's at the Activity (ADR-0019 2026-11-10).
  */
 function fieldValueProblem(
-  { event, activities, commonFieldSets, entrants }: Context,
+  { event, activities, commonFieldSets, entrants, entries }: Context,
   action: Extract<
     OfficialAction,
     { type: "set-field-value" | "revert-field-value" }
@@ -80,6 +82,8 @@ function fieldValueProblem(
   ) {
     return `${type}: ${entrantId} isn't in Competition ${competition.slug}; left out`;
   }
+  const missing = entryMissing(entries, action, action.entryId);
+  if (missing !== undefined) return `${type}: ${missing}; left out`;
   const field = mergeCommonFields(activity, competition, commonFieldSets).find(
     (f) => f.id === fieldId,
   );
@@ -91,4 +95,47 @@ function fieldValueProblem(
     range: false,
   });
   return problem === undefined ? undefined : `${type}: ${problem}; left out`;
+}
+
+/** Why `entryId` isn't one of the entrant's entries at the Activity, or undefined when it is. */
+function entryMissing(
+  entries: Context["entries"],
+  { activityId, entrantId }: { activityId: string; entrantId: string },
+  entryId: string,
+): string | undefined {
+  return entries.some(
+    (e) =>
+      e.id === entryId &&
+      e.activityId === activityId &&
+      e.entrantId === entrantId,
+  )
+    ? undefined
+    : `there's no score entry ${entryId} for ${entrantId} at that Activity`;
+}
+
+/** A choice names an Activity of the Event, an entrant of its Competition, and two of the entrant's entries there. */
+function chooseEntryProblem(
+  { event, entrants, entries }: Context,
+  action: Extract<OfficialAction, { type: "choose-entry" }>,
+): string | undefined {
+  const { entrantId, activityId } = action;
+  const listing = event.activities.find((a) => a.activityId === activityId);
+  if (!listing) {
+    return `choose-entry: no Activity ${activityId} in the Event; left out`;
+  }
+  if (
+    !entrants.some(
+      (e) => e.id === entrantId && e.competitionId === listing.competitionId,
+    )
+  ) {
+    const competition = event.competitions.find(
+      (c) => c.id === listing.competitionId,
+    );
+    return `choose-entry: ${entrantId} isn't in Competition ${competition?.slug ?? listing.competitionId}; left out`;
+  }
+  for (const id of [action.entryId, action.newestEntryId]) {
+    const missing = entryMissing(entries, action, id);
+    if (missing !== undefined) return `choose-entry: ${missing}; left out`;
+  }
+  return undefined;
 }

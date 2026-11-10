@@ -63,7 +63,7 @@ describe("per-Activity DQ: removed before the Activity is ranked", () => {
     const [activity] = scoreEvent(
       smallEvent({ scores: [SCORES], actions: [dq("t1", true, 0)] }),
     ).activities;
-    expect(activity?.entries.find((e) => e.entrantId === "t1")).toEqual({
+    expect(activity?.entries.find((e) => e.entrantId === "t1")).toMatchObject({
       entrantId: "t1",
       total: 30,
       points: 0,

@@ -11,6 +11,8 @@ export type FieldValue = number | string | boolean | null;
 export interface ScoreEntry {
   /** The Collator's score entry id; corrections name it (ADR-0019). Optional for fixtures without ids. */
   id?: string;
+  /** The Judge who entered it; two different Judges for one entrant make a conflict (ADR-0019). Optional for fixtures. */
+  judgeId?: string;
   activityId: string;
   /** A Team or Group from the Collator roster, by the Competition's `level`. */
   entrantId: string;
@@ -105,6 +107,19 @@ export type OfficialAction =
     }
   | {
       /**
+       * An Official's choice of which of an entrant's entries counts at an Activity. `newestEntryId` is
+       * the newest entry the Official saw: if a newer one arrives, the choice reopens and the newest
+       * counts again. Choosing the newest accepts the default (ADR-0019 2026-11-10).
+       */
+      type: "choose-entry";
+      activityId: string;
+      entrantId: string;
+      entryId: string;
+      newestEntryId: string;
+      notes?: string;
+    }
+  | {
+      /**
        * Freezes the Activity's Final Ranking as `ranking`, which stores what the Official saw. Until
        * `unfinalize`, scoring returns it as stored and never re-sorts it (ADR-0019).
        */
@@ -137,7 +152,45 @@ export interface ScoringInput {
 /** One entrant's result at one Activity: ranked, or DQ'd (no rank, 0 placement points). */
 export type EntryResult = RankedEntry | DisqualifiedEntry;
 
-export interface RankedEntry {
+/** What scoring used for an entrant at an Activity, reported with its result (ADR-0019 2026-11-10). */
+export interface EntryReport {
+  /** The counting entry's id; undefined when entries carry no ids. */
+  entryId?: string;
+  /** The values scoring used: the counting entry's, with its applied corrections laid over them. */
+  values: Record<string, FieldValue>;
+  /** Every effective correction (the latest set, not reverted, per entry and field) on this entrant's entries here. */
+  corrections: CorrectionReport[];
+  /** Conflict state (ADR-0019 2026-11-10). Without an Official's choice: "none" or "unresolved". */
+  conflict: "none" | "unresolved" | "resolved" | "reopened";
+  /**
+   * The latest `choose-entry` for the entrant here, if any. applied: it decides which entry counts.
+   * reopened: a newer entry arrived after it, so the newest counts. held: logged after the `finalize`.
+   */
+  choice?: {
+    actionIndex: number;
+    entryId: string;
+    state: "applied" | "reopened" | "held";
+  };
+}
+
+/** One effective field correction and what became of it. */
+export interface CorrectionReport {
+  /** Index of the action in `ScoringInput.actions` as given, so callers can say who and when. */
+  actionIndex: number;
+  entryId: string;
+  fieldId: string;
+  value: FieldValue;
+  /** The value on its entry as the Judge entered it; null when blank or missing. */
+  original: FieldValue;
+  /**
+   * applied: on the counting entry. held: logged after the `finalize` that freezes the Activity.
+   * superseded: on an entry a newer entry replaced by default. not-counting: on an entry an Official
+   * chose not to count.
+   */
+  state: "applied" | "superseded" | "not-counting" | "held";
+}
+
+export interface RankedEntry extends EntryReport {
   entrantId: string;
   total: number;
   /** Rank by total within the Activity, before any Official override. */
@@ -150,7 +203,7 @@ export interface RankedEntry {
 }
 
 /** DQ'd at this Activity: removed before ranking, so it has no rank (ADR-0019). */
-export interface DisqualifiedEntry {
+export interface DisqualifiedEntry extends EntryReport {
   entrantId: string;
   total: number;
   points: 0;
