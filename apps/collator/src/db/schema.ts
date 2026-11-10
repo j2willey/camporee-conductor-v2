@@ -127,3 +127,23 @@ export const officialActions = sqliteTable("official_actions", {
   clientCreatedAt: text("client_created_at").notNull(),
   receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
 });
+
+/**
+ * Officials added on the box's console (#42 PR 5, ADR-0027 item 5), laid over the cartridge's list. Append-only:
+ * never updated or deleted, and for one email the newest row wins. Tied to the Event they were added for.
+ */
+export const addedOfficials = sqliteTable(
+  "added_officials",
+  {
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    eventId: text("event_id").notNull(),
+    /** `normalEmail()`. */
+    email: text("email").notNull(),
+    name: text("name"),
+    role: text("role", { enum: ["director", "official"] }).notNull(),
+    addedAt: integer("added_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  () => [
+    check("added_officials_role", oneOf("role", ["director", "official"])),
+  ],
+);

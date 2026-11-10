@@ -12,13 +12,9 @@ import { recordClosure } from "./closures.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
+import { normalEmail, officialByEmail } from "./officials.ts";
 import { officialStandings } from "./standings.ts";
-import {
-  normalEmail,
-  officialActivity,
-  officialByEmail,
-  officialEvent,
-} from "./official-view.ts";
+import { officialActivity, officialEvent } from "./official-view.ts";
 import {
   recordGroup,
   recordScore,
@@ -214,7 +210,7 @@ function officialRoutes(db: Db) {
     if (email === "") {
       return c.json({ error: "Sign in with an Official's email." }, 401);
     }
-    const official = officialByEmail(event.bundle, email);
+    const official = officialByEmail(db, event.bundle, email);
     if (!official) {
       return c.json(
         {

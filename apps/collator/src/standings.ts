@@ -50,7 +50,7 @@ export function officialStandings(
 ): CompetitionStandingsView[] {
   const logged = loggedActions(db);
   const results = scoreEvent(scoringInput(db, bundle, undefined, logged));
-  const actedOn = actedOnLog(bundle, logged);
+  const actedOn = actedOnLog(db, bundle, logged);
   const nameOf = entrantNamer(db);
   const listed = officialEvent(db, bundle).activities;
   const scoringType = new Map(

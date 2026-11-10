@@ -12,6 +12,8 @@
     "test": "vitest run",
     "start": "node src/main.ts",
     "load-cartridge": "node src/cli/load-cartridge.ts",
+    "add-official": "node src/cli/add-official.ts",
+    "list-officials": "node src/cli/list-officials.ts",
     "backup-now": "node src/cli/backup-now.ts",
     "db:generate": "drizzle-kit generate"
   },
