@@ -3,7 +3,7 @@ import type {
   OfficialActivity,
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState, type ReactNode } from "react";
-import { errorMessage, newId, officialApi } from "../api.ts";
+import { ApiError, errorMessage, newId, officialApi } from "../api.ts";
 import { clock, entrantLabel, levelLabel, ordinal } from "../format.ts";
 import { ui } from "../ui.ts";
 
@@ -13,7 +13,8 @@ type FieldInfo = OfficialActivity["fields"][number];
 type FieldValue = number | string | boolean | null;
 
 /**
- * An Official confirming something on one row: a DQ or reinstatement, a field correction, or the revert of one.
+ * An Official confirming something on one row: a DQ or reinstatement, a field correction, the revert of one, or
+ * the choice of which entry counts.
  * Only one is open at a time. The id and `clientCreatedAt` are made once and kept, so a retry resends exactly
  * the same action and the box answers "repeat", even if the first send landed and only the reply was lost.
  * Changing the value or the reason makes it a new action, with a new id.
@@ -25,6 +26,8 @@ type Pending = {
   reason: string;
   busy: boolean;
   problem: string | null;
+  /** The box refused a choice made on a stale view (409): Reload, then choose again. */
+  stale?: boolean;
 } & (
   | { kind: "dq"; disqualified: boolean }
   | {
@@ -34,6 +37,7 @@ type Pending = {
       input: string | boolean;
     }
   | { kind: "revert"; entryId: string; field: FieldInfo }
+  | { kind: "choose"; entryId: string; newestEntryId: string }
 );
 
 const fresh = () => ({
@@ -123,20 +127,37 @@ export function OfficialActivityView({
                   fieldId: p.field.id,
                   value: valueOf(p.field, p.input),
                 }
-              : {
-                  type: "revert-field-value",
-                  ...base,
-                  entryId: p.entryId,
-                  fieldId: p.field.id,
-                },
+              : p.kind === "choose"
+                ? {
+                    type: "choose-entry",
+                    ...base,
+                    entryId: p.entryId,
+                    newestEntryId: p.newestEntryId,
+                  }
+                : {
+                    type: "revert-field-value",
+                    ...base,
+                    entryId: p.entryId,
+                    fieldId: p.field.id,
+                  },
         clientCreatedAt: p.clientCreatedAt,
       });
       setView(await officialApi.activity(email, activityId));
       setPending(null);
     } catch (e) {
       // The id stays, so a retry resends the same action (safe).
-      setPending({ ...p, busy: false, problem: errorMessage(e) });
+      setPending({
+        ...p,
+        busy: false,
+        problem: errorMessage(e),
+        stale: p.kind === "choose" && e instanceof ApiError && e.status === 409,
+      });
     }
+  };
+
+  const reload = async () => {
+    setPending(null);
+    setView(await officialApi.activity(email, activityId));
   };
 
   /** The Reason box and Confirm / Cancel buttons, shared by every kind of confirmation. */
@@ -158,6 +179,11 @@ export function OfficialActivityView({
         <p className={ui.error} role="alert">
           {p.problem}
         </p>
+      )}
+      {p.stale && (
+        <button className={ui.button} onClick={() => void reload()}>
+          Reload
+        </button>
       )}
       <div className="flex gap-2">
         <button
@@ -375,6 +401,14 @@ export function OfficialActivityView({
           </div>
         );
       })}
+      {r.notCounting.map((n) => (
+        <p
+          key={`${n.entryId} ${n.fieldId}`}
+          className="mt-1 rounded bg-stone-100 px-2 py-1 text-xs text-stone-700"
+        >
+          {n.by}'s correction of {n.label} is on an entry that doesn't count
+        </p>
+      ))}
       {r.held.map((h) => (
         <p
           key={`${h.entryId} ${h.fieldId}`}
@@ -386,6 +420,69 @@ export function OfficialActivityView({
       ))}
     </>
   );
+
+  /** Who scored each candidate entry, with Use this entry; the choice confirms in place like any other action. */
+  const choiceLines = (r: MatrixRow) => {
+    const newest = r.candidates.find((c) => c.newest);
+    const choosing =
+      pending?.kind === "choose" && pending.entrantId === r.entrantId
+        ? pending
+        : null;
+    return (
+      <>
+        {r.choice?.state === "applied" && r.conflict === "resolved" && (
+          <p className="mt-1 rounded bg-stone-100 px-2 py-1 text-xs text-stone-700">
+            Resolved: {r.choice.by} chose {judgeText(r.choice.judge)}'s entry,{" "}
+            {clock(r.choice.at)}
+            {r.choice.notes && `: ${r.choice.notes}`}
+          </p>
+        )}
+        {r.choice?.state === "reopened" && r.conflict === "reopened" && (
+          <p className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900">
+            A newer entry arrived after {r.choice.by}'s choice: the newest
+            counts until an Official chooses again.
+          </p>
+        )}
+        {r.conflict !== "none" && newest && (
+          <ul className="mt-1 flex flex-col gap-1 text-xs">
+            {r.candidates.map((c) => {
+              const chosenNow = c.counts && r.choice?.state === "applied";
+              const confirming = choosing?.entryId === c.entryId;
+              return (
+                <li key={c.entryId}>
+                  <p>
+                    {judgeText(c.judge)}, {clock(c.receivedAt)}
+                    {c.counts && <strong> counts</strong>}
+                  </p>
+                  {confirming && choosing
+                    ? confirmBar(choosing, "Confirm choice")
+                    : !chosenNow && (
+                        <button
+                          className={ui.link}
+                          onClick={() =>
+                            setPending({
+                              kind: "choose",
+                              entrantId: r.entrantId,
+                              entryId: c.entryId,
+                              newestEntryId: newest.entryId,
+                              ...fresh(),
+                              reason: "",
+                              busy: false,
+                              problem: null,
+                            })
+                          }
+                        >
+                          Use this entry
+                        </button>
+                      )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </>
+    );
+  };
 
   const back = (
     <button className={`${ui.link} self-start`} onClick={onBack}>
@@ -419,7 +516,8 @@ export function OfficialActivityView({
         {view.matrix.some((r) => r.conflict !== "none") && (
           <p className={ui.warning}>
             A {entrantWord.toLowerCase()} marked Conflict was scored by more
-            than one Judge: the newest counts until an Official resolves it.
+            than one Judge: the newest counts until an Official resolves it with
+            Use this entry.
           </p>
         )}
         <div className="overflow-x-auto">
@@ -483,6 +581,7 @@ export function OfficialActivityView({
                         Not on roster
                       </p>
                     )}
+                    {choiceLines(r)}
                     {correctionLines(r)}
                     {r.dq && (
                       <p className="text-xs font-medium text-red-800">
@@ -490,7 +589,8 @@ export function OfficialActivityView({
                         {r.dq.notes && `: ${r.dq.notes}`}
                       </p>
                     )}
-                    {r.conflict !== "none" && (
+                    {(r.conflict === "unresolved" ||
+                      r.conflict === "reopened") && (
                       <p className="text-xs font-medium text-amber-900">
                         Conflict: scored by{" "}
                         {r.judges.map(judgeText).join(" and ")}
@@ -590,7 +690,7 @@ export function OfficialActivityView({
                 #{e.receivedSeq} from {e.judge.name}
                 {e.judge.homeGroup && ` (${e.judge.homeGroup})`}
                 {!e.counts &&
-                  " · a newer entry for this " + entrantWord + " counts"}
+                  " · another entry for this " + entrantWord + " counts"}
               </p>
               <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-sm">
                 {Object.entries(e.values).map(([id, value]) => (

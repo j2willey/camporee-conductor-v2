@@ -20,9 +20,12 @@ import type { OutboxItem, SendResult } from "./outbox.ts";
 export class ApiError extends Error {
   override name = "ApiError";
   readonly refused: boolean;
-  constructor(message: string, refused = false) {
+  /** The HTTP status the box answered, when it answered. */
+  readonly status: number | undefined;
+  constructor(message: string, refused = false, status?: number) {
     super(message);
     this.refused = refused;
+    this.status = status;
   }
 }
 
@@ -49,6 +52,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiError(
       body.error ?? `The box answered ${response.status}`,
       response.status >= 400 && response.status < 500,
+      response.status,
     );
   }
   return body as T;
@@ -90,7 +94,7 @@ export const officialApi = {
     ),
 };
 
-/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement, and a field correction or its revert. */
+/** What `PUT /api/official/actions/:id` takes so far: a DQ or reinstatement, and a field correction or its revert, and a choice of which entry counts. */
 export interface OfficialActionBody {
   action:
     | {
@@ -115,6 +119,14 @@ export interface OfficialActionBody {
         entrantId: string;
         entryId: string;
         fieldId: string;
+        notes?: string;
+      }
+    | {
+        type: "choose-entry";
+        activityId: string;
+        entrantId: string;
+        entryId: string;
+        newestEntryId: string;
         notes?: string;
       };
   clientCreatedAt: string;
