@@ -1,11 +1,14 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import {
   actionProblem,
+  finalizeRanking,
+  scoreEvent,
   type OfficialAction,
 } from "@camporee-conductor/scoring";
 import { asc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
+import { scoringInput } from "./official-view.ts";
 import {
   conflict,
   invalid,
@@ -100,6 +103,20 @@ export function recordOfficialAction(
         reason: "conflict",
         message:
           "A newer entry has arrived since you loaded this; reload and choose again.",
+      };
+    }
+  }
+  // A finalize freezes what the Official saw: refuse it if the results have moved since (ADR-0019 2026-11-10).
+  if (action.type === "finalize") {
+    const now = scoreEvent(scoringInput(db, bundle, entries)).activities.find(
+      (a) => a.activityId === action.activityId,
+    );
+    if (!now || canonical(finalizeRanking(now)) !== canonical(action.ranking)) {
+      return {
+        ok: false,
+        reason: "conflict",
+        message:
+          "The results changed since you loaded this; reload and finalize again.",
       };
     }
   }

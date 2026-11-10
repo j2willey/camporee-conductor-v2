@@ -2,6 +2,7 @@ import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import type { Official } from "@camporee-conductor/schema";
 import {
   fillVariables,
+  finalizeRanking,
   inRankOrder,
   newestEntries,
   scoreEvent,
@@ -150,7 +151,7 @@ export function officialEvent(
               (e) => e.conflict === "unresolved" || e.conflict === "reopened",
             ).length ?? 0,
         lastReceivedAt: newest ? newest.toISOString() : null,
-        finalized: false,
+        finalized: scored.find((a) => a.activityId === id)?.finalized ?? false,
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };
@@ -364,27 +365,20 @@ export function officialActivity(
     (c) => c.id === listed.competition.id,
   );
   const entrants = competition?.level === "team" ? teams : groups;
-  const dqOf = (entrantId: string): MatrixRow["dq"] => {
-    const stub = { disqualified: true, state: "applied" as const };
-    const latest = logged.findLast(
-      (a) =>
-        a.action.type === "disqualify" &&
-        a.action.activityId === activityId &&
-        a.action.entrantId === entrantId,
-    );
-    if (!latest || latest.action.type !== "disqualify") return null;
-    if (!latest.action.disqualified) return null;
-    const official = officialByEmail(bundle, latest.officialEmail);
-    return {
-      ...stub,
-      by: official?.name ?? latest.officialEmail,
-      at: latest.receivedAt.toISOString(),
-      ...(latest.action.notes !== undefined && { notes: latest.action.notes }),
-    };
-  };
   const fieldList = fillVariables(found.fields, found.activity.variables ?? {});
   const officialName = (a: LoggedAction): string =>
     officialByEmail(bundle, a.officialEmail)?.name ?? a.officialEmail;
+  /** Who and when for the action at this index in the log. */
+  const actedOn = (actionIndex: number): Acted => {
+    const row = logged[actionIndex];
+    if (!row) return { by: "", at: "" };
+    const notes = (row.action as { notes?: string }).notes;
+    return {
+      by: officialName(row),
+      at: row.receivedAt.toISOString(),
+      ...(notes !== undefined && { notes }),
+    };
+  };
   const originOf = (r: EntryResult): MatrixRow["corrections"] => {
     const result: MatrixRow["corrections"] = {};
     for (const c of r.corrections) {
@@ -453,11 +447,32 @@ export function officialActivity(
       place: result && !result.disqualified ? result.finalRank : null,
       total: result ? result.total : null,
       disqualified: result?.disqualified ?? false,
-      points: null,
-      provisionalRank: null,
-      rankOverride: null,
-      adjustment: null,
-      dq: result?.disqualified ? dqOf(entrantId) : null,
+      points: result ? result.points : null,
+      provisionalRank:
+        result && !result.disqualified ? result.provisionalRank : null,
+      rankOverride: result?.rankOverride
+        ? {
+            ...actedOn(result.rankOverride.actionIndex),
+            rank: result.rankOverride.rank,
+            state: result.rankOverride.state,
+          }
+        : null,
+      adjustment: result?.adjustment
+        ? {
+            ...actedOn(result.adjustment.actionIndex),
+            points: result.adjustment.points,
+            state: result.adjustment.state,
+          }
+        : null,
+      // A reinstate that applies has nothing to show; a held one (either way) does.
+      dq:
+        result?.dq && (result.dq.disqualified || result.dq.state === "held")
+          ? {
+              ...actedOn(result.dq.actionIndex),
+              disqualified: result.dq.disqualified,
+              state: result.dq.state,
+            }
+          : null,
       onRoster: true,
       entryId: entry ? (result?.entryId ?? entry.id) : null,
       // Everything below comes from scoring's report. An off-roster entry isn't scored: shown as entered.
@@ -501,8 +516,10 @@ export function officialActivity(
   ];
   return {
     activity: listed,
-    finalized: null,
-    finalizeRanking: [],
+    finalized: results?.finalizedBy
+      ? actedOn(results.finalizedBy.actionIndex)
+      : null,
+    finalizeRanking: results ? finalizeRanking(results) : [],
     fields: fieldList.map((f) => ({
       id: f.id,
       label: f.label,

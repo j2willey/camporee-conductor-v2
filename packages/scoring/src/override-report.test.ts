@@ -158,6 +158,7 @@ describe("finalizeRanking", () => {
     ]);
     expect(activity?.finalized).toBe(true);
     expect(results.warnings).toEqual([]);
-    expect(finalizeRanking(activity!)).toEqual(ranking);
+    if (!activity) throw new Error("no activity");
+    expect(finalizeRanking(activity)).toEqual(ranking);
   });
 });

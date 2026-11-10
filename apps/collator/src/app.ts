@@ -1,7 +1,7 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import { serveStatic } from "@hono/node-server/serve-static";
 import type { Official } from "@camporee-conductor/schema";
-import { Hono, type Context } from "hono";
+import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
@@ -77,8 +77,9 @@ const idParam = validator("param", (value: Record<string, string>) => {
 const Notes = z.string().trim().min(1).max(500).optional();
 
 /**
- * An Official's action (#42): a per-Activity `disqualify` (PR 2b) and an Official's correction of a field
- * (PR 3) and a `choose-entry` (which entry counts). Other types and the overall DQ come with later slices, and answer 400 until then.
+ * An Official's action (#42): a per-Activity `disqualify` (PR 2b), an Official's correction of a field (PR 3), a
+ * `choose-entry` (which entry counts), and `finalize`, `unfinalize`, `set-final-rank` and `adjust-points` (PR 4).
+ * Other types and the overall DQ come with later slices, and answer 400 until then.
  */
 const ActionBody = z.strictObject({
   action: z.discriminatedUnion(
@@ -121,14 +122,65 @@ const ActionBody = z.strictObject({
         newestEntryId: PhoneId,
         notes: Notes,
       }),
+      z.strictObject({
+        type: z.literal("finalize"),
+        activityId: z.string().min(1),
+        ranking: z.array(
+          z.union([
+            z.strictObject({
+              entrantId: PhoneId,
+              rank: z.number().int().positive(),
+              points: z.number().finite(),
+              disqualified: z.literal(false),
+            }),
+            z.strictObject({
+              entrantId: PhoneId,
+              disqualified: z.literal(true),
+            }),
+          ]),
+        ),
+        notes: Notes,
+      }),
+      z.strictObject({
+        type: z.literal("unfinalize"),
+        activityId: z.string().min(1),
+        notes: Notes,
+      }),
+      z.strictObject({
+        type: z.literal("set-final-rank"),
+        activityId: z.string().min(1),
+        entrantId: PhoneId,
+        rank: z.number().int().positive(),
+        notes: Notes,
+      }),
+      z.strictObject({
+        type: z.literal("adjust-points"),
+        activityId: z.string().min(1),
+        entrantId: PhoneId,
+        points: z.number().finite(),
+        notes: Notes,
+      }),
     ],
     {
       error:
-        "Only a disqualify, set-field-value, revert-field-value or choose-entry action is accepted so far",
+        "Only a disqualify, set-field-value, revert-field-value, choose-entry, finalize, unfinalize, set-final-rank or adjust-points action is accepted so far",
     },
   ),
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
+
+/** Named, so the refusal says why: placement points are #23, not parity. Runs before `ActionBody` is checked. */
+const refusePlacementPoints: MiddlewareHandler = async (c, next) => {
+  const body = (await c.req.json().catch(() => null)) as {
+    action?: { type?: unknown };
+  } | null;
+  if (body?.action?.type === "set-placement-points") {
+    throw new HTTPException(400, {
+      message: "Event-day placement-points changes aren't supported (#23)",
+    });
+  }
+  await next();
+};
 
 /** What `/api/official/me` answers: who's signed in on the Official page. */
 export interface SignedInOfficial {
@@ -190,20 +242,26 @@ function officialRoutes(db: Db) {
       : c.json({ error: "no such Activity in the loaded Event" }, 404);
   });
 
-  routes.put("/actions/:id", idParam, jsonBody(ActionBody), (c) => {
-    const { action: given, clientCreatedAt } = c.req.valid("json");
-    const { notes, ...rest } = given;
-    const action = { ...rest, ...(notes !== undefined && { notes }) };
-    return reply(
-      c,
-      recordOfficialAction(db, c.get("bundle"), {
-        id: c.req.valid("param").id,
-        officialEmail: normalEmail(c.get("official").email),
-        action,
-        clientCreatedAt,
-      }),
-    );
-  });
+  routes.put(
+    "/actions/:id",
+    idParam,
+    refusePlacementPoints,
+    jsonBody(ActionBody),
+    (c) => {
+      const { action: given, clientCreatedAt } = c.req.valid("json");
+      const { notes, ...rest } = given;
+      const action = { ...rest, ...(notes !== undefined && { notes }) };
+      return reply(
+        c,
+        recordOfficialAction(db, c.get("bundle"), {
+          id: c.req.valid("param").id,
+          officialEmail: normalEmail(c.get("official").email),
+          action,
+          clientCreatedAt,
+        }),
+      );
+    },
+  );
 
   return routes;
 }
