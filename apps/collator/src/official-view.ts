@@ -135,8 +135,14 @@ export interface MatrixRow {
   dq: { by: string; at: string; notes?: string } | null;
   /** False for an entry whose entrant isn't on the roster: shown, but not ranked and not DQ-able. */
   onRoster: boolean;
-  /** The counting (newest) entry's values; null when unscored. */
+  /** The counting (newest) entry's id; null when unscored. Corrections name it. */
+  entryId: string | null;
+  /** The counting entry's values with the Officials' corrections laid over them; null when unscored. */
   values: Record<string, FieldValue> | null;
+  /** The corrections in effect on the counting entry, by field id (ADR-0019). */
+  corrections: Record<string, FieldCorrection>;
+  /** Corrections made to an older entry of this entrant: a newer entry counts now, so an Official looks again. */
+  superseded: SupersededCorrection[];
   /** The counting entry's Judge: name and home unit, never the email. */
   judge: { name: string; homeGroup?: string } | null;
   /** When the box received the counting entry (ISO). */
@@ -148,10 +154,39 @@ export interface MatrixRow {
   judges: { name: string; homeGroup?: string }[];
 }
 
+/** An Official's value for one field of the counting entry, with the Judge's original. */
+export interface FieldCorrection {
+  /** The Judge's value; null when blank or missing. */
+  original: FieldValue;
+  by: string;
+  /** When the box received the correction (ISO). */
+  at: string;
+  notes?: string;
+  /** What's off about the value, e.g. outside the field's range. It's allowed: the Official decides. */
+  warning?: string;
+}
+
+/** An effective correction whose entry no longer counts. */
+export interface SupersededCorrection {
+  entryId: string;
+  fieldId: string;
+  label: string;
+  value: FieldValue;
+  by: string;
+  at: string;
+  notes?: string;
+}
+
 export interface OfficialActivity {
   activity: OfficialEvent["activities"][number];
   /** Every field scored at the Activity, Common Fields included, to show values by label. */
-  fields: { id: string; label: string }[];
+  fields: {
+    id: string;
+    label: string;
+    type: string;
+    /** A select field's choices. */
+    options?: string[];
+  }[];
   /**
    * The score matrix (#42 PR 2a): one row per entrant of the Activity's Competition. Scored rows come first in
    * ranking order (from packages/scoring: `scoreEvent`, listed by `inRankOrder`), then unscored ones in roster
@@ -269,7 +304,10 @@ export function officialActivity(
       disqualified: result?.disqualified ?? false,
       dq: result?.disqualified ? dqOf(entrantId) : null,
       onRoster: true,
+      entryId: entry ? entry.id : null,
       values: entry ? entry.values : null,
+      corrections: {},
+      superseded: [],
       judge: entry
         ? judgeShown(judgeById.get(entry.judgeId), entry.judgeId)
         : null,
@@ -300,7 +338,7 @@ export function officialActivity(
   return {
     activity: listed,
     fields: fillVariables(found.fields, found.activity.variables ?? {}).map(
-      (f) => ({ id: f.id, label: f.label }),
+      (f) => ({ id: f.id, label: f.label, type: f.type }),
     ),
     matrix,
     entries: here.map((e) => ({
