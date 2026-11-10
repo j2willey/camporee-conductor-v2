@@ -5,6 +5,7 @@ import {
   type JudgeEvent,
   type OfficialActivity,
   type OfficialEvent,
+  type CompetitionStandingsView,
   type Roster,
   type ScoreSubmission,
   type SignedInOfficial,
@@ -79,6 +80,8 @@ export const officialApi = {
       email,
       `/activities/${encodeURIComponent(activityId)}`,
     ),
+  standings: (email: string) =>
+    asOfficial<CompetitionStandingsView[]>(email, "/standings"),
   /** Log an Official action (#42 PR 2b). Resending the same id is safe: the box answers "repeat". */
   act: (email: string, id: string, body: OfficialActionBody) =>
     call<{ status: "created" | "repeat" }>(
@@ -99,7 +102,8 @@ export interface OfficialActionBody {
   action:
     | {
         type: "disqualify";
-        activityId: string;
+        /** Left out for an overall DQ. */
+        activityId?: string;
         entrantId: string;
         disqualified: boolean;
         notes?: string;
@@ -136,6 +140,13 @@ export interface OfficialActionBody {
         notes?: string;
       }
     | { type: "unfinalize"; activityId: string; notes?: string }
+    | {
+        type: "set-overall-rank";
+        competitionId: string;
+        entrantId: string;
+        rank: number | string;
+        notes?: string;
+      }
     | {
         type: "set-final-rank";
         activityId: string;

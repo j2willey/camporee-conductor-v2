@@ -13,6 +13,7 @@ import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialOverview } from "./screens/OfficialOverview.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
 import { QrCodesPage } from "./screens/QrCodesPage.tsx";
+import { StandingsPage } from "./screens/StandingsPage.tsx";
 import { ui } from "./ui.ts";
 
 // The Official view (#40 PR 3), at /official: sign in with an email on the Event's Officials list, see the
@@ -29,6 +30,7 @@ export function OfficialApp() {
   const [problem, setProblem] = useState<string | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [standings, setStandings] = useState(false);
 
   // Signing in, or coming back with a saved email: the box checks it, as it does on every call.
   useEffect(() => {
@@ -63,6 +65,7 @@ export function OfficialApp() {
     setEvent(null);
     setActivity(null);
     setPrinting(false);
+    setStandings(false);
     setProblem(null);
   };
 
@@ -104,6 +107,12 @@ export function OfficialApp() {
           activities={event.activities}
           onBack={() => setPrinting(false)}
         />
+      ) : standings ? (
+        <StandingsPage
+          email={email}
+          labels={event.event.labels}
+          onBack={() => setStandings(false)}
+        />
       ) : activity ? (
         <OfficialActivityView
           email={email}
@@ -117,6 +126,7 @@ export function OfficialApp() {
           event={event}
           onPick={setActivity}
           onPrint={() => setPrinting(true)}
+          onStandings={() => setStandings(true)}
         />
       )}
     </Shell>

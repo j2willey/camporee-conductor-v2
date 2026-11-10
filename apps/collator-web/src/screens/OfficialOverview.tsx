@@ -21,11 +21,13 @@ export function OfficialOverview({
   event: first,
   onPick,
   onPrint,
+  onStandings,
 }: {
   email: string;
   event: OfficialEvent;
   onPick: (activity: Activity) => void;
   onPrint: () => void;
+  onStandings: () => void;
 }) {
   const [event, setEvent] = useState(first);
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
@@ -157,9 +159,14 @@ export function OfficialOverview({
           </div>
         </section>
       ))}
-      <button className={`${ui.buttonQuiet} mt-2 w-full`} onClick={onPrint}>
-        QR codes to print
-      </button>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onStandings}>
+          Standings
+        </button>
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onPrint}>
+          QR codes to print
+        </button>
+      </div>
     </section>
   );
 }

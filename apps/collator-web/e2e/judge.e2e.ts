@@ -25,6 +25,8 @@ import Database from "better-sqlite3";
 // and choosing the newest accepts it; the Overview's Conflicts count follows.
 // #42 PR 5: an Official sets a manual rank, finalizes Clown Car (the Overview says Final), a correction then waits,
 // and unfinalizing applies it.
+// #42 PR 4 (2): an Official opens Standings, DQs the top Patrol overall (the next is 1st), reinstates it, and sets an
+// overall rank, which says what the box gave.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -998,6 +1000,65 @@ test("an Official sets a manual rank, finalizes Clown Car, sees a correction wai
   await expect(page.getByText("Not finalized")).toBeVisible();
   await expect(rowFor(first)).toContainText("Corrected Patrol Flag");
   await expect(rowFor(first)).not.toContainText("waits until");
+});
+
+test("an Official opens Standings, DQs the top Patrol overall, reinstates it, and sets an overall rank", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Standings" }).click();
+  await expect(page.getByRole("heading", { name: "Standings" })).toBeVisible();
+
+  const table = page.getByRole("table").first();
+  await expect(
+    table.getByRole("columnheader", { name: "Clown Car (provisional)" }),
+  ).toBeVisible();
+  const rows = table.locator("tbody tr");
+  const headers = await table.getByRole("columnheader").allTextContents();
+  const clownCol = headers.findIndex((h) => h.startsWith("Clown Car"));
+  expect(
+    await rows.first().getByRole("cell").nth(clownCol).innerText(),
+  ).toMatch(/\d/);
+  const nameOf = async (n: number) =>
+    (await rows.nth(n).getByRole("cell").nth(1).innerText()).split("\n")[0] ??
+    "";
+  const top = await nameOf(0);
+  const next = await nameOf(1);
+  const rowFor = (name: string) =>
+    rows.filter({
+      has: page.getByRole("cell", {
+        name: new RegExp(`^${name.replace(/[()]/g, "\\$&")}`),
+      }),
+    });
+
+  // An overall DQ: the row says so, and the next one is 1st.
+  await rowFor(top)
+    .getByRole("button", { name: `DQ ${top} overall` })
+    .click();
+  await rowFor(top).getByLabel("Reason").fill("Left early");
+  await rowFor(top).getByRole("button", { name: "Confirm DQ" }).click();
+  await expect(rowFor(top)).toContainText("DQ overall by");
+  await expect(rowFor(top)).toContainText("Left early");
+  await expect(rowFor(next).getByRole("cell").first()).toHaveText(/^1st/);
+
+  // Reinstated.
+  await rowFor(top)
+    .getByRole("button", { name: `Reinstate ${top} overall` })
+    .click();
+  await rowFor(top).getByRole("button", { name: "Confirm reinstate" }).click();
+  await expect(rowFor(top)).not.toContainText("DQ overall by");
+
+  // An overall rank on the last row says what the box gave.
+  const last = await nameOf((await rows.count()) - 1);
+  await rowFor(last)
+    .getByRole("button", { name: `Overall rank for ${last}` })
+    .click();
+  await rowFor(last).getByLabel(`Overall rank for ${last}`).fill("1");
+  await rowFor(last).getByRole("button", { name: "Confirm rank" }).click();
+  await expect(rowFor(last)).toContainText("Rank set to 1 by");
+  await expect(rowFor(last).getByRole("cell").first()).toContainText("(auto");
 });
 
 test.describe("without the service worker", () => {
