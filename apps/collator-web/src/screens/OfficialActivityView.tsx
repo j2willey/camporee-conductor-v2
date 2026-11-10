@@ -375,6 +375,15 @@ export function OfficialActivityView({
           </div>
         );
       })}
+      {r.held.map((h) => (
+        <p
+          key={`${h.entryId} ${h.fieldId}`}
+          className="mt-1 rounded bg-stone-100 px-2 py-1 text-xs text-stone-700"
+        >
+          {h.by}'s correction of {h.label} to {show(h.value)} waits until the
+          Activity is unfinalized
+        </p>
+      ))}
     </>
   );
 
@@ -407,7 +416,7 @@ export function OfficialActivityView({
 
       <section className="flex flex-col gap-2">
         <h2 className={ui.h2}>Scores</h2>
-        {view.matrix.some((r) => r.conflict) && (
+        {view.matrix.some((r) => r.conflict !== "none") && (
           <p className={ui.warning}>
             A {entrantWord.toLowerCase()} marked Conflict was scored by more
             than one Judge: the newest counts until an Official resolves it.
@@ -451,7 +460,9 @@ export function OfficialActivityView({
                 <tr
                   key={r.entrantId}
                   className={`border-t border-stone-200 ${
-                    r.conflict || !r.onRoster
+                    r.conflict === "unresolved" ||
+                    r.conflict === "reopened" ||
+                    !r.onRoster
                       ? "bg-amber-50"
                       : r.scored
                         ? ""
@@ -479,7 +490,7 @@ export function OfficialActivityView({
                         {r.dq.notes && `: ${r.dq.notes}`}
                       </p>
                     )}
-                    {r.conflict && (
+                    {r.conflict !== "none" && (
                       <p className="text-xs font-medium text-amber-900">
                         Conflict: scored by{" "}
                         {r.judges.map(judgeText).join(" and ")}
