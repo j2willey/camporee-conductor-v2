@@ -7,7 +7,9 @@ import type { Db } from "./db/open.ts";
 import { officialActions, scoreEntries } from "./db/schema.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
-import { loggedActions } from "./scoring-input.ts";
+import { loadedEvent } from "./load-event.ts";
+import { loggedActions, scoringInput } from "./scoring-input.ts";
+import { scoreEvent, inRankOrder } from "@camporee-conductor/scoring";
 import {
   circusCartridge,
   CLOWN_CAR,
@@ -663,7 +665,7 @@ describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
     });
   });
 
-  it("refuses an action type the box doesn't take yet, and a disqualify with no Activity (400)", async () => {
+  it("refuses an action type the box doesn't take yet (400)", async () => {
     const other = await act("act-1", {
       action: {
         type: "set-award",
@@ -675,13 +677,6 @@ describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
     });
     expect(other.status).toBe(400);
     expect(await other.text()).toMatch(/\S/);
-    const body = dqBody("team-1");
-    const noActivity = Object.fromEntries(
-      Object.entries(body.action).filter(([key]) => key !== "activityId"),
-    );
-    const overall = await act("act-2", { ...body, action: noActivity });
-    expect(overall.status).toBe(400);
-    expect(await overall.text()).toMatch(/\S/);
   });
 
   it("keeps out an email that isn't on the Officials list (403) and logs nothing", async () => {
@@ -1305,15 +1300,207 @@ describe("PUT /api/official/actions/:id: finalize, manual rank and Official poin
       /placement-points changes aren't supported \(#23\)/,
     );
   });
+});
 
-  it("refuses set-overall-rank until the Standings slice", async () => {
-    const res = await act("or-1", {
+interface StandingsRow {
+  entrantId: string;
+  entrant: { name: string | null; group: string | null };
+  rank: number | null;
+  provisionalRank: number | null;
+  total: number;
+  disqualified: boolean;
+  points: Record<string, number | null>;
+  dq: { by: string; at: string; notes?: string } | null;
+  rankOverride: { rank: number; by: string; at: string; notes?: string } | null;
+}
+interface StandingsView {
+  competition: { id: string; label: string; level: string };
+  activities: { id: string; title: string; finalized: boolean }[];
+  rows: StandingsRow[];
+  finalizedCount: number;
+}
+
+describe("GET /api/official/standings and the overall actions (#42 PR 4)", () => {
+  // Flaming Arrows 14, Owls 9 and Night Owls 9 at Clown Car: a tie for second.
+  beforeEach(async () => {
+    await withScores();
+    await put("/api/teams/team-3", { groupId: "group-1", name: "Night Owls" });
+    await put("/api/scores/score-t3", {
+      judge: ALEX,
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-3",
+      values: { [CLOWN_CAR.ownField]: 4, [CLOWN_CAR.commonField]: 5 },
+      phoneCreatedAt: "2027-05-15T09:45:00Z",
+    });
+  });
+
+  const act = (id: string, action: Record<string, unknown>) =>
+    app.request(`/api/official/actions/${id}`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        [OFFICIAL_EMAIL_HEADER]: DIRECTOR_EMAIL,
+      },
+      body: JSON.stringify({
+        action,
+        clientCreatedAt: "2027-05-15T10:00:00Z",
+      }),
+    });
+  const standings = async (): Promise<StandingsView> => {
+    const res = await asOfficial("/api/official/standings", DIRECTOR_EMAIL);
+    expect(res.status).toBe(200);
+    const all = (await res.json()) as StandingsView[];
+    const found = all.find((s) =>
+      s.activities.some((a) => a.id === CLOWN_CAR.id),
+    );
+    if (!found) throw new Error("no Competition with Clown Car");
+    return found;
+  };
+  const ranks = async () =>
+    Object.fromEntries(
+      (await standings()).rows.map((r) => [
+        r.entrantId,
+        r.disqualified ? "DQ" : r.rank,
+      ]),
+    );
+  const dq = (entrantId: string, disqualified = true, notes?: string) =>
+    act(`odq-${entrantId}-${disqualified}`, {
+      type: "disqualify",
+      entrantId,
+      disqualified,
+      ...(notes !== undefined && { notes }),
+    });
+  const overallRank = async (entrantId: string, rank: number) =>
+    act(`orank-${entrantId}-${rank}`, {
       type: "set-overall-rank",
-      competitionId: "x",
-      entrantId: "team-1",
+      competitionId: (await standings()).competition.id,
+      entrantId,
+      rank,
+    });
+
+  it("needs the Official gate", async () => {
+    expect((await asOfficial("/api/official/standings", null)).status).toBe(
+      401,
+    );
+    expect(
+      (await asOfficial("/api/official/standings", "alex@example.com")).status,
+    ).toBe(403);
+  });
+
+  it("matches scoreEvent: totals, dense ranks with a tie, points per Activity, in rank order", async () => {
+    const view = await standings();
+    const bundle = loadedEvent(db)?.bundle;
+    if (!bundle) throw new Error("no Event");
+    const results = scoreEvent(scoringInput(db, bundle));
+    const expected = results.standings.find(
+      (s) => s.competitionId === view.competition.id,
+    );
+    expect(view.competition.label).toMatch(/\S/);
+    expect(view.rows.map((r) => r.entrantId)).toEqual(
+      expect.arrayContaining(["team-1", "team-2", "team-3"]),
+    );
+    for (const row of view.rows) {
+      const s = expected?.entrants.find((e) => e.entrantId === row.entrantId);
+      expect(row.total).toBe(s?.total);
+      expect(row.rank).toBe(s && !s.disqualified ? s.rank : null);
+      expect(row.entrant.name).not.toBeUndefined();
+    }
+    const clownResults = results.activities.find(
+      (a) => a.activityId === CLOWN_CAR.id,
+    );
+    if (!clownResults) throw new Error("no Clown Car results");
+    const clown = inRankOrder(clownResults);
+    for (const r of clown) {
+      expect(
+        view.rows.find((x) => x.entrantId === r.entrantId)?.points[
+          CLOWN_CAR.id
+        ],
+      ).toBe(r.points);
+    }
+    // Rows in rank order, with the tie shared.
+    const first3 = view.rows.slice(0, 3);
+    expect(first3.map((r) => r.entrantId)[0]).toBe("team-1");
+    expect(first3.map((r) => r.rank)).toEqual([1, 2, 2]);
+    // An Activity with no result for an entrant gives null.
+    const other = view.activities.find((a) => a.id !== CLOWN_CAR.id);
+    expect(view.rows[0]?.points[other?.id ?? ""] ?? null).toBeNull();
+  });
+
+  it("counts a provisional Activity: not finalized, and finalizedCount is 0", async () => {
+    const view = await standings();
+    expect(view.activities.find((a) => a.id === CLOWN_CAR.id)?.finalized).toBe(
+      false,
+    );
+    expect(view.finalizedCount).toBe(0);
+    expect(view.rows[0]?.total).toBeGreaterThan(0);
+  });
+
+  it("an overall DQ takes the entrant out of the ranking and the others move up; a reinstate puts it back", async () => {
+    expect((await dq("team-1", true, "Left early")).status).toBe(201);
+    const view = await standings();
+    expect(await ranks()).toEqual({ "team-1": "DQ", "team-2": 1, "team-3": 1 });
+    const row = view.rows.find((r) => r.entrantId === "team-1");
+    expect(row).toMatchObject({
+      rank: null,
+      disqualified: true,
+      dq: { by: "Pat Director", notes: "Left early" },
+    });
+    expect(row?.total).toBeGreaterThan(0);
+    // DQ'd rows come last.
+    expect(view.rows.at(-1)?.entrantId).toBe("team-1");
+    expect((await dq("team-1", false)).status).toBe(201);
+    expect(await ranks()).toEqual({ "team-1": 1, "team-2": 2, "team-3": 2 });
+    expect(
+      (await standings()).rows.find((r) => r.entrantId === "team-1")?.dq,
+    ).toBeNull();
+  });
+
+  it("set-overall-rank shows the override and the automatic rank, and nobody else is re-sorted", async () => {
+    expect((await overallRank("team-3", 1)).status).toBe(201);
+    const view = await standings();
+    expect(await ranks()).toEqual({ "team-1": 1, "team-2": 2, "team-3": 1 });
+    expect(view.rows.find((r) => r.entrantId === "team-3")).toMatchObject({
       rank: 1,
+      provisionalRank: 2,
+      rankOverride: { rank: 1, by: "Pat Director" },
+    });
+    expect(
+      view.rows.find((r) => r.entrantId === "team-2")?.rankOverride,
+    ).toBeNull();
+  });
+
+  it("a finalized Activity is counted, and an overall action still applies after it", async () => {
+    const v = (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as { finalizeRanking: unknown[] };
+    expect(
+      (
+        await act("fin-1", {
+          type: "finalize",
+          activityId: CLOWN_CAR.id,
+          ranking: v.finalizeRanking,
+        })
+      ).status,
+    ).toBe(201);
+    expect((await standings()).finalizedCount).toBe(1);
+    expect((await dq("team-1")).status).toBe(201);
+    expect((await ranks())["team-1"]).toBe("DQ");
+  });
+
+  it("refuses an overall DQ or rank for someone outside the Competition, and set-placement-points still", async () => {
+    expect((await dq("group-1")).status).toBe(400);
+    expect((await dq("nobody")).status).toBe(400);
+    const res = await act("pp-1", {
+      type: "set-placement-points",
+      activityId: CLOWN_CAR.id,
+      entrantId: "team-1",
+      points: 5,
     });
     expect(res.status).toBe(400);
+    expect(await res.text()).toMatch(/\(#23\)/);
   });
 });
 
