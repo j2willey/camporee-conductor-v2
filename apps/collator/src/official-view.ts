@@ -14,6 +14,7 @@ import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { officialByEmail } from "./officials.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
+import { resultCounts as exhibitionResultCounts } from "./exhibition-results.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
 import { resolvedRoster } from "./roster.ts";
 import {
@@ -116,10 +117,13 @@ export function officialEvent(
   const results = scoreEvent(input);
   const scored = results.activities;
   const counted = countedEntries(entries, results);
+  const resultCounts = exhibitionResultCounts(db);
   return {
     event,
     activities: activities.map(({ id, title, competition }) => {
       const closures = closuresAt(db, id);
+      const scoringType =
+        bundle.activities.find((a) => a.id === id)?.scoringType ?? "ranked";
       const here = counted.filter((e) => e.activityId === id);
       const scoredEntrants = new Set(here.map((e) => e.entrantId));
       const newest = here.reduce<Date | null>(
@@ -142,7 +146,10 @@ export function officialEvent(
             ).length ?? 0,
         lastReceivedAt: newest ? newest.toISOString() : null,
         finalized: scored.find((a) => a.activityId === id)?.finalized ?? false,
-        scoringType: "ranked",
+        scoringType,
+        ...(scoringType === "exhibition" && {
+          resultCount: resultCounts.get(id) ?? 0,
+        }),
         closedBy: closures.filter((c) => c.scoredSince === 0).length,
         closureProblems: closures.filter(closureProblem).length,
       };
