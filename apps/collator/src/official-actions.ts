@@ -5,10 +5,14 @@ import {
   scoreEvent,
   type OfficialAction,
 } from "@camporee-conductor/scoring";
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
-import { scoringInput } from "./official-view.ts";
+import {
+  loggedActions,
+  scoringInput,
+  type LoggedAction,
+} from "./scoring-input.ts";
 import {
   conflict,
   invalid,
@@ -20,16 +24,6 @@ import {
 
 // The log of Official actions (ADR-0019, #42). Append-only: an Official's override is a new row, never an
 // edit to a Judge's score entry or to an earlier action. The latest of a type wins, in `seq` order.
-
-/** One logged Official action, as stored. */
-export interface LoggedAction {
-  seq: number;
-  id: string;
-  officialEmail: string;
-  action: OfficialAction;
-  clientCreatedAt: string;
-  receivedAt: Date;
-}
 
 export interface ActionSubmission {
   id: string;
@@ -130,17 +124,4 @@ export function recordOfficialAction(
     })
     .run();
   return { ok: true, status: "created" };
-}
-
-/** Every logged Official action, oldest first. */
-export function loggedActions(db: Db): LoggedAction[] {
-  return db
-    .select()
-    .from(officialActions)
-    .orderBy(asc(officialActions.seq))
-    .all()
-    .map((row) => ({
-      ...row,
-      action: JSON.parse(row.action) as OfficialAction,
-    }));
 }

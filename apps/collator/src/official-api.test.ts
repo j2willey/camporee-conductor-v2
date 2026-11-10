@@ -7,7 +7,7 @@ import type { Db } from "./db/open.ts";
 import { officialActions, scoreEntries } from "./db/schema.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
-import { loggedActions } from "./official-actions.ts";
+import { loggedActions } from "./scoring-input.ts";
 import {
   circusCartridge,
   CLOWN_CAR,

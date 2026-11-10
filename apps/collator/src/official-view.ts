@@ -16,7 +16,11 @@ import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { judgeEvent, type JudgeEvent } from "./judge-event.ts";
 import { closureProblem, closuresAt, type ClosureView } from "./closures.ts";
-import { loggedActions, type LoggedAction } from "./official-actions.ts";
+import {
+  loggedActions,
+  scoringInput,
+  type LoggedAction,
+} from "./scoring-input.ts";
 import {
   judgeList,
   roster,
@@ -81,42 +85,6 @@ export function judgesByEntrant(
     byEntrant.set(e.entrantId, set);
   }
   return byEntrant;
-}
-
-/**
- * The one input to packages/scoring for the Event, so the Overview and the matrix can't drift (#42): every
- * on-roster entry, in the order received, with its id and Judge, and every logged action. An entry for
- * someone not on the roster isn't scored; the matrix shows it on a row of its own.
- */
-export function scoringInput(
-  db: Db,
-  bundle: CheckedBundle,
-  entries: ScoreEntryRow[] = scoreEntries(db),
-  logged: LoggedAction[] = loggedActions(db),
-): ScoringInput {
-  const entrants = scoringEntrants(bundle, roster(db));
-  const rosterIds = new Set(entrants.map((e) => `${e.competitionId} ${e.id}`));
-  const competitionOf = new Map(
-    bundle.event.activities.map((a) => [a.activityId, a.competitionId]),
-  );
-  return {
-    event: bundle.event,
-    activities: bundle.activities,
-    commonFieldSets: bundle.commonFieldSets,
-    entrants,
-    entries: entries
-      .filter((e) =>
-        rosterIds.has(`${competitionOf.get(e.activityId)} ${e.entrantId}`),
-      )
-      .map(({ id, judgeId, activityId, entrantId, values }) => ({
-        id,
-        judgeId,
-        activityId,
-        entrantId,
-        values,
-      })),
-    actions: logged.map((a) => a.action),
-  };
 }
 
 export function officialEvent(
