@@ -4,8 +4,10 @@ import { join } from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import type { Db } from "./db/open.ts";
+import { scoreEntries } from "./db/schema.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadEventCartridge } from "./load-event.ts";
+import { loggedActions } from "./official-actions.ts";
 import {
   circusCartridge,
   CLOWN_CAR,
@@ -454,6 +456,211 @@ describe("GET /api/official/activities/:id: the score matrix (#42 PR 2a)", () =>
   it("serves no Judge email anywhere in the matrix", async () => {
     const res = await asOfficial(`/api/official/activities/${CLOWN_CAR.id}`);
     expect(await res.text()).not.toMatch(/@example\.com/);
+  });
+});
+
+/** What #42 PR 2b adds to a matrix row, read loosely so these tests compile before the code does. */
+type RowPlus = MatrixRow & {
+  onRoster?: boolean;
+  dq?: { by: string; at: string; notes?: string } | null;
+};
+
+describe("PUT /api/official/actions/:id: DQ and reinstate (#42 PR 2b)", () => {
+  beforeEach(withScores);
+
+  const dqBody = (entrantId: string, disqualified = true, notes?: string) => ({
+    action: {
+      type: "disqualify",
+      activityId: CLOWN_CAR.id,
+      entrantId,
+      disqualified,
+      ...(notes !== undefined && { notes }),
+    },
+    clientCreatedAt: "2027-05-15T10:00:00Z",
+  });
+
+  const act = (
+    id: string,
+    body: unknown,
+    email: string | null = DIRECTOR_EMAIL,
+  ) =>
+    app.request(`/api/official/actions/${id}`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+        ...(email === null ? {} : { [OFFICIAL_EMAIL_HEADER]: email }),
+      },
+      body: JSON.stringify(body),
+    });
+
+  const matrix = async (): Promise<RowPlus[]> => {
+    const res = await asOfficial(
+      `/api/official/activities/${CLOWN_CAR.id}`,
+      DIRECTOR_EMAIL,
+    );
+    return ((await res.json()) as { matrix: RowPlus[] }).matrix;
+  };
+  const row = async (id: string) =>
+    (await matrix()).find((r) => r.entrantId === id);
+
+  it("DQs a scored entrant: the row shows who and when, and the next entrant moves up", async () => {
+    const res = await act("act-1", dqBody("team-1", true, "Left early"));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ status: "created" });
+    expect(await row("team-1")).toMatchObject({
+      disqualified: true,
+      place: null,
+      dq: { by: "Pat Director", notes: "Left early" },
+    });
+    expect(Number.isNaN(Date.parse((await row("team-1"))?.dq?.at ?? ""))).toBe(
+      false,
+    );
+    expect(await row("team-2")).toMatchObject({ place: 1, dq: null });
+    expect((await matrix()).map((r) => r.entrantId)).toEqual([
+      "team-2",
+      "team-1",
+    ]);
+  });
+
+  it("names an Official with no name by their email", async () => {
+    await act("act-1", dqBody("team-1"), OFFICIAL);
+    expect((await row("team-1"))?.dq?.by).toBe(OFFICIAL);
+  });
+
+  it("reinstates with a later disqualified: false (the latest wins), and the place comes back", async () => {
+    await act("act-1", dqBody("team-1"));
+    expect((await act("act-2", dqBody("team-1", false))).status).toBe(201);
+    expect(await row("team-1")).toMatchObject({
+      disqualified: false,
+      place: 1,
+      dq: null,
+    });
+    expect(await row("team-2")).toMatchObject({ place: 2 });
+  });
+
+  it("answers a resend of the same id and body 200 repeat, and a different body with that id 409", async () => {
+    await act("act-1", dqBody("team-1"));
+    const again = await act("act-1", dqBody("team-1"));
+    expect(again.status).toBe(200);
+    expect(await again.json()).toEqual({ status: "repeat" });
+    expect((await act("act-1", dqBody("team-2"))).status).toBe(409);
+    expect((await act("act-1", dqBody("team-1", false))).status).toBe(409);
+  });
+
+  it.each([
+    ["an unknown Activity", { activityId: "no-such-activity" }],
+    ["an entrant not on the roster", { entrantId: "ghost" }],
+  ])("refuses %s (400) and says why", async (_name, change) => {
+    const body = dqBody("team-1");
+    const res = await act("act-1", {
+      ...body,
+      action: { ...body.action, ...change },
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: expect.stringMatching(/disqualify: .*left out/),
+    });
+    expect((await row("team-1"))?.disqualified).toBe(false);
+  });
+
+  it("refuses an entrant of another Competition (a Group at a Team-level Activity)", async () => {
+    const res = await act("act-1", dqBody("group-1"));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({
+      error: expect.stringMatching(/isn't in Competition/),
+    });
+  });
+
+  it("refuses an action type other than disqualify, and a disqualify with no Activity (400)", async () => {
+    const other = await act("act-1", {
+      action: {
+        type: "adjust-points",
+        activityId: CLOWN_CAR.id,
+        entrantId: "team-1",
+        points: 5,
+      },
+      clientCreatedAt: "2027-05-15T10:00:00Z",
+    });
+    expect(other.status).toBe(400);
+    expect(await other.text()).toMatch(/\S/);
+    const body = dqBody("team-1");
+    const noActivity = Object.fromEntries(
+      Object.entries(body.action).filter(([key]) => key !== "activityId"),
+    );
+    const overall = await act("act-2", { ...body, action: noActivity });
+    expect(overall.status).toBe(400);
+    expect(await overall.text()).toMatch(/\S/);
+  });
+
+  it("keeps out an email that isn't on the Officials list (403) and logs nothing", async () => {
+    const res = await act("act-1", dqBody("team-1"), "alex@example.com");
+    expect(res.status).toBe(403);
+    expect((await act("act-2", dqBody("team-1"), null)).status).toBe(401);
+    expect((await row("team-1"))?.disqualified).toBe(false);
+    expect(loggedActions(db)).toEqual([]);
+  });
+
+  it("logs who, when and exactly what; never touches a Judge's score entry", async () => {
+    const before = (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as OfficialActivity;
+    await act("act-1", dqBody("team-1", true, "Left early"));
+    await act("act-2", dqBody("team-1", false));
+    expect(loggedActions(db).map((a) => [a.id, a.officialEmail])).toEqual([
+      ["act-1", DIRECTOR_EMAIL],
+      ["act-2", DIRECTOR_EMAIL],
+    ]);
+    expect(loggedActions(db)[0]?.action).toEqual(
+      dqBody("team-1", true, "Left early").action,
+    );
+    const after = (await (
+      await asOfficial(
+        `/api/official/activities/${CLOWN_CAR.id}`,
+        DIRECTOR_EMAIL,
+      )
+    ).json()) as OfficialActivity;
+    expect(after.entries).toEqual(before.entries);
+  });
+});
+
+describe("the matrix shows an entry whose entrant isn't on the roster (#42 PR 2b)", () => {
+  it("gives it its own row after the unscored ones: not on the roster, no place, no total", async () => {
+    await withScores();
+    await put("/api/teams/team-3", { groupId: "group-1", name: "Night Owls" });
+    db.insert(scoreEntries)
+      .values({
+        id: "score-ghost",
+        judgeId: ALEX.id,
+        activityId: CLOWN_CAR.id,
+        entrantId: "ghost-team",
+        values: JSON.stringify({ [CLOWN_CAR.ownField]: 7 }),
+        phoneCreatedAt: "2027-05-15T09:50:00Z",
+        receivedAt: new Date(),
+      })
+      .run();
+    const res = await asOfficial(`/api/official/activities/${CLOWN_CAR.id}`);
+    const { matrix } = (await res.json()) as { matrix: RowPlus[] };
+    expect(matrix.map((r) => r.entrantId)).toEqual([
+      "team-1",
+      "team-2",
+      "team-3",
+      "ghost-team",
+    ]);
+    expect(matrix.map((r) => r.onRoster)).toEqual([true, true, true, false]);
+    expect(matrix[3]).toMatchObject({
+      scored: true,
+      place: null,
+      total: null,
+      disqualified: false,
+      values: { [CLOWN_CAR.ownField]: 7 },
+      judge: { name: "Alex Judge" },
+      entryCount: 1,
+      conflict: false,
+      entrant: { name: null, group: null },
+    });
   });
 });
 
