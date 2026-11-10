@@ -10,7 +10,6 @@ import {
   type EntryResult,
   type FieldValue,
   type FinalizedResult,
-  type ScoringInput,
 } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
@@ -25,9 +24,7 @@ import {
   judgeList,
   roster,
   scoreEntries,
-  scoringEntrants,
   type JudgeIdentity,
-  type ScoreEntryRow,
 } from "./roster-and-scores.ts";
 
 // What Officials see on the box (#40 PR 3): each Activity's score entries and its ranking. Every ranking comes from

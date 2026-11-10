@@ -8,11 +8,7 @@ import {
 import { eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
 import { officialActions } from "./db/schema.ts";
-import {
-  loggedActions,
-  scoringInput,
-  type LoggedAction,
-} from "./scoring-input.ts";
+import { scoringInput } from "./scoring-input.ts";
 import {
   conflict,
   invalid,
