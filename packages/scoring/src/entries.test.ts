@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { inRankOrder, newestEntries, type ActivityResults } from "./index.ts";
+import {
+  inRankOrder,
+  newestEntries,
+  standingsInRankOrder,
+  type ActivityResults,
+  type CompetitionStandings,
+} from "./index.ts";
 
 // Two helpers for showing an Activity's results (#40 PR 3): which score entry counts when one entrant has
 // several, and the order to list results in. Both are scoring rules, so they live here (ADR-0019, 0027).
@@ -101,5 +107,63 @@ describe("inRankOrder: an Activity's results in the order to list them", () => {
         (e) => e.entrantId,
       ),
     ).toEqual(["b", "a"]);
+  });
+});
+
+describe("standingsInRankOrder: a Competition's standings in the order to list them (#42 PR 4)", () => {
+  const standings: CompetitionStandings = {
+    competitionId: "patrols",
+    entrants: [
+      {
+        entrantId: "t1",
+        total: 90,
+        provisionalRank: 2,
+        rank: 2,
+        disqualified: false,
+      },
+      { entrantId: "t2", total: 0, disqualified: true },
+      {
+        entrantId: "t3",
+        total: 100,
+        provisionalRank: 1,
+        rank: 1,
+        disqualified: false,
+      },
+      {
+        entrantId: "t4",
+        total: 90,
+        provisionalRank: 2,
+        rank: 2,
+        disqualified: false,
+      },
+      {
+        entrantId: "t5",
+        total: 80,
+        provisionalRank: 3,
+        rank: 1,
+        disqualified: false,
+      },
+    ],
+  };
+
+  it("lists by rank (an Official's override included), ties in listing order, then the DQ'd", () => {
+    expect(standingsInRankOrder(standings).map((s) => s.entrantId)).toEqual([
+      "t3",
+      "t5",
+      "t1",
+      "t4",
+      "t2",
+    ]);
+  });
+
+  it("doesn't change the standings it's given", () => {
+    standingsInRankOrder(standings);
+    expect(standings.entrants.map((s) => s.entrantId)).toEqual([
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "t5",
+    ]);
   });
 });

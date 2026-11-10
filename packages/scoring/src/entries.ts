@@ -1,8 +1,10 @@
 import type {
   ActivityResults,
+  CompetitionStandings,
   EntryResult,
   FinalizedResult,
   ScoreEntry,
+  Standing,
 } from "./types.ts";
 
 /**
@@ -51,4 +53,14 @@ export function finalizeRanking(results: ActivityResults): FinalizedResult[] {
           disqualified: false,
         },
   );
+}
+
+/**
+ * A Competition's standings in the order to list them: by rank, best first (an Official's `set-overall-rank`
+ * included), ties in listing order, then the entrants DQ'd overall. Not implemented yet (red).
+ */
+export function standingsInRankOrder(
+  standings: CompetitionStandings,
+): Standing[] {
+  return [...standings.entrants];
 }
