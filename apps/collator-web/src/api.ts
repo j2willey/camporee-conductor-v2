@@ -6,6 +6,8 @@ import {
   type OfficialActivity,
   type OfficialEvent,
   type CompetitionStandingsView,
+  type ExhibitionResultsView,
+  type ExhibitionRow,
   type OfficialRoster,
   type Roster,
   type RosterChange,
@@ -94,6 +96,34 @@ export const officialApi = {
   ) =>
     call<{ status: "created" | "repeat" }>(
       `/api/official/roster-changes/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: email,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
+  /** An Exhibition's current results and the log of saves (#42 PR 7). */
+  exhibition: (email: string, activityId: string) =>
+    asOfficial<ExhibitionResultsView>(
+      email,
+      `/exhibitions/${encodeURIComponent(activityId)}`,
+    ),
+  /** Save an Exhibition's whole results list. Resending the same id is safe: the box answers "repeat". */
+  saveExhibition: (
+    email: string,
+    activityId: string,
+    id: string,
+    body: {
+      rows: ExhibitionRow[];
+      replacesId: string | null;
+      clientCreatedAt: string;
+    },
+  ) =>
+    call<{ status: "created" | "repeat" }>(
+      `/api/official/exhibitions/${encodeURIComponent(activityId)}/saves/${encodeURIComponent(id)}`,
       {
         method: "PUT",
         headers: {

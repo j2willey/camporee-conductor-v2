@@ -121,8 +121,16 @@ export function OfficialOverview({
                           {a.title}
                         </button>
                       </td>
-                      <td className="px-3 py-2">{a.entrantsScored}</td>
-                      <td className="px-3 py-2">{a.entryCount}</td>
+                      {a.scoringType === "exhibition" ? (
+                        <td className="px-3 py-2" colSpan={2}>
+                          {plural(a.resultCount ?? 0, "result", "results")}
+                        </td>
+                      ) : (
+                        <>
+                          <td className="px-3 py-2">{a.entrantsScored}</td>
+                          <td className="px-3 py-2">{a.entryCount}</td>
+                        </>
+                      )}
                       <td className="px-3 py-2">{a.judges}</td>
                       <td className="px-3 py-2">
                         {a.closureProblems > 0 ? (

@@ -29,6 +29,8 @@ import Database from "better-sqlite3";
 // overall rank, which says what the box gave.
 // #42 PR 6: two Judges each add the same Patrol under nearly the same name and score it; an Official merges them on
 // the Roster page (one row, a conflict, one Standings row), unmerges (two again), and merges again.
+// #42 PR 7: an Official records an Exhibition's results (William Tell No Apple), reorders them and saves again; the
+// Overview counts them.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -1292,4 +1294,43 @@ test.describe("without the service worker", () => {
       page.getByText("Circus 2026 (moved to Saturday)"),
     ).toBeVisible();
   });
+});
+
+test("an Official records an Exhibition's results, reorders them, and the Overview counts them", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "William Tell No Apple" }).click();
+  await expect(
+    page.getByRole("heading", { name: "William Tell No Apple" }),
+  ).toBeVisible();
+  await expect(page.getByText("Not saved yet")).toBeVisible();
+
+  await page.getByRole("button", { name: "Add row" }).click();
+  await page.getByLabel("Name, row 1").fill("Alex Archer");
+  await page.getByLabel("Place, row 1").fill("1st");
+  await page.getByRole("button", { name: "Add row" }).click();
+  await page.getByLabel("Name, row 2").fill("Sam Shooter");
+  await page.getByLabel("Place, row 2").fill("2nd");
+  await expect(page.getByText("You have unsaved changes.")).toBeVisible();
+  await page.getByRole("button", { name: "Save results" }).click();
+  await expect(
+    page.getByText(/Saved by lead\.judge@example\.com/),
+  ).toBeVisible();
+  await expect(page.getByText("You have unsaved changes.")).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Move row 2 up" }).click();
+  await page.getByRole("button", { name: "Save results" }).click();
+  await expect(page.getByText("2 results")).toHaveCount(2);
+  await page.reload();
+  await page.getByRole("button", { name: "William Tell No Apple" }).click();
+  await expect(page.getByLabel("Name, row 1")).toHaveValue("Sam Shooter");
+  await expect(page.getByLabel("Name, row 2")).toHaveValue("Alex Archer");
+
+  await page.getByRole("button", { name: "← Overview" }).click();
+  await expect(
+    page.getByRole("row", { name: /William Tell No Apple/ }),
+  ).toContainText("2 results");
 });

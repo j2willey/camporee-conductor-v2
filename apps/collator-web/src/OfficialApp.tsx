@@ -9,6 +9,7 @@ import {
   savedOfficialEmail,
   saveOfficialEmail,
 } from "./official-identity.ts";
+import { ExhibitionResultsPage } from "./screens/ExhibitionResultsPage.tsx";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialOverview } from "./screens/OfficialOverview.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
@@ -121,6 +122,13 @@ export function OfficialApp() {
           email={email}
           labels={event.event.labels}
           onBack={() => setRosterOpen(false)}
+        />
+      ) : activity?.scoringType === "exhibition" ? (
+        <ExhibitionResultsPage
+          email={email}
+          activityId={activity.id}
+          labels={event.event.labels}
+          onBack={() => setActivity(null)}
         />
       ) : activity ? (
         <OfficialActivityView
