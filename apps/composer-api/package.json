@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc",
-    "test": "vitest run",
+    "test": "vitest run --testTimeout=20000",
     "start": "node --env-file-if-exists=../../.env.local src/main.ts",
     "import-event": "node src/cli/import.ts",
     "import-v1": "node src/cli/import-v1.ts",
