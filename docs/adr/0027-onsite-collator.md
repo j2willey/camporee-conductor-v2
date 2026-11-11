@@ -166,6 +166,27 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
   - v1 printed "Flaming Arrows (T101)". v2 prints the roster's names, "Flaming Arrows (Troop 101)".
   - v1 listed no Exhibitions. v2 lists the final ones.
 
+## Paper scoresheets (2026-11-11, #43 PR 5)
+
+- **The fallback when phones fail,** so they print before the event as well as on the day. An Official picks the
+  Activities and prints from the laptop's browser: **landscape**, 0.4in margins, one sheet per Activity, as in v1.
+- **The columns are exactly what a Judge enters on the phone:** the judge view's fields for the Activity (its own
+  fields and its Competition's Common Fields, merged by `packages/scoring` with variables filled in, ADR-0020),
+  in the phone's order. v1 left the Common Fields off its sheets. v2 includes them, because they're scored. Each
+  header carries a hint: the range for a number ("0–10"), "m:ss" for a stopwatch, "✓ / ✗" for a checkbox, the
+  options for a select, "notes" for a text area. Official-only fields are left off, as in v1.
+- **The rows come from the roster:** each entrant of the Activity's Competition (Team and Group, or Group), in the
+  judge page's order, then blank rows for walk-ups. With no roster on the box, the rows are all blank, so sheets
+  can be printed before check-in. "Rows" is v1's setting (20 by default, 5–60): the least a sheet has, and always
+  at least 3 blank rows after the roster. A "Fill in the roster" box turns the names off.
+- **An Exhibition's sheet has the Exhibition results columns** (name, Group, Team, place, notes), all blank, so
+  the paper can be typed straight into the Exhibition results page. This differs from v1, whose Exhibition sheet
+  had attendance columns (# Members, # Participating) that v2 doesn't record.
+- **Each sheet's header:** the Activity's title, its Competition, the Event's title and the date printed.
+- **Two-sided printing** prints each sheet twice, as v1 did.
+- **No box change:** the page reads the judge view and the Official roster the box already serves. It loads nothing
+  from outside the box, and an e2e test fails on any request off the box.
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge
