@@ -12,6 +12,9 @@
 #   6. The backup timer wrote a backup to the backup folder that opens and contains the score; backup-now
 #      works too.
 #
+#   7. Reset scores through the API (#42 PR 8): the score is gone, the reset's backup was written first; then
+#      restore-backup in the container brings the score back, under a new `restore` epoch (#66).
+#
 # Usage: docs/runbook/rehearse-collator.sh
 # Needs docker without sudo, node and the workspace's dependencies (pnpm install), curl and openssl.
 # Publishes no well-known ports: HTTPS on REHEARSAL_HTTPS_PORT (default 8443), HTTP on REHEARSAL_HTTP_PORT
@@ -185,5 +188,38 @@ compose exec -T collator node apps/collator/src/cli/backup-now.ts >/dev/null || 
 [ "$(find "$work/backups" -maxdepth 1 -name 'collator-*.db' | wc -l)" -le 5 ] || fail "BACKUP_KEEP=5 not applied"
 [ -z "$(find "$work/backups" -maxdepth 1 -name '*.partial')" ] || fail "a .partial file was left behind"
 pass "backup-now works; old backups pruned; no half files"
+
+echo "== 7. reset scores, then restore the backup it took"
+event_epoch() { # event_epoch -> "<id> <reason>" from the judge page's event data
+  curl -sS --max-time 10 --cacert "$work/root.crt" --resolve "$host:$https_port:127.0.0.1" \
+    "https://$host:$https_port/api/event" | node -p 'const e = JSON.parse(require("fs").readFileSync(0, "utf8")).epoch; `${e.id} ${e.reason}`'
+}
+score_count() { # score_count -> how many entries the Official view has at Clown Car
+  body_of "$(api GET "/api/official/activities/$activity")" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).entries.length'
+}
+[ "$(event_epoch | cut -d' ' -f2)" = created ] || fail "a new box's epoch should be 'created', got $(event_epoch)"
+wrong=$(api POST /api/official/reset '{"kind":"scores","confirm":"not the name"}')
+expect "a reset with the wrong name is refused" 400 "$wrong"
+[ "$(score_count)" = 1 ] || fail "a refused reset cleared the score"
+title=$(node -p "JSON.parse(require('fs').readFileSync('$fixtures/event.json','utf8')).title")
+reset=$(api POST /api/official/reset "$(printf '{"kind":"scores","confirm":"%s"}' "$title")")
+expect "reset scores" 200 "$reset"
+backup=$(body_of "$reset" | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).backup')
+[ -f "$work/backups/$backup" ] || fail "the reset's backup $backup isn't in the backup folder"
+has_score "$backup" || fail "the reset's backup $backup doesn't contain the score it was about to clear"
+[ "$(score_count)" = 0 ] || fail "the score is still there after the reset"
+[ "$(event_epoch | cut -d' ' -f2)" = reset ] || fail "after a reset the epoch should be 'reset', got $(event_epoch)"
+pass "reset: $backup written first with the score in it; the score is gone; the epoch is 'reset'"
+compose stop collator >/dev/null 2>&1 || fail "stop collator"
+compose run --rm --no-deps -T collator node apps/collator/src/cli/restore-backup.ts "/backups/$backup" ||
+  fail "restore-backup"
+compose start collator >/dev/null 2>&1 || fail "start collator"
+for _ in $(seq 30); do
+  [ "$(status_of "$(api GET /api/health 2>/dev/null || echo 'x 0')")" = 200 ] && break
+  sleep 1
+done
+[ "$(score_count)" = 1 ] || fail "the score didn't come back after restore-backup"
+[ "$(event_epoch | cut -d' ' -f2)" = restore ] || fail "after a restore the epoch should be 'restore', got $(event_epoch)"
+pass "restore-backup in the container: the score is back, under a new 'restore' epoch"
 
 echo "== all checks passed"

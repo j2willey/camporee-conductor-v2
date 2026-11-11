@@ -307,3 +307,122 @@ describe("outbox", () => {
     expect(outbox.items()).toEqual([]);
   });
 });
+
+// The box epoch (#66): items carry the epoch the phone knew, the box's confirmations go to the sent archive, and a
+// reset or restore changes the queue.
+describe("outbox and the box epoch", () => {
+  const make = (
+    options: Partial<Parameters<typeof createOutbox>[0]> = {},
+    box = scriptedBox(),
+    initial: OutboxItem[] = [],
+  ) =>
+    createOutbox({
+      store: memoryStore(initial).store,
+      send: box.send,
+      schedule: manualTimer().schedule,
+      ...options,
+    });
+
+  it("stamps a new item with the epoch the phone knows, unless it already has one", async () => {
+    const outbox = make(
+      { epoch: () => "e1" },
+      scriptedBox(UNREACHABLE, UNREACHABLE),
+    );
+    await outbox.sendNow(item("s1"));
+    await outbox.sendNow({ ...item("s2"), epoch: "e0" });
+    expect(outbox.items().map((i) => [i.id, i.epoch])).toEqual([
+      ["s1", "e1"],
+      ["s2", "e0"],
+    ]);
+  });
+
+  it("tells onConfirmed about each confirmed item with the epoch the box answered in, and not about refusals", async () => {
+    const confirmed: unknown[] = [];
+    const answers: SendResult[] = [
+      { ok: true, repeat: false, epoch: "e1" },
+      { ok: true, repeat: true, epoch: "e2" },
+      refused("no"),
+    ];
+    const outbox = make(
+      {
+        epoch: () => "e1",
+        onConfirmed: (i, r) => confirmed.push([i.id, i.epoch, r]),
+      },
+      scriptedBox(...answers),
+    );
+    await outbox.sendNow(item("s1"));
+    await outbox.sendNow(item("s2"));
+    await outbox.sendNow(item("s3"));
+    expect(confirmed).toEqual([
+      ["s1", "e1", { repeat: false, epoch: "e1" }],
+      ["s2", "e1", { repeat: true, epoch: "e2" }],
+    ]);
+  });
+
+  it("runs beforeRun before sending, and sends even if it fails", async () => {
+    const order: string[] = [];
+    const outbox = make(
+      {
+        beforeRun: () => {
+          order.push("check");
+          return Promise.reject(new Error("no answer"));
+        },
+        send: (i) => {
+          order.push(`send ${i.id}`);
+          return Promise.resolve({ ok: true, repeat: false });
+        },
+      },
+      scriptedBox(),
+    );
+    await outbox.sendNow(item("s1"));
+    expect(order).toEqual(["check", "send s1"]);
+  });
+
+  it("doesn't run beforeRun when there is nothing to send", async () => {
+    let checks = 0;
+    const outbox = make({
+      beforeRun: () => {
+        checks++;
+        return Promise.resolve();
+      },
+    });
+    await outbox.flush();
+    expect(checks).toBe(0);
+  });
+
+  it("sends nothing that beforeRun dropped (a reset found out before the send)", async () => {
+    const box = scriptedBox();
+    const outbox = make(
+      {
+        beforeRun: () => {
+          outbox.dropWhere((i) => i.epoch === "old");
+          return Promise.resolve();
+        },
+      },
+      box,
+    );
+    const result = await outbox.sendNow({ ...item("s1"), epoch: "old" });
+    expect(box.sent).toEqual([]);
+    expect(outbox.items()).toEqual([]);
+    expect(result.status).toBe("refused");
+  });
+
+  it("drops the items picked and hands them back", async () => {
+    const outbox = make({}, scriptedBox(UNREACHABLE, UNREACHABLE));
+    await outbox.sendNow({ ...item("s1"), epoch: "old" });
+    await outbox.sendNow({ ...item("s2"), epoch: "new" });
+    const dropped = outbox.dropWhere((i) => i.epoch === "old");
+    expect(dropped.map((i) => i.id)).toEqual(["s1"]);
+    expect(outbox.items().map((i) => i.id)).toEqual(["s2"]);
+  });
+
+  it("puts items back first, in order, with their ids, skipping any already queued", async () => {
+    const box = scriptedBox(UNREACHABLE);
+    const outbox = make({}, box);
+    await outbox.sendNow(item("s3"));
+    outbox.requeue([item("s1"), item("s2"), item("s3")]);
+    expect(outbox.items().map((i) => i.id)).toEqual(["s1", "s2", "s3"]);
+    await outbox.flush();
+    expect(box.sent).toEqual(["s3", "s1", "s2", "s3"]);
+  });
+});

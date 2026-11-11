@@ -13,6 +13,7 @@ import { ExhibitionResultsPage } from "./screens/ExhibitionResultsPage.tsx";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialOverview } from "./screens/OfficialOverview.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
+import { ResetPage } from "./screens/ResetPage.tsx";
 import { RosterPage } from "./screens/RosterPage.tsx";
 import { QrCodesPage } from "./screens/QrCodesPage.tsx";
 import { StandingsPage } from "./screens/StandingsPage.tsx";
@@ -34,6 +35,7 @@ export function OfficialApp() {
   const [printing, setPrinting] = useState(false);
   const [standings, setStandings] = useState(false);
   const [rosterOpen, setRosterOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   // Signing in, or coming back with a saved email: the box checks it, as it does on every call.
   useEffect(() => {
@@ -70,6 +72,7 @@ export function OfficialApp() {
     setPrinting(false);
     setStandings(false);
     setRosterOpen(false);
+    setResetting(false);
     setProblem(null);
   };
 
@@ -117,6 +120,12 @@ export function OfficialApp() {
           labels={event.event.labels}
           onBack={() => setStandings(false)}
         />
+      ) : resetting ? (
+        <ResetPage
+          email={email}
+          eventTitle={event.event.title}
+          onBack={() => setResetting(false)}
+        />
       ) : rosterOpen ? (
         <RosterPage
           email={email}
@@ -145,6 +154,7 @@ export function OfficialApp() {
           onPrint={() => setPrinting(true)}
           onStandings={() => setStandings(true)}
           onRoster={() => setRosterOpen(true)}
+          onReset={() => setResetting(true)}
         />
       )}
     </Shell>

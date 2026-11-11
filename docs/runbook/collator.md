@@ -131,15 +131,38 @@ newest `BACKUP_KEEP` (default 288, a day's worth). A mounted USB stick is just a
   next time; the server keeps running.
 - Take one now (before shutting down, or to check the stick):
   `docker compose exec collator node apps/collator/src/cli/backup-now.ts`
-- To restore, stop the box, copy a backup into the `collator-data` volume as `collator.db` (deleting any
-  `collator.db-wal` and `collator.db-shm` beside it), and start it.
-- **After a restore, scores the box confirmed after that backup are lost** (#66). Phones resend only what's
-  still in their outbox: scores saved while out of range and not yet sent. A score the box had already
-  confirmed is gone from the phone's outbox and is **not** resent. Until #66 is fixed:
-  - Note the backup's time. Anything scored after it may be missing.
-  - In the Official view, check each Activity's closures: "Check closures" and "N of them haven't reached
-    the box" point at Activities with missing scores.
-  - Re-enter missing scores from the paper scoresheets, or ask the Judge to score that Team again.
+- To restore a backup, use the command, never a hand copy: it checks the file is a Collator database, puts it
+  in place safely, clears the old journal files and records a **restore** in the box's epoch log (below).
+  The backups are `/backups` inside the container:
+  1. `docker compose stop collator`
+  2. `docker compose run --rm collator node apps/collator/src/cli/restore-backup.ts /backups/<file>`
+  3. `docker compose start collator`
+
+  It prints the backup's name and the new epoch. Exit 1 means it refused the file and changed nothing.
+
+- **After a restore, phones resend what the box lost** (#66). Each phone keeps what the box confirmed, and
+  when it next sees the box with the page open, it notices the new epoch and sends all of it again with the
+  same ids, so anything the box already had counts once. A phone that's out of range, or has the page
+  closed, resends when it's back in range and opened. Give the Judges a few minutes, then check closures as a
+  backstop: "Check closures" and "N of them haven't reached the box" point at an Activity still missing
+  scores. A closure that reports missing scores also makes the phone resend those.
+- **After a reset, nothing comes back**, on purpose: the phones drop what the reset cleared, and say so ("The
+  box was reset; N unsent scores from before the reset were discarded"). A reset undone by a phone coming
+  back into range would defeat it.
+
+### Reset for a rehearsal (#42)
+
+On the laptop, on the Official page, **Reset** (any Official may). Two kinds:
+
+- **Reset scores** clears score entries, closures, Judges, Official actions (disqualifications, corrections,
+  ranks, finalizing) and Exhibition results. It keeps the Event, the Groups and Teams, and the Officials.
+- **Full reset** also clears the Groups, Teams and the roster changes.
+- Neither touches the loaded cartridge or the Officials added on the console.
+
+To confirm, type the Event's name (its title or slug, any case). **The box backs up first**, into the backup
+folder; if it can't (no `BACKUP_DIR`, the stick missing or full) the reset is refused and nothing changes. The
+page then says "Reset done. Backup saved as `<file>`." To undo a reset, restore that file as above: it brings back
+everything the reset cleared, and phones resend what they scored after the reset.
 
 ## 6. If a phone can't connect
 

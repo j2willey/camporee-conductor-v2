@@ -4,6 +4,7 @@ import { ApiError } from "./api.ts";
 import {
   addGroupItem,
   addTeamItem,
+  isScore,
   loadKept,
   rosterWithPending,
   type KeptStorage,
@@ -161,5 +162,21 @@ describe("outbox items for roster adds", () => {
       label: "Eagles (Troop 202)",
       queuedAt: "now",
     });
+  });
+});
+
+describe("isScore", () => {
+  const at = (path: string) => ({
+    id: "x",
+    path,
+    body: {},
+    label: "x",
+    queuedAt: "t",
+  });
+  it("is true for a score, false for a roster add or a closure", () => {
+    expect(isScore(at("/api/scores/x"))).toBe(true);
+    expect(isScore(at("/api/groups/x"))).toBe(false);
+    expect(isScore(at("/api/teams/x"))).toBe(false);
+    expect(isScore(at("/api/closures/x"))).toBe(false);
   });
 });

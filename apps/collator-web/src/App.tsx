@@ -18,6 +18,7 @@ import { EntrantPicker, type Entrant } from "./screens/EntrantPicker.tsx";
 import { JudgeDetails } from "./screens/JudgeDetails.tsx";
 import { Saved } from "./screens/Saved.tsx";
 import { ScoreForm } from "./screens/ScoreForm.tsx";
+import { EpochNotices } from "./screens/EpochNotices.tsx";
 import { BuildStamp } from "./screens/BuildStamp.tsx";
 import { ui } from "./ui.ts";
 
@@ -81,7 +82,8 @@ export function App() {
         (kept) => {
           if (kept.fromPhone) return;
           setFromPhone(false);
-          if (JSON.stringify(kept.value) !== JSON.stringify(event))
+          // The epoch changes with a reset or restore, which isn't a change to the event.
+          if (withoutEpoch(kept.value) !== withoutEpoch(event))
             setEventChanged(true);
         },
         () => {},
@@ -141,6 +143,7 @@ export function App() {
           </button>
         </div>
       )}
+      <EpochNotices />
       <OutboxStatus />
     </header>
   );
@@ -227,6 +230,9 @@ export function App() {
     </Shell>
   );
 }
+
+const withoutEpoch = (event: JudgeEvent) =>
+  JSON.stringify({ ...event, epoch: undefined });
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (

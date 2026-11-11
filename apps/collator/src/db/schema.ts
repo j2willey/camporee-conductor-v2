@@ -15,6 +15,9 @@ export const EVENT_DOCUMENT_KINDS = [
 ] as const;
 export type EventDocumentKind = (typeof EVENT_DOCUMENT_KINDS)[number];
 
+export const EPOCH_REASONS = ["created", "restore", "reset"] as const;
+export type EpochReason = (typeof EPOCH_REASONS)[number];
+
 /** `column IN ('a', 'b')`, so the DB enforces what the TypeScript enum only types. */
 const oneOf = (column: string, values: readonly string[]) =>
   sql.raw(`${column} IN (${values.map((v) => `'${v}'`).join(", ")})`);
@@ -189,4 +192,20 @@ export const exhibitionResultSaves = sqliteTable(
     receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
   },
   (t) => [index("exhibition_result_saves_activity").on(t.activityId)],
+);
+
+/**
+ * The box epoch log (#66, ADR-0027): a random id and a reason each time the database is created, restored from a
+ * backup or reset. Append-only; the newest row is the current epoch. Phones compare epochs to know whether the box
+ * lost scores (restore: resend) or was cleared on purpose (reset: don't).
+ */
+export const boxEpochs = sqliteTable(
+  "box_epochs",
+  {
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    id: text("id").notNull().unique(),
+    reason: text("reason", { enum: EPOCH_REASONS }).notNull(),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+  },
+  () => [check("box_epochs_reason", oneOf("reason", EPOCH_REASONS))],
 );

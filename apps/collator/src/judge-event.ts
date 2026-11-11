@@ -42,6 +42,8 @@ export interface JudgeEvent {
     labels: JudgeLabels;
   };
   activities: JudgeActivity[];
+  /** The box epoch (#66): `GET /api/event` adds it. Absent from an event kept on a phone before epochs. */
+  epoch?: { id: string; reason: string };
 }
 
 export function judgeEvent(bundle: CheckedBundle): JudgeEvent {

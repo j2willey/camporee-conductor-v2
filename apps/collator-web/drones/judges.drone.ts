@@ -8,6 +8,13 @@ import {
   type Page,
   type TestInfo,
 } from "@playwright/test";
+import {
+  existsSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { DRONES_URL } from "./playwright.config.ts";
 
 // Judge drones (#63): a few simulated Judges' phones, each with its own storage, on the real box over
@@ -311,4 +318,158 @@ test("a Judge closes an Activity, and the box confirms it has their scores", asy
     },
   ]);
   await context.close();
+});
+
+// The box epoch (#66, ADR-0027): phones resend what a restore lost, and drop what a reset cleared.
+
+/**
+ * Ask drones-collator.sh to do something to the box, which a browser container can't: it writes the command
+ * into a shared folder and waits for the script's answer (`backup`: answers the file's name; `restore`: stops
+ * the box, runs restore-backup on that file, starts it again and waits until it answers).
+ */
+async function boxCommand(command: "backup" | "restore"): Promise<string> {
+  const dir = process.env["DRONES_CTL"];
+  if (!dir) throw new Error("DRONES_CTL is not set: run drones-collator.sh");
+  rmSync(`${dir}/ack`, { force: true });
+  writeFileSync(`${dir}/cmd.tmp`, command);
+  renameSync(`${dir}/cmd.tmp`, `${dir}/cmd`);
+  const until = Date.now() + 150_000;
+  while (!existsSync(`${dir}/ack`)) {
+    if (Date.now() > until) throw new Error(`the box never did: ${command}`);
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  const answer = readFileSync(`${dir}/ack`, "utf8").trim();
+  rmSync(`${dir}/ack`, { force: true });
+  if (answer.startsWith("fail")) throw new Error(`${command}: ${answer}`);
+  return answer;
+}
+
+/** Score the Patrol at Clown Car on a phone that is on the Activity list or has just saved. */
+async function scoreClownCar(
+  page: Page,
+  owls: string,
+  troop: string,
+  clowns: string,
+) {
+  const again = page.getByRole("button", { name: "Score another Patrol" });
+  if (await again.isVisible()) await again.click();
+  else await activity(page, "Clown Car").click();
+  await page.getByRole("button", { name: `${owls} (${troop})` }).click();
+  await fillClownCar(page, clowns, "1");
+  await expect(page.getByText(/Score saved/)).toBeVisible();
+}
+
+/** Every score entry on the box, for one Judge (by name) when given. */
+async function allEntries(request: APIRequestContext, judge?: string) {
+  const headers = { "x-official-email": OFFICIAL };
+  const event = (await (
+    await request.get("/api/official/event", { headers })
+  ).json()) as { activities: { id: string }[] };
+  const found: { id: string; judge: { name: string } }[] = [];
+  for (const a of event.activities) {
+    const res = await request.get(`/api/official/activities/${a.id}`, {
+      headers,
+    });
+    const body = (await res.json()) as { entries: typeof found };
+    found.push(...body.entries);
+  }
+  return judge ? found.filter((e) => e.judge.name === judge) : found;
+}
+
+test("after the box is restored from an earlier backup, phones resend what it lost, and every score is there once", async ({
+  browser,
+  request,
+}, info) => {
+  const tag = info.project.name;
+  const owls = `Owls ${tag}`;
+  const troop = `Troop ${tag}`;
+  const gus = `Gus ${tag}`;
+  const hana = `Hana ${tag}`;
+  const a = await phone(browser, info);
+  const b = await phone(browser, info);
+  await startJudging(a.page, gus);
+  await startJudging(b.page, hana);
+
+  await scoreClownCar(a.page, owls, troop, "1");
+  await scoreClownCar(b.page, owls, troop, "2");
+  await boxCommand("backup");
+  // These reach the box after the backup, so the restore loses them.
+  await scoreClownCar(a.page, owls, troop, "3");
+  await scoreClownCar(b.page, owls, troop, "4");
+  await expect(waitingToSend(a.page)).toHaveCount(0);
+  await expect(waitingToSend(b.page)).toHaveCount(0);
+  expect(await allEntries(request, gus)).toHaveLength(2);
+  expect(await allEntries(request, hana)).toHaveLength(2);
+
+  await boxCommand("restore");
+  expect(
+    await allEntries(request, gus),
+    "the restore should have lost the later scores",
+  ).toHaveLength(1);
+
+  await a.page.reload();
+  await b.page.reload();
+  await expect(
+    a.page.getByText(/The box was restored; resending 2 items/),
+  ).toBeVisible();
+  await expect(
+    b.page.getByText(/The box was restored; resending 2 items/),
+  ).toBeVisible();
+  await expect
+    .poll(async () => [
+      (await allEntries(request, gus)).length,
+      (await allEntries(request, hana)).length,
+    ])
+    .toEqual([2, 2]);
+  // Settled: nothing is sent twice.
+  await expect(waitingToSend(a.page)).toHaveCount(0);
+  await a.page.waitForTimeout(1_500);
+  expect(await allEntries(request, gus)).toHaveLength(2);
+  expect(await allEntries(request, hana)).toHaveLength(2);
+  await a.context.close();
+  await b.context.close();
+});
+
+test("after a reset, phones drop what they kept and say so; only a new score reaches the box", async ({
+  browser,
+  request,
+}, info) => {
+  const tag = info.project.name;
+  const owls = `Owls ${tag}`;
+  const troop = `Troop ${tag}`;
+  const ira = `Ira ${tag}`;
+  const jo = `Jo ${tag}`;
+  const a = await phone(browser, info);
+  const b = await phone(browser, info);
+  await startJudging(a.page, ira);
+  await startJudging(b.page, jo);
+  await scoreClownCar(a.page, owls, troop, "1");
+  await scoreClownCar(b.page, owls, troop, "2");
+  expect(await allEntries(request)).not.toHaveLength(0);
+
+  const title = (
+    (await (await request.get("/api/event")).json()) as {
+      event: { title: string };
+    }
+  ).event.title;
+  const reset = await request.post("/api/official/reset", {
+    headers: { "x-official-email": OFFICIAL },
+    data: { kind: "scores", confirm: title },
+  });
+  expect(reset.status()).toBe(200);
+  expect(await allEntries(request)).toHaveLength(0);
+
+  await a.page.reload();
+  await b.page.reload();
+  for (const page of [a.page, b.page]) {
+    await expect(page.getByText(/The box was reset/)).toBeVisible();
+  }
+  await a.page.waitForTimeout(1_500);
+  expect(await allEntries(request), "a reset score came back").toHaveLength(0);
+
+  await scoreClownCar(a.page, owls, troop, "5");
+  const after = await allEntries(request);
+  expect(after.map((e) => e.judge.name)).toEqual([ira]);
+  await a.context.close();
+  await b.context.close();
 });
