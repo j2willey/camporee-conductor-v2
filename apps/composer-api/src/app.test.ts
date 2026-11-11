@@ -660,7 +660,9 @@ describe("Events", () => {
       expect(res.status).toBe(200);
       expect(res.contentType).toMatch(/^text\/html/);
       expect(res.text).toMatch(/^<!doctype html>/);
-      expect(res.text).toContain(`<h1>${titleOf(id)}</h1>`);
+      expect(res.text).toMatch(
+        new RegExp(`<h1>[A-Z]\\d+\\. ${titleOf(id)}</h1>`),
+      );
       expect(res.text).toContain("The Judge&#39;s playbook");
     });
 
@@ -675,6 +677,30 @@ describe("Events", () => {
       expect(res.text.indexOf(`id="guide-${a}"`)).toBeLessThan(
         res.text.indexOf(`id="guide-${b}"`),
       );
+    });
+
+    it("adds the two-sided script only when asked", async () => {
+      const ids = `${activityIds[0]},${activityIds[1]}`;
+      const plain = await page("bob@example.com", guidesPath(ids));
+      expect(plain.text).not.toContain("<script");
+      for (const flag of ["1", "true"]) {
+        const res = await page(
+          "bob@example.com",
+          `${guidesPath(ids)}&twoSided=${flag}`,
+        );
+        expect(res.status).toBe(200);
+        expect(res.text.match(/<script/g)).toHaveLength(1);
+        expect(res.text).toContain("data-two-sided");
+      }
+      const off = await page(
+        "bob@example.com",
+        `${guidesPath(ids)}&twoSided=0`,
+      );
+      expect(off.text).not.toContain("<script");
+      expect(
+        (await page("bob@example.com", `${guidesPath(ids)}&twoSided=maybe`))
+          .status,
+      ).toBe(400);
     });
 
     it("is 400 without ids", async () => {

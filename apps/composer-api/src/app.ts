@@ -55,6 +55,10 @@ const jsonBody = <S extends z.ZodType>(schema: S) =>
 const activityIdsQuery = validator("query", (value) => {
   const result = z
     .object({
+      twoSided: z
+        .enum(["1", "true", "0", "false"])
+        .optional()
+        .transform((v) => v === "1" || v === "true"),
       ids: z
         .string()
         .transform((ids) =>
@@ -71,7 +75,9 @@ const activityIdsQuery = validator("query", (value) => {
   if (!result.success) {
     throw new HTTPException(400, { message: z.prettifyError(result.error) });
   }
-  return { ids: result.data.ids };
+  const out: { ids: string[]; twoSided?: "1" } = { ids: result.data.ids };
+  if (result.data.twoSided) out.twoSided = "1";
+  return out;
 });
 
 /**
@@ -286,14 +292,14 @@ export function createApp({
 
     /**
      * Activity guides (ADR-0028, issue #44): one print-ready HTML page with a guide for each Activity in
-     * `ids` (comma-separated), in that order. 400 without ids; 404 if any isn't an Activity of this Event.
+     * `ids` (comma-separated), in that order; `twoSided=1` starts each on a right-hand page. 400 without ids; 404 if any isn't an Activity of this Event.
      */
     .get("/events/:eventId/activity-guides", activityIdsQuery, (c) => {
       const { event, activities } = readEvent(
         c.req.param("eventId"),
         c.var.user.userId,
       );
-      const { ids } = c.req.valid("query");
+      const { ids, twoSided } = c.req.valid("query");
       // The Event's Activities in its own Organization (readEvent filters by both), so no other Org's document is read.
       const inEvent = new Set(activities.map((a) => a.id));
       if (!ids.every((id) => inEvent.has(id))) {
@@ -313,7 +319,11 @@ export function createApp({
         if (!activity) throw new HTTPException(404, { message: "Not found." });
         return buildActivityGuide(event, activity);
       });
-      return c.html(renderActivityGuidesHtml(event, guides));
+      return c.html(
+        renderActivityGuidesHtml(event, guides, {
+          twoSided: twoSided === "1",
+        }),
+      );
     })
 
     /**
