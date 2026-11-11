@@ -103,6 +103,50 @@ describe("top-percent is a counted cutoff, ties at the line included", () => {
   });
 });
 
+describe("top-percent never goes to an entrant with 0 points (Awards amendment 2026-11-11, v1's Top Dog)", () => {
+  /** 20 entrants: t1… score `scored` totals, the rest are no-shows tied at 0, ranked last. */
+  function withNoShows(scored: number[]): RankedStanding[] {
+    const totals = [...scored, ...Array<number>(20 - scored.length).fill(0)];
+    return totals.map((total, i) => {
+      const rank = total > 0 ? i + 1 : scored.length + 1;
+      return {
+        entrantId: `t${i + 1}`,
+        total,
+        provisionalRank: rank,
+        rank,
+        disqualified: false,
+      };
+    });
+  }
+
+  it("no-shows still count: 20 entrants with 4 no-shows → 25% of 20 = 5 Top Dogs", () => {
+    const scored = [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+    expect(
+      recipients(TOP_25, withNoShows(scored), []).map((r) => r.entrantId),
+    ).toEqual(["t1", "t2", "t3", "t4", "t5"]);
+  });
+
+  it("only 3 of 20 scored: the 3 get it, and the 17 no-shows tied at 0 inside the cutoff don't", () => {
+    expect(
+      recipients(TOP_25, withNoShows([30, 20, 10]), []).map((r) => r.entrantId),
+    ).toEqual(["t1", "t2", "t3"]);
+  });
+
+  it("an Official can still give it to an entrant with 0 points with set-award", () => {
+    expect(
+      recipients(TOP_25, withNoShows([30, 20, 10]), [setAward("t9", true)]),
+    ).toContainEqual({ entrantId: "t9", manual: true });
+  });
+
+  it("named places are unchanged: 0 points still takes a place (v1 skipped 0 only for Top Dog)", () => {
+    const zeros = withNoShows([]).slice(0, 2);
+    expect(recipients(AXES, zeros, []).map((r) => r.entrantId)).toEqual([
+      "t1",
+      "t2",
+    ]);
+  });
+});
+
 describe("overall DQ: removed before ranking, so no automatic award (ADR-0019 DQ amendment)", () => {
   it("named places: standings 1, 2, 3 with 1st DQ'd → t2 gets the Gold Axe, t3 the Silver Hatchet", () => {
     expect(
