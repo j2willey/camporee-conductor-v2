@@ -109,6 +109,35 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
 12. **The results bundle (USB, ADR-0015) carries everything home**, Judges included (for thank-you notes).
     What gets uploaded to the cloud Composer is decided later. (#43, #45)
 
+## Reset, restore and the box epoch (2026-11-10, #42 PR 8, #66)
+
+- **Reset, for rehearsals** (v1's `/api/admin/scores` and `/full-reset`). An Official does it on the laptop: any
+  Official, per ADR-0019 2026-11-10, "no Director-only actions".
+  - **Reset scores** clears score entries, closures, Judges, Official actions and exhibition results.
+  - **Full reset** also clears the roster (Groups, Teams and the roster log).
+  - Neither touches the loaded cartridge or the Officials added on the console.
+- **Every reset backs up first.** The box takes a backup just before resetting, into the usual backup folder. If that
+  backup can't be written (no folder set, the stick is full or missing), the reset is **refused**. The Official
+  must also **type the Event's name** to confirm, and the box checks it too.
+- **The box epoch** (#66, decided 2026-11-07). The box keeps a log of epochs: a random id and a **reason**, `created`,
+  `restore` or `reset`, with the time. The current epoch is the newest. The phone learns it with the event data, and
+  from every answer.
+  - **Restore:** restoring a backup is a box-console command, `restore-backup <file>`, run while the server is
+    stopped. It puts the backup in place and appends a `restore` epoch. A file copied by hand can't be told apart
+    from the live database, because a backup carries the same epoch, so the runbook uses the command.
+  - **Phones on a new epoch.** A phone keeps a **sent archive**: everything it sent and the box confirmed (scores,
+    Groups and Teams it added, closures), each tagged with the epoch it was sent in. When it sees a new epoch, it asks
+    the box for the epochs since the one it knew:
+    - **any reset among them:** the phone drops its archive and any outbox items from before the reset. Nothing is
+      resent, so a reset never undoes itself when a phone reconnects;
+    - **only restores:** the phone resends its whole archive, with the same ids, so anything the box already has
+      counts once. This recovers what the backup missed;
+    - **an epoch the box doesn't know** (a backup older than anything the phone saw) is treated as a restore.
+  - **A closure's `missing` list is a second trigger:** the phone resends those ids from its archive.
+  - The archive lives in the phone's storage for the Event, at about 1 KB per score.
+- Item 8's promise, "phones resend what the box lost", is now true after a restore, and deliberately false after a
+  reset. The runbook's §5 says which is which.
+
 ## Consequences
 
 - The Collator needs no hardware decision to be built and rehearsed; the runbook (#45) records the box
