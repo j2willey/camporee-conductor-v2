@@ -153,12 +153,9 @@ async function rehearsal() {
     },
     OFFICIAL,
   );
-  const label = (await send(
-    "GET",
-    "/api/official/award-label",
-    undefined,
-    OFFICIAL,
-  ).then((r) => r.json())) as { label: unknown };
+  const label = (await (
+    await send("GET", "/api/official/award-label", undefined, OFFICIAL)
+  ).json()) as { label: unknown };
   expect(
     (
       await send(

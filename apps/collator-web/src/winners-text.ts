@@ -63,3 +63,50 @@ export function exhibitionRowText(row: ExhibitionRow) {
     notes: row.notes,
   };
 }
+
+const ORDINAL = /^\d+(st|nd|rd|th)$/i;
+
+/** Who a sticker names: "Group Team" for a Team (just the Team with no Group), the Group, or "(unknown)". */
+function stickerWho(entrant: AwardLine["entrant"]): string {
+  if (entrant.team !== null) {
+    return [entrant.group, entrant.team].filter((x) => x).join(" ");
+  }
+  return entrant.group ?? "(unknown)";
+}
+
+/**
+ * A sticker's winner line, v1's shape (ADR-0027 "Award stickers"): "1st Place - Troop 101 Flaming Arrows";
+ * "Gold Axe - …" for a named place, except an ordinal place name ("1st") reads "1st Place - …"; an Award with no
+ * place or rank (Top Dog) reads "<Award title> - …". Display only.
+ */
+export function stickerWinnerLine(
+  group: Pick<AwardGroup, "title">,
+  line: AwardLine,
+): string {
+  const place =
+    line.place !== undefined
+      ? ORDINAL.test(line.place)
+        ? `${line.place} Place`
+        : line.place
+      : line.rank !== undefined
+        ? `${ordinal(line.rank)} Place`
+        : group.title;
+  return `${place} - ${stickerWho(line.entrant)}`;
+}
+
+/** A final Exhibition row on a sticker: "1st - Jane Doe, Troop 101 Owls"; the place as typed, left out when empty. */
+export function stickerExhibitionLine(row: ExhibitionRow): string {
+  const belongs = [row.group, row.team].filter((x) => x !== "").join(" ");
+  const name =
+    belongs === "" ? row.participantName : `${row.participantName}, ${belongs}`;
+  return row.place === "" ? name : `${row.place} - ${name}`;
+}
+
+/** Stickers in rows across the sheet, in the order given (layout only; nothing is sorted). */
+export function stickerRows<T>(items: readonly T[], perRow = 3): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += perRow) {
+    rows.push(items.slice(i, i + perRow));
+  }
+  return rows;
+}
