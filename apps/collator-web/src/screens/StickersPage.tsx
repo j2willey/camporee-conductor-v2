@@ -3,7 +3,13 @@ import type {
   AwardLabelView,
   AwardsView,
 } from "@camporee-conductor/collator/types";
-import { useEffect, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { errorMessage, newId, officialApi } from "../api.ts";
 import { ui } from "../ui.ts";
 import {
@@ -35,10 +41,20 @@ const LINES: { name: StyleName; heading: string }[] = [
 
 const sizeNumber = (size: string) => Number.parseInt(size, 10);
 
-/** v1's sheet: 3 stickers across, 3.3in cells, a row of 3 kept together on a page, a gap after each Activity/Award. */
+/**
+ * v1's sheet: 3 stickers across, a row of 3 kept together on a page, a gap after each Activity/Award. Each column is a
+ * third of the page (about 2.5in portrait, as printed in May; 3.3in landscape), and a sticker is at most 1.5in tall,
+ * padding included (Jim, 2026-11-11): 0.1in above and below, so 1.3in of lines.
+ */
 const PRINT_CSS = `
 .sticker-table { table-layout: fixed; width: 100%; border-collapse: collapse; }
-.sticker-table td { width: 3.3in; padding: 0.1in 0.15in; vertical-align: middle; }
+.sticker-table td { width: 33.33%; padding: 0.1in 0.15in; vertical-align: middle; }
+.sticker-table .sticker { max-height: 1.3in; overflow: hidden; }
+@media screen {
+  /* On screen, the portrait page's printable width, so what's measured here is what prints. */
+  .sticker-table { width: 7.5in; }
+  .sticker-table .sticker[data-too-tall] { outline: 2px solid #dc2626; outline-offset: 2px; }
+}
 .sticker-table tbody { break-inside: avoid; }
 .sticker-table .sticker-gap td { height: 0.15in; padding: 0; }
 @media print {
@@ -70,6 +86,9 @@ export function StickersPage({
   const [competition, setCompetition] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // How many stickers their fonts make taller than 1.5in: they're cut off in print, so the page says so first.
+  const sheetRef = useRef<HTMLTableElement>(null);
+  const [tooTall, setTooTall] = useState(0);
   // Made once per set of edits and kept, so a retry resends exactly the same save.
   const [attempt, setAttempt] = useState<{
     id: string;
@@ -157,6 +176,20 @@ export function StickersPage({
         : [{ id: `${g.kind}-${g.id}`, stickers }];
     }),
   );
+
+  // After each render, mark the stickers cut off at 1.5in (their lines overflow the capped box) and count them.
+  useLayoutEffect(() => {
+    const stickers = sheetRef.current?.querySelectorAll<HTMLElement>(
+      "[data-testid=sticker]",
+    );
+    let count = 0;
+    for (const el of stickers ?? []) {
+      const over = el.scrollHeight > el.clientHeight + 1;
+      el.toggleAttribute("data-too-tall", over);
+      if (over) count += 1;
+    }
+    setTooTall(count);
+  });
 
   const styleOf = (name: StyleName): CSSProperties => {
     const s = label ? label.styles[label.syncFonts ? "line1" : name] : null;
@@ -314,6 +347,17 @@ export function StickersPage({
           </>
         )}
       </div>
+      {tooTall > 0 && (
+        <p
+          className={`${ui.error} print:hidden`}
+          role="alert"
+          data-testid="sticker-too-tall"
+        >
+          {tooTall === 1 ? "1 sticker is" : `${tooTall} stickers are`} taller
+          than 1.5 in (outlined in red), so the bottom would be cut off when
+          printed. Make a font smaller, or shorten line 1 or 2.
+        </p>
+      )}
       {awards && label && sheet.length === 0 && (
         <p className={ui.muted}>
           There are no awards to print stickers for yet.
@@ -321,7 +365,11 @@ export function StickersPage({
       )}
       {label && sheet.length > 0 && (
         <div className="overflow-x-auto print:overflow-visible">
-          <table className="sticker-table" data-testid="sticker-sheet">
+          <table
+            className="sticker-table"
+            data-testid="sticker-sheet"
+            ref={sheetRef}
+          >
             {sheet.flatMap((g) => [
               ...stickerRows(g.stickers).map((row, r) => (
                 <tbody key={`${g.id}-${r}`}>
@@ -330,7 +378,7 @@ export function StickersPage({
                       (s, i) => (
                         <td key={s?.key ?? `empty-${i}`}>
                           {s && (
-                            <div data-testid="sticker">
+                            <div className="sticker" data-testid="sticker">
                               {label.line1 !== "" && (
                                 <div style={styleOf("line1")}>
                                   {label.line1}

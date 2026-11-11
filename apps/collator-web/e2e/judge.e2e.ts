@@ -1445,6 +1445,32 @@ test("an Official opens Print stickers: four lines, a saved label line, one Comp
   await page.getByLabel("Line 2", { exact: true }).fill("The Circus");
   await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByTestId("label-source")).toContainText("Saved by");
+
+  // A sticker is at most 1.5in tall (Jim, 2026-11-11). Default fonts fit with no warning; 36pt on every line
+  // doesn't, so the page warns before printing, and in print every cell stays within 1.5in (96px an inch).
+  await expect(page.getByTestId("sticker-too-tall")).toHaveCount(0);
+  for (const heading of [
+    "Line 1",
+    "Line 2",
+    "Activity or Award name",
+    "Winner",
+  ]) {
+    const size = page.getByLabel(`${heading} size in points`);
+    // With "one font for all lines", only Line 1's size is open, and it sets them all.
+    if (await size.isEnabled()) await size.fill("36");
+  }
+  await expect(page.getByTestId("sticker-too-tall")).toContainText(
+    "taller than 1.5 in",
+  );
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByTestId("sticker-too-tall")).toBeHidden();
+  const heights = await page
+    .getByTestId("sticker-sheet")
+    .locator("tbody:not(:has(.sticker-gap)) td")
+    .evaluateAll((cells) => cells.map((c) => c.getBoundingClientRect().height));
+  expect(heights.length).toBeGreaterThan(0);
+  expect(Math.max(...heights)).toBeLessThanOrEqual(1.5 * 96 + 1);
+  await page.emulateMedia({ media: "screen" });
   expect(strangers).toEqual([]);
 });
 
