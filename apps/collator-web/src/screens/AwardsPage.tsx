@@ -10,16 +10,18 @@ import {
 
 /**
  * Awards (#43 PR 1): who places at each Activity and who receives each Award, from the box's winners registry
- * (packages/scoring). Provisional until every Activity is final. Stickers print from here (StickersPage); the script comes later.
+ * (packages/scoring). Provisional until every Activity is final. Stickers print from here (StickersPage); the announcer script too (AnnouncerPage).
  */
 export function AwardsPage({
   email,
   onBack,
   onStickers,
+  onAnnouncer,
 }: {
   email: string;
   onBack: () => void;
   onStickers: () => void;
+  onAnnouncer: () => void;
 }) {
   const [view, setView] = useState<AwardsView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -41,9 +43,14 @@ export function AwardsPage({
         ← Overview
       </button>
       <h1 className={ui.h1}>Awards</h1>
-      <button className={`${ui.buttonQuiet} self-start`} onClick={onStickers}>
-        Print stickers
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button className={ui.buttonQuiet} onClick={onStickers}>
+          Print stickers
+        </button>
+        <button className={ui.buttonQuiet} onClick={onAnnouncer}>
+          Announcer script
+        </button>
+      </div>
       {problem && (
         <p className={ui.error} role="alert">
           {problem}

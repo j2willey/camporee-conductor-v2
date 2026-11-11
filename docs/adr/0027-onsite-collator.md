@@ -145,6 +145,27 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
   settings, because they're setup, not results.
 - **Offline:** the page loads nothing from outside the box. An e2e test fails on any request off the box.
 
+## Announcer script (2026-11-11, #43 PR 4)
+
+- **A print page for whoever reads the results out,** from the Awards page, like v1's announcer sheet. It's printed
+  from the laptop's browser, for one Competition or all of them.
+- **One block per Activity, Award and final Exhibition,** in the Awards view's order. Each block has its title, then
+  one row per winner: the place, the name, and the score. Each block stays together on a page.
+  - **Activity:** the place ("1st"), "Team (Group)", and the Activity score in points: the entry's `total` from
+    `packages/scoring`.
+  - **Award:** the place name, or nothing for a top-percent Award such as Top Dog (v1 printed no rank numbers
+    there), then the name and the overall score: the standing's `total` (placement points).
+  - **Final Exhibition:** the place as the Official typed it, the name, Group and Team, and the notes. No score.
+- **The Awards view carries the scores.** The box looks each line's score up in `scoreEvent`'s results (the entry
+  for an Activity line, the standing for an Award line) and passes it through. Nothing is summed, ranked or sorted
+  outside scoring (CLAUDE.md rule 3).
+- **Provisional prints.** Unlike the stickers, a provisional script says so on paper, at the top, because it's read
+  aloud.
+- **Differences from v1, on purpose:**
+  - v1 numbered the rows 1., 2., 3. even when two tied. v2 prints each winner's place, so a tie reads "1st", "1st".
+  - v1 printed "Flaming Arrows (T101)". v2 prints the roster's names, "Flaming Arrows (Troop 101)".
+  - v1 listed no Exhibitions. v2 lists the final ones.
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge

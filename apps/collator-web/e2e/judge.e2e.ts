@@ -1447,6 +1447,57 @@ test("an Official opens Print stickers: four lines, a saved label line, one Comp
   expect(strangers).toEqual([]);
 });
 
+// #43 PR 4: an Official opens the Announcer script from Awards: a block per Activity with the place, the name and the
+// points, the provisional line (read aloud, so it prints), one Competition at a time, nothing off the box.
+test("an Official opens the Announcer script: a Clown Car block with 1st, a name and points, the provisional line in print, one Competition, nothing off the box", async ({
+  page,
+}) => {
+  const boxHost = new URL(String(test.info().project.use.baseURL)).host;
+  const strangers: string[] = [];
+  page.on("request", (req) => {
+    const url = new URL(req.url());
+    if (!["http:", "https:"].includes(url.protocol)) return;
+    if (url.host !== boxHost) {
+      strangers.push(req.url());
+    }
+  });
+  await page.addInitScript(() => {
+    window.print = () => {};
+  });
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Awards", exact: true }).click();
+  await page.getByRole("button", { name: "Announcer script" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Announcer script" }),
+  ).toBeVisible();
+
+  const clownCar = page
+    .getByTestId("announcer-block")
+    .filter({ hasText: "Clown Car" })
+    .first();
+  await expect(clownCar).toContainText("1st");
+  await expect(clownCar).toContainText(/\S+ \(\S.*\)/);
+  await expect(clownCar).toContainText(/\d+ pts/);
+
+  // One Competition at a time.
+  await page.getByLabel("Competition").selectOption({ label: "Patrol Games" });
+  await expect(clownCar).toBeVisible();
+  await page.getByLabel("Competition").selectOption({ label: "All" });
+
+  // The Print button prints (stubbed here); in print the provisional line shows and the controls don't.
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByTestId("announcer-controls")).toBeHidden();
+  await expect(page.getByTestId("announcer-provisional")).toContainText(
+    "Provisional",
+  );
+  await expect(clownCar).toBeVisible();
+  await page.emulateMedia({ media: "screen" });
+  expect(strangers).toEqual([]);
+});
+
 // #43 PR 2: an Official marks an Exhibition's results final: the save controls go, the Overview says Final, Awards
 // lists it; Back to draft makes it editable again.
 test("an Official marks an Exhibition final, sees it on Awards, then puts it back to draft", async ({

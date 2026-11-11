@@ -34,6 +34,29 @@ export function winnerRow(group: Pick<AwardGroup, "title">, line: AwardLine) {
   };
 }
 
+/**
+ * One announcer-script row (#43 PR 4): the place said ("" for a top-percent Award such as Top Dog, which has no place
+ * and no rank), the name, and "N pts" from scoring's total ("" when the box found none). Display only.
+ */
+export function announcerRow(
+  group: Pick<AwardGroup, "title">,
+  line: AwardLine,
+) {
+  return {
+    place:
+      line.place === undefined && line.rank === undefined
+        ? ""
+        : winnerPlace(line, group.title),
+    name: winnerName(line.entrant),
+    score: line.total === undefined ? "" : `${line.total} pts`,
+  };
+}
+
+/** One final Exhibition row on the announcer script: place as typed, name, "Group / Team", notes. No score. */
+export function announcerExhibitionRow(row: ExhibitionRow) {
+  return exhibitionRowText(row);
+}
+
 /** "Provisional: 3 of 20 Activities and 1 of 2 Exhibitions final. Awards may change." or "All Activities and Exhibitions final." */
 export function provisionalBanner(view: {
   provisional: boolean;
