@@ -57,6 +57,13 @@
       "when": 1794355266380,
       "tag": "0007_box_epochs",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1794409279777,
+      "tag": "0008_exhibition_status",
+      "breakpoints": true
     }
   ]
 }

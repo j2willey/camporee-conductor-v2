@@ -195,6 +195,29 @@ export const exhibitionResultSaves = sqliteTable(
 );
 
 /**
+ * Exhibition Final and Draft (ADR-0027, #43 PR 2): each change of an Exhibition's results to final or back to
+ * draft. Append-only: never updated or deleted; the latest row for an Activity wins, and none means draft.
+ */
+export const exhibitionStatusChanges = sqliteTable(
+  "exhibition_status_changes",
+  {
+    seq: integer("seq").primaryKey({ autoIncrement: true }),
+    id: text("id").notNull().unique(),
+    activityId: text("activity_id").notNull(),
+    /** `normalEmail()` of who changed it. */
+    officialEmail: text("official_email").notNull(),
+    final: integer("final", { mode: "boolean" }).notNull(),
+    /** Finalizing: the save the Official loaded, null when none was saved. Null for back to draft. */
+    saveId: text("save_id"),
+    notes: text("notes"),
+    /** The laptop's clock, for information. */
+    clientCreatedAt: text("client_created_at").notNull(),
+    receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [index("exhibition_status_changes_activity").on(t.activityId)],
+);
+
+/**
  * The box epoch log (#66, ADR-0027): a random id and a reason each time the database is created, restored from a
  * backup or reset. Append-only; the newest row is the current epoch. Phones compare epochs to know whether the box
  * lost scores (restore: resend) or was cleared on purpose (reset: don't).
