@@ -316,6 +316,9 @@ importers:
 
   apps/composer-web:
     dependencies:
+      '@camporee-conductor/program-guide':
+        specifier: workspace:*
+        version: link:../../packages/program-guide
       '@clerk/react':
         specifier: 6.18.0
         version: 6.18.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthProvider } from "./auth.tsx";
 import { Layout } from "./pages/Layout.tsx";
 import { EventPage } from "./pages/EventPage.tsx";
+import { GuidesPage } from "./pages/GuidesPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { OrganizationsPage } from "./pages/OrganizationsPage.tsx";
 import { NotFound } from "./pages/ErrorMessage.tsx";
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
       { path: "/", element: <OrganizationsPage /> },
       { path: "/organizations/:orgId", element: <OrganizationPage /> },
       { path: "/events/:eventId", element: <EventPage /> },
+      { path: "/events/:eventId/guides", element: <GuidesPage /> },
       { path: "*", element: <NotFound /> },
     ],
   },

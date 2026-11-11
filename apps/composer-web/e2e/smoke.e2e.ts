@@ -86,6 +86,46 @@ test("an Organizer opens one Activity's guide in a new tab", async ({
   await expect(guide.getByText("The Judge's playbook")).toBeVisible();
 });
 
+// Issue #44 PR 2: the Guides page prints several guides, each starting on a right-hand page.
+test("an Organizer prints Patrol Games guides two-sided", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "Guides", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Guides" })).toBeVisible();
+  await expect(page.getByLabel("Two-sided", { exact: false })).toBeChecked();
+
+  await page.getByRole("button", { name: "None of Troop Challenges" }).click();
+  await page.getByRole("button", { name: "None of Exhibition Events" }).click();
+
+  const [guides] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: "Open guides" }).click(),
+  ]);
+  await guides.waitForSelector('body[data-two-sided-ready="true"]');
+  await expect(guides.locator("h1").first()).toHaveText(/^P1\. /);
+  expect(await guides.locator("h1").count()).toBeGreaterThan(1);
+
+  // Walk the printed pages: every guide must start on an odd page, counting the blank pages.
+  const starts = await guides.evaluate(() => {
+    let next = 1;
+    const out: number[] = [];
+    for (const el of Array.from(document.body.children)) {
+      if (el.matches("article")) {
+        out.push(next);
+        next += Number(el.getAttribute("data-pages"));
+      } else if (el.matches(".blank-page")) next += 1;
+    }
+    return out;
+  });
+  expect(starts.length).toBeGreaterThan(1);
+  for (const start of starts) expect(start % 2).toBe(1);
+});
+
 test("not found replaces the whole page", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Email").fill("smoke@example.com");
