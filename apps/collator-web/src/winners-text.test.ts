@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  announcerExhibitionRow,
+  announcerRow,
   exhibitionRowText,
   provisionalBanner,
   stickerExhibitionLine,
@@ -233,5 +235,87 @@ describe("sticker rows", () => {
     ]);
     expect(stickerRows([])).toEqual([]);
     expect(stickerRows(["b", "a"])).toEqual([["b", "a"]]);
+  });
+});
+
+describe("announcer rows", () => {
+  const team = { group: "Troop 101", team: "Owls" };
+
+  it("an Activity line: the place, the name and 'N pts'", () => {
+    expect(
+      announcerRow(
+        { title: "Clown Car" },
+        { rank: 1, entrantId: "t1", entrant: team, manual: false, total: 14 },
+      ),
+    ).toEqual({ place: "1st", name: "Owls (Troop 101)", score: "14 pts" });
+  });
+
+  it("a tie says '1st' twice", () => {
+    const line = (id: string) => ({
+      rank: 1,
+      entrantId: id,
+      entrant: team,
+      manual: false,
+      total: 9,
+    });
+    const g = { title: "Clown Car" };
+    expect(announcerRow(g, line("a")).place).toBe("1st");
+    expect(announcerRow(g, line("b")).place).toBe("1st");
+  });
+
+  it("a named place is said as named", () => {
+    expect(
+      announcerRow(
+        { title: "Overall" },
+        {
+          rank: 2,
+          place: "Silver Axe",
+          entrantId: "t1",
+          entrant: team,
+          manual: false,
+          total: 18,
+        },
+      ).place,
+    ).toBe("Silver Axe");
+  });
+
+  it("a top-percent Award (Top Dog) has no place, and 0 pts is still said", () => {
+    expect(
+      announcerRow(
+        { title: "Top Dog" },
+        {
+          entrantId: "g1",
+          entrant: { group: "Troop 101", team: null },
+          manual: false,
+          total: 0,
+        },
+      ),
+    ).toEqual({ place: "", name: "Troop 101", score: "0 pts" });
+  });
+
+  it("no total means no score", () => {
+    expect(
+      announcerRow(
+        { title: "Overall" },
+        { rank: 1, entrantId: "x", entrant: team, manual: true },
+      ).score,
+    ).toBe("");
+  });
+
+  it("an Exhibition row: place as typed, name, 'Group / Team', notes", () => {
+    expect(
+      announcerExhibitionRow({
+        participantName: "Jane Doe",
+        group: "Troop 101",
+        team: "Owls",
+        place: "1st",
+        notes: "Bullseye",
+      }),
+    ).toEqual({
+      place: "1st",
+      name: "Jane Doe",
+      belongs: "Troop 101 / Owls",
+      notes: "Bullseye",
+    });
   });
 });

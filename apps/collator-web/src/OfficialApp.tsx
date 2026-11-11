@@ -10,6 +10,7 @@ import {
   saveOfficialEmail,
 } from "./official-identity.ts";
 import { AwardsPage } from "./screens/AwardsPage.tsx";
+import { AnnouncerPage } from "./screens/AnnouncerPage.tsx";
 import { StickersPage } from "./screens/StickersPage.tsx";
 import { ExhibitionResultsPage } from "./screens/ExhibitionResultsPage.tsx";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
@@ -38,6 +39,7 @@ export function OfficialApp() {
   const [standings, setStandings] = useState(false);
   const [awardsOpen, setAwardsOpen] = useState(false);
   const [stickersOpen, setStickersOpen] = useState(false);
+  const [announcerOpen, setAnnouncerOpen] = useState(false);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
 
@@ -77,6 +79,7 @@ export function OfficialApp() {
     setStandings(false);
     setAwardsOpen(false);
     setStickersOpen(false);
+    setAnnouncerOpen(false);
     setRosterOpen(false);
     setResetting(false);
     setProblem(null);
@@ -128,11 +131,14 @@ export function OfficialApp() {
         />
       ) : awardsOpen && stickersOpen ? (
         <StickersPage email={email} onBack={() => setStickersOpen(false)} />
+      ) : awardsOpen && announcerOpen ? (
+        <AnnouncerPage email={email} onBack={() => setAnnouncerOpen(false)} />
       ) : awardsOpen ? (
         <AwardsPage
           email={email}
           onBack={() => setAwardsOpen(false)}
           onStickers={() => setStickersOpen(true)}
+          onAnnouncer={() => setAnnouncerOpen(true)}
         />
       ) : resetting ? (
         <ResetPage
