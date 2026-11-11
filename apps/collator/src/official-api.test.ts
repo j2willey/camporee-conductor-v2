@@ -10,11 +10,13 @@ import { loadEventCartridge } from "./load-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { loggedActions, scoringInput } from "./scoring-input.ts";
 import { scoreEvent, inRankOrder } from "@camporee-conductor/scoring";
+import type { AwardsView } from "./awards.ts";
 import {
   circusCartridge,
   CLOWN_CAR,
   DIRECTOR_EMAIL,
   editFields,
+  GROUP_ACTIVITY,
   HIGH_WIRE,
   testDb,
 } from "./test-support.ts";
@@ -1557,5 +1559,122 @@ describe("the page's own paths, such as /official, get the web app", () => {
     }
     // An API path is never answered with the page.
     expect((await served.request("/api/nothing")).status).toBe(404);
+  });
+});
+
+describe("GET /api/official/awards: the winners registry with names (#43 PR 1)", () => {
+  const awards = async (): Promise<AwardsView> => {
+    const res = await asOfficial("/api/official/awards", DIRECTOR_EMAIL);
+    expect(res.status).toBe(200);
+    return (await res.json()) as AwardsView;
+  };
+
+  beforeEach(async () => {
+    await withScores();
+    // Troop 101 scores at a Group-level Activity (Troop Challenges).
+    await put("/api/scores/score-g1", {
+      judge: ALEX,
+      activityId: GROUP_ACTIVITY,
+      entrantId: "group-1",
+      values: {
+        organization: 4,
+        cleanliness: 4,
+        safety: 4,
+        scout_skills: 4,
+        spirit: 4,
+      },
+      phoneCreatedAt: "2027-05-15T09:50:00Z",
+    });
+  });
+
+  it("needs the Official gate: 401 with no email, 403 for someone not on the list", async () => {
+    expect((await asOfficial("/api/official/awards", null)).status).toBe(401);
+    expect(
+      (await asOfficial("/api/official/awards", "alex@example.com")).status,
+    ).toBe(403);
+  });
+
+  it("is provisional while Activities aren't final, and counts them", async () => {
+    const view = await awards();
+    expect(view.provisional).toBe(true);
+    expect(view.finalizedCount).toBe(0);
+    expect(view.rankedCount).toBeGreaterThan(1);
+  });
+
+  it("lists places by Competition, Activity then Award, in the registry's order, with names", async () => {
+    const { sections } = await awards();
+    const patrol = sections.find((s) =>
+      s.groups.some((g) => g.id === CLOWN_CAR.id),
+    );
+    expect(patrol?.groups.map((g) => [g.kind, g.title])).toEqual([
+      ["activity", expect.any(String)],
+      ["award", "Overall"],
+    ]);
+    expect(patrol?.groups[0]?.lines).toEqual([
+      {
+        rank: 1,
+        entrantId: "team-1",
+        entrant: { group: "Troop 101", team: "Flaming Arrows" },
+        manual: false,
+      },
+      {
+        rank: 2,
+        entrantId: "team-2",
+        entrant: { group: "Troop 101", team: "Owls" },
+        manual: false,
+      },
+    ]);
+    expect(
+      patrol?.groups[1]?.lines.map((l) => [l.rank, l.place, l.entrantId]),
+    ).toEqual([
+      [1, "1st", "team-1"],
+      [2, "2nd", "team-2"],
+    ]);
+  });
+
+  it("a Group-level entrant has a Group and no Team", async () => {
+    const { sections } = await awards();
+    const troops = sections.find((s) =>
+      s.groups.some((g) => g.id === GROUP_ACTIVITY),
+    );
+    expect(troops?.groups.find((g) => g.id === GROUP_ACTIVITY)?.lines).toEqual([
+      {
+        rank: 1,
+        entrantId: "group-1",
+        entrant: { group: "Troop 101", team: null },
+        manual: false,
+      },
+    ]);
+    // Top Dog is an Award with no place.
+    const topDog = troops?.groups.find((g) => g.title === "Top Dog");
+    expect(topDog?.lines).toEqual([
+      {
+        entrantId: "group-1",
+        entrant: { group: "Troop 101", team: null },
+        manual: false,
+      },
+    ]);
+  });
+
+  it("one finalized Activity counts as one final, and the Event is still provisional", async () => {
+    db.insert(officialActions)
+      .values({
+        id: "finalize-1",
+        officialEmail: DIRECTOR_EMAIL,
+        action: JSON.stringify({
+          type: "finalize",
+          activityId: CLOWN_CAR.id,
+          ranking: [
+            { entrantId: "team-1", rank: 1, points: 10, disqualified: false },
+            { entrantId: "team-2", rank: 2, points: 8, disqualified: false },
+          ],
+        }),
+        clientCreatedAt: "2027-05-15T09:59:00Z",
+        receivedAt: new Date(),
+      })
+      .run();
+    const view = await awards();
+    expect(view.finalizedCount).toBe(1);
+    expect(view.provisional).toBe(true);
   });
 });
