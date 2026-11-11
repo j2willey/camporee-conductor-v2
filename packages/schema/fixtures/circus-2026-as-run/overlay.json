@@ -8,6 +8,7 @@
       "title": "Circus 2026 Common Fields (as run)"
     }
   },
+  "awards": [{"slug":"overall","label":"Overall","competition":"patrol-games","rule":{"type":"places","names":["1st","2nd","3rd"]}}],
   "commonFields": {
     "p_flag": { "placeholder": "0-5 Points" },
     "ten_ess": {

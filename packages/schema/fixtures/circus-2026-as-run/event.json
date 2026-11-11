@@ -270,6 +270,23 @@
     }
   ],
   "tieNumbering": "dense",
+  "awards": [
+    {
+      "id": "01a18a1b-3000-7123-a0b8-339bc1d81bc1",
+      "slug": "overall",
+      "label": "Overall",
+      "competitionId": "01a18a1b-3000-705e-aaef-00bc32b82586",
+      "scope": "event",
+      "rule": {
+        "type": "places",
+        "names": [
+          "1st",
+          "2nd",
+          "3rd"
+        ]
+      }
+    }
+  ],
   "legacy": {
     "v1Id": "5d5a6a80-c9e1-4551-8e15-8ef1ca93b9ca"
   },

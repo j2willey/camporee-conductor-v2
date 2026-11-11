@@ -270,6 +270,21 @@
   "tieNumbering": "dense",
   "awards": [
     {
+      "id": "01a18a1b-3000-7a2f-8cbf-f982f4ef6a17",
+      "slug": "overall",
+      "label": "Overall",
+      "competitionId": "01a18a1b-3000-73de-bf41-5a03a35033b2",
+      "scope": "event",
+      "rule": {
+        "type": "places",
+        "names": [
+          "1st",
+          "2nd",
+          "3rd"
+        ]
+      }
+    },
+    {
       "id": "01a18a1b-3000-787e-aff1-9c02017f31ef",
       "slug": "top-dog",
       "label": "Top Dog",

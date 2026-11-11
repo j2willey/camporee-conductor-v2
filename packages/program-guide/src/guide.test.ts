@@ -132,12 +132,13 @@ describe("buildGuide: skills", () => {
 });
 
 describe("buildGuide: Awards, described from the Award rules", () => {
-  it("describes Top Dog as the top 25% of Troops in the Troop Challenges standings", () => {
+  it("describes Overall by place and Top Dog as the top 25% of Troops in the Troop Challenges standings", () => {
     const { sections } = buildGuide(circus, circusActivities);
     expect(section(sections, "awards").blocks).toEqual([
       {
         kind: "list",
         items: [
+          "Overall: by place in the Patrol Games standings: 1st (1st), 2nd (2nd), 3rd (3rd).",
           "Top Dog: the top 25% of Troops in the Troop Challenges standings.",
         ],
       },
