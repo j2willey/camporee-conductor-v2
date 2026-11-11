@@ -490,7 +490,9 @@ describe("Final and Draft (#43 PR 2)", () => {
       const a = officialAwards(db, bundleOf());
       expect(a.exhibitionFinalCount).toBe(1);
       expect(
-        a.sections.flatMap((s) => s.groups).some((g) => g.kind === "exhibition"),
+        a.sections
+          .flatMap((s) => s.groups)
+          .some((g) => g.kind === "exhibition"),
       ).toBe(false);
     });
 
