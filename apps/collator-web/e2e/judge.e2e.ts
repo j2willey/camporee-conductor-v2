@@ -258,7 +258,14 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
   await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
 
   await page.unroute("**/api/scores/*");
-  await waitingToSend(page).getByRole("button", { name: "Send now" }).click();
+  // The outbox also retries on its own timer, so it may send before the click lands and the button goes (#85).
+  // That's fine; a click that fails while the score is still waiting is not.
+  await waitingToSend(page)
+    .getByRole("button", { name: "Send now" })
+    .click({ timeout: 5_000 })
+    .catch(async (e: unknown) => {
+      if ((await waitingToSend(page).count()) > 0) throw e;
+    });
   await expect(waitingToSend(page)).toHaveCount(0);
   expect(count("score_entries")).toBe(before + 2);
 });

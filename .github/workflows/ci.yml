@@ -32,6 +32,11 @@ jobs:
   smoke:
     name: smoke test (Playwright)
     runs-on: ubuntu-latest
+    # Playwright's image has the browsers and their system libraries, so nothing is installed with apt at run time
+    # (#85: the runner couldn't reach the Ubuntu mirror). The tag must match the pinned @playwright/test (checked below).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host # Playwright's advice for Chromium in Docker, as the drones run it
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -41,8 +46,16 @@ jobs:
           cache: pnpm
       - name: Install
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: pnpm --filter @camporee-conductor/composer-web exec playwright install --with-deps chromium
+      - name: Image matches the pinned Playwright
+        run: |
+          image=1.64.1
+          for app in composer-web collator-web; do
+            pinned=$(node -p "require('./apps/$app/node_modules/@playwright/test/package.json').version")
+            if [ "$pinned" != "$image" ]; then
+              echo "::error::apps/$app pins @playwright/test $pinned, but the smoke job's container is Playwright $image. Update the image tag and 'image=' in .github/workflows/ci.yml."
+              exit 1
+            fi
+          done
       # Builds the web app, seeds a fresh database and runs it behind the API with the dev sign-in:
       # no Clerk secrets (issue #4, D7).
       - name: Smoke test
