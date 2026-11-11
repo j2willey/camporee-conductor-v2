@@ -22,6 +22,7 @@ export function OfficialOverview({
   onPick,
   onPrint,
   onStandings,
+  onAwards,
   onRoster,
   onReset,
 }: {
@@ -30,6 +31,7 @@ export function OfficialOverview({
   onPick: (activity: Activity) => void;
   onPrint: () => void;
   onStandings: () => void;
+  onAwards: () => void;
   onRoster: () => void;
   onReset: () => void;
 }) {
@@ -174,6 +176,9 @@ export function OfficialOverview({
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <button className={`${ui.buttonQuiet} w-full`} onClick={onStandings}>
           Standings
+        </button>
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onAwards}>
+          Awards
         </button>
         <button className={`${ui.buttonQuiet} w-full`} onClick={onRoster}>
           Roster

@@ -5,6 +5,7 @@ import {
   type JudgeEvent,
   type OfficialActivity,
   type OfficialEvent,
+  type AwardsView,
   type CompetitionStandingsView,
   type ExhibitionResultsView,
   type ExhibitionRow,
@@ -103,6 +104,8 @@ export const officialApi = {
     ),
   standings: (email: string) =>
     asOfficial<CompetitionStandingsView[]>(email, "/standings"),
+  /** The winners registry with names: who places at each Activity and who receives each Award (#43). */
+  awards: (email: string) => asOfficial<AwardsView>(email, "/awards"),
   /** The roster as Officials see it, with what is merged and the log (#42 PR 6). */
   roster: (email: string) => asOfficial<OfficialRoster>(email, "/roster"),
   /** Add, rename, merge or unmerge a Group or Team. Resending the same id is safe: the box answers "repeat". */
