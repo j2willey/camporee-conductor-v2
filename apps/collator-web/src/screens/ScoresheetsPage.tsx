@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, errorMessage, officialApi } from "../api.ts";
 import {
   sheetColumns,
+  rowCount,
   sheetRows,
   withDuplex,
   type SheetColumn,
@@ -51,7 +52,9 @@ export function ScoresheetsPage({
   const [roster, setRoster] = useState<OfficialRoster | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [unchecked, setUnchecked] = useState<ReadonlySet<string>>(new Set());
-  const [rows, setRows] = useState(20);
+  // What's typed in the Rows box; the sheets use rowCount() of it, so typing isn't snapped mid-number.
+  const [rowsTyped, setRowsTyped] = useState("20");
+  const rows = rowCount(rowsTyped);
   const [fill, setFill] = useState(true);
   const [twoSided, setTwoSided] = useState(false);
 
@@ -196,12 +199,9 @@ export function ScoresheetsPage({
                   type="number"
                   min={5}
                   max={60}
-                  value={rows}
-                  onChange={(e) =>
-                    setRows(
-                      Math.min(60, Math.max(5, Number(e.target.value) || 20)),
-                    )
-                  }
+                  value={rowsTyped}
+                  onChange={(e) => setRowsTyped(e.target.value)}
+                  onBlur={() => setRowsTyped(String(rows))}
                 />
               </label>
               <label className="flex items-center gap-2 pb-2">

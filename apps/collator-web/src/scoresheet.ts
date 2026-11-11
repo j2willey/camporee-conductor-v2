@@ -114,3 +114,10 @@ export function sheetColumns(
 export function withDuplex<T>(sheets: readonly T[]): T[] {
   return sheets.flatMap((s) => [s, s]);
 }
+
+/** The rows a sheet has at least, from the Rows box as typed: 5–60, and v1's 20 when it's empty or unreadable. */
+export function rowCount(typed: string): number {
+  const n = Math.trunc(Number(typed));
+  if (typed.trim() === "" || !Number.isFinite(n)) return 20;
+  return Math.min(60, Math.max(5, n));
+}
