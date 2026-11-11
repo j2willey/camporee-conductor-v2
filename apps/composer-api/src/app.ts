@@ -289,9 +289,13 @@ export function createApp({
      * `ids` (comma-separated), in that order. 400 without ids; 404 if any isn't an Activity of this Event.
      */
     .get("/events/:eventId/activity-guides", activityIdsQuery, (c) => {
-      const { event } = readEvent(c.req.param("eventId"), c.var.user.userId);
+      const { event, activities } = readEvent(
+        c.req.param("eventId"),
+        c.var.user.userId,
+      );
       const { ids } = c.req.valid("query");
-      const inEvent = new Set(event.activities.map((a) => a.activityId));
+      // The Event's Activities in its own Organization (readEvent filters by both), so no other Org's document is read.
+      const inEvent = new Set(activities.map((a) => a.id));
       if (!ids.every((id) => inEvent.has(id))) {
         throw new HTTPException(404, { message: "Not found." });
       }
