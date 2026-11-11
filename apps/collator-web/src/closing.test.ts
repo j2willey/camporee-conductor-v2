@@ -64,3 +64,20 @@ describe("closing", () => {
     expect(() => closing.scored("alex", "clown-car", "s-1")).not.toThrow();
   });
 });
+
+describe("closing after a reset", () => {
+  it("clears what the phone kept about scores and closures", () => {
+    const storage = memoryStorage();
+    const closing = createClosing(storage);
+    closing.scored("alex", "clown-car", "s-1");
+    closing.closed("alex", "clown-car", {
+      closureId: "c-1",
+      scoreCount: 1,
+      missing: 0,
+    });
+    closing.clearAll();
+    const again = createClosing(storage);
+    expect(again.scoreIds("alex", "clown-car")).toEqual([]);
+    expect(again.closure("alex", "clown-car")).toBeUndefined();
+  });
+});

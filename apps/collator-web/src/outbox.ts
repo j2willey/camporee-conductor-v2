@@ -16,13 +16,15 @@ export interface OutboxItem {
   /** What the Judge sees, e.g. "Flaming Arrows (Troop 101) at Clown Car". */
   label: string;
   queuedAt: string;
+  /** The box epoch the phone knew when this was made (#66): a reset drops what was made before it. */
+  epoch?: string;
   /** The box's message, once it refused this one. */
   refused?: string;
 }
 
 /** What one send got back. `refused`: the box answered and said no; otherwise it couldn't be reached. */
 export type SendResult =
-  | { ok: true; repeat: boolean }
+  | { ok: true; repeat: boolean; epoch?: string }
   | { ok: false; refused: boolean; message: string };
 
 /** Where the outbox is kept on the phone. `save` answers false when the phone wouldn't keep it. */
@@ -55,6 +57,10 @@ export interface Outbox {
   /** Resolves once the current send run (if any) has finished. */
   idle(): Promise<void>;
   discard(id: string): void;
+  /** Take out the items `drop` picks (a reset: made before it, so never sent) and return them. */
+  dropWhere(drop: (item: OutboxItem) => boolean): OutboxItem[];
+  /** Put items back to send again, first and in this order, skipping ids already here (a restore). */
+  requeue(items: readonly OutboxItem[]): void;
   subscribe(listener: () => void): () => void;
 }
 
@@ -65,9 +71,21 @@ export function createOutbox({
   store,
   send,
   schedule,
+  epoch,
+  onConfirmed,
+  beforeRun,
 }: {
   store: OutboxStore;
   send: (item: OutboxItem) => Promise<SendResult>;
+  /** The box epoch the phone knows now: stamped on each new item. */
+  epoch?: () => string | undefined;
+  /** The box confirmed this item (created or repeat): the sent archive keeps it. */
+  onConfirmed?: (
+    item: OutboxItem,
+    result: { repeat: boolean; epoch?: string },
+  ) => void;
+  /** Runs before each send run that has something to send: the phone checks the box epoch here. Failures are ignored. */
+  beforeRun?: () => Promise<void>;
   /** Run `fn` once after `ms`: `setTimeout` in the browser. */
   schedule: (fn: () => void, ms: number) => void;
 }): Outbox {
@@ -159,6 +177,12 @@ export function createOutbox({
     flush,
     idle: () => running ?? Promise.resolve(),
     discard: (id) => update(items.filter((i) => i.id !== id)),
+    dropWhere: () => {
+      throw new Error("not implemented");
+    },
+    requeue: () => {
+      throw new Error("not implemented");
+    },
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
