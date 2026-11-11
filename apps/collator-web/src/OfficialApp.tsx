@@ -11,6 +11,7 @@ import {
 } from "./official-identity.ts";
 import { AwardsPage } from "./screens/AwardsPage.tsx";
 import { AnnouncerPage } from "./screens/AnnouncerPage.tsx";
+import { ScoresheetsPage } from "./screens/ScoresheetsPage.tsx";
 import { StickersPage } from "./screens/StickersPage.tsx";
 import { ExhibitionResultsPage } from "./screens/ExhibitionResultsPage.tsx";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
@@ -36,6 +37,7 @@ export function OfficialApp() {
   const [problem, setProblem] = useState<string | null>(null);
   const [activity, setActivity] = useState<Activity | null>(null);
   const [printing, setPrinting] = useState(false);
+  const [sheetsOpen, setSheetsOpen] = useState(false);
   const [standings, setStandings] = useState(false);
   const [awardsOpen, setAwardsOpen] = useState(false);
   const [stickersOpen, setStickersOpen] = useState(false);
@@ -76,6 +78,7 @@ export function OfficialApp() {
     setEvent(null);
     setActivity(null);
     setPrinting(false);
+    setSheetsOpen(false);
     setStandings(false);
     setAwardsOpen(false);
     setStickersOpen(false);
@@ -123,6 +126,8 @@ export function OfficialApp() {
           activities={event.activities}
           onBack={() => setPrinting(false)}
         />
+      ) : sheetsOpen ? (
+        <ScoresheetsPage email={email} onBack={() => setSheetsOpen(false)} />
       ) : standings ? (
         <StandingsPage
           email={email}
@@ -172,6 +177,7 @@ export function OfficialApp() {
           event={event}
           onPick={setActivity}
           onPrint={() => setPrinting(true)}
+          onScoresheets={() => setSheetsOpen(true)}
           onStandings={() => setStandings(true)}
           onAwards={() => setAwardsOpen(true)}
           onRoster={() => setRosterOpen(true)}

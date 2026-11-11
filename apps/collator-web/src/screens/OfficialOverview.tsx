@@ -21,6 +21,7 @@ export function OfficialOverview({
   event: first,
   onPick,
   onPrint,
+  onScoresheets,
   onStandings,
   onAwards,
   onRoster,
@@ -30,6 +31,7 @@ export function OfficialOverview({
   event: OfficialEvent;
   onPick: (activity: Activity) => void;
   onPrint: () => void;
+  onScoresheets: () => void;
   onStandings: () => void;
   onAwards: () => void;
   onRoster: () => void;
@@ -186,6 +188,9 @@ export function OfficialOverview({
         </button>
         <button className={`${ui.buttonQuiet} w-full`} onClick={onPrint}>
           QR codes to print
+        </button>
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onScoresheets}>
+          Paper scoresheets
         </button>
         <button className={`${ui.buttonQuiet} w-full`} onClick={onReset}>
           Reset
