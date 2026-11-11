@@ -1338,6 +1338,30 @@ test("an Official records an Exhibition's results, reorders them, and the Overvi
   ).toContainText("2 results");
 });
 
+// #43 PR 1: an Official opens Awards from the home page. It's provisional, an Activity shows a 1st place, and the
+// Overall Award is there. (The Patrols were scored by the tests above.)
+test("an Official opens Awards: provisional, a 1st place at Clown Car, and the Overall Award", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Awards" }).click();
+  await expect(page.getByRole("heading", { name: "Awards" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText(
+    /^Provisional: \d+ of \d+ Activities final\. Awards may change\.$/,
+  );
+  const clownCar = page
+    .getByTestId("awards-activity")
+    .filter({ has: page.getByRole("heading", { name: "Clown Car" }) });
+  await expect(clownCar).toContainText("1st");
+  await expect(
+    page
+      .getByTestId("awards-award")
+      .filter({ has: page.getByRole("heading", { name: "Overall" }) }),
+  ).toBeVisible();
+});
+
 test("an Official resets scores: the typed name enables the button, a backup is saved, scores are gone", async ({
   page,
 }) => {
