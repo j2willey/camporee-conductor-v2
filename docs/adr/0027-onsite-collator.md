@@ -144,6 +144,12 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
   rule 5). Fonts are v1's list of system fonts, so nothing is fetched. Sizes are 6–36pt. A reset keeps the
   settings, because they're setup, not results.
 - **Offline:** the page loads nothing from outside the box. An e2e test fails on any request off the box.
+- **Size (2026-11-11, Jim):** May's stickers were printed **portrait, 3 across**. v1's "3.3in" cells were squeezed
+  to the page width, about 2.5in each. A sticker's **height is limited to 1.5in**; the width is flexible. So each
+  column is a third of the printable width (about 2.5in portrait, 3.3in landscape, the Official's choice in the
+  print dialog). Each sticker is at most 1.5in tall, padding included, and anything taller is cut off. The page
+  warns on screen, before printing, about any sticker its fonts make taller than that, and outlines it, so a
+  larger font never cuts a winner's name off unnoticed.
 
 ## Announcer script (2026-11-11, #43 PR 4)
 
