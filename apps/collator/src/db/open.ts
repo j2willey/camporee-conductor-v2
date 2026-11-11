@@ -4,6 +4,7 @@ import {
   type BetterSQLite3Database,
 } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import { ensureEpoch } from "../epoch.ts";
 import * as schema from "./schema.ts";
 
 /** The Drizzle database, with the better-sqlite3 connection underneath (`$client`) for backups. */
@@ -20,5 +21,6 @@ export function openDb(path: string): Db {
   sqlite.pragma("foreign_keys = ON");
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: MIGRATIONS });
+  ensureEpoch(db);
   return db;
 }

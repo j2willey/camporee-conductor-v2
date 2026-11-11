@@ -22,19 +22,18 @@ import { circusCartridge, CLOWN_CAR, DIRECTOR_EMAIL } from "./test-support.ts";
 // refuses), clears one transaction's worth, and appends a `reset` epoch.
 
 const OFFICIAL = "lead.judge@example.com";
-const TABLES = [
-  "score_entries",
-  "activity_closures",
-  "judges",
-  "official_actions",
-  "exhibition_result_saves",
-  "groups",
-  "teams",
-  "roster_changes",
-  "event_documents",
-  "cartridge_loads",
-  "added_officials",
-] as const;
+type Table =
+  | "score_entries"
+  | "activity_closures"
+  | "judges"
+  | "official_actions"
+  | "exhibition_result_saves"
+  | "groups"
+  | "teams"
+  | "roster_changes"
+  | "event_documents"
+  | "cartridge_loads"
+  | "added_officials";
 
 let dir: string;
 let stick: string;
@@ -55,7 +54,7 @@ afterEach(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const count = (table: (typeof TABLES)[number]) =>
+const count = (table: Table) =>
   (db.$client.prepare(`SELECT count(*) n FROM ${table}`).get() as { n: number })
     .n;
 
@@ -146,8 +145,8 @@ async function rehearsal() {
   expect(count("roster_changes")).toBe(1);
 }
 
-const reset = (body: unknown, email: string | undefined = OFFICIAL) =>
-  send("POST", "/api/official/reset", body, email);
+const reset = (body: unknown, email: string | null = OFFICIAL) =>
+  send("POST", "/api/official/reset", body, email ?? undefined);
 
 describe("POST /api/official/reset", () => {
   it("refuses a wrong confirmation with a 400 and changes nothing", async () => {
@@ -165,7 +164,7 @@ describe("POST /api/official/reset", () => {
 
   it("is for Officials only, like the rest of the Official view", async () => {
     await rehearsal();
-    const res = await reset({ kind: "scores", confirm: "x" }, undefined);
+    const res = await reset({ kind: "scores", confirm: "x" }, null);
     expect(res.status).toBe(401);
     expect(count("score_entries")).toBe(1);
   });

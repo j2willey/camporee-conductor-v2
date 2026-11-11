@@ -15,6 +15,8 @@ import {
   notExhibition,
   recordExhibitionResults,
 } from "./exhibition-results.ts";
+import { currentEpoch, epochsSince } from "./epoch.ts";
+import { resetBox } from "./reset.ts";
 import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
@@ -236,6 +238,12 @@ const ExhibitionSaveBody = z.strictObject({
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
 
+/** An Official resetting the box for a rehearsal; the typed name is checked in reset.ts. */
+const ResetBody = z.strictObject({
+  kind: z.enum(["scores", "full"]),
+  confirm: z.string().max(500),
+});
+
 /** Named, so the refusal says why: placement points are #23, not parity. Runs before `ActionBody` is checked. */
 const refusePlacementPoints: MiddlewareHandler = async (c, next) => {
   const body = (await c.req.json().catch(() => null)) as {
@@ -259,7 +267,7 @@ export interface SignedInOfficial {
 /**
  * The Official view's API (#40 PR 3). Every call is checked against the loaded Event's Officials list.
  */
-function officialRoutes(db: Db, _backup: BackupConfig | null) {
+function officialRoutes(db: Db, backup: BackupConfig | null) {
   const routes = new Hono<{
     Variables: { official: Official; bundle: CheckedBundle };
   }>();
@@ -358,6 +366,22 @@ function officialRoutes(db: Db, _backup: BackupConfig | null) {
     },
   );
 
+  // Reset for rehearsals (ADR-0027): backs up first; any Official may (ADR-0019, no Director-only actions).
+  routes.post("/reset", jsonBody(ResetBody), (c) => {
+    const result = resetBox(db, backup, {
+      ...c.req.valid("json"),
+      officialEmail: normalEmail(c.get("official").email),
+    });
+    if (!result.ok) {
+      return c.json(
+        { error: result.message },
+        result.reason === "invalid" ? 400 : 409,
+      );
+    }
+    const { id, reason } = result.epoch;
+    return c.json({ backup: result.backup, epoch: { id, reason } });
+  });
+
   routes.get("/activities/:id", (c) => {
     const found = officialActivity(db, c.get("bundle"), c.req.param("id"));
     return found
@@ -422,6 +446,13 @@ export function createApp({
 }) {
   const app = new Hono();
 
+  // Every API answer says which box epoch it came from (#66), so a phone notices a restore or reset on its next call.
+  // Read after the handler, so the answer to a reset carries the new epoch.
+  app.use("/api/*", async (c, next) => {
+    await next();
+    c.header("x-box-epoch", currentEpoch(db).id);
+  });
+
   app.get("/api/health", (c) => {
     const event = loadedEvent(db);
     return c.json({ ok: true, event: event?.manifest.event ?? null });
@@ -432,7 +463,26 @@ export function createApp({
     if (!event) {
       return c.json({ error: "no Event is loaded on this box yet" }, 409);
     }
-    return c.json(judgeEvent(event.bundle));
+    const { id, reason } = currentEpoch(db);
+    return c.json({ ...judgeEvent(event.bundle), epoch: { id, reason } });
+  });
+
+  // What happened to the box since the epoch a phone knew (#66): the phone decides to resend or drop.
+  app.get("/api/epochs", (c) => {
+    const since = c.req.query("since");
+    if (!since) {
+      throw new HTTPException(400, { message: "since is required" });
+    }
+    const found = epochsSince(db, since);
+    const brief = ({ id, reason }: { id: string; reason: string }) => ({
+      id,
+      reason,
+    });
+    return c.json({
+      current: brief(currentEpoch(db)),
+      since: Array.isArray(found) ? found.map(brief) : null,
+      unknown: !Array.isArray(found),
+    });
   });
 
   // Display names, with what an Official merged away left out; the resend path below keeps what phones sent.
