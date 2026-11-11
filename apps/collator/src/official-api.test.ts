@@ -1616,12 +1616,14 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
         entrantId: "team-1",
         entrant: { group: "Troop 101", team: "Flaming Arrows" },
         manual: false,
+        total: expect.any(Number),
       },
       {
         rank: 2,
         entrantId: "team-2",
         entrant: { group: "Troop 101", team: "Owls" },
         manual: false,
+        total: expect.any(Number),
       },
     ]);
     expect(
@@ -1649,6 +1651,7 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
         entrantId: "group-1",
         entrant: { group: "Troop 101", team: null },
         manual: false,
+        total: expect.any(Number),
       },
     ]);
     // Top Dog is an Award with no place.
@@ -1658,6 +1661,7 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
         entrantId: "group-1",
         entrant: { group: "Troop 101", team: null },
         manual: false,
+        total: expect.any(Number),
       },
     ]);
   });

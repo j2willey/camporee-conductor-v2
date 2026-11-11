@@ -1,5 +1,9 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
-import { scoreEvent, winnersRegistry } from "@camporee-conductor/scoring";
+import {
+  scoreEvent,
+  winnersRegistry,
+  type EventResults,
+} from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import {
@@ -20,6 +24,8 @@ export interface AwardLine {
   /** A Team's name and its Group's; a Group-level entrant has a Group and no Team; null names for an id off the roster. */
   entrant: { group: string | null; team: string | null };
   manual: boolean;
+  /** Passed through from scoring (#43 PR 4): an Activity line's entry total, an Award line's standing total. */
+  total?: number;
 }
 
 export interface ExhibitionAwardGroup {
@@ -49,6 +55,28 @@ export interface AwardsView {
     competition: { id: string; label: string };
     groups: (AwardGroup | ExhibitionAwardGroup)[];
   }[];
+}
+
+/** An Activity line's score: the entrant's entry `total` in that Activity's results. A lookup, nothing more. */
+export function scoreOfActivityLine(
+  results: EventResults,
+  activityId: string,
+  entrantId: string,
+): number | undefined {
+  return results.activities
+    .find((a) => a.activityId === activityId)
+    ?.entries.find((e) => e.entrantId === entrantId)?.total;
+}
+
+/** An Award line's score: the entrant's standing `total` (placement points) in the Award's Competition. */
+export function scoreOfAwardLine(
+  results: EventResults,
+  competitionId: string,
+  entrantId: string,
+): number | undefined {
+  return results.standings
+    .find((s) => s.competitionId === competitionId)
+    ?.entrants.find((e) => e.entrantId === entrantId)?.total;
 }
 
 export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
@@ -98,6 +126,10 @@ export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
       section.groups.push(group);
     }
     const name = nameOf(line.entrantId);
+    const total =
+      line.kind === "activity"
+        ? scoreOfActivityLine(results, id, line.entrantId)
+        : scoreOfAwardLine(results, competition.id, line.entrantId);
     group.lines.push({
       ...(line.rank !== undefined && { rank: line.rank }),
       ...(line.place !== undefined && { place: line.place }),
@@ -107,6 +139,7 @@ export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
           ? { group: name.group, team: name.name }
           : { group: name.name, team: null },
       manual: line.manual,
+      ...(total !== undefined && { total }),
     });
   }
 
