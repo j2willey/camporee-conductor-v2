@@ -19,3 +19,9 @@ export {
   type ActivityGuideSection,
 } from "./activity-guide.ts";
 export { renderInlineMarkdown, renderMarkdown } from "./markdown.ts";
+export {
+  buildSuppliesList,
+  renderSuppliesListHtml,
+  type SuppliesList,
+  type SuppliesListLine,
+} from "./supplies-list.ts";

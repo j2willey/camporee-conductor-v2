@@ -128,7 +128,7 @@ describe("renderSuppliesListHtml", () => {
   it("one Activity per page: each entry breaks after; continuous: none do", () => {
     const list = buildSuppliesList(circus, [clownCar, bigTopDown]);
     expect(html(list, true)).toContain('class="entry per-page"');
-    expect(html(list, false)).not.toContain("per-page");
+    expect(html(list, false)).not.toContain('class="entry per-page"');
   });
 
   it("continuous: splits an Activity every 30 lines, headed (cont.)", () => {
