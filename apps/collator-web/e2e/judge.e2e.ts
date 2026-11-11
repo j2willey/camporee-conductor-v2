@@ -1454,7 +1454,9 @@ test("an Official opens Print stickers: four lines, a saved label line, one Comp
     "Activity or Award name",
     "Winner",
   ]) {
-    await page.getByLabel(`${heading} size in points`).fill("36");
+    const size = page.getByLabel(`${heading} size in points`);
+    // With "one font for all lines", only Line 1's size is open, and it sets them all.
+    if (await size.isEnabled()) await size.fill("36");
   }
   await expect(page.getByTestId("sticker-too-tall")).toContainText(
     "taller than 1.5 in",
