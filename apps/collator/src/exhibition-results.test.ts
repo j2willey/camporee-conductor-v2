@@ -472,7 +472,9 @@ describe("Final and Draft (#43 PR 2)", () => {
           { participantName: "Amy", place: "1st", notes: "n" },
         ],
       });
-      const section = a.sections.find((s) => s.groups.includes(found[0]!));
+      const section = a.sections.find((s) =>
+        s.groups.some((g) => g === found[0]),
+      );
       expect(section?.groups.at(-1)).toBe(found[0]);
       // back to draft: not listed
       await status("st-2", false, null);

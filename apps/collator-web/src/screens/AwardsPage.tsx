@@ -2,7 +2,11 @@ import type { AwardsView } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
 import { errorMessage, officialApi } from "../api.ts";
 import { ui } from "../ui.ts";
-import { provisionalBanner, winnerRow } from "../winners-text.ts";
+import {
+  exhibitionRowText,
+  provisionalBanner,
+  winnerRow,
+} from "../winners-text.ts";
 
 /**
  * Awards (#43 PR 1): who places at each Activity and who receives each Award, from the box's winners registry
@@ -59,24 +63,46 @@ export function AwardsPage({
               data-testid={`awards-${g.kind}`}
             >
               <h3 className="font-medium">{g.title}</h3>
-              <ul className="mt-1 flex flex-col gap-0.5 text-sm">
-                {g.lines.map((line) => {
-                  const row = winnerRow(g, line);
-                  return (
-                    <li
-                      key={`${line.entrantId}-${line.place ?? line.rank ?? ""}`}
-                    >
-                      <span className="inline-block w-20 font-medium">
-                        {row.place}
-                      </span>
-                      {row.name}
-                      {row.official && (
-                        <span className={ui.muted}> (Official)</span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              {g.kind === "exhibition" ? (
+                <ul className="mt-1 flex flex-col gap-0.5 text-sm">
+                  {g.rows.map((r, i) => {
+                    const t = exhibitionRowText(r);
+                    return (
+                      <li key={i}>
+                        <span className="inline-block w-20 font-medium">
+                          {t.place}
+                        </span>
+                        {t.name}
+                        {t.belongs && (
+                          <span className={ui.muted}> ({t.belongs})</span>
+                        )}
+                        {t.notes && (
+                          <span className={ui.muted}>: {t.notes}</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <ul className="mt-1 flex flex-col gap-0.5 text-sm">
+                  {g.lines.map((line) => {
+                    const row = winnerRow(g, line);
+                    return (
+                      <li
+                        key={`${line.entrantId}-${line.place ?? line.rank ?? ""}`}
+                      >
+                        <span className="inline-block w-20 font-medium">
+                          {row.place}
+                        </span>
+                        {row.name}
+                        {row.official && (
+                          <span className={ui.muted}> (Official)</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           ))}
         </section>

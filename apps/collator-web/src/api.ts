@@ -131,6 +131,29 @@ export const officialApi = {
       email,
       `/exhibitions/${encodeURIComponent(activityId)}`,
     ),
+  /** Mark an Exhibition's results final, or back to draft (#43 PR 2). Resending the same id is safe. */
+  setExhibitionStatus: (
+    email: string,
+    activityId: string,
+    id: string,
+    body: {
+      final: boolean;
+      saveId: string | null;
+      notes?: string;
+      clientCreatedAt: string;
+    },
+  ) =>
+    call<{ status: "created" | "repeat" }>(
+      `/api/official/exhibitions/${encodeURIComponent(activityId)}/status/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: email,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
   /** Save an Exhibition's whole results list. Resending the same id is safe: the box answers "repeat". */
   saveExhibition: (
     email: string,
