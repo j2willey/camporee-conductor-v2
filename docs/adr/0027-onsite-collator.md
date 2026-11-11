@@ -209,6 +209,8 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
   `README.txt` says when it was exported and whether the results were still provisional.
 - **Judges' emails leave the box only in this export.** No page or JSON view serves them (#41 PR 5). The export is
   for the Event's own Officials, who sign in to get it. The README asks them to keep it private.
+- **Column names use the Event's own words** for a Group and a Team ("Troop", "Patrol"), as the printouts do. A
+  ticked checkbox reads "yes" and an unticked one "no", so it isn't mistaken for a blank.
 - **CSV:** UTF-8 with a byte-order mark (so Excel reads names correctly), CRLF line ends, and quotes where needed. A
   text cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`, so a spreadsheet doesn't run a name
   typed on a phone as a formula.

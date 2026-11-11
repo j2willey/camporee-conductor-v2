@@ -130,7 +130,7 @@ async function downloadAsOfficial(
   return { blob: await response.blob(), fileName: named?.[1] ?? "download" };
 }
 
-/** Hands a downloaded file to the browser's save: a temporary link, clicked, then the object URL is let go. */
+/** Hands a downloaded file to the browser's save: a temporary link, clicked; the object URL is let go after. */
 export function saveDownload(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -139,7 +139,8 @@ export function saveDownload(blob: Blob, fileName: string): void {
   document.body.append(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Let go a little later: revoking straight after the click can cancel the save in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export const officialApi = {

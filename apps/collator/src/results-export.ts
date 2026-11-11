@@ -18,14 +18,14 @@ const BOM = "﻿";
 
 /**
  * CSV for a spreadsheet: a byte-order mark first (Excel reads UTF-8 by it), CRLF after every row, null and
- * undefined empty, a boolean "yes" or empty (so a ticked box reads "yes" and a plain cell stays blank). A cell is
+ * undefined empty, a boolean "yes" or "no" (so an unticked box isn't mistaken for an unanswered one). A cell is
  * quoted when it has a comma, quote, CR, LF or an edge space. A text cell starting `=`, `+`, `-`, `@`, tab or CR
  * gets a leading `'` so a name typed on a phone isn't run as a formula; numbers are never guarded.
  */
 export function csvText(rows: Cell[][]): string {
   const cell = (value: Cell): string => {
     if (value === null || value === undefined) return "";
-    if (typeof value === "boolean") return value ? "yes" : "";
+    if (typeof value === "boolean") return value ? "yes" : "no";
     let text = String(value);
     if (typeof value === "string" && /^[=+\-@\t\r]/.test(text)) {
       text = `'${text}`;
@@ -35,6 +35,12 @@ export function csvText(rows: Cell[][]): string {
       : text;
   };
   return BOM + rows.map((r) => r.map(cell).join(",") + "\r\n").join("");
+}
+
+/** The Event's names for a Group and a Team (e.g. Troop, Patrol), as the judge page and printouts show them. */
+function entrantLabels(bundle: CheckedBundle): [string, string] {
+  const labels = bundle.event.terminology.labels;
+  return [labels?.group ?? "Group", labels?.team ?? "Team"];
 }
 
 /** The box's local date, YYYY-MM-DD. */
@@ -84,8 +90,7 @@ export function awardsCsv(
       "Competition",
       "Category",
       "Place",
-      "Group",
-      "Team",
+      ...entrantLabels(bundle),
       "Score",
       "Manual",
       "Name",
@@ -147,6 +152,7 @@ export function resultsZip(
   now: Date,
 ): { fileName: string; bytes: Uint8Array } {
   const view = officialAwards(db, bundle);
+  const [groupLabel, teamLabel] = entrantLabels(bundle);
   const files: Record<string, string> = {};
   const listed = officialEvent(db, bundle).activities;
   const entrantCells = (
@@ -161,8 +167,8 @@ export function resultsZip(
     files[`standings/${fileId(s.competition.id)}.csv`] = csvText([
       [
         "Rank",
-        "Group",
-        "Team",
+        groupLabel,
+        teamLabel,
         "Total",
         "Disqualified",
         ...s.activities.map((a) => a.title),
@@ -185,8 +191,8 @@ export function resultsZip(
       "Phone time",
       "Judge",
       "Judge's unit",
-      "Group",
-      "Team",
+      groupLabel,
+      teamLabel,
       "Counts",
       "Values",
     ],
@@ -199,8 +205,8 @@ export function resultsZip(
     files[`scores/${fileId(a.id)}.csv`] = csvText([
       [
         "Place",
-        "Group",
-        "Team",
+        groupLabel,
+        teamLabel,
         "On roster",
         "Total",
         "Points",
@@ -246,7 +252,7 @@ export function resultsZip(
     if (a.scoringType !== "exhibition") continue;
     const status = finals.has(a.id) ? "final" : "draft";
     files[`exhibitions/${fileId(a.id)}.csv`] = csvText([
-      ["Status", "Name", "Group", "Team", "Place", "Notes"],
+      ["Status", "Name", groupLabel, teamLabel, "Place", "Notes"],
       ...latestRows(db, a.id).map((r) => [
         status,
         r.participantName,
