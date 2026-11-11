@@ -49,8 +49,8 @@ cleanup() {
 trap cleanup EXIT
 fail() { echo "FAIL  $*" >&2; exit 1; }
 pass() { echo "PASS  $*"; }
-mkdir -p "$work/backups" "$work/cartridges" "$work/results"
-chmod 777 "$work/backups" "$work/results"
+mkdir -p "$work/backups" "$work/cartridges" "$work/results" "$work/ctl"
+chmod 777 "$work/backups" "$work/results" "$work/ctl"
 
 echo "== 1. build ($commit) and start"
 compose build collator >"$work/build.log" 2>&1 || { tail -40 "$work/build.log"; fail "image build"; }
@@ -76,7 +76,7 @@ docker image inspect "$image" >/dev/null 2>&1 || docker pull -q "$image" >/dev/n
 # The browsers run as root in the container; results are handed back to this user at the end.
 docker run --rm --network "$network" --add-host "$host:$caddy_ip" --ipc=host \
   -v "$repo:/repo" -v "$work:/work" -w /repo/apps/collator-web \
-  -e CI -e DRONES_URL="https://$host" -e DRONES_BUILD="$commit" -e DRONES_RESULTS=/work/results \
+  -e CI -e DRONES_CTL=/work/ctl -e DRONES_URL="https://$host" -e DRONES_BUILD="$commit" -e DRONES_RESULTS=/work/results \
   -e NODE_EXTRA_CA_CERTS=/work/root.crt -e HOST_IDS="$(id -u):$(id -g)" \
   "$image" bash -euo pipefail -c '
     cp /work/root.crt /usr/local/share/ca-certificates/caddy-drones.crt
@@ -92,8 +92,36 @@ docker run --rm --network "$network" --add-host "$host:$caddy_ip" --ipc=host \
     status=0
     ./node_modules/.bin/playwright test -c drones/playwright.config.ts || status=$?
     chown -R "$HOST_IDS" /work/results
-    exit $status' || drones=$?
+    exit $status' &
+playwright_pid=$!
+
+# The restore scenario needs the box stopped, restored and started again, which a browser container can't do.
+# It writes a command into $work/ctl and waits; this loop does it to this script's own Compose project only.
+while kill -0 "$playwright_pid" 2>/dev/null; do
+  if [ -f "$work/ctl/cmd" ]; then
+    cmd=$(cat "$work/ctl/cmd")
+    rm -f "$work/ctl/cmd"
+    answer="fail: unknown command $cmd"
+    case "$cmd" in
+      backup)
+        if out=$(compose exec -T collator node apps/collator/src/cli/backup-now.ts 2>&1); then
+          answer=$(basename "$(printf '%s\n' "$out" | sed -n 's/^backup written: //p' | head -1)")
+          printf '%s' "$answer" >"$work/ctl/backup-name"
+        else answer="fail: $out"; fi ;;
+      restore)
+        name=$(cat "$work/ctl/backup-name")
+        if compose stop -t 5 collator >/dev/null 2>&1 &&
+          out=$(compose run --rm --no-deps -T collator node apps/collator/src/cli/restore-backup.ts "/backups/$name" 2>&1) &&
+          compose up -d --wait --wait-timeout 90 collator >/dev/null 2>&1; then
+          answer="restored $name"
+        else answer="fail: ${out:-restore}"; compose up -d collator >/dev/null 2>&1 || true; fi ;;
+    esac
+    printf '%s' "$answer" >"$work/ctl/ack"
+  fi
+  sleep 0.5
+done
+wait "$playwright_pid" || drones=$?
 rm -rf "$results" && mkdir -p "$(dirname "$results")" && cp -r "$work/results" "$results"
 [ "${drones:-0}" = 0 ] || fail "drones (traces in $results)"
-pass "drones: Chromium and WebKit over HTTPS, each score and Team on the box exactly once"
+pass "drones: Chromium and WebKit over HTTPS, each score and Team on the box exactly once, also after a restore and a reset"
 echo "== all checks passed"

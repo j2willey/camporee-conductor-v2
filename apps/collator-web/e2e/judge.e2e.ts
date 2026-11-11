@@ -33,6 +33,7 @@ import Database from "better-sqlite3";
 // Overview counts them.
 // #42 PR 8: an Official resets scores: the button waits for the typed name, the backup is named, the Overview
 // shows no scores, and the roster stays.
+// #42 PR 8 (2): a phone that kept a sent score and an unsent one drops both after a reset, and says so.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -1379,4 +1380,39 @@ test("an Official resets scores: the typed name enables the button, a backup is 
   });
   await page.getByRole("button", { name: "← Overview" }).click();
   await expect(page.getByText(/^0 scores across 0 of/)).toBeVisible();
+});
+
+test("after a reset, a phone drops the scores it kept, sends none of them, and says so", async ({
+  page,
+}) => {
+  await startJudging(page);
+  await scoreFlamingArrows(page);
+  await expect(page.getByText(/^Score saved:/)).toBeVisible();
+  // A second score the box never gets before the reset.
+  await page.route("**/api/scores/*", (route) => route.abort());
+  await page.getByRole("button", { name: "Score another Patrol" }).click();
+  await scoreFlamingArrows(page);
+  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
+  expect(count("score_entries")).toBe(1);
+
+  const { event } = (await (await page.request.get("/api/event")).json()) as {
+    event: { title: string };
+  };
+  const reset = await page.request.post("/api/official/reset", {
+    headers: { "x-official-email": "lead.judge@example.com" },
+    data: { kind: "scores", confirm: event.title },
+  });
+  expect(reset.status()).toBe(200);
+  expect(count("score_entries")).toBe(0);
+
+  await page.unroute("**/api/scores/*");
+  await page.reload();
+  await expect(
+    page.getByText(
+      "The box was reset; 1 unsent score from before the reset was discarded.",
+    ),
+  ).toBeVisible();
+  await expect(waitingToSend(page)).toHaveCount(0);
+  await page.waitForTimeout(1_000);
+  expect(count("score_entries")).toBe(0);
 });
