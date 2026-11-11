@@ -108,8 +108,8 @@ describe("Activity places", () => {
     });
     const lines = registry(input).lines.filter((l) => l.rank === 3);
     expect(lines.map((l) => [l.entrantId, l.manual])).toEqual([
-      ["d", true],
       ["c", false],
+      ["d", true],
     ]);
   });
 
@@ -210,10 +210,6 @@ describe("order", () => {
         { a: 3, b: 1 },
         { x: 3, y: 2 },
       ],
-      awards: [
-        award({ type: "places", names: ["1st"] }, AWARD, COMPETITION_2),
-        award({ type: "places", names: ["1st"] }, AWARD_2, COMPETITION),
-      ],
     });
     const [first] = base.event.competitions;
     if (!first) throw new Error("no Competition");
@@ -222,6 +218,10 @@ describe("order", () => {
       event: {
         ...base.event,
         competitions: [first, { ...first, id: COMPETITION_2, slug: "second" }],
+        awards: [
+          award({ type: "places", names: ["1st"] }, AWARD, COMPETITION_2),
+          award({ type: "places", names: ["1st"] }, AWARD_2, COMPETITION),
+        ],
         activities: base.event.activities.map((a, i) =>
           i === 2 ? { ...a, competitionId: COMPETITION_2 } : a,
         ),
