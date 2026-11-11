@@ -67,16 +67,12 @@
       "indexes": {
         "activity_closures_id_unique": {
           "name": "activity_closures_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         },
         "activity_closures_activity": {
           "name": "activity_closures_activity",
-          "columns": [
-            "activity_id"
-          ],
+          "columns": ["activity_id"],
           "isUnique": false
         }
       },
@@ -85,12 +81,8 @@
           "name": "activity_closures_judge_id_judges_id_fk",
           "tableFrom": "activity_closures",
           "tableTo": "judges",
-          "columnsFrom": [
-            "judge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["judge_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -205,9 +197,7 @@
       "indexes": {
         "award_label_saves_id_unique": {
           "name": "award_label_saves_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         }
       },
@@ -251,9 +241,7 @@
       "indexes": {
         "box_epochs_id_unique": {
           "name": "box_epochs_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         }
       },
@@ -404,16 +392,12 @@
       "indexes": {
         "exhibition_result_saves_id_unique": {
           "name": "exhibition_result_saves_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         },
         "exhibition_result_saves_activity": {
           "name": "exhibition_result_saves_activity",
-          "columns": [
-            "activity_id"
-          ],
+          "columns": ["activity_id"],
           "isUnique": false
         }
       },
@@ -492,16 +476,12 @@
       "indexes": {
         "exhibition_status_changes_id_unique": {
           "name": "exhibition_status_changes_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         },
         "exhibition_status_changes_activity": {
           "name": "exhibition_status_changes_activity",
-          "columns": [
-            "activity_id"
-          ],
+          "columns": ["activity_id"],
           "isUnique": false
         }
       },
@@ -621,9 +601,7 @@
       "indexes": {
         "official_actions_id_unique": {
           "name": "official_actions_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         }
       },
@@ -688,9 +666,7 @@
       "indexes": {
         "roster_changes_id_unique": {
           "name": "roster_changes_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         }
       },
@@ -762,16 +738,12 @@
       "indexes": {
         "score_entries_id_unique": {
           "name": "score_entries_id_unique",
-          "columns": [
-            "id"
-          ],
+          "columns": ["id"],
           "isUnique": true
         },
         "score_entries_activity": {
           "name": "score_entries_activity",
-          "columns": [
-            "activity_id"
-          ],
+          "columns": ["activity_id"],
           "isUnique": false
         }
       },
@@ -780,12 +752,8 @@
           "name": "score_entries_judge_id_judges_id_fk",
           "tableFrom": "score_entries",
           "tableTo": "judges",
-          "columnsFrom": [
-            "judge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["judge_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -825,12 +793,8 @@
           "name": "teams_group_id_groups_id_fk",
           "tableFrom": "teams",
           "tableTo": "groups",
-          "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["group_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

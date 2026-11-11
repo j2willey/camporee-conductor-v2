@@ -133,7 +133,7 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
     " Place", so the Overall Award reads "1st Place - …" as v1's overall stickers did;
   - an Award with no places (Top Dog) reads "Top Dog - Troop 101" (v1 printed "Best in Show", ADR-0019 registry);
   - a final Exhibition row reads "1st - Jane Doe, Troop 101", with the place as the Official typed it.
-  The words are the laptop's (`winners-text.ts`); places and recipients come from the Awards view, unsorted.
+    The words are the laptop's (`winners-text.ts`); places and recipients come from the Awards view, unsorted.
 - **What prints:** the Awards view's lines (the winners registry plus final Exhibitions), for one Competition or
   all of them, as v1 printed one view at a time. While Awards are provisional, the page says so on screen; it
   doesn't stop printing.
