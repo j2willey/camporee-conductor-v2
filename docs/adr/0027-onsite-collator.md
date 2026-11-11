@@ -187,6 +187,33 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
 - **No box change:** the page reads the judge view and the Official roster the box already serves. It loads nothing
   from outside the box, and an e2e test fails on any request off the box.
 
+## Awards CSV and the results export (2026-11-11, #43 PR 6)
+
+- **Two downloads for Officials,** built on the box and served only behind the Official sign-in: the **awards CSV**
+  (v1's `exportAwardsCSV`, from the Awards page) and **the results export** (v1's `/api/export`, grown into a zip of
+  CSVs, from the Overview). They download to the laptop and work with the box offline.
+- **Nothing is computed for an export.** Every file is a view the Official pages already show (the winners
+  registry, the Standings, an Activity's score matrix, the Exhibition results), written out as CSV. Ranks, places,
+  totals and points come from `packages/scoring` through those views (CLAUDE.md rule 3); the export only lays them
+  out in rows.
+- **The awards CSV** has one row per award line, in the Awards page's order: Competition, Category (the Activity,
+  Award or Exhibition), Place, Group, Team, Score, Manual. Exhibition rows add the Participant's name and notes.
+  v1 added its `entryname` fields. Those became `info` fields on import (a v2 field has no such kind), so the CSV
+  adds a column for each **single-line text `info` field** of a winning entry (e.g. "Dish Name / Description"),
+  read from the Activity's score matrix. A notes area isn't one of them. While any Activity or Exhibition is still
+  open, the file name says **provisional**.
+- **The results export** (`results-<date>.zip`): the awards CSV; one Standings file per Competition; one file per
+  ranked Activity with its score matrix (place, total, points, DQ, the Judge, and each field's value with Officials'
+  corrections laid over it); every score entry received, as entered; one file per Exhibition with its status; and
+  **the Judges: name, email, home unit, and how many entries they sent**, for thank-you notes (item 12). A
+  `README.txt` says when it was exported and whether the results were still provisional.
+- **Judges' emails leave the box only in this export.** No page or JSON view serves them (#41 PR 5). The export is
+  for the Event's own Officials, who sign in to get it. The README asks them to keep it private.
+- **CSV:** UTF-8 with a byte-order mark (so Excel reads names correctly), CRLF line ends, and quotes where needed. A
+  text cell starting with `=`, `+`, `-`, `@`, tab or CR gets a leading `'`, so a spreadsheet doesn't run a name
+  typed on a phone as a formula.
+- **Not ADR-0015's results bundle:** that is the later, structured carry-home. This export is plain CSV, for people.
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge
