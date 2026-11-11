@@ -15,6 +15,7 @@
     "add-official": "node src/cli/add-official.ts",
     "list-officials": "node src/cli/list-officials.ts",
     "backup-now": "node src/cli/backup-now.ts",
+    "restore-backup": "node src/cli/restore-backup.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

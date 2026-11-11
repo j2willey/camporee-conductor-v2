@@ -6,6 +6,7 @@ import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
+import type { BackupConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { recordClosure } from "./closures.ts";
@@ -258,7 +259,7 @@ export interface SignedInOfficial {
 /**
  * The Official view's API (#40 PR 3). Every call is checked against the loaded Event's Officials list.
  */
-function officialRoutes(db: Db) {
+function officialRoutes(db: Db, _backup: BackupConfig | null) {
   const routes = new Hono<{
     Variables: { official: Official; bundle: CheckedBundle };
   }>();
@@ -411,10 +412,13 @@ function reply(c: Context, result: Recorded) {
 export function createApp({
   db,
   webRoot = null,
+  backup = null,
 }: {
   db: Db;
   /** The built web app (judge page) to serve, or null in development, where Vite serves it. */
   webRoot?: string | null;
+  /** Where a reset takes its backup first (ADR-0027); null when no backup folder is set, which refuses resets. */
+  backup?: BackupConfig | null;
 }) {
   const app = new Hono();
 
@@ -470,7 +474,7 @@ export function createApp({
     );
   });
 
-  app.route("/api/official", officialRoutes(db));
+  app.route("/api/official", officialRoutes(db, backup));
 
   app.onError((error, c) => {
     if (error instanceof HTTPException) {
