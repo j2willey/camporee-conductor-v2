@@ -116,9 +116,9 @@ describe("csvText", () => {
     ).toBe(`${BOM}a,b\r\nc,d\r\n`);
   });
 
-  it("writes null and undefined as empty, numbers as typed, booleans as yes or blank", () => {
+  it("writes null and undefined as empty, numbers as typed, booleans as yes or no", () => {
     expect(csvText([[null, undefined, 3, -3, 0.5, true, false]])).toBe(
-      `${BOM},,3,-3,0.5,yes,\r\n`,
+      `${BOM},,3,-3,0.5,yes,no\r\n`,
     );
   });
 
@@ -141,7 +141,7 @@ describe("awardsCsv", () => {
     expect(fileName).toBe("awards-provisional-2027-05-15.csv");
     const lines = text.slice(1).split("\r\n");
     expect(lines[0]).toBe(
-      `Competition,Category,Place,Group,Team,Score,Manual,Name,Notes,${DISH}`,
+      `Competition,Category,Place,Troop,Patrol,Score,Manual,Name,Notes,${DISH}`,
     );
     const clownRows = lines.filter((l) => l.includes("Troop 101"));
     expect(clownRows.length).toBeGreaterThanOrEqual(2);
@@ -197,17 +197,17 @@ describe("resultsZip", () => {
       "judges.csv holds Judges' emails: keep this file private",
     );
     expect(files["entries.csv"]?.split("\r\n")[0]).toBe(
-      `${BOM}Activity,Entry id,Received #,Phone time,Judge,Judge's unit,Group,Team,Counts,Values`,
+      `${BOM}Activity,Entry id,Received #,Phone time,Judge,Judge's unit,Troop,Patrol,Counts,Values`,
     );
     expect(files["entries.csv"]).toContain("score-3");
     expect(files[`scores/${CLOWN_CAR.id}.csv`]?.split("\r\n")[0]).toMatch(
-      /^\uFEFFPlace,Group,Team,On roster,Total,Points,Disqualified,Judge,Judge's unit,Received at,Entries,/,
+      /^\uFEFFPlace,Troop,Patrol,On roster,Total,Points,Disqualified,Judge,Judge's unit,Received at,Entries,/,
     );
     const standing = Object.entries(files).find(([n]) =>
       n.startsWith("standings/"),
     );
     expect(standing?.[1].split("\r\n")[0]).toMatch(
-      /^\uFEFFRank,Group,Team,Total,Disqualified/,
+      /^\uFEFFRank,Troop,Patrol,Total,Disqualified/,
     );
   });
 
@@ -219,7 +219,7 @@ describe("resultsZip", () => {
     const files = unzip(resultsZip(db, bundle(), NOW).bytes);
     const csv = files[`exhibitions/${archery.id}.csv`];
     expect(csv?.split("\r\n")[0]).toBe(
-      `${BOM}Status,Name,Group,Team,Place,Notes`,
+      `${BOM}Status,Name,Troop,Patrol,Place,Notes`,
     );
   });
 
