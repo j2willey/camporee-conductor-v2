@@ -19,6 +19,8 @@ export type EpochAction = "none" | "reset" | "restore";
  * "reset" when any epoch since was a reset (nothing comes back, even if a restore followed: the Officials
  * wanted it empty). "restore" when there were only restores, or the box doesn't know the epoch the phone knew.
  */
-export function decideEpoch(_answer: EpochAnswer): EpochAction {
-  throw new Error("not implemented");
+export function decideEpoch(answer: EpochAnswer): EpochAction {
+  if (answer.unknown || answer.since === null) return "restore";
+  if (answer.since.length === 0) return "none";
+  return answer.since.some((e) => e.reason === "reset") ? "reset" : "restore";
 }

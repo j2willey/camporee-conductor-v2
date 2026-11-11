@@ -6,7 +6,11 @@ import { useState } from "react";
 import { api, ApiError, errorMessage, newId, wasRefused } from "../api.ts";
 import type { Closed } from "../closing.ts";
 import { closing } from "../phone-closing.ts";
-import { useOutboxItems } from "../phone-outbox.ts";
+import {
+  resendMissingScores,
+  sentArchive,
+  useOutboxItems,
+} from "../phone-outbox.ts";
 import { ui } from "../ui.ts";
 
 /**
@@ -61,12 +65,27 @@ export function CloseActivity({
     const scoreIds = closing.scoreIds(judge.id, activity.id);
     const closureId = newId();
     try {
-      const answer = await api.putClosure(closureId, {
+      const submission = {
         judge,
         activityId: activity.id,
         scoreIds,
         phoneCreatedAt: new Date().toISOString(),
+      };
+      const { body: answer, epoch } = await api.putClosure(
+        closureId,
+        submission,
+      );
+      // Kept like a score, so a restored box gets the closure again too.
+      sentArchive.add({
+        id: closureId,
+        path: `/api/closures/${closureId}`,
+        body: submission,
+        label: `Closing ${activity.title}`,
+        queuedAt: submission.phoneCreatedAt,
+        ...(epoch !== undefined && { epoch, confirmedEpoch: epoch }),
       });
+      // Scores the box doesn't have but this phone kept (it was restored): send them again.
+      if (answer.missing.length > 0) resendMissingScores(answer.missing);
       const done = {
         closureId,
         scoreCount: scoreIds.length,

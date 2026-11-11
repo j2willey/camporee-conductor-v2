@@ -15,6 +15,7 @@ import {
   type SignedInOfficial,
   type Team,
 } from "@camporee-conductor/collator/types";
+import type { EpochAnswer } from "./epoch-decision.ts";
 import type { OutboxItem, SendResult } from "./outbox.ts";
 
 /**
@@ -41,7 +42,21 @@ export const errorMessage = (e: unknown) =>
 /** True when the box refused the request: resending it unchanged can't help. */
 export const wasRefused = (e: unknown) => e instanceof ApiError && e.refused;
 
+let epochListener: ((id: string) => void) | undefined;
+
+/** Hear the box epoch (the `x-box-epoch` header) on every answer, so the phone notices a restore or reset (#66). */
+export function onBoxEpoch(listener: (id: string) => void) {
+  epochListener = listener;
+}
+
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  return (await callWithEpoch<T>(path, init)).body;
+}
+
+async function callWithEpoch<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<{ body: T; epoch: string | undefined }> {
   let response: Response;
   try {
     response = await fetch(path, init);
@@ -50,6 +65,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       "Can't reach the scoring box. Check the Wi-Fi and try again.",
     );
   }
+  const epoch = response.headers.get("x-box-epoch") ?? undefined;
+  if (epoch !== undefined) epochListener?.(epoch);
   const body = (await response.json().catch(() => ({}))) as {
     error?: string;
   };
@@ -60,11 +77,11 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
       response.status,
     );
   }
-  return body as T;
+  return { body: body as T, epoch };
 }
 
 const put = (path: string, body: unknown) =>
-  call<{ status: "created" | "repeat" }>(path, {
+  callWithEpoch<{ status: "created" | "repeat" }>(path, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -239,20 +256,24 @@ export interface OfficialActionBody {
 export const api = {
   event: () => call<JudgeEvent>("/api/event"),
   roster: () => call<Roster>("/api/roster"),
+  /** What happened to the box since the epoch the phone knew (#66). */
+  epochs: (since: string) =>
+    call<EpochAnswer>(`/api/epochs?since=${encodeURIComponent(since)}`),
   putGroup: (group: Group) =>
     put(`/api/groups/${group.id}`, { name: group.name }),
   putTeam: (team: Team) =>
     put(`/api/teams/${team.id}`, { groupId: team.groupId, name: team.name }),
   /** Close an Activity (#41 PR 6): the box answers which of the scores it has. */
   putClosure: (id: string, closure: Omit<ClosureSubmission, "id">) =>
-    call<{ status: "created" | "repeat"; have: number; missing: string[] }>(
-      `/api/closures/${encodeURIComponent(id)}`,
-      {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(closure),
-      },
-    ),
+    callWithEpoch<{
+      status: "created" | "repeat";
+      have: number;
+      missing: string[];
+    }>(`/api/closures/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(closure),
+    }),
   /** Resending the same id is always safe: the box answers "repeat" (ADR-0027 item 8). */
   putScore: ({ id, ...score }: ScoreSubmission) =>
     put(`/api/scores/${id}`, score),
@@ -261,8 +282,12 @@ export const api = {
 /** One send from the outbox (#41 PR 2): what the box answered, or that it couldn't be reached. */
 export async function sendQueued(item: OutboxItem): Promise<SendResult> {
   try {
-    const { status } = await put(item.path, item.body);
-    return { ok: true, repeat: status === "repeat" };
+    const { body, epoch } = await put(item.path, item.body);
+    return {
+      ok: true,
+      repeat: body.status === "repeat",
+      ...(epoch !== undefined && { epoch }),
+    };
   } catch (e) {
     return { ok: false, refused: wasRefused(e), message: errorMessage(e) };
   }

@@ -82,9 +82,7 @@ export function createClosing(storage: ClosingStorage) {
       });
     },
     /** After a reset: the box has none of the scores or closures this phone remembers. */
-    clearAll: () => {
-      throw new Error("not implemented");
-    },
+    clearAll: () => write({ scored: {}, closed: {} }),
     /** The Activities this Judge has closed. */
     closedActivities: (judgeId: string): Set<string> =>
       new Set(

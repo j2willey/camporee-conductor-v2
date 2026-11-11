@@ -25,7 +25,7 @@ function phone(knownAtStart: string | undefined, epochs: EpochInfo[]) {
   let known = knownAtStart;
   const said: string[] = [];
   const onBox = new Set<string>();
-  let boxEpoch = epochs.at(-1)?.id ?? "e1";
+  let boxEpoch = knownAtStart ?? "e1";
   let reachable = true;
   const resets: string[] = [];
   const archive = createSentArchive({

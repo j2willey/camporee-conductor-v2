@@ -54,6 +54,7 @@ export const ROSTER_KEY = "collator.roster";
 
 const GROUPS = "/api/groups/";
 const TEAMS = "/api/teams/";
+const CLOSURES = "/api/closures/";
 
 /** An outbox item adding a Group (the same PUT the box takes). */
 export const addGroupItem = (group: Group, queuedAt: string): OutboxItem => ({
@@ -99,6 +100,8 @@ export function rosterWithPending(
   return { groups, teams };
 }
 
-/** True for a score; false for a roster add. */
+/** True for a score; false for a roster add or a closure. */
 export const isScore = (item: OutboxItem) =>
-  !item.path.startsWith(GROUPS) && !item.path.startsWith(TEAMS);
+  !item.path.startsWith(GROUPS) &&
+  !item.path.startsWith(TEAMS) &&
+  !item.path.startsWith(CLOSURES);

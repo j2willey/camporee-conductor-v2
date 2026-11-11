@@ -28,11 +28,53 @@ export interface SentArchive {
   clear(): void;
 }
 
-export function createSentArchive(_options: {
+export function createSentArchive({
+  storage,
+  key,
+  warn = (message) => console.warn(message),
+}: {
   storage: ArchiveStorage;
   /** Where it's kept: per Event. */
   key: () => string;
   warn?: (message: string) => void;
 }): SentArchive {
-  throw new Error("not implemented");
+  const read = (): ArchiveEntry[] => {
+    try {
+      const raw = storage.getItem(key());
+      const entries = raw ? (JSON.parse(raw) as unknown) : [];
+      return Array.isArray(entries) ? (entries as ArchiveEntry[]) : [];
+    } catch {
+      return [];
+    }
+  };
+  /** Writes, dropping the oldest entries while the phone says it's full. */
+  const write = (entries: ArchiveEntry[]) => {
+    let keep = entries;
+    for (;;) {
+      try {
+        storage.setItem(key(), JSON.stringify(keep));
+        break;
+      } catch {
+        if (keep.length === 0) return;
+        keep = keep.slice(1);
+      }
+    }
+    if (keep.length < entries.length) {
+      warn(
+        `The phone's storage is full: ${entries.length - keep.length} of the oldest sent scores are no longer kept for resending.`,
+      );
+    }
+  };
+
+  return {
+    entries: read,
+    add: (entry) => {
+      const entries = read();
+      const at = entries.findIndex((e) => e.id === entry.id);
+      if (at < 0) entries.push(entry);
+      else entries[at] = entry;
+      write(entries);
+    },
+    clear: () => write([]),
+  };
 }

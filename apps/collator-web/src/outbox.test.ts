@@ -324,7 +324,10 @@ describe("outbox and the box epoch", () => {
     });
 
   it("stamps a new item with the epoch the phone knows, unless it already has one", async () => {
-    const outbox = make({ epoch: () => "e1" }, scriptedBox(UNREACHABLE));
+    const outbox = make(
+      { epoch: () => "e1" },
+      scriptedBox(UNREACHABLE, UNREACHABLE),
+    );
     await outbox.sendNow(item("s1"));
     await outbox.sendNow({ ...item("s2"), epoch: "e0" });
     expect(outbox.items().map((i) => [i.id, i.epoch])).toEqual([
@@ -405,7 +408,7 @@ describe("outbox and the box epoch", () => {
   });
 
   it("drops the items picked and hands them back", async () => {
-    const outbox = make({}, scriptedBox(UNREACHABLE));
+    const outbox = make({}, scriptedBox(UNREACHABLE, UNREACHABLE));
     await outbox.sendNow({ ...item("s1"), epoch: "old" });
     await outbox.sendNow({ ...item("s2"), epoch: "new" });
     const dropped = outbox.dropWhere((i) => i.epoch === "old");

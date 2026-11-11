@@ -116,6 +116,13 @@ export function createOutbox({
   };
 
   const run = async () => {
+    if (beforeRun && items.some((i) => i.refused === undefined)) {
+      try {
+        await beforeRun();
+      } catch {
+        // No answer: the sends below find that out too.
+      }
+    }
     for (;;) {
       const next = items.find((i) => i.refused === undefined);
       if (!next) break;
@@ -123,6 +130,10 @@ export function createOutbox({
       if (result.ok) {
         retryMs = FIRST_RETRY_MS;
         update(items.filter((i) => i.id !== next.id));
+        onConfirmed?.(next, {
+          repeat: result.repeat,
+          ...(result.epoch !== undefined && { epoch: result.epoch }),
+        });
         awaited.get(next.id)?.({ status: "sent", repeat: result.repeat });
       } else if (result.refused) {
         const answer = awaited.get(next.id);
@@ -158,7 +169,12 @@ export function createOutbox({
   return {
     items: () => items,
     kept: () => kept,
-    sendNow: async (item, { waitMs } = {}) => {
+    sendNow: async (made, { waitMs } = {}) => {
+      const known = epoch?.();
+      const item =
+        made.epoch === undefined && known !== undefined
+          ? { ...made, epoch: known }
+          : made;
       update([...items, item]);
       const result = new Promise<SendNowResult>((resolve) =>
         awaited.set(item.id, resolve),
@@ -177,11 +193,26 @@ export function createOutbox({
     flush,
     idle: () => running ?? Promise.resolve(),
     discard: (id) => update(items.filter((i) => i.id !== id)),
-    dropWhere: () => {
-      throw new Error("not implemented");
+    dropWhere: (drop) => {
+      const dropped = items.filter(drop);
+      if (dropped.length > 0) {
+        const gone = new Set(dropped.map((i) => i.id));
+        update(items.filter((i) => !gone.has(i.id)));
+        gone.forEach((id) => {
+          awaited.get(id)?.({
+            status: "refused",
+            message:
+              "The box was reset before this was sent, so it wasn't kept. Score it again.",
+          });
+          awaited.delete(id);
+        });
+      }
+      return dropped;
     },
-    requeue: () => {
-      throw new Error("not implemented");
+    requeue: (back) => {
+      const have = new Set(items.map((i) => i.id));
+      const fresh = back.filter((i) => !have.has(i.id));
+      if (fresh.length > 0) update([...fresh, ...items]);
     },
     subscribe: (listener) => {
       listeners.add(listener);
