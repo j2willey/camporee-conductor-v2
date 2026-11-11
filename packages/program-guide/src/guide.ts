@@ -114,7 +114,9 @@ export function buildGuide(event: Event, activities: GuideActivity[]): Guide {
         break;
       case "places":
         text = `${award.label}: by place in ${standings}: ${award.rule.names
-          .map((name, i) => `${name} (${ordinal(i + 1)})`)
+          .map((name, i) =>
+            name === ordinal(i + 1) ? name : `${name} (${ordinal(i + 1)})`,
+          )
           .join(", ")}.`;
         break;
       case "manual":
