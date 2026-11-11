@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { devices, expect, test, type Page } from "@playwright/test";
 import Database from "better-sqlite3";
@@ -1713,4 +1714,47 @@ test("after a reset, a phone drops the scores it kept, sends none of them, and s
   await expect(waitingToSend(page)).toHaveCount(0);
   await page.waitForTimeout(1_000);
   expect(count("score_entries")).toBe(0);
+});
+
+// #43 PR 6: an Official downloads the results zip from the Overview and the awards CSV from the Awards page; the
+// file names say provisional while results are open, the CSV opens with its header, nothing goes off the box.
+test("an Official downloads all results as a zip and the awards as a CSV, and nothing goes off the box", async ({
+  page,
+}) => {
+  const boxHost = new URL(String(test.info().project.use.baseURL)).host;
+  const strangers: string[] = [];
+  page.on("request", (req) => {
+    const url = new URL(req.url());
+    if (!["http:", "https:"].includes(url.protocol)) return;
+    if (url.host !== boxHost) strangers.push(req.url());
+  });
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(
+    page.getByText("A zip of CSVs, Judges' emails included: keep it private."),
+  ).toBeVisible();
+  const [zip] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download all results" }).click(),
+  ]);
+  expect(zip.suggestedFilename()).toMatch(
+    /^results-(provisional-)?\d{4}-\d{2}-\d{2}\.zip$/,
+  );
+
+  await page.getByRole("button", { name: "Awards" }).click();
+  await expect(page.getByRole("heading", { name: "Awards" })).toBeVisible();
+  const [csv] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download CSV" }).click(),
+  ]);
+  expect(csv.suggestedFilename()).toMatch(
+    /^awards-(provisional-)?\d{4}-\d{2}-\d{2}\.csv$/,
+  );
+  const path = await csv.path();
+  const text = readFileSync(path, "utf8");
+  expect(text.startsWith("﻿")).toBe(true);
+  expect(text.slice(1).split("\r\n")[0]).toMatch(/^Competition,Category,Place/);
+  expect(strangers).toEqual([]);
 });
