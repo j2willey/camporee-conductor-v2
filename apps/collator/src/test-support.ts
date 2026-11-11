@@ -30,16 +30,19 @@ type Doc = Record<string, unknown>;
 export function circusBundle({
   eventId = CIRCUS_EVENT_ID,
   editActivity = (activity) => activity,
+  editEvent = (event) => event,
 }: {
   eventId?: string;
   editActivity?: (activity: Doc) => Doc;
+  /** Changes a copy of the Event document, for cases the fixture doesn't have. */
+  editEvent?: (event: Doc) => Doc;
 } = {}): EventBundle {
   return {
-    event: {
+    event: editEvent({
       ...read("event.json"),
       id: eventId,
       ...(eventId !== CIRCUS_EVENT_ID && { slug: "some-other-event" }),
-    },
+    }),
     commonFieldSets: [read("common-fields.json")],
     activities: readdirSync(new URL("activities/", FIXTURE))
       .filter((f) => f.endsWith(".json"))
@@ -64,15 +67,18 @@ export function circusCartridge({
   eventId,
   profile = "event-day",
   editActivity,
+  editEvent,
 }: {
   eventId?: string;
   profile?: CartridgeProfile;
   editActivity?: (activity: Doc) => Doc;
+  editEvent?: (event: Doc) => Doc;
 } = {}): Uint8Array {
   return exportCartridge(
     circusBundle({
       ...(eventId !== undefined && { eventId }),
       ...(editActivity && { editActivity }),
+      ...(editEvent && { editEvent }),
     }),
     profile,
     { exportedAt: new Date("2027-05-10T18:00:00Z") },
