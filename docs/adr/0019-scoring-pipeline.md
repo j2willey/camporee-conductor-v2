@@ -259,3 +259,34 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
 - **While the Activity is finalized,** a later `reassign-entry` waits for `unfinalize`, like every per-Activity
   action.
 - A whole Team entered twice is a **merge** (ADR-0027, roster changes), not many reassignments.
+
+## Amendment 2026-11-10 (issue #43): the winners registry
+
+The winners registry is the one list that award stickers, the announcer script and the awards CSV all print from
+(v1's `getWinnersRegistry`). It's computed in `packages/scoring`, as **`winnersRegistry(event, results)`**, a pure
+function over `scoreEvent`'s results. The printouts never rank or pick winners themselves.
+
+- **Activity places:** for each ranked Activity, entrants whose `finalRank` is 1, 2 or 3. That's the Official's
+  override or the stored Final Ranking where there is one, and the provisional ranking otherwise. Ties are
+  included, numbered by the Event's tie numbering. DQ'd entrants are left out. **Three places is v1's rule, kept
+  as a constant;** making it configurable is a follow-up (#70).
+- **Awards:** every Event Award's recipients from `awardRecipients` (named place, or none for top percent),
+  manual ones included.
+- **Order:**
+  - by Competition, in the Event's order;
+  - within a Competition, its ranked Activities by `sortOrder`, then its Awards in the Event's order;
+  - within an Activity or Award, by place, then by the order scoring gave.
+- **`provisional`:** true while any ranked Activity is not finalized. Screens and printouts say so.
+- **Ids only:** each line holds ids (Activity or Award, entrant) and the place, never names. Names and wording are
+  the box's and the printout's job.
+- **The overall 1st–3rd is an Award, not a rule.** v1 always gave Patrols an overall 1st–3rd. In v2 that's a
+  named-places Award in the Event: Jim added "Overall" (1st, 2nd, 3rd, Patrol Games) to the Circus design
+  (2026-11-10). An Event without it gets no overall places.
+- **Parity:** at Circus 2026, the registry reproduces the 63 stickers printed at the event
+  (`printed-stickers.json`): 20 Games × 3, plus the 3 overall Patrol stickers.
+- **Differences from v1, on purpose:**
+  - v1 added "entry name" field values to a sticker line. v2 has no such field kind, and Circus 2026 had none.
+  - v1's Top Dog line read "Best in Show". v2 prints the Award's label.
+  - v1 left Troops with 0 points out of Top Dog. v2 follows the Awards amendment: every entrant that isn't DQ'd
+    counts.
+  - Exhibition results join the registry once an Exhibition can be final (#43 PR 2).
