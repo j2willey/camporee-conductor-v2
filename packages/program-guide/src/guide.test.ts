@@ -138,8 +138,31 @@ describe("buildGuide: Awards, described from the Award rules", () => {
       {
         kind: "list",
         items: [
-          "Overall: by place in the Patrol Games standings: 1st (1st), 2nd (2nd), 3rd (3rd).",
+          "Overall: by place in the Patrol Games standings: 1st, 2nd, 3rd.",
           "Top Dog: the top 25% of Troops in the Troop Challenges standings.",
+        ],
+      },
+    ]);
+  });
+
+  it("gives each named place its ordinal, unless the name already is one", () => {
+    const [overall] = circus.awards ?? [];
+    if (!overall) throw new Error("the Circus design has no Overall Award");
+    const event = circusWith({
+      awards: [
+        {
+          ...overall,
+          label: "Axes",
+          rule: { type: "places", names: ["Gold Axe", "2nd", "Bronze Axe"] },
+        },
+      ],
+    });
+    const { sections } = buildGuide(event, circusActivities);
+    expect(section(sections, "awards").blocks).toEqual([
+      {
+        kind: "list",
+        items: [
+          "Axes: by place in the Patrol Games standings: Gold Axe (1st), 2nd, Bronze Axe (3rd).",
         ],
       },
     ]);
