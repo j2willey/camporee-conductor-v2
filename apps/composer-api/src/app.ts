@@ -5,9 +5,14 @@ import {
   CartridgeProfileSchema,
   exportCartridge,
 } from "@camporee-conductor/cartridge";
-import { buildGuide, renderGuideHtml } from "@camporee-conductor/program-guide";
-import { Slug, type Event } from "@camporee-conductor/schema";
-import { and, eq } from "drizzle-orm";
+import {
+  buildActivityGuide,
+  buildGuide,
+  renderActivityGuidesHtml,
+  renderGuideHtml,
+} from "@camporee-conductor/program-guide";
+import { Slug, type Activity, type Event } from "@camporee-conductor/schema";
+import { and, eq, inArray } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
@@ -45,6 +50,29 @@ const jsonBody = <S extends z.ZodType>(schema: S) =>
     }
     return result.data;
   });
+
+/** Validates the query string: `ids` is a comma-separated list of Activity ids (400 if missing or empty). */
+const activityIdsQuery = validator("query", (value) => {
+  const result = z
+    .object({
+      ids: z
+        .string()
+        .transform((ids) =>
+          ids
+            .split(",")
+            .map((id) => id.trim())
+            .filter((id) => id !== ""),
+        )
+        .pipe(
+          z.array(z.string()).min(1, "ids must name at least one Activity."),
+        ),
+    })
+    .safeParse(value);
+  if (!result.success) {
+    throw new HTTPException(400, { message: z.prettifyError(result.error) });
+  }
+  return { ids: result.data.ids };
+});
 
 /**
  * The Composer API (issue #4). `auth` is the swappable auth module (ADR-0014); `authConfig` tells the
@@ -254,6 +282,38 @@ export function createApp({
         c.var.user.userId,
       );
       return c.html(renderGuideHtml(buildGuide(event, activities)));
+    })
+
+    /**
+     * Activity guides (ADR-0028, issue #44): one print-ready HTML page with a guide for each Activity in
+     * `ids` (comma-separated), in that order. 400 without ids; 404 if any isn't an Activity of this Event.
+     */
+    .get("/events/:eventId/activity-guides", activityIdsQuery, (c) => {
+      const { event, activities } = readEvent(
+        c.req.param("eventId"),
+        c.var.user.userId,
+      );
+      const { ids } = c.req.valid("query");
+      // The Event's Activities in its own Organization (readEvent filters by both), so no other Org's document is read.
+      const inEvent = new Set(activities.map((a) => a.id));
+      if (!ids.every((id) => inEvent.has(id))) {
+        throw new HTTPException(404, { message: "Not found." });
+      }
+      const rows = db
+        .select({ id: documents.id, json: documents.json })
+        .from(documents)
+        .where(and(inArray(documents.id, ids), eq(documents.kind, "activity")))
+        .all();
+      // Validated on import (ADR-0012); stored exactly as given.
+      const byId = new Map(
+        rows.map((row) => [row.id, JSON.parse(row.json) as Activity]),
+      );
+      const guides = ids.map((id) => {
+        const activity = byId.get(id);
+        if (!activity) throw new HTTPException(404, { message: "Not found." });
+        return buildActivityGuide(event, activity);
+      });
+      return c.html(renderActivityGuidesHtml(event, guides));
     })
 
     /**

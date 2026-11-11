@@ -7,3 +7,13 @@ export {
   type GuideSection,
 } from "./guide.ts";
 export { escapeHtml, renderGuideHtml } from "./render.ts";
+export {
+  buildActivityGuide,
+  renderActivityGuidesHtml,
+  type ActivityGuide,
+  type ActivityGuideBlock,
+  type ActivityGuidePart,
+  type ActivityGuidePartKind,
+  type ActivityGuideSection,
+} from "./activity-guide.ts";
+export { renderInlineMarkdown, renderMarkdown } from "./markdown.ts";

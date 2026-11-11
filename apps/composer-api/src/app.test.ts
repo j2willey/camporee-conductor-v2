@@ -629,6 +629,78 @@ describe("Events", () => {
     });
   });
 
+  describe("Activity guides (#44)", () => {
+    const activityIds = (
+      readEventBundle(CIRCUS_2026).activities as { id: string; title: string }[]
+    ).map((a) => a.id);
+    const guidesPath = (ids: string, eventId = EVENT_ID) =>
+      `/api/events/${eventId}/activity-guides${ids === "" ? "" : `?ids=${ids}`}`;
+    const page = async (who: string | null, path: string) => {
+      const response = await app.request(
+        path,
+        who ? { headers: { [DEV_USER_HEADER]: who } } : {},
+      );
+      return {
+        status: response.status,
+        contentType: response.headers.get("content-type"),
+        text: await response.text(),
+      };
+    };
+    const titleOf = (id: string) =>
+      (
+        readEventBundle(CIRCUS_2026).activities as {
+          id: string;
+          title: string;
+        }[]
+      ).find((a) => a.id === id)?.title as string;
+
+    it("serves a viewer one Activity's guide as a print-ready page", async () => {
+      const id = activityIds[0] as string;
+      const res = await page("bob@example.com", guidesPath(id));
+      expect(res.status).toBe(200);
+      expect(res.contentType).toMatch(/^text\/html/);
+      expect(res.text).toMatch(/^<!doctype html>/);
+      expect(res.text).toContain(`<h1>${titleOf(id)}</h1>`);
+      expect(res.text).toContain("The Judge&#39;s playbook");
+    });
+
+    it("serves several guides in the order of ids", async () => {
+      const [a, b] = [activityIds[3], activityIds[1]] as [string, string];
+      const res = await page("bob@example.com", guidesPath(`${a},${b}`));
+      expect(res.status).toBe(200);
+      expect(res.text.match(/<article class="activity-guide"/g)).toHaveLength(
+        2,
+      );
+      expect(res.text.indexOf(`id="guide-${a}"`)).toBeGreaterThan(-1);
+      expect(res.text.indexOf(`id="guide-${a}"`)).toBeLessThan(
+        res.text.indexOf(`id="guide-${b}"`),
+      );
+    });
+
+    it("is 400 without ids", async () => {
+      expect((await page("bob@example.com", guidesPath(""))).status).toBe(400);
+      expect(
+        (await page("bob@example.com", `${guidesPath("")}?ids=`)).status,
+      ).toBe(400);
+    });
+
+    it("is 404 when an id isn't an Activity of this Event", async () => {
+      const id = activityIds[0] as string;
+      for (const bad of ["0196cfa2-4c00-7000-8000-00000000ffff", EVENT_ID]) {
+        expect(
+          (await page("bob@example.com", guidesPath(`${id},${bad}`))).status,
+        ).toBe(404);
+      }
+    });
+
+    it("is 404 to someone who isn't a member, 401 to nobody", async () => {
+      const path = guidesPath(activityIds[0] as string);
+      await call("eve@example.com", "GET", "/api/me");
+      expect((await page("eve@example.com", path)).status).toBe(404);
+      expect((await page(null, path)).status).toBe(401);
+    });
+  });
+
   it("is 404 for an Event that doesn't exist, or an id that isn't an Event", async () => {
     expect(
       (
