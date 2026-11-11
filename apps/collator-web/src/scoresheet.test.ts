@@ -5,6 +5,7 @@ import {
   sheetRows,
   withDuplex,
   type SheetField,
+  rowCount,
 } from "./scoresheet.ts";
 
 const field = (
@@ -108,5 +109,19 @@ describe("withDuplex", () => {
   it("prints each sheet twice, in order", () => {
     expect(withDuplex(["a", "b"])).toEqual(["a", "a", "b", "b"]);
     expect(withDuplex([])).toEqual([]);
+  });
+});
+
+describe("rowCount: the Rows box as typed, for the sheets", () => {
+  it("keeps 5–60 as typed, so typing 40 passes through 4 without snapping", () => {
+    expect(rowCount("40")).toBe(40);
+    expect(rowCount("4")).toBe(5);
+  });
+
+  it("holds to 5–60, and an empty or unreadable box means v1's 20", () => {
+    expect(rowCount("99")).toBe(60);
+    expect(rowCount("")).toBe(20);
+    expect(rowCount("abc")).toBe(20);
+    expect(rowCount("12.7")).toBe(12);
   });
 });
