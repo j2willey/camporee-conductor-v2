@@ -1,6 +1,6 @@
 import type { OfficialEvent } from "@camporee-conductor/collator/types";
 import { useEffect, useRef, useState } from "react";
-import { officialApi } from "../api.ts";
+import { errorMessage, officialApi, saveDownload } from "../api.ts";
 import { clock, levelLabel } from "../format.ts";
 import { ui } from "../ui.ts";
 
@@ -41,6 +41,15 @@ export function OfficialOverview({
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
   const [stale, setStale] = useState(false);
   const refreshing = useRef(false);
+  const [downloadProblem, setDownloadProblem] = useState<string | null>(null);
+  const downloadAll = () =>
+    officialApi.download(email, "/export/results.zip").then(
+      ({ blob, fileName }) => {
+        setDownloadProblem(null);
+        saveDownload(blob, fileName);
+      },
+      (e: unknown) => setDownloadProblem(errorMessage(e)),
+    );
 
   useEffect(() => {
     let current = true;
@@ -195,6 +204,22 @@ export function OfficialOverview({
         <button className={`${ui.buttonQuiet} w-full`} onClick={onReset}>
           Reset
         </button>
+      </div>
+      <div className="flex flex-col gap-1">
+        <button
+          className={`${ui.buttonQuiet} w-full sm:w-auto sm:self-start`}
+          onClick={downloadAll}
+        >
+          Download all results
+        </button>
+        <p className={ui.muted}>
+          A zip of CSVs, Judges' emails included: keep it private.
+        </p>
+        {downloadProblem && (
+          <p className={ui.error} role="alert">
+            {downloadProblem}
+          </p>
+        )}
       </div>
     </section>
   );

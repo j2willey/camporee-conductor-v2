@@ -1,6 +1,6 @@
 import type { AwardsView } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
-import { errorMessage, officialApi } from "../api.ts";
+import { errorMessage, officialApi, saveDownload } from "../api.ts";
 import { ui } from "../ui.ts";
 import {
   exhibitionRowText,
@@ -26,6 +26,15 @@ export function AwardsPage({
   const [view, setView] = useState<AwardsView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
 
+  const downloadCsv = () =>
+    officialApi.download(email, "/export/awards.csv").then(
+      ({ blob, fileName }) => {
+        setProblem(null);
+        saveDownload(blob, fileName);
+      },
+      (e: unknown) => setProblem(errorMessage(e)),
+    );
+
   useEffect(() => {
     let current = true;
     officialApi.awards(email).then(
@@ -49,6 +58,12 @@ export function AwardsPage({
         </button>
         <button className={ui.buttonQuiet} onClick={onAnnouncer}>
           Announcer script
+        </button>
+        <button
+          className={`${ui.buttonQuiet} print:hidden`}
+          onClick={downloadCsv}
+        >
+          Download CSV
         </button>
       </div>
       {problem && (
