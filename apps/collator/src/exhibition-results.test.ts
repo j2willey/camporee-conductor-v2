@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { scoreEvent } from "@camporee-conductor/scoring";
 import { createApp } from "./app.ts";
 import type { Db } from "./db/open.ts";
-import { exhibitionResultSaves } from "./db/schema.ts";
+import { exhibitionResultSaves, exhibitionStatusChanges } from "./db/schema.ts";
+import { officialAwards } from "./awards.ts";
 import { exhibitionResults } from "./exhibition-results.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadedEvent, loadEventCartridge } from "./load-event.ts";
@@ -303,5 +304,193 @@ describe("the Overview and scoring", () => {
     if (!bundle) throw new Error("no Event");
     expect(exhibitionResults(db, bundle, archery)?.rows).toEqual([]);
     expect(exhibitionResults(db, bundle, "nope")).toBeUndefined();
+  });
+});
+
+describe("Final and Draft (#43 PR 2)", () => {
+  const status = (
+    id: string,
+    final: boolean,
+    saveId: string | null,
+    extra: { notes?: string; activityId?: string; email?: string } = {},
+  ) =>
+    app.request(
+      `/api/official/exhibitions/${extra.activityId ?? archery}/status/${id}`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: extra.email ?? OFFICIAL,
+        },
+        body: JSON.stringify({
+          final,
+          saveId,
+          ...(extra.notes !== undefined && { notes: extra.notes }),
+          clientCreatedAt: "2027-05-15T11:00:00Z",
+        }),
+      },
+    );
+  const view = async () =>
+    (await (await get()).json()) as {
+      final: {
+        by: string;
+        at: string;
+        saveId: string | null;
+        notes: string | null;
+      } | null;
+    };
+  const bundleOf = () => {
+    const b = loadedEvent(db)?.bundle;
+    if (!b) throw new Error("no Event");
+    return b;
+  };
+
+  it("is a draft until finalized", async () => {
+    expect((await view()).final).toBeNull();
+  });
+
+  it("finalizes the loaded save (201), and the view says who, when and the notes", async () => {
+    await save("save-1", [row("A", "1st")]);
+    const res = await status("st-1", true, "save-1", { notes: "checked" });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({ status: "created" });
+    expect((await view()).final).toMatchObject({
+      by: OFFICIAL,
+      saveId: "save-1",
+      notes: "checked",
+    });
+  });
+
+  it("can finalize an Exhibition with nothing saved (saveId null)", async () => {
+    expect((await status("st-1", true, null)).status).toBe(201);
+    expect((await view()).final?.saveId).toBeNull();
+  });
+
+  it("treats the same id and content as a repeat (200), other content as a conflict (409)", async () => {
+    await save("save-1", [row("A")]);
+    await status("st-1", true, "save-1");
+    expect((await status("st-1", true, "save-1")).status).toBe(200);
+    expect((await status("st-1", true, "save-1", { notes: "x" })).status).toBe(
+      409,
+    );
+    expect(db.select().from(exhibitionStatusChanges).all()).toHaveLength(1);
+  });
+
+  it("refuses a stale finalize (409) with the reload message", async () => {
+    await save("save-1", [row("A")]);
+    await save("save-2", [row("B")], "save-1");
+    const res = await status("st-1", true, "save-1");
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "New results were saved since you loaded this; reload and mark final again.",
+    );
+    expect((await status("st-2", true, null)).status).toBe(409);
+  });
+
+  it("refuses finalizing twice, and back to draft when already a draft (400)", async () => {
+    expect((await status("d-0", false, null)).status).toBe(400);
+    await status("st-1", true, null);
+    const res = await status("st-2", true, null);
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toMatch(/final/i);
+  });
+
+  it("refuses an Activity that isn't an Exhibition or isn't in the Event (400)", async () => {
+    expect(
+      (await status("st-1", true, null, { activityId: CLOWN_CAR.id })).status,
+    ).toBe(400);
+    expect(
+      (await status("st-2", true, null, { activityId: "nope" })).status,
+    ).toBe(400);
+  });
+
+  it("refuses a save while final (409), but a repeat of an earlier save is still a repeat", async () => {
+    await save("save-1", [row("A")]);
+    await status("st-1", true, "save-1");
+    const res = await save("save-2", [row("B")], "save-1");
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toBe(
+      "These results are final; put them back to draft to change them.",
+    );
+    expect((await save("save-1", [row("A")])).status).toBe(200);
+    expect(db.select().from(exhibitionResultSaves).all()).toHaveLength(1);
+  });
+
+  it("back to draft makes it a draft again and saves work", async () => {
+    await save("save-1", [row("A")]);
+    await status("st-1", true, "save-1");
+    expect((await status("st-2", false, null)).status).toBe(201);
+    expect((await view()).final).toBeNull();
+    expect((await save("save-2", [row("B")], "save-1")).status).toBe(201);
+    expect((await status("st-3", true, "save-2")).status).toBe(201);
+  });
+
+  it("shows Final or Draft in the Overview", async () => {
+    const flag = async () =>
+      (
+        (await (
+          await app.request("/api/official/event", {
+            headers: { [OFFICIAL_EMAIL_HEADER]: OFFICIAL },
+          })
+        ).json()) as { activities: { id: string; final?: boolean }[] }
+      ).activities;
+    let all = await flag();
+    expect(all.find((a) => a.id === archery)?.final).toBe(false);
+    expect(all.find((a) => a.id === CLOWN_CAR.id)?.final).toBeUndefined();
+    await status("st-1", true, null);
+    all = await flag();
+    expect(all.find((a) => a.id === archery)?.final).toBe(true);
+  });
+
+  describe("Awards", () => {
+    const exhibitions = () =>
+      bundleOf().activities.filter((a) => a.scoringType === "exhibition");
+
+    it("counts Exhibitions and stays provisional while one is a draft", () => {
+      const a = officialAwards(db, bundleOf());
+      expect(a.exhibitionCount).toBe(exhibitions().length);
+      expect(a.exhibitionFinalCount).toBe(0);
+      expect(a.provisional).toBe(true);
+    });
+
+    it("lists only final Exhibitions, rows in the Official's order, after the registry groups", async () => {
+      await save("save-1", [
+        row("Zed", "2nd"),
+        row("Amy", "1st", { notes: "n" }),
+      ]);
+      await status("st-1", true, "save-1");
+      const a = officialAwards(db, bundleOf());
+      expect(a.exhibitionFinalCount).toBe(1);
+      const groups = a.sections.flatMap((s) => s.groups);
+      const found = groups.filter((g) => g.kind === "exhibition");
+      expect(found).toHaveLength(1);
+      expect(found[0]).toMatchObject({
+        id: archery,
+        title: "William Tell No Apple",
+        rows: [
+          { participantName: "Zed", place: "2nd" },
+          { participantName: "Amy", place: "1st", notes: "n" },
+        ],
+      });
+      const section = a.sections.find((s) => s.groups.includes(found[0]!));
+      expect(section?.groups.at(-1)).toBe(found[0]);
+      // back to draft: not listed
+      await status("st-2", false, null);
+      expect(
+        officialAwards(db, bundleOf())
+          .sections.flatMap((s) => s.groups)
+          .some((g) => g.kind === "exhibition"),
+      ).toBe(false);
+    });
+
+    it("is not provisional because of Exhibitions once all are final", async () => {
+      for (const [i, e] of exhibitions().entries()) {
+        await status(`st-${i}`, true, null, { activityId: e.id });
+      }
+      const a = officialAwards(db, bundleOf());
+      expect(a.exhibitionFinalCount).toBe(a.exhibitionCount);
+      // ranked Activities are still unfinalized here, so the Event stays provisional
+      expect(a.provisional).toBe(true);
+    });
   });
 });

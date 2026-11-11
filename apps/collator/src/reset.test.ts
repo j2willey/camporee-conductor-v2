@@ -28,6 +28,7 @@ type Table =
   | "judges"
   | "official_actions"
   | "exhibition_result_saves"
+  | "exhibition_status_changes"
   | "groups"
   | "teams"
   | "roster_changes"
@@ -128,6 +129,16 @@ async function rehearsal() {
           replacesId: null,
           clientCreatedAt: "2027-05-15T12:00:00Z",
         },
+        OFFICIAL,
+      )
+    ).status,
+  ).toBe(201);
+  expect(
+    (
+      await send(
+        "PUT",
+        `/api/official/exhibitions/${archery}/status/f1`,
+        { final: true, saveId: "x1", clientCreatedAt: "2027-05-15T12:01:00Z" },
         OFFICIAL,
       )
     ).status,
@@ -239,6 +250,7 @@ describe("POST /api/official/reset", () => {
       "judges",
       "official_actions",
       "exhibition_result_saves",
+      "exhibition_status_changes",
     ] as const) {
       expect(count(t), t).toBe(0);
     }
@@ -270,6 +282,7 @@ describe("POST /api/official/reset", () => {
       "judges",
       "official_actions",
       "exhibition_result_saves",
+      "exhibition_status_changes",
       "groups",
       "teams",
       "roster_changes",
