@@ -154,6 +154,7 @@ async function rehearsal() {
   );
   expect(count("score_entries")).toBe(1);
   expect(count("roster_changes")).toBe(1);
+  expect(count("exhibition_status_changes")).toBe(1);
 }
 
 const reset = (body: unknown, email: string | null = OFFICIAL) =>
