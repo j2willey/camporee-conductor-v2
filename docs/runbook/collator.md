@@ -148,7 +148,9 @@ newest `BACKUP_KEEP` (default 288, a day's worth). A mounted USB stick is just a
   scores. A closure that reports missing scores also makes the phone resend those.
 - **After a reset, nothing comes back**, on purpose: the phones drop what the reset cleared, and say so ("The
   box was reset; N unsent scores from before the reset were discarded"). A reset undone by a phone coming
-  back into range would defeat it.
+  back into range would defeat it. So **after the final rehearsal reset, every judge phone opens the judge
+  page on the box Wi-Fi (the check-in QR) before anyone scores**: a phone that scores before it has seen the
+  reset discards those scores when it reconnects (#70 tracks a safer design).
 
 ### Reset for a rehearsal (#42)
 
@@ -163,6 +165,13 @@ To confirm, type the Event's name (its title or slug, any case). **The box backs
 folder; if it can't (no `BACKUP_DIR`, the stick missing or full) the reset is refused and nothing changes. The
 page then says "Reset done. Backup saved as `<file>`." To undo a reset, restore that file as above: it brings back
 everything the reset cleared, and phones resend what they scored after the reset.
+
+### Event morning, after the final rehearsal reset
+
+1. Reset (above), and note the backup's name.
+2. At check-in, each Judge scans the check-in QR on the box Wi-Fi and the judge page opens. That's when the phone
+   learns about the reset; scores made before it would be discarded.
+3. Only then does the Judge go to their Station and score.
 
 ## 6. If a phone can't connect
 
