@@ -9,6 +9,7 @@
     }
   },
   "awards": [
+    {"slug":"overall","label":"Overall","competition":"patrol-games","rule":{"type":"places","names":["1st","2nd","3rd"]}},
     {
       "slug": "top-dog",
       "label": "Top Dog",

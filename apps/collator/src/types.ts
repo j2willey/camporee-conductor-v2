@@ -24,6 +24,7 @@ export type {
   Team,
   TeamSubmission,
 } from "./roster-and-scores.ts";
+export type { AwardGroup, AwardLine, AwardsView } from "./awards.ts";
 export type { CompetitionStandingsView, StandingsRow } from "./standings.ts";
 export type {
   MergedEntrant,

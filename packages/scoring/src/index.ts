@@ -30,4 +30,10 @@ export {
   type PlacementPointsTable,
 } from "./ranking.ts";
 export { scoreEvent } from "./score-event.ts";
+export {
+  WINNER_PLACES,
+  winnersRegistry,
+  type WinnerLine,
+  type WinnersRegistry,
+} from "./winners-registry.ts";
 export type * from "./types.ts";

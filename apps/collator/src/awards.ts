@@ -1,0 +1,97 @@
+import type { CheckedBundle } from "@camporee-conductor/cartridge";
+import { scoreEvent, winnersRegistry } from "@camporee-conductor/scoring";
+import type { Db } from "./db/open.ts";
+import { entrantNamer } from "./official-view.ts";
+import { loggedActions, scoringInput } from "./scoring-input.ts";
+
+// The Awards page for Officials (#43 PR 1): the winners registry from packages/scoring, with names from the roster.
+// The order is the registry's; nothing here ranks or sorts (CLAUDE.md rule 3).
+
+export interface AwardLine {
+  rank?: number;
+  place?: string;
+  entrantId: string;
+  /** A Team's name and its Group's; a Group-level entrant has a Group and no Team; null names for an id off the roster. */
+  entrant: { group: string | null; team: string | null };
+  manual: boolean;
+}
+
+export interface AwardGroup {
+  kind: "activity" | "award";
+  id: string;
+  /** The Activity's title or the Award's label. */
+  title: string;
+  lines: AwardLine[];
+}
+
+export interface AwardsView {
+  /** True while any ranked Activity isn't finalized: the places may change. */
+  provisional: boolean;
+  finalizedCount: number;
+  rankedCount: number;
+  sections: {
+    competition: { id: string; label: string };
+    groups: AwardGroup[];
+  }[];
+}
+
+export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
+  const results = scoreEvent(
+    scoringInput(db, bundle, undefined, loggedActions(db)),
+  );
+  const registry = winnersRegistry(bundle.event, results, bundle.activities);
+  const nameOf = entrantNamer(db);
+  const titleOf = new Map<string, string>([
+    ...bundle.activities.map((a) => [a.id, a.title] as const),
+    ...(bundle.event.awards ?? []).map((a) => [a.id, a.label] as const),
+  ]);
+  const ranked = new Set(
+    bundle.activities
+      .filter((a) => a.scoringType === "ranked")
+      .map((a) => a.id),
+  );
+  const rankedResults = results.activities.filter((a) =>
+    ranked.has(a.activityId),
+  );
+
+  const sections: AwardsView["sections"] = [];
+  for (const line of registry.lines) {
+    const competition = bundle.event.competitions.find(
+      (c) => c.id === line.competitionId,
+    );
+    if (!competition) continue;
+    let section = sections.find((s) => s.competition.id === competition.id);
+    if (!section) {
+      section = {
+        competition: { id: competition.id, label: competition.label },
+        groups: [],
+      };
+      sections.push(section);
+    }
+    const id =
+      (line.kind === "activity" ? line.activityId : line.awardId) ?? "";
+    // Consecutive lines for the same Activity or Award make a group; the registry's order is kept.
+    let group = section.groups.at(-1);
+    if (!group || group.kind !== line.kind || group.id !== id) {
+      group = { kind: line.kind, id, title: titleOf.get(id) ?? id, lines: [] };
+      section.groups.push(group);
+    }
+    const name = nameOf(line.entrantId);
+    group.lines.push({
+      ...(line.rank !== undefined && { rank: line.rank }),
+      ...(line.place !== undefined && { place: line.place }),
+      entrantId: line.entrantId,
+      entrant:
+        competition.level === "team"
+          ? { group: name.group, team: name.name }
+          : { group: name.name, team: null },
+      manual: line.manual,
+    });
+  }
+  return {
+    provisional: registry.provisional,
+    finalizedCount: rankedResults.filter((a) => a.finalized).length,
+    rankedCount: rankedResults.length,
+    sections,
+  };
+}

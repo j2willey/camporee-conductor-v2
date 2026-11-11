@@ -83,7 +83,7 @@ describe("Circus 2026 fixtures: content and references", () => {
     ]);
   });
 
-  it("has Top Dog as an Award (top 25% of Troop Challenges), not an Activity (#3)", () => {
+  it("has Overall (1st to 3rd, Patrol Games) and Top Dog (top 25% of Troop Challenges) as Awards, not Activities (#3, #43)", () => {
     expect(activities.map((a) => a.slug)).not.toContain("top-dog");
     expect(
       event.awards?.map(({ slug, label, competitionId, scope, rule }) => ({
@@ -94,6 +94,13 @@ describe("Circus 2026 fixtures: content and references", () => {
         rule,
       })),
     ).toEqual([
+      {
+        slug: "overall",
+        label: "Overall",
+        competitionId: competitionBySlug.get("patrol-games")?.id,
+        scope: "event",
+        rule: { type: "places", names: ["1st", "2nd", "3rd"] },
+      },
       {
         slug: "top-dog",
         label: "Top Dog",
@@ -277,8 +284,8 @@ describe("Circus 2026 as-run fixtures", () => {
     }
   });
 
-  it("has no Awards: v1 ran Top Dog as a Troop Challenge", () => {
-    expect(asRunEvent.awards).toBeUndefined();
+  it("has only the Overall Award: v1 ran Top Dog as a Troop Challenge (#43)", () => {
+    expect(asRunEvent.awards?.map((a) => a.slug)).toEqual(["overall"]);
   });
 
   it("has no Program Guide settings: v1 had none (#5)", () => {

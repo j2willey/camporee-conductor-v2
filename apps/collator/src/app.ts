@@ -21,6 +21,7 @@ import { judgeEvent } from "./judge-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
 import { normalEmail, officialByEmail } from "./officials.ts";
+import { officialAwards } from "./awards.ts";
 import { officialStandings } from "./standings.ts";
 import { officialActivity, officialEvent } from "./official-view.ts";
 import {
@@ -313,6 +314,8 @@ function officialRoutes(db: Db, backup: BackupConfig | null) {
   routes.get("/standings", (c) =>
     c.json(officialStandings(db, c.get("bundle"))),
   );
+
+  routes.get("/awards", (c) => c.json(officialAwards(db, c.get("bundle"))));
 
   routes.get("/roster", (c) => c.json(officialRoster(db, c.get("bundle"))));
 
