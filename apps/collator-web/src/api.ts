@@ -96,7 +96,54 @@ const asOfficial = <T>(email: string, path: string) =>
     headers: { [OFFICIAL_EMAIL_HEADER]: email },
   });
 
+/**
+ * An Official download (#43 PR 6): the file as a blob with the name the box gave it. Errors read like other
+ * Official calls: the box's own message, or "can't reach the box".
+ */
+async function downloadAsOfficial(
+  email: string,
+  path: string,
+): Promise<{ blob: Blob; fileName: string }> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/official${path}`, {
+      headers: { [OFFICIAL_EMAIL_HEADER]: email },
+    });
+  } catch {
+    throw new ApiError(
+      "Can't reach the scoring box. Check the Wi-Fi and try again.",
+    );
+  }
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as {
+      error?: string;
+    };
+    throw new ApiError(
+      body.error ?? `The box answered ${response.status}`,
+      response.status >= 400 && response.status < 500,
+      response.status,
+    );
+  }
+  const named = /filename="([^"]+)"/.exec(
+    response.headers.get("content-disposition") ?? "",
+  );
+  return { blob: await response.blob(), fileName: named?.[1] ?? "download" };
+}
+
+/** Hands a downloaded file to the browser's save: a temporary link, clicked, then the object URL is let go. */
+export function saveDownload(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const officialApi = {
+  download: downloadAsOfficial,
   me: (email: string) => asOfficial<SignedInOfficial>(email, "/me"),
   event: (email: string) => asOfficial<OfficialEvent>(email, "/event"),
   activity: (email: string, activityId: string) =>
