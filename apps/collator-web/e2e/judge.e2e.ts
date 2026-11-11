@@ -1498,6 +1498,72 @@ test("an Official opens the Announcer script: a Clown Car block with 1st, a name
   expect(strangers).toEqual([]);
 });
 
+// #43 PR 5: an Official prints paper scoresheets: pick Activities, see the Common Field column with its hint, a roster
+// name, blank numbered rows; two-sided doubles the sheets; the controls don't print; nothing off the box.
+test("an Official opens Paper scoresheets: a Clown Car sheet with a Common Field column, a roster name and blank rows, two-sided doubles it, nothing off the box", async ({
+  page,
+}) => {
+  const boxHost = new URL(String(test.info().project.use.baseURL)).host;
+  const strangers: string[] = [];
+  page.on("request", (req) => {
+    const url = new URL(req.url());
+    if (!["http:", "https:"].includes(url.protocol)) return;
+    if (url.host !== boxHost) strangers.push(req.url());
+  });
+  await page.addInitScript(() => {
+    window.print = () => {};
+  });
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Paper scoresheets" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Paper scoresheets" }),
+  ).toBeVisible();
+
+  const sheets = page.getByTestId("scoresheet");
+  await expect(page.getByLabel("Clown Car")).toBeChecked();
+  await expect(sheets.nth(1)).toBeVisible();
+
+  // None for every Competition, then Clown Car alone.
+  const nones = page.getByRole("button", { name: /^None of / });
+  for (let i = (await nones.count()) - 1; i >= 0; i--) {
+    await nones.nth(i).click();
+  }
+  await expect(sheets).toHaveCount(0);
+  await expect(page.getByText("Pick at least one Activity")).toBeVisible();
+  await page.getByLabel("Clown Car").check();
+  await expect(sheets).toHaveCount(1);
+  const sheet = sheets.first();
+  await expect(sheet).toContainText("Clown Car");
+  await expect(sheet).toContainText("Patrol Flag");
+  await expect(sheet.locator("th", { hasText: "Patrol Flag" })).toContainText(
+    /\d+–\d+|max \d+|min \d+/,
+  );
+  await expect(sheet).toContainText("Flaming Arrows");
+  await expect(
+    sheet.locator("tbody tr").last().locator("td").first(),
+  ).toHaveText(/^\d+$/);
+
+  // Rows is the least a sheet has; Fill in the roster off leaves them all blank.
+  await page.getByLabel("Rows").fill("40");
+  await expect(sheet.locator("tbody tr")).toHaveCount(40);
+  await page.getByLabel("Fill in the roster").uncheck();
+  await expect(sheet).not.toContainText("Flaming Arrows");
+  await page.getByLabel("Fill in the roster").check();
+
+  await page.getByLabel("Two-sided (each sheet twice)").check();
+  await expect(sheets).toHaveCount(2);
+  await page.getByLabel("Two-sided (each sheet twice)").uncheck();
+
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByTestId("scoresheet-controls")).toBeHidden();
+  await expect(sheet).toBeVisible();
+  await page.emulateMedia({ media: "screen" });
+  expect(strangers).toEqual([]);
+});
+
 // #43 PR 2: an Official marks an Exhibition's results final: the save controls go, the Overview says Final, Awards
 // lists it; Back to draft makes it editable again.
 test("an Official marks an Exhibition final, sees it on Awards, then puts it back to draft", async ({
