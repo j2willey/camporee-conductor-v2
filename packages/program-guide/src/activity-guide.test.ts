@@ -324,7 +324,7 @@ describe("renderActivityGuidesHtml", () => {
     const page = html();
     expect(page).toMatch(/\.part \+ \.part\s*\{[^}]*break-before:\s*page/);
     expect(page).toMatch(
-      /\.activity-guide \+ \.activity-guide\s*\{[^}]*break-before:\s*page/,
+      /\.activity-guide ~ \.activity-guide\s*\{[^}]*break-before:\s*page/,
     );
     expect(page).toContain("@page { size: letter; margin: 0.75in; }");
   });
@@ -434,7 +434,7 @@ describe("blankPagesAfter", () => {
       [[2], [1], [1]],
       [false, true],
     ],
-    [[[], [1]], [true]],
+    [[[], [1]], [false]],
   ])("%j -> %j", (input, expected) => {
     expect(blankPagesAfter(input)).toEqual(expected);
   });

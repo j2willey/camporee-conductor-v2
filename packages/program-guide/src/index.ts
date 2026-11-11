@@ -8,6 +8,8 @@ export {
 } from "./guide.ts";
 export { escapeHtml, renderGuideHtml } from "./render.ts";
 export {
+  activityGuideNumbers,
+  blankPagesAfter,
   buildActivityGuide,
   renderActivityGuidesHtml,
   type ActivityGuide,
