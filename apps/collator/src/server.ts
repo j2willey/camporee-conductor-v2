@@ -22,7 +22,8 @@ export function start(config: Config): ServerType {
   );
   const server = serve(
     {
-      fetch: createApp({ db, webRoot: config.webRoot }).fetch,
+      fetch: createApp({ db, webRoot: config.webRoot, backup: config.backup })
+        .fetch,
       port: config.port,
     },
     (info) => console.log(`collator listening on :${info.port}`),

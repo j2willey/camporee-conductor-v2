@@ -31,6 +31,8 @@ import Database from "better-sqlite3";
 // the Roster page (one row, a conflict, one Standings row), unmerges (two again), and merges again.
 // #42 PR 7: an Official records an Exhibition's results (William Tell No Apple), reorders them and saves again; the
 // Overview counts them.
+// #42 PR 8: an Official resets scores: the button waits for the typed name, the backup is named, the Overview
+// shows no scores, and the roster stays.
 // Each test uses what the one before it stored, so they run in order.
 test.describe.configure({ mode: "serial" });
 
@@ -1333,4 +1335,48 @@ test("an Official records an Exhibition's results, reorders them, and the Overvi
   await expect(
     page.getByRole("row", { name: /William Tell No Apple/ }),
   ).toContainText("2 results");
+});
+
+test("an Official resets scores: the typed name enables the button, a backup is saved, scores are gone", async ({
+  page,
+}) => {
+  expect(count("score_entries")).toBeGreaterThan(0);
+  const groups = count("groups");
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Reset scores" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Full reset" })).toBeVisible();
+
+  const button = page.getByRole("button", { name: "Reset scores" });
+  await expect(button).toBeDisabled();
+  await page
+    .getByLabel("Type the Event's name to confirm, Reset scores")
+    .fill("Not the name");
+  await expect(button).toBeDisabled();
+  const title = await page
+    .getByLabel("Type the Event's name to confirm, Reset scores")
+    .getAttribute("placeholder");
+  await page
+    .getByLabel("Type the Event's name to confirm, Reset scores")
+    .fill(` ${title?.toUpperCase()} `);
+  await expect(button).toBeEnabled();
+  await button.click();
+  await expect(
+    page.getByText(/Reset done\. Backup saved as collator-.*\.db\./),
+  ).toBeVisible();
+
+  expect(count("score_entries")).toBe(0);
+  expect(count("official_actions")).toBe(0);
+  expect(count("groups")).toBe(groups);
+  expect(
+    firstRow("SELECT reason FROM box_epochs ORDER BY seq DESC LIMIT 1"),
+  ).toEqual({
+    reason: "reset",
+  });
+  await page.getByRole("button", { name: "← Overview" }).click();
+  await expect(page.getByText(/^0 scores across 0 of/)).toBeVisible();
 });

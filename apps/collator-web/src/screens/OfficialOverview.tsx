@@ -23,6 +23,7 @@ export function OfficialOverview({
   onPrint,
   onStandings,
   onRoster,
+  onReset,
 }: {
   email: string;
   event: OfficialEvent;
@@ -30,6 +31,7 @@ export function OfficialOverview({
   onPrint: () => void;
   onStandings: () => void;
   onRoster: () => void;
+  onReset: () => void;
 }) {
   const [event, setEvent] = useState(first);
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
@@ -178,6 +180,9 @@ export function OfficialOverview({
         </button>
         <button className={`${ui.buttonQuiet} w-full`} onClick={onPrint}>
           QR codes to print
+        </button>
+        <button className={`${ui.buttonQuiet} w-full`} onClick={onReset}>
+          Reset
         </button>
       </div>
     </section>

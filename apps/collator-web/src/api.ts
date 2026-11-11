@@ -133,6 +133,19 @@ export const officialApi = {
         body: JSON.stringify(body),
       },
     ),
+  /** Reset the box for a rehearsal (#42 PR 8). It backs up first and refuses, with a message, if it can't. */
+  reset: (email: string, body: { kind: "scores" | "full"; confirm: string }) =>
+    call<{ backup: string; epoch: { id: string; reason: string } }>(
+      "/api/official/reset",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: email,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
   /** Log an Official action (#42 PR 2b). Resending the same id is safe: the box answers "repeat". */
   act: (email: string, id: string, body: OfficialActionBody) =>
     call<{ status: "created" | "repeat" }>(
