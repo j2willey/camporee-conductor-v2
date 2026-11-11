@@ -111,7 +111,7 @@ image build-and-start check and the Collator box rehearsal on every PR and push 
 
 ```
 packages/scoring/   pure scoring & ranking (ADR-0019, 0020)
-packages/program-guide/  pure Program Guide generation: guide model + print-ready HTML (ADR-0018, #5)
+packages/program-guide/  pure Program Guide and Activity guide generation: models + print-ready HTML (ADR-0018, #5; ADR-0028, #44)
 packages/cartridge/ cartridges: v1 cartridge → v2 documents + per-event overlay (#46); the v2 zip format, export, and the
                     Collator's load checks (#8, ADR-0012 amendment)
 events/             per-event overlay.json for v1 imports; never the v1 cartridge itself (unpublished designs)
