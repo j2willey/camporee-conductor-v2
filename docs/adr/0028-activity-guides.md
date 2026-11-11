@@ -46,8 +46,23 @@ imported Event. They are separate from the event-wide Program Guide (ADR-0018, #
    value in `fixtures/circus-2026/v1-source/games/` must appear in the same part of the v2 guide. Supplies are
    checked against the imported `supplies` (the import's own tests cover the text → items step).
 
+## Printing several guides (2026-11-11, #44 PR 2)
+
+7. **Numbers:** each Activity's number is the first letter of its Competition's label plus its position in that
+   Competition, in Event order: `P1`… for Patrol Games, `T1`… for Troop Challenges, `E1`… for Exhibitions, as v1
+   printed them. If two Competitions' labels start with the same letter, both use the Competition's position
+   instead (`1-3`, `2-3`). The number is part of the Activity's guide wherever it prints, and is worked out in
+   the package (`activityGuideNumbers`).
+8. **A Guides page in the Composer:** Activities by Competition, with All / None, all ticked at first, and a
+   **Two-sided** box (on by default). It opens one print page with the picked guides in Event order.
+9. **Two-sided: each guide starts on a right-hand page** (Jim, 2026-11-11), so a packet folds per Activity. Chrome
+   ignores CSS `break-before: right`; a rendered PDF in 2026-11 put no blank pages in. So the page carries **one
+   small inline script**, the only exception to "no scripts". It measures each part at the printed width,
+   works out how many pages each guide takes, and adds a blank page after any guide that ends on a right-hand
+   page, as v1 did. The page arithmetic is a pure function in the package, unit tested, and the page embeds that
+   same function's source, so what's tested is what runs. Single-sided printing adds no blank pages and runs no script.
+
 ## Consequences
 
-- Printing several guides, numbering (`P1`…) and right-hand-page starts come in #44 PR 2; the supplies list in
-  PR 3. Printing guides from the Collator box on the day is later, not parity (Jim, 2026-11-11).
+- The supplies list comes in #44 PR 3. Printing guides from the Collator box on the day is later, not parity (Jim, 2026-11-11).
 - The Program Guide's teasers can reuse the Markdown subset.
