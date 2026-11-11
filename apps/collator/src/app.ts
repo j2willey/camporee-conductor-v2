@@ -24,6 +24,7 @@ import { loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
 import { normalEmail, officialByEmail } from "./officials.ts";
 import { officialAwards } from "./awards.ts";
+import { awardsCsv, resultsZip } from "./results-export.ts";
 import { officialStandings } from "./standings.ts";
 import { officialActivity, officialEvent } from "./official-view.ts";
 import {
@@ -332,6 +333,24 @@ function officialRoutes(db: Db, backup: BackupConfig | null) {
   );
 
   routes.get("/awards", (c) => c.json(officialAwards(db, c.get("bundle"))));
+
+  // Downloads for the laptop (#43 PR 6): the awards CSV and the results zip (Judges' emails inside), built on request.
+  routes.get("/export/awards.csv", (c) => {
+    const { fileName, text } = awardsCsv(db, c.get("bundle"), new Date());
+    return c.body(text, 200, {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${fileName}"`,
+      "cache-control": "no-store",
+    });
+  });
+  routes.get("/export/results.zip", (c) => {
+    const { fileName, bytes } = resultsZip(db, c.get("bundle"), new Date());
+    return c.body(new Uint8Array(bytes), 200, {
+      "content-type": "application/zip",
+      "content-disposition": `attachment; filename="${fileName}"`,
+      "cache-control": "no-store",
+    });
+  });
 
   routes.get("/award-label", (c) =>
     c.json(awardLabelView(db, c.get("bundle"))),

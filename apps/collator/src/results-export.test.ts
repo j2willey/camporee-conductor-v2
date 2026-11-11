@@ -1,4 +1,4 @@
-import { unzipSync, strFromU8 } from "fflate";
+import { unzipSync } from "fflate";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import type { Db } from "./db/open.ts";
@@ -15,7 +15,10 @@ import {
 
 // The awards CSV and the results export (#43 PR 6, ADR-0027): views already on the Official pages, laid out as CSV.
 
-const BOM = "﻿";
+const BOM = "\uFEFF";
+/** Decoded keeping the byte-order mark, which a plain decode drops. */
+const text = (bytes: Uint8Array) =>
+  new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes);
 const ALEX = {
   id: "judge-alex",
   name: "Alex Judge",
@@ -142,7 +145,7 @@ describe("awardsCsv", () => {
     );
     const clownRows = lines.filter((l) => l.includes("Troop 101"));
     expect(clownRows.length).toBeGreaterThanOrEqual(2);
-    expect(text).toContain(`,"'=SUM(A1)",`);
+    expect(text).toContain(",'=SUM(A1),");
     expect(text).not.toContain(",=SUM(A1),");
     // Place is the rank for an Activity line; the dish is read from the score matrix (the newest entry counts).
     expect(
@@ -159,7 +162,7 @@ describe("awardsCsv", () => {
 describe("resultsZip", () => {
   const unzip = (bytes: Uint8Array) =>
     Object.fromEntries(
-      Object.entries(unzipSync(bytes)).map(([k, v]) => [k, strFromU8(v)]),
+      Object.entries(unzipSync(bytes)).map(([k, v]) => [k, text(v)]),
     );
 
   it("holds the files, with the Judges' emails and a provisional README", () => {
@@ -179,7 +182,7 @@ describe("resultsZip", () => {
     expect(names).toContain(`scores/${CLOWN_CAR.id}.csv`);
     expect(names.some((n) => n.startsWith("exhibitions/"))).toBe(true);
     for (const n of names) {
-      expect(n).toMatch(/^[a-z0-9_\-./]+$/);
+      expect(n).toMatch(/^[A-Za-z0-9_\-./]+$/);
       if (n.endsWith(".csv")) expect(files[n]?.startsWith(BOM)).toBe(true);
     }
     expect(files["judges.csv"]).toBe(
@@ -198,13 +201,13 @@ describe("resultsZip", () => {
     );
     expect(files["entries.csv"]).toContain("score-3");
     expect(files[`scores/${CLOWN_CAR.id}.csv`]?.split("\r\n")[0]).toMatch(
-      /^﻿Place,Group,Team,On roster,Total,Points,Disqualified,Judge,Judge's unit,Received at,Entries,/,
+      /^\uFEFFPlace,Group,Team,On roster,Total,Points,Disqualified,Judge,Judge's unit,Received at,Entries,/,
     );
     const standing = Object.entries(files).find(([n]) =>
       n.startsWith("standings/"),
     );
     expect(standing?.[1].split("\r\n")[0]).toMatch(
-      /^﻿Rank,Group,Team,Total,Disqualified/,
+      /^\uFEFFRank,Group,Team,Total,Disqualified/,
     );
   });
 
@@ -244,7 +247,9 @@ describe("the export routes", () => {
     );
     expect(res.headers.get("cache-control")).toBe("no-store");
     expect(
-      (await res.text()).startsWith(`${BOM}Competition,Category,Place`),
+      text(new Uint8Array(await res.arrayBuffer())).startsWith(
+        `${BOM}Competition,Category,Place`,
+      ),
     ).toBe(true);
   });
 

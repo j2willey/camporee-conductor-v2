@@ -286,6 +286,8 @@ export interface OfficialActivity {
     id: string;
     label: string;
     type: string;
+    /** points, metric, penalty or info: the results export reads single-line `info` text fields by it (#43 PR 6). */
+    kind: string;
     /** A select field's choices. */
     options?: string[];
   }[];
@@ -534,6 +536,7 @@ export function officialActivity(
       id: f.id,
       label: f.label,
       type: f.type,
+      kind: f.kind,
       ...(f.type === "select" && { options: f.config?.options ?? [] }),
     })),
     matrix,

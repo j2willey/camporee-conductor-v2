@@ -325,8 +325,14 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
           id: CLOWN_CAR.ownField,
           label: "Big Top Cruiser Clowns",
           type: "number",
+          kind: "points",
         },
-        { id: CLOWN_CAR.commonField, label: "Patrol Flag", type: "number" },
+        {
+          id: CLOWN_CAR.commonField,
+          label: "Patrol Flag",
+          type: "number",
+          kind: "points",
+        },
       ]),
     );
   });
@@ -362,6 +368,7 @@ describe("GET /api/official/activities/:id: one Activity's entries and ranking",
       id: "size",
       label: "Size",
       type: "select",
+      kind: "info",
       options: ["small", "large"],
     });
   });
