@@ -8,8 +8,10 @@ import {
 import {
   buildActivityGuide,
   buildGuide,
+  buildSuppliesList,
   renderActivityGuidesHtml,
   renderGuideHtml,
+  renderSuppliesListHtml,
 } from "@camporee-conductor/program-guide";
 import { Slug, type Activity, type Event } from "@camporee-conductor/schema";
 import { and, eq, inArray } from "drizzle-orm";
@@ -59,6 +61,10 @@ const activityIdsQuery = validator("query", (value) => {
         .enum(["1", "true", "0", "false"])
         .optional()
         .transform((v) => v === "1" || v === "true"),
+      perPage: z
+        .enum(["1", "true", "0", "false"])
+        .optional()
+        .transform((v) => v === "1" || v === "true"),
       ids: z
         .string()
         .transform((ids) =>
@@ -75,8 +81,11 @@ const activityIdsQuery = validator("query", (value) => {
   if (!result.success) {
     throw new HTTPException(400, { message: z.prettifyError(result.error) });
   }
-  const out: { ids: string[]; twoSided?: "1" } = { ids: result.data.ids };
+  const out: { ids: string[]; twoSided?: "1"; perPage?: "1" } = {
+    ids: result.data.ids,
+  };
   if (result.data.twoSided) out.twoSided = "1";
+  if (result.data.perPage) out.perPage = "1";
   return out;
 });
 
@@ -144,6 +153,33 @@ export function createApp({
       .all()
       .filter((a) => ids.has(a.id));
     return { event, activities };
+  };
+
+  /**
+   * The Event and the full Activity documents for `ids`, in that order. 404 if any isn't an Activity of this Event
+   * in its own Organization (readEvent filters by both), so no other Org's document is read.
+   */
+  const readPicked = (eventId: string, userId: string, ids: string[]) => {
+    const { event, activities } = readEvent(eventId, userId);
+    const inEvent = new Set(activities.map((a) => a.id));
+    if (!ids.every((id) => inEvent.has(id))) {
+      throw new HTTPException(404, { message: "Not found." });
+    }
+    const rows = db
+      .select({ id: documents.id, json: documents.json })
+      .from(documents)
+      .where(and(inArray(documents.id, ids), eq(documents.kind, "activity")))
+      .all();
+    // Validated on import (ADR-0012); stored exactly as given.
+    const byId = new Map(
+      rows.map((row) => [row.id, JSON.parse(row.json) as Activity]),
+    );
+    const picked = ids.map((id) => {
+      const activity = byId.get(id);
+      if (!activity) throw new HTTPException(404, { message: "Not found." });
+      return activity;
+    });
+    return { event, picked };
   };
 
   const api = new Hono<{ Variables: { user: AuthUser } }>()
@@ -295,33 +331,32 @@ export function createApp({
      * `ids` (comma-separated), in that order; `twoSided=1` starts each on a right-hand page. 400 without ids; 404 if any isn't an Activity of this Event.
      */
     .get("/events/:eventId/activity-guides", activityIdsQuery, (c) => {
-      const { event, activities } = readEvent(
+      const { ids, twoSided } = c.req.valid("query");
+      const { event, picked } = readPicked(
         c.req.param("eventId"),
         c.var.user.userId,
+        ids,
       );
-      const { ids, twoSided } = c.req.valid("query");
-      // The Event's Activities in its own Organization (readEvent filters by both), so no other Org's document is read.
-      const inEvent = new Set(activities.map((a) => a.id));
-      if (!ids.every((id) => inEvent.has(id))) {
-        throw new HTTPException(404, { message: "Not found." });
-      }
-      const rows = db
-        .select({ id: documents.id, json: documents.json })
-        .from(documents)
-        .where(and(inArray(documents.id, ids), eq(documents.kind, "activity")))
-        .all();
-      // Validated on import (ADR-0012); stored exactly as given.
-      const byId = new Map(
-        rows.map((row) => [row.id, JSON.parse(row.json) as Activity]),
-      );
-      const guides = ids.map((id) => {
-        const activity = byId.get(id);
-        if (!activity) throw new HTTPException(404, { message: "Not found." });
-        return buildActivityGuide(event, activity);
-      });
       return c.html(
-        renderActivityGuidesHtml(event, guides, {
-          twoSided: twoSided === "1",
+        renderActivityGuidesHtml(
+          event,
+          picked.map((activity) => buildActivityGuide(event, activity)),
+          { twoSided: twoSided === "1" },
+        ),
+      );
+    })
+
+    /** The supplies list for the Activities in `ids`, in that order (ADR-0028 item 10, #44). */
+    .get("/events/:eventId/supplies-list", activityIdsQuery, (c) => {
+      const { ids, perPage } = c.req.valid("query");
+      const { event, picked } = readPicked(
+        c.req.param("eventId"),
+        c.var.user.userId,
+        ids,
+      );
+      return c.html(
+        renderSuppliesListHtml(buildSuppliesList(event, picked), {
+          perPage: perPage === "1",
         }),
       );
     })

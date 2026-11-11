@@ -7,7 +7,7 @@ import { ui } from "../ui.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import { Loading, PageError } from "./ErrorMessage.tsx";
 
-/** Picks Activities and opens their guides as one print page (ADR-0028 items 8 and 9, issue #44). */
+/** Picks Activities and opens their guides, or their supplies list, as one print page (ADR-0028 items 8–10, #44). */
 export function GuidesPage() {
   const { eventId = "" } = useParams();
   const result = useQuery({
@@ -60,6 +60,15 @@ function GuidesPicker({
         query: { ids: ids.join(","), ...(twoSided ? { twoSided: "1" } : {}) },
       }),
     "Couldn't load the guides.",
+  );
+  const [perPage, setPerPage] = useState(false);
+  const supplies = useOpenHtmlInNewTab(
+    () =>
+      client.api.events[":eventId"]["supplies-list"].$get({
+        param: { eventId },
+        query: { ids: ids.join(","), ...(perPage ? { perPage: "1" } : {}) },
+      }),
+    "Couldn't load the supplies list.",
   );
 
   function set(entryIds: string[], on: boolean) {
@@ -148,6 +157,34 @@ function GuidesPicker({
         {error && (
           <p role="alert" className={ui.error}>
             {error}
+          </p>
+        )}
+      </div>
+      <div className="space-y-3">
+        <h2 className={ui.h2}>Supplies list</h2>
+        <p className={ui.muted}>
+          The same Activities&apos; supplies, per Activity (quantities
+          aren&apos;t added up).
+        </p>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={perPage}
+            onChange={(e) => setPerPage(e.target.checked)}
+          />
+          One Activity per page
+        </label>
+        <button
+          type="button"
+          className={ui.buttonQuiet}
+          disabled={ids.length === 0 || supplies.opening}
+          onClick={() => void supplies.open()}
+        >
+          Open supplies list
+        </button>
+        {supplies.error && (
+          <p role="alert" className={ui.error}>
+            {supplies.error}
           </p>
         )}
       </div>

@@ -62,7 +62,20 @@ imported Event. They are separate from the event-wide Program Guide (ADR-0018, #
    page, as v1 did. The page arithmetic is a pure function in the package, unit tested, and the page embeds that
    same function's source, so what's tested is what runs. Single-sided printing adds no blank pages and runs no script.
 
+## The supplies list (2026-11-11, #44 PR 3)
+
+10. **v1's `printSupplies`, from the Guides page,** for the same picked Activities:
+    - **Content:** each Activity in Event order, headed by its number and title. Its supplies are listed under their
+      `group` headings as sub-items, each written "item (quantity)" when a quantity is given. An Activity with none
+      reads "No supplies listed."
+    - **Two modes, as in v1:** **one Activity per page**, or **continuous**. In continuous mode an Activity longer
+      than 30 lines is split, and each later piece is headed "\<number\> \<title\> (cont.)", v1's fixed split.
+      Browsers don't say where a printed page breaks.
+    - **Per Activity, not totals:** quantities are free text ("4–5", "1 per judge"), so they can't be added up.
+    - **Generation:** pure, in `packages/program-guide` (`buildSuppliesList`, `renderSuppliesListHtml`). One
+      standalone page with no scripts.
+
 ## Consequences
 
-- The supplies list comes in #44 PR 3. Printing guides from the Collator box on the day is later, not parity (Jim, 2026-11-11).
+- Printing guides from the Collator box on the day is later, not parity (Jim, 2026-11-11).
 - The Program Guide's teasers can reuse the Markdown subset.

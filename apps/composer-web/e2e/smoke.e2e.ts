@@ -124,6 +124,16 @@ test("an Organizer prints Patrol Games guides two-sided", async ({ page }) => {
   });
   expect(starts.length).toBeGreaterThan(1);
   for (const start of starts) expect(start % 2).toBe(1);
+
+  // Issue #44 PR 3: the supplies list for the same picks, continuous by default.
+  const [supplies] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: "Open supplies list" }).click(),
+  ]);
+  await expect(supplies).toHaveTitle(/: supplies list$/);
+  await expect(supplies.locator("h2").first()).toHaveText(/^P1 /);
+  await expect(supplies.locator("h2", { hasText: /^T\d+ / })).toHaveCount(0);
+  await expect(supplies.locator("section.per-page")).toHaveCount(0);
 });
 
 test("not found replaces the whole page", async ({ page }) => {
