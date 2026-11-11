@@ -101,6 +101,24 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
 - **These are results, not scoring:** `packages/scoring` never sees them. They're kept on the box and in its backups,
   and the results bundle and awards printouts (#43, ADR-0015) read them from there.
 
+## Exhibition Final and Draft (2026-11-11, #43 PR 2)
+
+- **An Official marks an Exhibition's results final, or back to draft,** on the laptop. Each change is appended to
+  its own log on the box (who, when, optional notes), and the latest change for an Exhibition wins. An Exhibition
+  with no change logged is a draft. This log is the box's, not `packages/scoring`'s action log, because scoring never
+  sees Exhibition results (above).
+- **Finalizing freezes what the Official saw.** It names the save the Official loaded (none, when nothing was saved),
+  and the Collator refuses it as stale (409, reload) when a newer save has arrived. This is the same rule as a stale
+  `finalize` for a ranked Activity. Finalizing a final Exhibition, or putting a draft one back to draft, is refused.
+- **While an Exhibition is final, saves to its results are refused** (409: put it back to draft first). A repeat of an
+  earlier save is still a repeat.
+- **The Overview shows Final or Draft** for each Exhibition, next to its result count.
+- **Awards list final Exhibitions only.** The box adds each final Exhibition's rows, in the Official's order and with
+  the place as the Official typed it, to its Competition's section on the Awards page, after the winners registry's
+  lines. Nothing is ranked or sorted (CLAUDE.md rule 3). Awards stay **provisional** while any ranked Activity
+  isn't finalized or any Exhibition is still a draft, and the page counts both.
+- **A reset clears this log** with the results; a restore brings it back with the backup.
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge

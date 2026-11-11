@@ -70,6 +70,11 @@ Date: 2026-10-25 · Status: Accepted, amended 2026-10-30 and 2026-11-02 (see bel
   - `top-percent`: a **counted cutoff**: `ceil(percent × entrants)`, then `withinCutoff`, so everyone tied
     at the line is included. Entrants are those in the Competition's standings who aren't DQ'd. Coyote
     Creek's Top Dog is top-percent 25 over Troop Challenges.
+    **(2026-11-11, Jim, #43 PR 2) An entrant with 0 points never receives a top-percent award
+    automatically**, as in v1. The count still uses every entrant that isn't DQ'd, no-shows included (v1
+    did the same). It only matters when fewer entrants scored than the count: without it, every no-show
+    would tie at 0 inside the cutoff. A manual `set-award` can still give it. Named places are unchanged
+    (v1 skipped 0 points only for Top Dog).
   - `manual`: no automatic recipients.
 - **DQ'd entrants never receive an automatic award**, only a manual one.
 - **Manual awards and overrides** are a logged Official action, `set-award` (award, entrant, awarded
@@ -287,6 +292,7 @@ function over `scoreEvent`'s results. The printouts never rank or pick winners t
 - **Differences from v1, on purpose:**
   - v1 added "entry name" field values to a sticker line. v2 has no such field kind, and Circus 2026 had none.
   - v1's Top Dog line read "Best in Show". v2 prints the Award's label.
-  - v1 left Troops with 0 points out of Top Dog. v2 follows the Awards amendment: every entrant that isn't DQ'd
-    counts.
-  - Exhibition results join the registry once an Exhibition can be final (#43 PR 2).
+- **Exhibitions aren't in the registry:** scoring never sees their results (ADR-0027). The box adds final
+  Exhibitions to the Awards page after the registry's lines (ADR-0027, Exhibition Final and Draft).
+- **Top Dog and 0 points:** v1 left Troops with 0 points out of Top Dog, and so does v2 now (Awards amendment,
+  2026-11-11).
