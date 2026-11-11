@@ -10,7 +10,7 @@ import { loadEventCartridge } from "./load-event.ts";
 import { loadedEvent } from "./load-event.ts";
 import { loggedActions, scoringInput } from "./scoring-input.ts";
 import { scoreEvent, inRankOrder } from "@camporee-conductor/scoring";
-import type { AwardsView } from "./awards.ts";
+import type { AwardGroup, AwardsView } from "./awards.ts";
 import {
   circusCartridge,
   CLOWN_CAR,
@@ -1610,7 +1610,7 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
       ["activity", expect.any(String)],
       ["award", "Overall"],
     ]);
-    expect(patrol?.groups[0]?.lines).toEqual([
+    expect((patrol?.groups[0] as AwardGroup).lines).toEqual([
       {
         rank: 1,
         entrantId: "team-1",
@@ -1625,7 +1625,11 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
       },
     ]);
     expect(
-      patrol?.groups[1]?.lines.map((l) => [l.rank, l.place, l.entrantId]),
+      (patrol?.groups[1] as AwardGroup).lines.map((l) => [
+        l.rank,
+        l.place,
+        l.entrantId,
+      ]),
     ).toEqual([
       [1, "1st", "team-1"],
       [2, "2nd", "team-2"],
@@ -1637,7 +1641,9 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
     const troops = sections.find((s) =>
       s.groups.some((g) => g.id === GROUP_ACTIVITY),
     );
-    expect(troops?.groups.find((g) => g.id === GROUP_ACTIVITY)?.lines).toEqual([
+    expect(
+      (troops?.groups.find((g) => g.id === GROUP_ACTIVITY) as AwardGroup).lines,
+    ).toEqual([
       {
         rank: 1,
         entrantId: "group-1",
@@ -1647,7 +1653,7 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
     ]);
     // Top Dog is an Award with no place.
     const topDog = troops?.groups.find((g) => g.title === "Top Dog");
-    expect(topDog?.lines).toEqual([
+    expect((topDog as AwardGroup).lines).toEqual([
       {
         entrantId: "group-1",
         entrant: { group: "Troop 101", team: null },

@@ -1,7 +1,7 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import { desc, eq } from "drizzle-orm";
 import type { Db } from "./db/open.ts";
-import { exhibitionResultSaves } from "./db/schema.ts";
+import { exhibitionResultSaves, exhibitionStatusChanges } from "./db/schema.ts";
 import { activityFields } from "./bundle-lookup.ts";
 import { officialByEmail } from "./officials.ts";
 import {
@@ -45,6 +45,13 @@ export interface ExhibitionResultsView {
   /** The Official's name, else email. */
   savedBy: string | null;
   savedAt: string | null;
+  /** The latest status change when it made the results final; null for a draft (none, or put back to draft). */
+  final: {
+    by: string;
+    at: string;
+    saveId: string | null;
+    notes: string | null;
+  } | null;
   /** Every save, newest first. */
   history: { saveId: string; by: string; at: string; rowCount: number }[];
 }
@@ -52,6 +59,9 @@ export interface ExhibitionResultsView {
 export const MAX_ROWS = 500;
 const MAX_FIELD = 200;
 const MAX_NOTES = 1000;
+
+const FINAL_MESSAGE =
+  "These results are final; put them back to draft to change them.";
 
 const STALE: Refused = {
   ok: false,
@@ -108,6 +118,112 @@ const latestSave = (db: Db, activityId: string) =>
     .limit(1)
     .get();
 
+const latestStatus = (db: Db, activityId: string) =>
+  db
+    .select()
+    .from(exhibitionStatusChanges)
+    .where(eq(exhibitionStatusChanges.activityId, activityId))
+    .orderBy(desc(exhibitionStatusChanges.seq))
+    .limit(1)
+    .get();
+
+/** The Activity ids whose latest status change is final. */
+export function finalExhibitions(db: Db): Set<string> {
+  const latest = new Map<string, boolean>();
+  for (const c of db
+    .select()
+    .from(exhibitionStatusChanges)
+    .orderBy(exhibitionStatusChanges.seq)
+    .all()) {
+    latest.set(c.activityId, c.final);
+  }
+  return new Set([...latest].filter(([, final]) => final).map(([id]) => id));
+}
+
+/** The rows of an Exhibition's latest save, in the Official's order; empty when never saved. */
+export function latestRows(db: Db, activityId: string): ExhibitionRow[] {
+  const latest = latestSave(db, activityId);
+  return latest ? (JSON.parse(latest.rows) as ExhibitionRow[]) : [];
+}
+
+export interface ExhibitionStatusSubmission {
+  id: string;
+  /** `normalEmail()` of the Official. */
+  officialEmail: string;
+  activityId: string;
+  final: boolean;
+  /** Finalizing: the save the Official loaded (null when none). Null for back to draft. */
+  saveId: string | null;
+  notes: string | null;
+  clientCreatedAt: string;
+}
+
+const statusContent = (s: {
+  officialEmail: string;
+  activityId: string;
+  final: boolean;
+  saveId: string | null;
+  notes: string | null;
+  clientCreatedAt: string;
+}) =>
+  JSON.stringify([
+    s.officialEmail,
+    s.activityId,
+    s.final,
+    s.saveId,
+    s.notes,
+    s.clientCreatedAt,
+  ]);
+
+/**
+ * Logs marking an Exhibition's results final, or back to draft (ADR-0027, #43 PR 2). A resend of the same id and
+ * content is a repeat; the same id with other content is a conflict. Finalizing must name the latest save (or none),
+ * or it's refused as stale.
+ */
+export function recordExhibitionStatus(
+  db: Db,
+  bundle: CheckedBundle,
+  submission: ExhibitionStatusSubmission,
+): Recorded {
+  const { id, activityId, final } = submission;
+  const existing = db
+    .select()
+    .from(exhibitionStatusChanges)
+    .where(eq(exhibitionStatusChanges.id, id))
+    .get();
+  if (existing) {
+    return statusContent(existing) === statusContent(submission)
+      ? { ok: true, status: "repeat" }
+      : conflict("Exhibition status change", id);
+  }
+  const wrongKind = notExhibition(bundle, activityId);
+  if (wrongKind !== undefined) return invalid(wrongKind);
+  const isFinal = latestStatus(db, activityId)?.final ?? false;
+  if (final && isFinal) return invalid("These results are already final.");
+  if (!final && !isFinal) return invalid("These results are already a draft.");
+  if (final && (latestSave(db, activityId)?.id ?? null) !== submission.saveId) {
+    return {
+      ok: false,
+      reason: "conflict",
+      message:
+        "New results were saved since you loaded this; reload and mark final again.",
+    };
+  }
+  db.insert(exhibitionStatusChanges)
+    .values({
+      id,
+      activityId,
+      officialEmail: submission.officialEmail,
+      final,
+      saveId: final ? submission.saveId : null,
+      notes: submission.notes,
+      clientCreatedAt: submission.clientCreatedAt,
+      receivedAt: new Date(),
+    })
+    .run();
+  return { ok: true, status: "created" };
+}
+
 /** Why this Activity can't hold results, or undefined when it's an Exhibition in the Event. */
 export function notExhibition(
   bundle: CheckedBundle,
@@ -162,6 +278,9 @@ export function recordExhibitionResults(
   const wrongKind = notExhibition(bundle, activityId);
   if (wrongKind !== undefined) return invalid(wrongKind);
   if ("problem" in checked) return invalid(checked.problem);
+  if (latestStatus(db, activityId)?.final) {
+    return { ok: false, reason: "conflict", message: FINAL_MESSAGE };
+  }
   if ((latestSave(db, activityId)?.id ?? null) !== replacesId) return STALE;
   db.insert(exhibitionResultSaves)
     .values({
@@ -210,6 +329,7 @@ export function exhibitionResults(
     .orderBy(desc(exhibitionResultSaves.seq))
     .all();
   const [latest] = saves;
+  const status = latestStatus(db, activityId);
   return {
     activity: {
       id: found.activity.id,
@@ -224,6 +344,14 @@ export function exhibitionResults(
     saveId: latest?.id ?? null,
     savedBy: latest ? who(latest.officialEmail) : null,
     savedAt: latest ? latest.receivedAt.toISOString() : null,
+    final: status?.final
+      ? {
+          by: who(status.officialEmail),
+          at: status.receivedAt.toISOString(),
+          saveId: status.saveId,
+          notes: status.notes,
+        }
+      : null,
     history: saves.map((s) => ({
       saveId: s.id,
       by: who(s.officialEmail),

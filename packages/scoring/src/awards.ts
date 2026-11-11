@@ -75,12 +75,12 @@ function automatic(
             : [{ entrantId: s.entrantId, place, manual: false }];
         });
     case "top-percent": {
-      // A counted cutoff, so everyone tied at the line is included.
+      // A counted cutoff, so everyone tied at the line is included. The count takes every entrant, no-shows too,
+      // but an entrant with 0 points never gets it automatically (Awards amendment 2026-11-11, v1's Top Dog).
       const count = Math.ceil((rule.percent * eligible.length) / 100);
-      return withinCutoff(eligible, count).map((s) => ({
-        entrantId: s.entrantId,
-        manual: false,
-      }));
+      return withinCutoff(eligible, count)
+        .filter((s) => s.total > 0)
+        .map((s) => ({ entrantId: s.entrantId, manual: false }));
     }
     case "manual":
       return [];

@@ -55,6 +55,12 @@ export function ExhibitionResultsPage({
   const [problem, setProblem] = useState<string | null>(null);
   const [stale, setStale] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** The status change being sent, kept across retries. */
+  const [attemptStatus, setAttemptStatus] = useState<{
+    final: boolean;
+    id: string;
+    clientCreatedAt: string;
+  } | null>(null);
   /** The save being sent, kept across retries; dropped when the rows change. */
   const [attempt, setAttempt] = useState<{
     id: string;
@@ -122,6 +128,33 @@ export function ExhibitionResultsPage({
     edit(next);
   };
 
+  const isFinal = view.final !== null;
+
+  /** Mark final (names the save loaded) or back to draft. The id is kept for retries of the same change. */
+  const changeStatus = async (final: boolean) => {
+    const made =
+      attemptStatus?.final === final
+        ? attemptStatus
+        : { final, id: newId(), clientCreatedAt: new Date().toISOString() };
+    setAttemptStatus(made);
+    setBusy(true);
+    setProblem(null);
+    try {
+      await officialApi.setExhibitionStatus(email, activityId, made.id, {
+        final,
+        saveId: final ? view.saveId : null,
+        clientCreatedAt: made.clientCreatedAt,
+      });
+      setAttemptStatus(null);
+      await load();
+    } catch (e) {
+      setProblem(errorMessage(e));
+      setStale(e instanceof ApiError && e.status === 409);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const save = async () => {
     const made = attempt ?? {
       id: newId(),
@@ -165,6 +198,17 @@ export function ExhibitionResultsPage({
             : "Not saved yet"}
         </p>
       </div>
+      <p role="status" data-testid="exhibition-status">
+        {view.final ? (
+          <>
+            <strong>Final</strong>, marked by {view.final.by},{" "}
+            {clock(view.final.at, true)}
+            {view.final.notes ? `: ${view.final.notes}` : ""}
+          </>
+        ) : (
+          <strong>Draft</strong>
+        )}
+      </p>
       <datalist id={groupList}>
         {names(roster?.groups).map((n) => (
           <option key={n} value={n} />
@@ -195,6 +239,7 @@ export function ExhibitionResultsPage({
                     className={`${ui.input} w-full`}
                     aria-label={`Name, row ${i + 1}`}
                     value={r.participantName}
+                    disabled={isFinal}
                     onChange={(e) =>
                       change(r.key, { participantName: e.target.value })
                     }
@@ -206,6 +251,7 @@ export function ExhibitionResultsPage({
                     aria-label={`${labels.group}, row ${i + 1}`}
                     list={groupList}
                     value={r.group}
+                    disabled={isFinal}
                     onChange={(e) => change(r.key, { group: e.target.value })}
                   />
                 </td>
@@ -215,6 +261,7 @@ export function ExhibitionResultsPage({
                     aria-label={`${labels.team}, row ${i + 1}`}
                     list={teamList}
                     value={r.team}
+                    disabled={isFinal}
                     onChange={(e) => change(r.key, { team: e.target.value })}
                   />
                 </td>
@@ -223,6 +270,7 @@ export function ExhibitionResultsPage({
                     className={`${ui.input} w-28`}
                     aria-label={`Place, row ${i + 1}`}
                     value={r.place}
+                    disabled={isFinal}
                     onChange={(e) => change(r.key, { place: e.target.value })}
                   />
                 </td>
@@ -231,6 +279,7 @@ export function ExhibitionResultsPage({
                     className={`${ui.input} w-full`}
                     aria-label={`Notes, row ${i + 1}`}
                     value={r.notes}
+                    disabled={isFinal}
                     onChange={(e) => change(r.key, { notes: e.target.value })}
                   />
                 </td>
@@ -238,7 +287,7 @@ export function ExhibitionResultsPage({
                   <button
                     className={ui.link}
                     aria-label={`Move row ${i + 1} up`}
-                    disabled={i === 0}
+                    disabled={isFinal || i === 0}
                     onClick={() => move(i, -1)}
                   >
                     ↑
@@ -246,7 +295,7 @@ export function ExhibitionResultsPage({
                   <button
                     className={ui.link}
                     aria-label={`Move row ${i + 1} down`}
-                    disabled={i === rows.length - 1}
+                    disabled={isFinal || i === rows.length - 1}
                     onClick={() => move(i, 1)}
                   >
                     ↓
@@ -254,6 +303,7 @@ export function ExhibitionResultsPage({
                   <button
                     className={ui.link}
                     aria-label={`Remove row ${i + 1}`}
+                    disabled={isFinal}
                     onClick={() => edit(rows.filter((x) => x.key !== r.key))}
                   >
                     Remove
@@ -271,21 +321,40 @@ export function ExhibitionResultsPage({
           </tbody>
         </table>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <button
-          className={ui.buttonQuiet}
-          onClick={() => edit([...rows, blankRow()])}
-        >
-          Add row
-        </button>
-        <button
-          className={ui.button}
-          disabled={busy}
-          onClick={() => void save()}
-        >
-          {busy ? "Saving…" : "Save results"}
-        </button>
-      </div>
+      {isFinal ? (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className={ui.buttonQuiet}
+            disabled={busy}
+            onClick={() => void changeStatus(false)}
+          >
+            Back to draft
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            className={ui.buttonQuiet}
+            onClick={() => edit([...rows, blankRow()])}
+          >
+            Add row
+          </button>
+          <button
+            className={ui.button}
+            disabled={busy}
+            onClick={() => void save()}
+          >
+            {busy ? "Saving…" : "Save results"}
+          </button>
+          <button
+            className={ui.buttonQuiet}
+            disabled={busy || dirty}
+            onClick={() => void changeStatus(true)}
+          >
+            Mark final
+          </button>
+        </div>
+      )}
       {dirty && <p className={ui.note}>You have unsaved changes.</p>}
       {problem && (
         <div className="flex flex-col gap-2" role="alert">

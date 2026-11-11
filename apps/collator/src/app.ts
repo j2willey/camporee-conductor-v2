@@ -14,6 +14,7 @@ import {
   exhibitionResults,
   notExhibition,
   recordExhibitionResults,
+  recordExhibitionStatus,
 } from "./exhibition-results.ts";
 import { currentEpoch, epochsSince } from "./epoch.ts";
 import { resetBox } from "./reset.ts";
@@ -239,6 +240,14 @@ const ExhibitionSaveBody = z.strictObject({
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
 
+/** An Official marking an Exhibition's results final, or back to draft (#43 PR 2). Rules: exhibition-results.ts. */
+const ExhibitionStatusBody = z.strictObject({
+  final: z.boolean(),
+  saveId: PhoneId.nullable(),
+  notes: Notes.optional(),
+  clientCreatedAt: z.iso.datetime({ offset: true }),
+});
+
 /** An Official resetting the box for a rehearsal; the typed name is checked in reset.ts. */
 const ResetBody = z.strictObject({
   kind: z.enum(["scores", "full"]),
@@ -363,6 +372,27 @@ function officialRoutes(db: Db, backup: BackupConfig | null) {
           activityId: c.req.param("activityId"),
           rows,
           replacesId,
+          clientCreatedAt,
+        }),
+      );
+    },
+  );
+
+  routes.put(
+    "/exhibitions/:activityId/status/:id",
+    idParam,
+    jsonBody(ExhibitionStatusBody),
+    (c) => {
+      const { final, saveId, notes, clientCreatedAt } = c.req.valid("json");
+      return reply(
+        c,
+        recordExhibitionStatus(db, c.get("bundle"), {
+          id: c.req.valid("param").id,
+          officialEmail: normalEmail(c.get("official").email),
+          activityId: c.req.param("activityId"),
+          final,
+          saveId,
+          notes: notes ?? null,
           clientCreatedAt,
         }),
       );

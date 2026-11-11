@@ -4,6 +4,7 @@ import type { Db } from "./db/open.ts";
 import {
   activityClosures,
   exhibitionResultSaves,
+  exhibitionStatusChanges,
   groups,
   judges,
   officialActions,
@@ -66,6 +67,7 @@ export function resetBox(
     tx.delete(judges).run();
     tx.delete(officialActions).run();
     tx.delete(exhibitionResultSaves).run();
+    tx.delete(exhibitionStatusChanges).run();
     if (input.kind === "full") {
       tx.delete(teams).run();
       tx.delete(groups).run();

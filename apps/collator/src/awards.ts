@@ -1,6 +1,12 @@
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import { scoreEvent, winnersRegistry } from "@camporee-conductor/scoring";
 import type { Db } from "./db/open.ts";
+import { activityFields } from "./bundle-lookup.ts";
+import {
+  finalExhibitions,
+  latestRows,
+  type ExhibitionRow,
+} from "./exhibition-results.ts";
 import { entrantNamer } from "./official-view.ts";
 import { loggedActions, scoringInput } from "./scoring-input.ts";
 
@@ -16,6 +22,14 @@ export interface AwardLine {
   manual: boolean;
 }
 
+export interface ExhibitionAwardGroup {
+  kind: "exhibition";
+  id: string;
+  title: string;
+  /** The latest save's rows, in the Official's order; the place is as typed. */
+  rows: ExhibitionRow[];
+}
+
 export interface AwardGroup {
   kind: "activity" | "award";
   id: string;
@@ -25,13 +39,15 @@ export interface AwardGroup {
 }
 
 export interface AwardsView {
-  /** True while any ranked Activity isn't finalized: the places may change. */
+  /** True while any ranked Activity isn't finalized or any Exhibition is a draft: the places may change. */
   provisional: boolean;
   finalizedCount: number;
   rankedCount: number;
+  exhibitionCount: number;
+  exhibitionFinalCount: number;
   sections: {
     competition: { id: string; label: string };
-    groups: AwardGroup[];
+    groups: (AwardGroup | ExhibitionAwardGroup)[];
   }[];
 }
 
@@ -72,7 +88,12 @@ export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
       (line.kind === "activity" ? line.activityId : line.awardId) ?? "";
     // Consecutive lines for the same Activity or Award make a group; the registry's order is kept.
     let group = section.groups.at(-1);
-    if (!group || group.kind !== line.kind || group.id !== id) {
+    if (
+      !group ||
+      group.kind === "exhibition" ||
+      group.kind !== line.kind ||
+      group.id !== id
+    ) {
       group = { kind: line.kind, id, title: titleOf.get(id) ?? id, lines: [] };
       section.groups.push(group);
     }
@@ -88,10 +109,49 @@ export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
       manual: line.manual,
     });
   }
+
+  // Final Exhibitions, in the Event's Activity order, after each section's registry groups (CLAUDE.md rule 3).
+  const finals = finalExhibitions(db);
+  const exhibitions = bundle.activities.filter(
+    (a) => a.scoringType === "exhibition",
+  );
+  const listed = exhibitions.filter((a) => finals.has(a.id));
+  const sectionFor = (competitionId: string) => {
+    let section = sections.find((s) => s.competition.id === competitionId);
+    if (!section) {
+      const c = bundle.event.competitions.find((c) => c.id === competitionId);
+      if (!c) return undefined;
+      section = {
+        competition: { id: c.id, label: c.label },
+        groups: [],
+      };
+      // Keep Competitions in the Event's order.
+      const order = bundle.event.competitions.map((c) => c.id);
+      const at = sections.findIndex(
+        (s) => order.indexOf(s.competition.id) > order.indexOf(c.id),
+      );
+      sections.splice(at === -1 ? sections.length : at, 0, section);
+    }
+    return section;
+  };
+  for (const a of listed) {
+    const competitionId = activityFields(bundle, a.id)?.competition.id;
+    const rows = latestRows(db, a.id);
+    // Final with nothing saved: no one to award, so nothing to list.
+    if (competitionId === undefined || rows.length === 0) continue;
+    sectionFor(competitionId)?.groups.push({
+      kind: "exhibition",
+      id: a.id,
+      title: a.title,
+      rows,
+    });
+  }
   return {
-    provisional: registry.provisional,
+    provisional: registry.provisional || listed.length < exhibitions.length,
     finalizedCount: rankedResults.filter((a) => a.finalized).length,
     rankedCount: rankedResults.length,
+    exhibitionCount: exhibitions.length,
+    exhibitionFinalCount: listed.length,
     sections,
   };
 }

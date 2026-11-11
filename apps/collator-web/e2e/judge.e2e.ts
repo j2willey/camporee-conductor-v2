@@ -1356,7 +1356,7 @@ test("an Official opens Awards: provisional, a 1st place at Clown Car, and the O
   await page.getByRole("button", { name: "Awards" }).click();
   await expect(page.getByRole("heading", { name: "Awards" })).toBeVisible();
   await expect(page.getByRole("status")).toContainText(
-    /^Provisional: \d+ of \d+ Activities final\. Awards may change\.$/,
+    /^Provisional: \d+ of \d+ Activities and 0 of \d+ Exhibitions final\. Awards may change\.$/,
   );
   const clownCar = page
     .getByTestId("awards-activity")
@@ -1367,6 +1367,52 @@ test("an Official opens Awards: provisional, a 1st place at Clown Car, and the O
       .getByTestId("awards-award")
       .filter({ has: page.getByRole("heading", { name: "Overall" }) }),
   ).toBeVisible();
+});
+
+// #43 PR 2: an Official marks an Exhibition's results final: the save controls go, the Overview says Final, Awards
+// lists it; Back to draft makes it editable again.
+test("an Official marks an Exhibition final, sees it on Awards, then puts it back to draft", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "William Tell No Apple" }).click();
+  await expect(page.getByTestId("exhibition-status")).toContainText("Draft");
+
+  await page.getByRole("button", { name: "Mark final" }).click();
+  await expect(page.getByTestId("exhibition-status")).toContainText("Final");
+  await expect(page.getByTestId("exhibition-status")).toContainText(
+    "lead.judge@example.com",
+  );
+  await expect(page.getByRole("button", { name: "Save results" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("button", { name: "Add row" })).toHaveCount(0);
+  await expect(page.getByLabel("Name, row 1")).toBeDisabled();
+
+  await page.getByRole("button", { name: "← Overview" }).click();
+  await expect(
+    page.getByRole("row", { name: /William Tell No Apple/ }),
+  ).toContainText("Final");
+  await page.getByRole("button", { name: "Awards" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    /and 1 of \d+ Exhibitions final/,
+  );
+  const tell = page.getByTestId("awards-exhibition").filter({
+    has: page.getByRole("heading", { name: "William Tell No Apple" }),
+  });
+  await expect(tell).toContainText("Sam Shooter");
+  await expect(tell).toContainText("Alex Archer");
+
+  await page.getByRole("button", { name: "← Overview" }).click();
+  await page.getByRole("button", { name: "William Tell No Apple" }).click();
+  await page.getByRole("button", { name: "Back to draft" }).click();
+  await expect(page.getByTestId("exhibition-status")).toContainText("Draft");
+  await expect(
+    page.getByRole("button", { name: "Save results" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Name, row 1")).toBeEnabled();
 });
 
 test("an Official resets scores: the typed name enables the button, a backup is saved, scores are gone", async ({

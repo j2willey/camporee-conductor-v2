@@ -127,7 +127,8 @@ export function OfficialOverview({
                       </td>
                       {a.scoringType === "exhibition" ? (
                         <td className="px-3 py-2" colSpan={2}>
-                          {plural(a.resultCount ?? 0, "result", "results")}
+                          {plural(a.resultCount ?? 0, "result", "results")},{" "}
+                          {a.final ? "Final" : "Draft"}
                         </td>
                       ) : (
                         <>

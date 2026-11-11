@@ -28,6 +28,7 @@ type Table =
   | "judges"
   | "official_actions"
   | "exhibition_result_saves"
+  | "exhibition_status_changes"
   | "groups"
   | "teams"
   | "roster_changes"
@@ -132,6 +133,16 @@ async function rehearsal() {
       )
     ).status,
   ).toBe(201);
+  expect(
+    (
+      await send(
+        "PUT",
+        `/api/official/exhibitions/${archery}/status/f1`,
+        { final: true, saveId: "x1", clientCreatedAt: "2027-05-15T12:01:00Z" },
+        OFFICIAL,
+      )
+    ).status,
+  ).toBe(201);
   await send(
     "PUT",
     "/api/official/roster-changes/r1",
@@ -143,6 +154,7 @@ async function rehearsal() {
   );
   expect(count("score_entries")).toBe(1);
   expect(count("roster_changes")).toBe(1);
+  expect(count("exhibition_status_changes")).toBe(1);
 }
 
 const reset = (body: unknown, email: string | null = OFFICIAL) =>
@@ -239,6 +251,7 @@ describe("POST /api/official/reset", () => {
       "judges",
       "official_actions",
       "exhibition_result_saves",
+      "exhibition_status_changes",
     ] as const) {
       expect(count(t), t).toBe(0);
     }
@@ -270,6 +283,7 @@ describe("POST /api/official/reset", () => {
       "judges",
       "official_actions",
       "exhibition_result_saves",
+      "exhibition_status_changes",
       "groups",
       "teams",
       "roster_changes",
