@@ -218,6 +218,23 @@ export const exhibitionStatusChanges = sqliteTable(
 );
 
 /**
+ * Award sticker label settings (ADR-0027, #43 PR 3): each save is the whole label, as the Event's
+ * `presentation.awardLabel` shape. Append-only; the newest row is the current label. Setup, not results, so a reset
+ * keeps it.
+ */
+export const awardLabelSaves = sqliteTable("award_label_saves", {
+  seq: integer("seq").primaryKey({ autoIncrement: true }),
+  id: text("id").notNull().unique(),
+  /** `normalEmail()` of who saved it. */
+  officialEmail: text("official_email").notNull(),
+  /** JSON: an `AwardLabel`. */
+  label: text("label").notNull(),
+  /** The laptop's clock, for information. */
+  clientCreatedAt: text("client_created_at").notNull(),
+  receivedAt: integer("received_at", { mode: "timestamp_ms" }).notNull(),
+});
+
+/**
  * The box epoch log (#66, ADR-0027): a random id and a reason each time the database is created, restored from a
  * backup or reset. Append-only; the newest row is the current epoch. Phones compare epochs to know whether the box
  * lost scores (restore: resend) or was cleared on purpose (reset: don't).

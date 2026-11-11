@@ -34,7 +34,8 @@ type Table =
   | "roster_changes"
   | "event_documents"
   | "cartridge_loads"
-  | "added_officials";
+  | "added_officials"
+  | "award_label_saves";
 
 let dir: string;
 let stick: string;
@@ -152,15 +153,42 @@ async function rehearsal() {
     },
     OFFICIAL,
   );
+  const label = (await (
+    await send("GET", "/api/official/award-label", undefined, OFFICIAL)
+  ).json()) as { label: unknown };
+  expect(
+    (
+      await send(
+        "PUT",
+        "/api/official/award-label/l1",
+        { label: label.label, clientCreatedAt: "2027-05-15T12:00:00Z" },
+        OFFICIAL,
+      )
+    ).status,
+  ).toBe(201);
   expect(count("score_entries")).toBe(1);
   expect(count("roster_changes")).toBe(1);
   expect(count("exhibition_status_changes")).toBe(1);
+  expect(count("award_label_saves")).toBe(1);
 }
+
+const resetKeepsLabel = async (kind: "scores" | "full") => {
+  await rehearsal();
+  const title = loadedEvent(db)?.manifest.event.title ?? "";
+  expect((await reset({ kind, confirm: title })).status).toBe(200);
+  expect(count("award_label_saves")).toBe(1);
+};
 
 const reset = (body: unknown, email: string | null = OFFICIAL) =>
   send("POST", "/api/official/reset", body, email ?? undefined);
 
 describe("POST /api/official/reset", () => {
+  it("reset scores keeps the sticker label settings (setup, not results)", () =>
+    resetKeepsLabel("scores"));
+
+  it("full reset keeps the sticker label settings too", () =>
+    resetKeepsLabel("full"));
+
   it("refuses a wrong confirmation with a 400 and changes nothing", async () => {
     await rehearsal();
     const epoch = currentEpoch(db).id;

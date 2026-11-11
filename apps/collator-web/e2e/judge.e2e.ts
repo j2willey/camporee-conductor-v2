@@ -1369,6 +1369,84 @@ test("an Official opens Awards: provisional, a 1st place at Clown Car, and the O
   ).toBeVisible();
 });
 
+// #43 PR 3: an Official prints award stickers from Awards: v1's four lines, a label setting saved on the box and kept
+// across a reload, one Competition at a time, nothing fetched from outside the box, and only the sheet in print.
+// Leaves the box's label as the Event had it (the same words saved back).
+test("an Official opens Print stickers: four lines, a saved label line, one Competition, nothing off the box, and only the sheet prints", async ({
+  page,
+}) => {
+  const boxHost = new URL(String(test.info().project.use.baseURL)).host;
+  const strangers: string[] = [];
+  page.on("request", (req) => {
+    const url = new URL(req.url());
+    if (!["http:", "https:"].includes(url.protocol)) return;
+    if (url.host !== boxHost) {
+      strangers.push(req.url());
+    }
+  });
+  await page.addInitScript(() => {
+    window.print = () => {};
+  });
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Awards", exact: true }).click();
+  await page.getByRole("button", { name: "Print stickers" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Award stickers" }),
+  ).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Provisional");
+  await expect(page.getByTestId("label-source")).toHaveText("From the Event.");
+
+  const clownCar = page
+    .getByTestId("sticker")
+    .filter({ hasText: "Clown Car" })
+    .first();
+  await expect(clownCar).toContainText("Coyote Creek Camporee 2026");
+  await expect(clownCar).toContainText("The Circus");
+  await expect(clownCar).toContainText(/1st Place - \S/);
+
+  // Line 2 changes live, then is saved on the box and kept across a reload.
+  await page.getByLabel("Line 2", { exact: true }).fill("Under the Big Top");
+  await expect(clownCar).toContainText("Under the Big Top");
+  await expect(page.getByTestId("label-source")).toContainText("Not saved yet");
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByTestId("label-source")).toContainText(
+    "Saved by lead.judge@example.com",
+  );
+  await page.reload();
+  await page.getByRole("button", { name: "Awards", exact: true }).click();
+  await page.getByRole("button", { name: "Print stickers" }).click();
+  await expect(page.getByLabel("Line 2", { exact: true })).toHaveValue(
+    "Under the Big Top",
+  );
+
+  // One Competition at a time.
+  const all = await page.getByTestId("sticker").count();
+  await page.getByLabel("Competition").selectOption({ label: "Patrol Games" });
+  const some = await page.getByTestId("sticker").count();
+  expect(some).toBeGreaterThan(0);
+  // Only Patrol Games has awards yet (its Exhibitions are drafts), so the sheet is the same size.
+  expect(some).toBe(all);
+  await expect(
+    page.getByTestId("sticker").filter({ hasText: "Clown Car" }).first(),
+  ).toBeVisible();
+
+  // The Print button prints (stubbed here); in print only the sheet shows.
+  await page.getByRole("button", { name: "Print", exact: true }).click();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByTestId("sticker-controls")).toBeHidden();
+  await expect(page.getByTestId("sticker-sheet")).toBeVisible();
+  await expect(page.getByText("Signed in as")).toBeHidden();
+  await page.emulateMedia({ media: "screen" });
+
+  // Put the label back as the Event had it.
+  await page.getByLabel("Line 2", { exact: true }).fill("The Circus");
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByTestId("label-source")).toContainText("Saved by");
+  expect(strangers).toEqual([]);
+});
+
 // #43 PR 2: an Official marks an Exhibition's results final: the save controls go, the Overview says Final, Awards
 // lists it; Back to draft makes it editable again.
 test("an Official marks an Exhibition final, sees it on Awards, then puts it back to draft", async ({

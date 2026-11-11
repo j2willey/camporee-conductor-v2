@@ -41,3 +41,4 @@ export type {
   ExhibitionResultsView,
   ExhibitionRow,
 } from "./exhibition-results.ts";
+export type { AwardLabel, AwardLabelView } from "./award-label.ts";

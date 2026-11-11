@@ -10,6 +10,7 @@ import {
   saveOfficialEmail,
 } from "./official-identity.ts";
 import { AwardsPage } from "./screens/AwardsPage.tsx";
+import { StickersPage } from "./screens/StickersPage.tsx";
 import { ExhibitionResultsPage } from "./screens/ExhibitionResultsPage.tsx";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialOverview } from "./screens/OfficialOverview.tsx";
@@ -36,6 +37,7 @@ export function OfficialApp() {
   const [printing, setPrinting] = useState(false);
   const [standings, setStandings] = useState(false);
   const [awardsOpen, setAwardsOpen] = useState(false);
+  const [stickersOpen, setStickersOpen] = useState(false);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
 
@@ -74,6 +76,7 @@ export function OfficialApp() {
     setPrinting(false);
     setStandings(false);
     setAwardsOpen(false);
+    setStickersOpen(false);
     setRosterOpen(false);
     setResetting(false);
     setProblem(null);
@@ -123,8 +126,14 @@ export function OfficialApp() {
           labels={event.event.labels}
           onBack={() => setStandings(false)}
         />
+      ) : awardsOpen && stickersOpen ? (
+        <StickersPage email={email} onBack={() => setStickersOpen(false)} />
       ) : awardsOpen ? (
-        <AwardsPage email={email} onBack={() => setAwardsOpen(false)} />
+        <AwardsPage
+          email={email}
+          onBack={() => setAwardsOpen(false)}
+          onStickers={() => setStickersOpen(true)}
+        />
       ) : resetting ? (
         <ResetPage
           email={email}

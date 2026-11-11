@@ -10,14 +10,16 @@ import {
 
 /**
  * Awards (#43 PR 1): who places at each Activity and who receives each Award, from the box's winners registry
- * (packages/scoring). Provisional until every Activity is final. Plain; stickers and the script come later.
+ * (packages/scoring). Provisional until every Activity is final. Stickers print from here (StickersPage); the script comes later.
  */
 export function AwardsPage({
   email,
   onBack,
+  onStickers,
 }: {
   email: string;
   onBack: () => void;
+  onStickers: () => void;
 }) {
   const [view, setView] = useState<AwardsView | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -39,6 +41,9 @@ export function AwardsPage({
         ← Overview
       </button>
       <h1 className={ui.h1}>Awards</h1>
+      <button className={`${ui.buttonQuiet} self-start`} onClick={onStickers}>
+        Print stickers
+      </button>
       {problem && (
         <p className={ui.error} role="alert">
           {problem}

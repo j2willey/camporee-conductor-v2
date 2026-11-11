@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { BackupConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
+import { awardLabelView, recordAwardLabel } from "./award-label.ts";
 import { recordClosure } from "./closures.ts";
 import {
   exhibitionResults,
@@ -248,6 +249,12 @@ const ExhibitionStatusBody = z.strictObject({
   clientCreatedAt: z.iso.datetime({ offset: true }),
 });
 
+/** An Official saving the sticker label settings (#43 PR 3). Rules (fonts, sizes) are checked in award-label.ts. */
+const AwardLabelBody = z.strictObject({
+  label: z.unknown(),
+  clientCreatedAt: z.iso.datetime({ offset: true }),
+});
+
 /** An Official resetting the box for a rehearsal; the typed name is checked in reset.ts. */
 const ResetBody = z.strictObject({
   kind: z.enum(["scores", "full"]),
@@ -325,6 +332,23 @@ function officialRoutes(db: Db, backup: BackupConfig | null) {
   );
 
   routes.get("/awards", (c) => c.json(officialAwards(db, c.get("bundle"))));
+
+  routes.get("/award-label", (c) =>
+    c.json(awardLabelView(db, c.get("bundle"))),
+  );
+
+  routes.put("/award-label/:id", idParam, jsonBody(AwardLabelBody), (c) => {
+    const { label, clientCreatedAt } = c.req.valid("json");
+    return reply(
+      c,
+      recordAwardLabel(db, {
+        id: c.req.valid("param").id,
+        officialEmail: normalEmail(c.get("official").email),
+        label,
+        clientCreatedAt,
+      }),
+    );
+  });
 
   routes.get("/roster", (c) => c.json(officialRoster(db, c.get("bundle"))));
 

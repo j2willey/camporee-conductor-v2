@@ -5,6 +5,8 @@ import {
   type JudgeEvent,
   type OfficialActivity,
   type OfficialEvent,
+  type AwardLabel,
+  type AwardLabelView,
   type AwardsView,
   type CompetitionStandingsView,
   type ExhibitionResultsView,
@@ -106,6 +108,26 @@ export const officialApi = {
     asOfficial<CompetitionStandingsView[]>(email, "/standings"),
   /** The winners registry with names: who places at each Activity and who receives each Award (#43). */
   awards: (email: string) => asOfficial<AwardsView>(email, "/awards"),
+  /** The sticker label settings: the Event's until an Official saves another on the box (#43 PR 3). */
+  awardLabel: (email: string) =>
+    asOfficial<AwardLabelView>(email, "/award-label"),
+  /** Save the sticker label settings. Resending the same id is safe: the box answers "repeat". */
+  saveAwardLabel: (
+    email: string,
+    id: string,
+    body: { label: AwardLabel; clientCreatedAt: string },
+  ) =>
+    call<{ status: "created" | "repeat" }>(
+      `/api/official/award-label/${encodeURIComponent(id)}`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+          [OFFICIAL_EMAIL_HEADER]: email,
+        },
+        body: JSON.stringify(body),
+      },
+    ),
   /** The roster as Officials see it, with what is merged and the log (#42 PR 6). */
   roster: (email: string) => asOfficial<OfficialRoster>(email, "/roster"),
   /** Add, rename, merge or unmerge a Group or Team. Resending the same id is safe: the box answers "repeat". */

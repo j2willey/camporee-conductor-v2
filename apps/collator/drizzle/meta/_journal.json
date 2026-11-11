@@ -64,6 +64,13 @@
       "when": 1794409279777,
       "tag": "0008_exhibition_status",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1794412934516,
+      "tag": "0009_award_label",
+      "breakpoints": true
     }
   ]
 }
