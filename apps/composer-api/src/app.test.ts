@@ -1,3 +1,4 @@
+import { escapeHtml } from "@camporee-conductor/program-guide";
 import { eq, sql } from "drizzle-orm";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -717,6 +718,56 @@ describe("Events", () => {
           (await page("bob@example.com", guidesPath(`${id},${bad}`))).status,
         ).toBe(404);
       }
+    });
+
+    describe("the supplies list (ADR-0028 item 10)", () => {
+      const suppliesPath = (ids: string) =>
+        `/api/events/${EVENT_ID}/supplies-list${ids === "" ? "" : `?ids=${ids}`}`;
+
+      it("serves a viewer the picked Activities' supplies, in the order of ids", async () => {
+        const [a, b] = [activityIds[3], activityIds[1]] as [string, string];
+        const res = await page("bob@example.com", suppliesPath(`${a},${b}`));
+        expect(res.status).toBe(200);
+        expect(res.contentType).toMatch(/^text\/html/);
+        expect(res.text).toMatch(/<title>.*: supplies list<\/title>/);
+        expect(res.text).not.toContain("<script");
+        // Titles are escaped on the page ("Lady's" → "Lady&#39;s").
+        const at = (id: string) => res.text.indexOf(escapeHtml(titleOf(id)));
+        expect(at(a)).toBeGreaterThan(-1);
+        expect(at(a)).toBeLessThan(at(b));
+        expect(res.text).not.toContain('class="entry per-page"');
+      });
+
+      it("puts each Activity on its own page when asked", async () => {
+        const ids = `${activityIds[0]},${activityIds[1]}`;
+        const res = await page(
+          "bob@example.com",
+          `${suppliesPath(ids)}&perPage=1`,
+        );
+        expect(res.status).toBe(200);
+        expect(res.text.match(/class="entry per-page"/g)).toHaveLength(2);
+        expect(
+          (await page("bob@example.com", `${suppliesPath(ids)}&perPage=no`))
+            .status,
+        ).toBe(400);
+      });
+
+      it("is 400 without ids, 404 for a foreign id, 401 signed out", async () => {
+        expect((await page("bob@example.com", suppliesPath(""))).status).toBe(
+          400,
+        );
+        expect(
+          (
+            await page(
+              "bob@example.com",
+              suppliesPath(`${activityIds[0]},${EVENT_ID}`),
+            )
+          ).status,
+        ).toBe(404);
+        expect(
+          (await page(null, suppliesPath(activityIds[0] as string))).status,
+        ).toBe(401);
+      });
     });
 
     it("is 404 to someone who isn't a member, 401 to nobody", async () => {
