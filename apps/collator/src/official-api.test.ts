@@ -1662,6 +1662,38 @@ describe("GET /api/official/awards: the winners registry with names (#43 PR 1)",
     ]);
   });
 
+  it("each line carries its score, looked up from scoring: the entry's total, or the standing's (#43 PR 4)", async () => {
+    const { sections } = await awards();
+    const bundle = loadedEvent(db)?.bundle;
+    if (!bundle) throw new Error("no Event");
+    const results = scoreEvent(scoringInput(db, bundle));
+    const patrol = sections.find((s) =>
+      s.groups.some((g) => g.id === CLOWN_CAR.id),
+    );
+    const activity = patrol?.groups[0] as AwardGroup;
+    const entries = results.activities.find(
+      (a) => a.activityId === CLOWN_CAR.id,
+    )?.entries;
+    expect(activity.lines.length).toBeGreaterThan(0);
+    for (const line of activity.lines) {
+      const total = entries?.find((e) => e.entrantId === line.entrantId)?.total;
+      expect(total).toEqual(expect.any(Number));
+      expect(line.total).toBe(total);
+    }
+    const overall = patrol?.groups[1] as AwardGroup;
+    const standings = results.standings.find(
+      (s) => s.competitionId === patrol?.competition.id,
+    );
+    expect(overall.lines.length).toBeGreaterThan(0);
+    for (const line of overall.lines) {
+      const total = standings?.entrants.find(
+        (e) => e.entrantId === line.entrantId,
+      )?.total;
+      expect(total).toEqual(expect.any(Number));
+      expect(line.total).toBe(total);
+    }
+  });
+
   it("one finalized Activity counts as one final, and the Event is still provisional", async () => {
     db.insert(officialActions)
       .values({
