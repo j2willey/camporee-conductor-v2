@@ -136,12 +136,14 @@ export function officialAwards(db: Db, bundle: CheckedBundle): AwardsView {
   };
   for (const a of listed) {
     const competitionId = activityFields(bundle, a.id)?.competition.id;
-    if (competitionId === undefined) continue;
+    const rows = latestRows(db, a.id);
+    // Final with nothing saved: no one to award, so nothing to list.
+    if (competitionId === undefined || rows.length === 0) continue;
     sectionFor(competitionId)?.groups.push({
       kind: "exhibition",
       id: a.id,
       title: a.title,
-      rows: latestRows(db, a.id),
+      rows,
     });
   }
   return {
