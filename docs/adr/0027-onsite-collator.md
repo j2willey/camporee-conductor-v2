@@ -119,6 +119,31 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
   isn't finalized or any Exhibition is still a draft, and the page counts both.
 - **A reset clears this log** with the results; a restore brings it back with the backup.
 
+## Award stickers (2026-11-11, #43 PR 3)
+
+- **Printed from the laptop's browser, not as a PDF.** v1 printed an HTML table, not a fixed label template, and that
+  is what was printed in May. A PDF would add a library and gain nothing for parity. The layout is v1's: 3
+  stickers across, cells 3.3in wide, 0.5in page margins. Each row of 3 stays together on a page, and a gap follows
+  each Activity or Award.
+- **Four lines, as in v1:** line 1 and line 2 (typed, left out when empty), the Activity's title (or the Award's
+  label, or the Exhibition's title), and the winner.
+- **The winner line** keeps v1's shape, with the roster's names instead of v1's "T101":
+  - an Activity place reads "1st Place - Troop 101 Flaming Arrows";
+  - a named place reads "Gold Axe - Troop 101 Flaming Arrows"; a place name that is already an ordinal gets
+    " Place", so the Overall Award reads "1st Place - …" as v1's overall stickers did;
+  - an Award with no places (Top Dog) reads "Top Dog - Troop 101" (v1 printed "Best in Show", ADR-0019 registry);
+  - a final Exhibition row reads "1st - Jane Doe, Troop 101", with the place as the Official typed it.
+  The words are the laptop's (`winners-text.ts`); places and recipients come from the Awards view, unsorted.
+- **What prints:** the Awards view's lines (the winners registry plus final Exhibitions), for one Competition or
+  all of them, as v1 printed one view at a time. While Awards are provisional, the page says so on screen; it
+  doesn't stop printing.
+- **Label settings are the box's, set on the day.** Line 1, line 2, "one font for all lines", and a font, size and
+  bold per line. They start as the Event's `presentation.awardLabel` and are saved on the box in an append-only log,
+  latest wins, in the same shape (validated by `AwardLabelSchema`). The Event document is never edited (CLAUDE.md
+  rule 5). Fonts are v1's list of system fonts, so nothing is fetched. Sizes are 6–36pt. A reset keeps the
+  settings, because they're setup, not results.
+- **Offline:** the page loads nothing from outside the box. An e2e test fails on any request off the box.
+
 ## Recovery and after the event
 
 11. **The box backs up to a USB stick every few minutes.** A replacement box loaded with the same cartridge
