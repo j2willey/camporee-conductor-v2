@@ -485,6 +485,15 @@ describe("Final and Draft (#43 PR 2)", () => {
       ).toBe(false);
     });
 
+    it("a final Exhibition with no results counts as final but has nothing to list", async () => {
+      await status("st-1", true, null);
+      const a = officialAwards(db, bundleOf());
+      expect(a.exhibitionFinalCount).toBe(1);
+      expect(
+        a.sections.flatMap((s) => s.groups).some((g) => g.kind === "exhibition"),
+      ).toBe(false);
+    });
+
     it("is not provisional because of Exhibitions once all are final", async () => {
       for (const [i, e] of exhibitions().entries()) {
         await status(`st-${i}`, true, null, { activityId: e.id });
