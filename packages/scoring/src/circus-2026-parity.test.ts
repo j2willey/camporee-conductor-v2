@@ -12,6 +12,7 @@ import {
 } from "../scripts/v1-golden.ts";
 import {
   scoreEvent,
+  winnersRegistry,
   type EntryResult,
   type OfficialAction,
   type Standing,
@@ -159,6 +160,48 @@ describe("Circus 2026 parity with v1's Officials' results", () => {
     expect([...perActivity, ...overall].sort()).toEqual(
       printed.map((s) => `${s.gameId} ${place(s.rank)} ${s.entityId}`).sort(),
     );
+  });
+});
+
+describe("Circus 2026 winners registry (#43)", () => {
+  const registry = winnersRegistry(
+    circus.input.event,
+    results,
+    circus.input.activities,
+  );
+  const patrolGames = circus.competitionIdOf("patrol-games");
+  const gameOf = new Map(
+    printed
+      .filter((s) => s.gameId !== "OVERALL")
+      .map((s) => [circus.activityIdOf(s.gameId), s.gameId]),
+  );
+  const overall = circus.input.event.awards?.find((a) => a.slug === "overall");
+
+  it("lists Patrol Games exactly as the 63 award stickers printed at the event", () => {
+    expect(
+      registry.lines
+        .filter((l) => l.competitionId === patrolGames)
+        .map((l) =>
+          l.kind === "activity"
+            ? `${gameOf.get(l.activityId ?? "") ?? l.activityId} ${l.rank} ${l.entrantId}`
+            : `${l.awardId === overall?.id ? "OVERALL" : l.awardId} ${l.rank} ${l.entrantId}`,
+        )
+        .sort(),
+    ).toEqual(
+      printed.map((s) => `${s.gameId} ${place(s.rank)} ${s.entityId}`).sort(),
+    );
+  });
+
+  it("is provisional: the as-run data has no finalize actions", () => {
+    expect(registry.provisional).toBe(true);
+  });
+
+  it("has 27 Troop Challenges places and no Awards (Top Dog was a game as run)", () => {
+    const troops = registry.lines.filter(
+      (l) => l.competitionId === circus.competitionIdOf("troop-challenges"),
+    );
+    expect(troops.filter((l) => l.kind === "award")).toHaveLength(0);
+    expect(troops.filter((l) => l.kind === "activity")).toHaveLength(27);
   });
 });
 
