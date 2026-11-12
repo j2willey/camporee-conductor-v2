@@ -15,6 +15,8 @@ export type ContentSource = "event" | "venue" | "organization" | "theme";
 export type GuideBlock =
   | { kind: "cover"; title: string; lines: string[] }
   | { kind: "paragraph"; text: string }
+  /** Text the Event supplies in Markdown, e.g. its introduction (the ADR-0028 subset). */
+  | { kind: "markdown"; text: string }
   | { kind: "list"; items: string[] }
   /** Content not in the design yet: names its source and what it will hold. */
   | { kind: "stub"; source: ContentSource; holds: string };
@@ -132,13 +134,28 @@ export function buildGuide(event: Event, activities: GuideActivity[]): Guide {
       : text;
   };
 
+  const dates = formatDates(event.startDate, event.endDate);
+  const venueName = event.venue?.name.trim() ?? "";
+  const venueAddress = event.venue?.address.trim() ?? "";
   const coverLines = [
     ...(theme === undefined ? [] : [theme]),
     ...(event.year === undefined ? [] : [String(event.year)]),
     ...(event.organizerName === undefined
       ? []
       : [`Organizer: ${event.organizerName}`]),
+    ...(dates === undefined ? [] : [dates]),
+    ...(venueName === "" ? [] : [venueName]),
+    ...(venueName === "" || venueAddress === "" ? [] : [venueAddress]),
   ];
+  const coverStub =
+    dates === undefined && venueName === ""
+      ? [stub("event", "dates and venue")]
+      : dates === undefined
+        ? [stub("event", "the dates")]
+        : venueName === ""
+          ? [stub("event", "the venue")]
+          : [];
+  const introduction = event.introduction?.trim() ?? "";
   const skills = event.programGuide?.skills ?? [];
   const awards = event.awards ?? [];
 
@@ -150,7 +167,7 @@ export function buildGuide(event: Event, activities: GuideActivity[]): Guide {
       dependsOnTheme: true,
       blocks: [
         { kind: "cover", title: event.title, lines: coverLines },
-        stub("event", "dates and venue"),
+        ...coverStub,
       ],
     },
     {
@@ -159,7 +176,9 @@ export function buildGuide(event: Event, activities: GuideActivity[]): Guide {
       level: 1,
       dependsOnTheme: false,
       blocks: [
-        stub("organization", "a welcome to units and what the guide covers"),
+        introduction === ""
+          ? stub("organization", "a welcome to units and what the guide covers")
+          : { kind: "markdown", text: event.introduction ?? "" },
       ],
     },
     {
@@ -360,4 +379,51 @@ function ordinal(n: number): string {
       ? "th"
       : (["th", "st", "nd", "rd"][n % 10] ?? "th");
   return `${n}${suffix}`;
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/**
+ * An Event's dates as people write them: "May 14–16, 2027", "May 30 – June 1, 2027", or across years in full.
+ * Read as calendar dates (no time zone). Undefined when there are none.
+ */
+export function formatDates(
+  start: string | undefined,
+  end: string | undefined,
+): string | undefined {
+  const parts = (iso: string) => {
+    const [y = "", m = "", d = ""] = iso.split("-");
+    return {
+      year: y,
+      month: MONTHS[Number(m) - 1] ?? m,
+      day: String(Number(d)),
+    };
+  };
+  if (start === undefined && end === undefined) return undefined;
+  if (start === undefined) {
+    const e = parts(end ?? "");
+    return `Until ${e.month} ${e.day}, ${e.year}`;
+  }
+  const s = parts(start);
+  const full = (p: typeof s) => `${p.month} ${p.day}, ${p.year}`;
+  if (end === undefined || end === start) return full(s);
+  const e = parts(end);
+  if (s.year !== e.year) return `${full(s)} – ${full(e)}`;
+  if (s.month !== e.month) {
+    return `${s.month} ${s.day} – ${e.month} ${e.day}, ${e.year}`;
+  }
+  return `${s.month} ${s.day}–${e.day}, ${e.year}`;
 }

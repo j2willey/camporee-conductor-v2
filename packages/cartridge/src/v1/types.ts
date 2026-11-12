@@ -60,6 +60,16 @@ export interface V1Camporee {
     year: number;
     director: string;
     camporeeId: string;
+    /** The Composer's Event details (v1 composer.js); any may be missing or empty. */
+    location?: { name?: string; address?: string };
+    introduction?: string;
+    contacts?: {
+      role?: string;
+      name?: string;
+      email?: string;
+      phone?: string;
+    }[];
+    dates?: { start?: string; end?: string };
     theme_colors: { main: string; header: string; accent: string };
     awards_config: {
       line1: string;

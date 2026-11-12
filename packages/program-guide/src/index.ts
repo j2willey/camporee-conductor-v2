@@ -1,5 +1,6 @@
 export {
   buildGuide,
+  formatDates,
   type ContentSource,
   type Guide,
   type GuideActivity,

@@ -442,3 +442,37 @@ test("an owner edits the Event details", async ({ page }) => {
     "Knots",
   );
 });
+
+// #6 PR 8: venue, introduction and contacts, and the Program Guide using them.
+test("an owner adds the venue, introduction and a contact", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "Event details" }).click();
+
+  await page.getByLabel("Venue", { exact: true }).fill("Camp Chesebrough");
+  await page.getByLabel(/^Introduction/).fill("Welcome to the **Big Top**!");
+  await page.getByRole("button", { name: "+ Add contact" }).click();
+  await page.getByLabel("Role of contact 1").fill("Camporee Director");
+  await page.getByLabel("Name of contact 1").fill("Pat Example");
+  await page.getByLabel("Email of contact 1").fill("pat@example.com");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+
+  await page.reload();
+  await expect(page.getByLabel("Name of contact 1")).toHaveValue("Pat Example");
+
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  const [guide] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: "Program Guide" }).click(),
+  ]);
+  await expect(guide.getByText("Camp Chesebrough")).toBeVisible();
+  await expect(guide.locator("strong", { hasText: "Big Top" })).toBeVisible();
+});

@@ -40,6 +40,52 @@
     "organizerName": {
       "type": "string"
     },
+    "venue": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "address"
+      ],
+      "additionalProperties": false
+    },
+    "introduction": {
+      "type": "string"
+    },
+    "contacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "name",
+          "email",
+          "phone"
+        ],
+        "additionalProperties": false
+      }
+    },
     "terminology": {
       "type": "object",
       "properties": {

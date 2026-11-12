@@ -17,6 +17,7 @@ export {
 } from "./v1/overlay.ts";
 export {
   checkEventBundle,
+  stripPersonalData,
   withoutDisabledActivities,
   type BundleCheck,
   type CheckedBundle,

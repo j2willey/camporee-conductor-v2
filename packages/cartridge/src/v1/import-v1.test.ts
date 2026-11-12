@@ -311,6 +311,67 @@ describe("importV1Cartridge: the Event", () => {
     expect(event).not.toHaveProperty("awards");
   });
 
+  it("carries v1's location, introduction, contacts and dates (ADR-0029 item 8)", () => {
+    const withMeta = camporee();
+    withMeta.meta = {
+      ...withMeta.meta,
+      location: { name: "Camp Chesebrough", address: "" },
+      introduction: "Welcome, **units**!",
+      contacts: [
+        { role: "Director", name: "Pat", email: "pat@example.com", phone: "" },
+        { role: "Registrar", name: "Sam" },
+      ],
+      dates: { start: "2027-05-14", end: "2027-05-16" },
+    };
+    const { event, notes } = run({ camporee: withMeta });
+    expect(event).toMatchObject({
+      venue: { name: "Camp Chesebrough", address: "" },
+      introduction: "Welcome, **units**!",
+      contacts: [
+        { role: "Director", name: "Pat", email: "pat@example.com", phone: "" },
+        { role: "Registrar", name: "Sam", email: "", phone: "" },
+      ],
+      startDate: "2027-05-14",
+      endDate: "2027-05-16",
+    });
+    expect(notes).toEqual([]);
+  });
+
+  it("adds none of them when v1 has none", () => {
+    const { event } = run();
+    for (const key of [
+      "venue",
+      "introduction",
+      "contacts",
+      "startDate",
+      "endDate",
+    ]) {
+      expect(event).not.toHaveProperty(key);
+    }
+  });
+
+  it("leaves out a v1 date that isn't a date, or an end before the start, with a note", () => {
+    const withDates = camporee();
+    withDates.meta = {
+      ...withDates.meta,
+      dates: { start: "May 14", end: "" },
+    };
+    const odd = run({ camporee: withDates });
+    expect(odd.event).not.toHaveProperty("startDate");
+    expect(odd.event).not.toHaveProperty("endDate");
+    expect(odd.notes).toEqual([
+      'Left out v1\'s start date "May 14": not a date (YYYY-MM-DD).',
+    ]);
+
+    withDates.meta.dates = { start: "2027-05-16", end: "2027-05-14" };
+    const backwards = run({ camporee: withDates });
+    expect(backwards.event).toMatchObject({ startDate: "2027-05-16" });
+    expect(backwards.event).not.toHaveProperty("endDate");
+    expect(backwards.notes).toEqual([
+      "Left out v1's end date \"2027-05-14\": it's before the start date.",
+    ]);
+  });
+
   it("maps leagues to Competitions: unit → group, subunit → team", () => {
     expect(
       run().event.competitions.map(({ slug, label, level, registration }) => ({

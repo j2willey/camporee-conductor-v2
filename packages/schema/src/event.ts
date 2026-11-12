@@ -123,6 +123,24 @@ export const AwardSchema = z.strictObject({
   rule: AwardRuleSchema,
 });
 
+/** Where the Event happens (v1's `meta.location`). Venue Profiles come later (ADR-0021). */
+export const VenueSchema = z.strictObject({
+  name: z.string(),
+  address: z.string(),
+});
+
+/**
+ * Someone to contact about the Event, e.g. the director (v1's `meta.contacts`). **Personal data** (ADR-0031
+ * rule 4): kept only in the Event's own cartridges, stripped from every other export (`stripPersonalData` in
+ * packages/cartridge). Not roster contacts, which live only on the Collator (ADR-0026).
+ */
+export const ContactSchema = z.strictObject({
+  role: z.string(),
+  name: z.string(),
+  email: z.string(),
+  phone: z.string(),
+});
+
 /** One Activity in this Event. The list order is `sortOrder`, not array position. */
 export const EventActivitySchema = z.strictObject({
   activityId: Uuid7,
@@ -147,6 +165,11 @@ const eventShape = {
   startDate: z.iso.date().optional(),
   endDate: z.iso.date().optional(),
   organizerName: z.string().optional(),
+  /** ADR-0029 item 8: plain Event fields for parity with v1's Event metadata. */
+  venue: VenueSchema.optional(),
+  /** The Program Guide's welcome, in Markdown (the ADR-0028 subset). */
+  introduction: z.string().optional(),
+  contacts: z.array(ContactSchema).optional(),
   terminology: TerminologySchema,
   presentation: z.strictObject({
     themeColors: z.strictObject({
@@ -236,10 +259,14 @@ export const EventSchema = z
 /** A shareable, Event-shaped starting point, with lineage and attribution (ADR-0017). */
 export const TemplateSchema = z
   .strictObject({ ...eventShape, kind: z.literal("template") })
+  // Event-shaped without `contacts`: personal data never goes into a Template (ADR-0031 rule 4).
+  .omit({ contacts: true })
   .superRefine(checkEventReferences);
 
 export type Event = z.infer<typeof EventSchema>;
 export type Template = z.infer<typeof TemplateSchema>;
 export type Competition = z.infer<typeof CompetitionSchema>;
 export type Award = z.infer<typeof AwardSchema>;
+export type Venue = z.infer<typeof VenueSchema>;
+export type Contact = z.infer<typeof ContactSchema>;
 export type PlacementPoints = z.infer<typeof PlacementPointsSchema>;

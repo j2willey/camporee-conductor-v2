@@ -136,6 +136,10 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 - **Playlist `enabled`** (all `true` in 2026): a game v1 disables comes across as `activities[].enabled: false`
   (ADR-0029 item 9, #6), left out of the event-day cartridge and the Program Guide. Enabled entries carry no
   `enabled`, so these fixtures don't change.
+- **`meta.location`, `meta.introduction`, `meta.contacts` and `meta.dates`** (none in the 2026 source): v1's
+  Event details now come across as `venue`, `introduction`, `contacts`, `startDate` and `endDate` (ADR-0029 item
+  8, #6 PR 8). The 2026 source has none of them, so these fixtures don't change. Contacts are personal data
+  (ADR-0031 rule 4).
 - **Terminology `organizer: "Event Director"`**: packs relabel only the participant hierarchy and the event
   name (ADR-0003, amended).
 - **`sessions`, `officials`** (both empty) and **`rosters`** (empty; rosters are Collator-only, ADR-0026).

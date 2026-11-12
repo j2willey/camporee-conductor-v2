@@ -349,6 +349,49 @@ describe("EventSchema", () => {
   });
 });
 
+describe("venue, introduction and contacts (ADR-0029 item 8)", () => {
+  it("takes them as plain Event fields, empty strings allowed (v1 had them empty)", () => {
+    const event = {
+      ...validEvent(),
+      venue: { name: "Camp Chesebrough", address: "" },
+      introduction: "Welcome to the **Circus**!",
+      contacts: [
+        {
+          role: "Camporee Director",
+          name: "Pat Example",
+          email: "pat@example.com",
+          phone: "",
+        },
+      ],
+    };
+    expect(issuesOf(EventSchema, event)).toEqual([]);
+    // Stored as given: nothing added.
+    expect(EventSchema.parse(event).contacts).toEqual(event.contacts);
+  });
+
+  it("leaves them out by default, with nothing added", () => {
+    const parsed = EventSchema.parse(validEvent());
+    expect(parsed).not.toHaveProperty("venue");
+    expect(parsed).not.toHaveProperty("introduction");
+    expect(parsed).not.toHaveProperty("contacts");
+  });
+
+  it("rejects a contact or venue with a missing or extra field", () => {
+    expect(
+      issuesOf(EventSchema, {
+        ...validEvent(),
+        venue: { name: "Camp" },
+        contacts: [
+          { role: "Director", name: "Pat", email: "", phone: "", age: 9 },
+        ],
+      }),
+    ).toEqual([
+      "venue.address: Invalid input: expected string, received undefined",
+      'contacts.0: Unrecognized key: "age"',
+    ]);
+  });
+});
+
 describe("TemplateSchema", () => {
   it("accepts an Event-shaped document with kind 'template' and attribution", () => {
     const template = {
@@ -368,6 +411,25 @@ describe("TemplateSchema", () => {
     expect(
       issuesOf(EventSchema, { ...validEvent(), kind: "template" }),
     ).toContain('kind: Invalid input: expected "event"');
+  });
+
+  it("has no contacts: personal data never goes into a Template (ADR-0031 rule 4)", () => {
+    const template = {
+      ...validEvent(),
+      kind: "template",
+      contacts: [{ role: "Director", name: "Pat", email: "", phone: "" }],
+    };
+    expect(issuesOf(TemplateSchema, template)).toEqual([
+      'Unrecognized key: "contacts"',
+    ]);
+    expect(
+      TemplateSchema.safeParse({
+        ...validEvent(),
+        kind: "template",
+        venue: { name: "Camp", address: "" },
+        introduction: "Welcome",
+      }).success,
+    ).toBe(true);
   });
 
   it("applies the same cross-checks as an Event", () => {
