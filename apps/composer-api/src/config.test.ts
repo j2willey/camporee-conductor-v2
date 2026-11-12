@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   ConfigError,
   databasePathFrom,
+  describeAi,
   describeAuth,
   webRootFrom,
   loadConfig,
@@ -140,5 +141,38 @@ describe("the server", () => {
     );
     expect(result.status).toBe(1);
     expect(result.stderr).toMatch(/dev sign-in adapter.*production/i);
+  });
+});
+
+describe("AI settings (ADR-0030, #103)", () => {
+  const dev = { NODE_ENV: "test", AUTH_ADAPTER: "dev" };
+
+  it("are off without ANTHROPIC_API_KEY, or with a blank one", () => {
+    expect(loadConfig(dev).ai).toBeNull();
+    expect(loadConfig({ ...dev, ANTHROPIC_API_KEY: "  " }).ai).toBeNull();
+  });
+
+  it("take the key, and AI_MODEL with Sonnet by default", () => {
+    expect(loadConfig({ ...dev, ANTHROPIC_API_KEY: "sk-ant-x" }).ai).toEqual({
+      apiKey: "sk-ant-x",
+      model: "claude-sonnet-5-5",
+    });
+    expect(
+      loadConfig({
+        ...dev,
+        ANTHROPIC_API_KEY: "sk-ant-x",
+        AI_MODEL: "claude-opus-5-5",
+      }).ai?.model,
+    ).toBe("claude-opus-5-5");
+  });
+
+  it("are described in one startup line that never prints the key", () => {
+    expect(describeAi(null)).toBe("ai: off (no ANTHROPIC_API_KEY)");
+    const line = describeAi({
+      apiKey: "sk-ant-secret",
+      model: "claude-sonnet-5-5",
+    });
+    expect(line).toBe("ai: claude-sonnet-5-5");
+    expect(line).not.toContain("secret");
   });
 });

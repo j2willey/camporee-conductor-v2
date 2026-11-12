@@ -10,8 +10,15 @@ export type AuthConfig =
   /** Trusts a header for the user: development and test only (issue #4, D7). */
   | { adapter: "dev" };
 
+/** AI assistance (ADR-0030): off (null) without a key. */
+export type AiConfig = { apiKey: string; model: string } | null;
+
+/** ADR-0030 item 1: Sonnet unless AI_MODEL names another. */
+export const DEFAULT_AI_MODEL = "claude-sonnet-5-5";
+
 export interface Config {
   auth: AuthConfig;
+  ai: AiConfig;
   databasePath: string;
   port: number;
   /** The built web app to serve, or null in development, where Vite serves it (issue #4, D5). */
@@ -56,10 +63,25 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
   }
   return {
     auth,
+    ai: aiConfigFrom(env),
     databasePath: databasePathFrom(env),
     port,
     webRoot: webRootFrom(env),
   };
+}
+
+/** The key and model from ANTHROPIC_API_KEY and AI_MODEL; null (AI off) without a key (ADR-0030 item 2). */
+export function aiConfigFrom(
+  env: Record<string, string | undefined>,
+): AiConfig {
+  const apiKey = env["ANTHROPIC_API_KEY"]?.trim();
+  if (!apiKey) return null;
+  return { apiKey, model: env["AI_MODEL"]?.trim() || DEFAULT_AI_MODEL };
+}
+
+/** One startup line saying whether AI is on, and which model; never the key. */
+export function describeAi(ai: AiConfig): string {
+  return ai ? `ai: ${ai.model}` : "ai: off (no ANTHROPIC_API_KEY)";
 }
 
 /**

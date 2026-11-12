@@ -1,6 +1,6 @@
 ---
 created: 2026-11-11
-updated: 2026-11-11
+updated: 2026-11-12
 ---
 
 # ADR-0030 — AI assistance in the Composer
@@ -26,9 +26,18 @@ parity plan) brings the four features to v2.
    - The UI shows the change as a diff. The editor accepts it or throws it away.
    - Accepting is an ordinary save: the `If-Match` check applies and it writes an audit row (action marked as AI).
      Undo restores the version from before the accept.
-4. **What it may change:** only the design text of the Event or Activity being edited (theme, title, `content`).
-   It never changes scoring fields, Competitions, Awards, Officials or contacts. The API checks this: a proposal
-   that changes anything else is refused.
+4. **What it may change** (amended 2026-11-12, #103, for v1 parity: v1's `theme-game` prompt let the model reword
+   scoring inputs):
+   - the design text of the Event or Activity being edited: theme, title, `content`;
+   - **plus the wording of the Activity's own scoring fields:** each field's `label` and `config.placeholder`.
+     (v1 also reworded a field's description; v2's fields have none. If one is added, it joins this list.)
+
+   Everything else is refused: field ids, `type`, `kind`, `audience`, `sortOrder`, `weight`, `required`, `min`/`max`,
+   `defaultValue`, `options`, the primary metric and its direction, adding, removing or reordering fields, Common
+   Fields, Competitions, Awards, Officials and contacts. The API enforces it as a **structural diff against the
+   current document**: only the allowed paths may differ. One pure function does it, with a test for each allowed
+   and each refused path.
+
 5. **No personal data is sent to the provider.** Prompts carry the Activity or Event design only, never contacts,
    Officials or anything from a roster (ADR-0026, ADR-0031 rule 4).
 6. **Composer only.** The Collator never imports the adapter, and a dependency check in CI keeps it that way
@@ -44,3 +53,18 @@ parity plan) brings the four features to v2.
 - The model can change without a code change. The cost is an extra environment variable to keep in the deploy
   runbook.
 - Second on the `later` list if #6 slips past about 2026-11-19: "AI update with a prompt" (#103 PR 4).
+
+## Notes
+
+**Provider and key test (#103 PR 1, 2026-11-12).**
+
+- **The adapter** (`apps/composer-api/src/ai/`) has one method: a system prompt and a user prompt in, text out. The
+  Anthropic one uses the official SDK (`@anthropic-ai/sdk`). `AI_MODEL` defaults to `claude-sonnet-5-5`. A
+  declined request (`stop_reason: "refusal"`) is an error the editor sees, never a proposal.
+- **No key, no AI:** without `ANTHROPIC_API_KEY`, the API has no provider, `/api/me` says `ai: false`, the AI routes
+  answer 404, and the buttons are hidden.
+- **"Test the key" is a CLI for now:** `pnpm --filter @camporee-conductor/composer-api test-ai-key`, run on the
+  droplet by whoever has the shell, which is the sysadmin today. H (#104) builds the sysadmin pages; its admin page
+  can call the same function. It sends one tiny request and prints the model's answer or the error, never the key.
+- **The dependency check** is a test in each Collator app: no `@anthropic-ai/*` package and no import of the Composer
+  API, in `package.json` or in `src/`.

@@ -73,7 +73,8 @@ pnpm --filter @camporee-conductor/scoring test -- --watch   # TDD loop for scori
 pnpm --filter @camporee-conductor/schema generate           # regenerate json-schema/ after changing a Zod schema
 
 # Composer API (apps/composer-api), :3010, composer.db. `start` loads .env.local at the repo root if present
-# (gitignored): CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY. Variables set on the command line win over the file.
+# (gitignored): CLERK_SECRET_KEY, CLERK_PUBLISHABLE_KEY, and optionally ANTHROPIC_API_KEY and AI_MODEL (AI assistance,
+# ADR-0030: off without a key). Variables set on the command line win over the file.
 pnpm --filter @camporee-conductor/composer-api start                                         # Clerk sign-in
 NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer-api start   # dev sign-in: header `x-dev-user: <email>`; refused in production
 pnpm --filter @camporee-conductor/composer-web dev                                           # web app on :5173, proxies to the API
@@ -84,6 +85,7 @@ pnpm --filter @camporee-conductor/composer-api export-cartridge <org-slug> <even
 pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
 pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> packages/schema/fixtures/circus-2026  # owner + Org + Event
 pnpm --filter @camporee-conductor/composer-api set-curator <email> [--off]   # library curator (ADR-0031); user must have signed in
+pnpm --filter @camporee-conductor/composer-api test-ai-key   # one live request with ANTHROPIC_API_KEY (ADR-0030); CI never calls the provider
 pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
 
 # Collator (apps/collator), :3030, collator.db (#40). One Event per box; no accounts for Judges. Officials
