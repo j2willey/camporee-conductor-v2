@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useBlocker } from "react-router";
 import { ApiError } from "../api.ts";
+import { moveItem, removeItem, replaceItem } from "../draft.ts";
 import { ui } from "../ui.ts";
 
 // Pieces shared by the Composer's editing pages (ADR-0029): the Save bar, the leave warning, and form parts.
@@ -198,5 +199,65 @@ export function RowButtons({
         ✕
       </button>
     </span>
+  );
+}
+
+export function StringList({
+  label,
+  item,
+  items,
+  multiline,
+  onChange,
+}: {
+  label: string;
+  item: string;
+  items: string[];
+  multiline: boolean;
+  onChange: (items: string[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium text-stone-700">{label}</h3>
+      <ol className="space-y-2">
+        {items.map((value, index) => {
+          const name = `${item} ${index + 1}`;
+          const set = (v: string) => onChange(replaceItem(items, index, v));
+          return (
+            <li key={index} className="flex items-start gap-2">
+              {multiline ? (
+                <textarea
+                  className={`${ui.input} flex-1 font-mono text-sm`}
+                  rows={2}
+                  aria-label={name}
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                />
+              ) : (
+                <input
+                  className={`${ui.input} flex-1`}
+                  aria-label={name}
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                />
+              )}
+              <RowButtons
+                name={name}
+                index={index}
+                count={items.length}
+                onMove={(step) => onChange(moveItem(items, index, step))}
+                onRemove={() => onChange(removeItem(items, index))}
+              />
+            </li>
+          );
+        })}
+      </ol>
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        onClick={() => onChange([...items, ""])}
+      >
+        + Add {item}
+      </button>
+    </div>
   );
 }

@@ -1,14 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  EventSchema,
   type Award,
   type Competition,
   type Event,
 } from "@camporee-conductor/schema";
 import { DEFAULT_PLACEMENT_POINTS } from "@camporee-conductor/scoring";
 import { useState } from "react";
-import { Link, useParams } from "react-router";
-import { client, data } from "../api.ts";
 import {
   addAward,
   addCompetition,
@@ -20,15 +16,8 @@ import {
 } from "../competitions.ts";
 import { moveItem, omit, removeItem, replaceItem } from "../draft.ts";
 import { ui } from "../ui.ts";
-import type { EventRead } from "./ActivityList.tsx";
-import {
-  Card,
-  RowButtons,
-  SaveBar,
-  Text,
-  useLeaveWarning,
-} from "./editing.tsx";
-import { Loading, PageError } from "./ErrorMessage.tsx";
+import { Card, RowButtons, Text } from "./editing.tsx";
+import { EventEditorPage } from "./EventEditor.tsx";
 
 /**
  * An Event's Competitions and Awards (#6 PR 6): label, level, registration, Divisions, placement points and
@@ -36,184 +25,131 @@ import { Loading, PageError } from "./ErrorMessage.tsx";
  * with If-Match (ADR-0029). Common Fields are chosen in #99.
  */
 export function CompetitionsPage() {
-  const { eventId = "" } = useParams();
-  const result = useQuery({
-    queryKey: ["events", eventId],
-    queryFn: () =>
-      data(client.api.events[":eventId"].$get({ param: { eventId } })),
-    // A background refetch would replace the draft; the page reloads only when asked.
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-  });
-  if (result.isPending) return <Loading />;
-  if (result.isError) return <PageError error={result.error} />;
+  const [removeProblem, setRemoveProblem] = useState<string | null>(null);
   return (
-    <Editor key={result.data.updatedAt} eventId={eventId} read={result.data} />
+    <EventEditorPage
+      heading="Competitions and Awards"
+      onDiscard={() => setRemoveProblem(null)}
+    >
+      {({ draft, setDraft }) => (
+        <Competitions
+          draft={draft}
+          setDraft={setDraft}
+          removeProblem={removeProblem}
+          setRemoveProblem={setRemoveProblem}
+        />
+      )}
+    </EventEditorPage>
   );
 }
 
-function Editor({ eventId, read }: { eventId: string; read: EventRead }) {
-  const stored = read.event as Event;
-  const canEdit = read.role === "owner" || read.role === "editor";
-  const [draft, setDraft] = useState<Event>(stored);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(stored);
-  const check = EventSchema.safeParse(draft);
-  const issues = check.success
-    ? []
-    : check.error.issues.map(
-        (i) =>
-          `${i.path.length > 0 ? `${i.path.map(String).join(".")}: ` : ""}${i.message}`,
-      );
-  const [removeProblem, setRemoveProblem] = useState<string | null>(null);
-
-  const queryClient = useQueryClient();
-  const save = useMutation({
-    mutationFn: () =>
-      data(
-        client.api.events[":eventId"].$put(
-          { param: { eventId }, json: draft },
-          { headers: { "if-match": String(read.updatedAt) } },
-        ),
-      ),
-    onSuccess: ({ updatedAt }) =>
-      queryClient.setQueryData<EventRead>(["events", eventId], {
-        ...read,
-        event: draft as EventRead["event"],
-        updatedAt,
-      }),
-  });
-  useLeaveWarning(dirty && !save.isPending);
-
+function Competitions({
+  draft,
+  setDraft,
+  removeProblem,
+  setRemoveProblem,
+}: {
+  draft: Event;
+  setDraft: (event: Event) => void;
+  removeProblem: string | null;
+  setRemoveProblem: (problem: string | null) => void;
+}) {
   const counts = new Map<string, number>();
   for (const a of draft.activities) {
     counts.set(a.competitionId, (counts.get(a.competitionId) ?? 0) + 1);
   }
-
   return (
-    <div className="space-y-6 pb-24">
-      <div className="space-y-1">
-        <p>
-          <Link to={`/events/${eventId}`} className={ui.link}>
-            ← Back to the Event
-          </Link>
-        </p>
-        <h1 className={ui.h1}>Competitions and Awards</h1>
-        <p className={ui.muted}>{stored.title}</p>
-      </div>
-
-      <fieldset disabled={!canEdit} className="space-y-6">
-        {draft.competitions.map((competition, index) => (
-          <CompetitionEditor
-            key={competition.id}
-            competition={competition}
-            activities={counts.get(competition.id) ?? 0}
-            index={index}
-            count={draft.competitions.length}
-            onChange={(change) =>
-              setDraft(updateCompetition(draft, index, change))
+    <>
+      {draft.competitions.map((competition, index) => (
+        <CompetitionEditor
+          key={competition.id}
+          competition={competition}
+          activities={counts.get(competition.id) ?? 0}
+          index={index}
+          count={draft.competitions.length}
+          onChange={(change) =>
+            setDraft(updateCompetition(draft, index, change))
+          }
+          onAddDivision={() => setDraft(addDivision(draft, index))}
+          onMove={(step) => setDraft(moveCompetition(draft, index, step))}
+          onRemove={() => {
+            const removed = removeCompetition(draft, competition.id);
+            if (!removed.ok) {
+              setRemoveProblem(
+                `Can't remove ${competition.label}: ${removed.problem}`,
+              );
+              return;
             }
-            onAddDivision={() => setDraft(addDivision(draft, index))}
-            onMove={(step) => setDraft(moveCompetition(draft, index, step))}
-            onRemove={() => {
-              const removed = removeCompetition(draft, competition.id);
-              if (!removed.ok) {
-                setRemoveProblem(
-                  `Can't remove ${competition.label}: ${removed.problem}`,
-                );
-                return;
-              }
-              const awards = (draft.awards ?? []).filter(
-                (a) => a.competitionId === competition.id,
-              ).length;
-              if (
-                awards > 0 &&
-                !window.confirm(
-                  `Remove ${competition.label} and its ${awards} ${awards === 1 ? "Award" : "Awards"}?`,
-                )
-              ) {
-                return;
-              }
-              setRemoveProblem(null);
-              setDraft(removed.event);
-            }}
-          />
-        ))}
-        {removeProblem && (
-          <p role="alert" className={ui.error}>
-            {removeProblem}
-          </p>
-        )}
-        <button
-          type="button"
-          className={ui.buttonQuiet}
-          onClick={() => setDraft(addCompetition(draft, "New Competition"))}
-        >
-          + Add Competition
-        </button>
-
-        <Card title="Awards">
-          <p className={ui.muted}>
-            Recognition drawn from a Competition's standings, e.g. 1st–3rd
-            place, or the top 25%.
-          </p>
-          <ol className="space-y-3">
-            {(draft.awards ?? []).map((award, index, awards) => (
-              <AwardEditor
-                key={award.id}
-                award={award}
-                index={index}
-                count={awards.length}
-                competitions={draft.competitions}
-                onChange={(next) =>
-                  setDraft({
-                    ...draft,
-                    awards: replaceItem(awards, index, next),
-                  })
-                }
-                onMove={(step) =>
-                  setDraft({ ...draft, awards: moveItem(awards, index, step) })
-                }
-                onRemove={() =>
-                  setDraft({ ...draft, awards: removeItem(awards, index) })
-                }
-              />
-            ))}
-          </ol>
-          {draft.competitions[0] && (
-            <button
-              type="button"
-              className={ui.buttonQuiet}
-              onClick={() =>
-                setDraft(addAward(draft, draft.competitions[0]?.id ?? ""))
-              }
-            >
-              + Add award
-            </button>
-          )}
-        </Card>
-      </fieldset>
-
-      {canEdit && (
-        <SaveBar
-          dirty={dirty}
-          issues={issues}
-          saving={save.isPending}
-          error={save.error}
-          onSave={() => save.mutate()}
-          onDiscard={() => {
-            save.reset();
+            const awards = (draft.awards ?? []).filter(
+              (a) => a.competitionId === competition.id,
+            ).length;
+            if (
+              awards > 0 &&
+              !window.confirm(
+                `Remove ${competition.label} and its ${awards} ${awards === 1 ? "Award" : "Awards"}?`,
+              )
+            ) {
+              return;
+            }
             setRemoveProblem(null);
-            setDraft(stored);
-          }}
-          onReload={() => {
-            save.reset();
-            void queryClient.invalidateQueries({
-              queryKey: ["events", eventId],
-            });
+            setDraft(removed.event);
           }}
         />
+      ))}
+      {removeProblem && (
+        <p role="alert" className={ui.error}>
+          {removeProblem}
+        </p>
       )}
-    </div>
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        onClick={() => setDraft(addCompetition(draft, "New Competition"))}
+      >
+        + Add Competition
+      </button>
+
+      <Card title="Awards">
+        <p className={ui.muted}>
+          Recognition drawn from a Competition's standings, e.g. 1st–3rd place,
+          or the top 25%.
+        </p>
+        <ol className="space-y-3">
+          {(draft.awards ?? []).map((award, index, awards) => (
+            <AwardEditor
+              key={award.id}
+              award={award}
+              index={index}
+              count={awards.length}
+              competitions={draft.competitions}
+              onChange={(next) =>
+                setDraft({
+                  ...draft,
+                  awards: replaceItem(awards, index, next),
+                })
+              }
+              onMove={(step) =>
+                setDraft({ ...draft, awards: moveItem(awards, index, step) })
+              }
+              onRemove={() =>
+                setDraft({ ...draft, awards: removeItem(awards, index) })
+              }
+            />
+          ))}
+        </ol>
+        {draft.competitions[0] && (
+          <button
+            type="button"
+            className={ui.buttonQuiet}
+            onClick={() =>
+              setDraft(addAward(draft, draft.competitions[0]?.id ?? ""))
+            }
+          >
+            + Add award
+          </button>
+        )}
+      </Card>
+    </>
   );
 }
 

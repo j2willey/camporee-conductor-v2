@@ -393,3 +393,52 @@ test("an owner edits Competitions and Awards", async ({ page }) => {
     page.getByRole("region", { name: "Competition: New Competition" }),
   ).toHaveCount(0);
 });
+
+// #6 PR 7: the Event's details, theme colors with v1's "reset to defaults", saved with the Event.
+test("an owner edits the Event details", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "Event details" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Event details",
+  );
+  await expect(page.getByLabel("Theme", { exact: true })).toHaveValue(
+    "The Circus",
+  );
+
+  // Ends before it starts: named, and Save stays off.
+  await page.getByLabel("Starts").fill("2027-05-16");
+  await page.getByLabel("Ends").fill("2027-05-14");
+  await expect(page.getByRole("alert")).toContainText("endDate");
+  await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+  await page.getByLabel("Starts").fill("2027-05-14");
+  await page.getByLabel("Ends").fill("2027-05-16");
+
+  await page.getByLabel("Theme", { exact: true }).fill("Under the Big Top");
+  await page.getByLabel("Year").fill("2027");
+  await page.getByRole("button", { name: "Reset to defaults" }).click();
+  await expect(page.getByLabel("Main color", { exact: true })).toHaveValue(
+    "#0d6efd",
+  );
+  await page.getByRole("button", { name: "+ Add skill" }).click();
+  await page.getByLabel("skill 13", { exact: true }).fill("Knots");
+
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+  await page.reload();
+  await expect(page.getByLabel("Theme", { exact: true })).toHaveValue(
+    "Under the Big Top",
+  );
+  await expect(page.getByLabel("Ends")).toHaveValue("2027-05-16");
+  await expect(page.getByLabel("Header color", { exact: true })).toHaveValue(
+    "#34495e",
+  );
+  await expect(page.getByLabel("skill 13", { exact: true })).toHaveValue(
+    "Knots",
+  );
+});
