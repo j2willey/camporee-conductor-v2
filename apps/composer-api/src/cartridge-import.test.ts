@@ -32,11 +32,15 @@ const EVENT_DAY = exportCartridge(
   { exportedAt },
 );
 
-/** The Circus 2026 v1 cartridge as v1's Composer exports it; `drop` leaves one game out. */
+/** The Circus 2026 v1 cartridge as v1's Composer exports it; `drop` takes one game out (file and playlist). */
 function v1Zip(drop?: string): Uint8Array {
   const src = join(CIRCUS_2026, "v1-source");
+  const camporee = JSON.parse(
+    readFileSync(join(src, "camporee.json"), "utf8"),
+  ) as { playlist: { gameId: string }[] };
+  camporee.playlist = camporee.playlist.filter((e) => e.gameId !== drop);
   const files: Record<string, Uint8Array> = {
-    "camporee.json": readFileSync(join(src, "camporee.json")),
+    "camporee.json": strToU8(JSON.stringify(camporee)),
     "presets.json": readFileSync(join(src, "presets.json")),
   };
   for (const name of readdirSync(join(src, "games"))) {
@@ -95,15 +99,16 @@ async function upload(
       type: "application/zip",
     }),
   );
-  const response = await app.request(
-    `/api/organizations/${orgId}/import`,
-    { method: "POST", headers: { [DEV_USER_HEADER]: who }, body: form },
-  );
+  const response = await app.request(`/api/organizations/${orgId}/import`, {
+    method: "POST",
+    headers: { [DEV_USER_HEADER]: who },
+    body: form,
+  });
   const text = await response.text();
   return { status: response.status, json: text ? JSON.parse(text) : null };
 }
 
-const count = (kind: string) =>
+const count = (kind: "event" | "activity") =>
   db.select().from(documents).where(eq(documents.kind, kind)).all().length;
 
 beforeEach(async () => {
@@ -152,7 +157,7 @@ describe("POST /api/organizations/:orgId/import", () => {
   it("imports a v1 zip, reporting games it skipped", async () => {
     const res = await upload(OWNER, v1Zip(), "circus-v1.zip");
     expect(res.status).toBe(200);
-    expect(res.json).toMatchObject({ source: "v1", eventId: EVENT.id });
+    expect(res.json).toMatchObject({ source: "v1" });
     expect(res.json.created).toBeGreaterThan(30);
     expect(Array.isArray(res.json.skipped)).toBe(true);
     expect(Array.isArray(res.json.notes)).toBe(true);

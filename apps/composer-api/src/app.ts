@@ -34,6 +34,7 @@ import {
   removeActivity,
 } from "./documents/event-activities.ts";
 import { createEvent, duplicateEvent } from "./documents/events.ts";
+import { importUpload } from "./import/import-upload.ts";
 import {
   createCommonFields,
   readCommonFields,
@@ -86,6 +87,15 @@ const jsonBody = <S extends z.ZodType>(schema: S) =>
     }
     return result.data;
   });
+
+/** A multipart upload with one file, `file` (400 without it): the web client's form type comes from here. */
+const zipUpload = validator("form", (value): { file: File } => {
+  const file = value["file"];
+  if (!(file instanceof File)) {
+    throw new HTTPException(400, { message: "Send the zip as `file`." });
+  }
+  return { file };
+});
 
 /** Any JSON body (400 if it isn't JSON): a whole document, checked by `saveDocument` (ADR-0029). */
 const anyJson = validator("json", (value): unknown => value);
@@ -420,6 +430,23 @@ export function createApp({
         201,
       ),
     )
+
+    /**
+     * Imports an uploaded zip (#100 PR 2): a design cartridge or a v1 export, as multipart field `file`. Editors
+     * and owners; 422 names the file and each problem.
+     */
+    .post("/organizations/:orgId/import", zipUpload, async (c) => {
+      const { file } = c.req.valid("form");
+      return c.json(
+        importUpload(db, {
+          organizationId: c.req.param("orgId"),
+          userId: c.var.user.userId,
+          name: file.name || "upload.zip",
+          bytes: new Uint8Array(await file.arrayBuffer()),
+          now: now(),
+        }),
+      );
+    })
 
     .get("/events/:eventId", (c) =>
       c.json(readEvent(c.req.param("eventId"), c.var.user.userId)),
