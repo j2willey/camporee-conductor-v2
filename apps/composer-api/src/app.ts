@@ -23,6 +23,7 @@ import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
+import { saveDocument, type SavableKind } from "./documents/save.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import {
@@ -52,6 +53,9 @@ const jsonBody = <S extends z.ZodType>(schema: S) =>
     }
     return result.data;
   });
+
+/** Any JSON body (400 if it isn't JSON): a whole document, checked by `saveDocument` (ADR-0029). */
+const anyJson = validator("json", (value): unknown => value);
 
 /** Validates the query string: `ids` is a comma-separated list of Activity ids (400 if missing or empty). */
 const activityIdsQuery = validator("query", (value) => {
@@ -99,11 +103,14 @@ export function createApp({
   auth,
   authConfig,
   webRoot = null,
+  now = () => new Date(),
 }: {
   db: Db;
   auth: AuthAdapter;
   authConfig: AuthConfig;
   webRoot?: string | null;
+  /** The clock for saves (tests pass a fixed one). */
+  now?: () => Date;
 }) {
   const myOrganizations = (userId: string) =>
     db
@@ -152,8 +159,41 @@ export function createApp({
       )
       .all()
       .filter((a) => ids.has(a.id));
-    return { event, activities };
+    return { event, activities, updatedAt: row.updatedAt.getTime() };
   };
+
+  /** One Activity document and its `updatedAt`, for editing (ADR-0029). 404 like `readEvent`. */
+  const readActivity = (activityId: string, userId: string) => {
+    const row = db
+      .select()
+      .from(documents)
+      .where(and(eq(documents.id, activityId), eq(documents.kind, "activity")))
+      .get();
+    if (!row) throw new HTTPException(404, { message: "Not found." });
+    requireRole(db, row.organizationId, userId, "viewer");
+    return {
+      activity: JSON.parse(row.json) as Activity,
+      updatedAt: row.updatedAt.getTime(),
+    };
+  };
+
+  /** PUT a whole document with If-Match (ADR-0029); the answer is its new `updatedAt`. */
+  const save = (
+    c: Context<{ Variables: { user: AuthUser } }>,
+    kind: SavableKind,
+    id: string,
+    raw: unknown,
+  ) =>
+    c.json({
+      updatedAt: saveDocument(db, {
+        kind,
+        id,
+        raw,
+        userId: c.var.user.userId,
+        ifMatch: c.req.header("if-match"),
+        now: now(),
+      }),
+    });
 
   /**
    * The Event and the full Activity documents for `ids`, in that order. 404 if any isn't an Activity of this Event
@@ -315,6 +355,20 @@ export function createApp({
 
     .get("/events/:eventId", (c) =>
       c.json(readEvent(c.req.param("eventId"), c.var.user.userId)),
+    )
+
+    /** Saves the whole Event (ADR-0029): editors and owners, with If-Match. */
+    .put("/events/:eventId", anyJson, (c) =>
+      save(c, "event", c.req.param("eventId"), c.req.valid("json")),
+    )
+
+    .get("/activities/:activityId", (c) =>
+      c.json(readActivity(c.req.param("activityId"), c.var.user.userId)),
+    )
+
+    /** Saves the whole Activity (ADR-0029): editors and owners, with If-Match. */
+    .put("/activities/:activityId", anyJson, (c) =>
+      save(c, "activity", c.req.param("activityId"), c.req.valid("json")),
     )
 
     /** The Event's Program Guide as one print-ready HTML page (issue #5). */

@@ -19,7 +19,23 @@ export function readEventDocuments(
     .where(and(eq(documents.id, eventId), eq(documents.kind, "event")))
     .get();
   if (!row) return undefined;
-  const event = JSON.parse(row.json) as Event;
+  return {
+    organizationId: row.organizationId,
+    bundle: eventBundleFor(db, row.organizationId, JSON.parse(row.json)),
+  };
+}
+
+/**
+ * The bundle for `rawEvent` (stored, or about to be saved, ADR-0029) with the documents it references from its
+ * Organization only. Documents it names that aren't there are left out, so `checkEventBundle` reports them.
+ * `rawEvent` must already pass `EventSchema`.
+ */
+export function eventBundleFor(
+  db: Db,
+  organizationId: string,
+  rawEvent: unknown,
+): EventBundle {
+  const event = rawEvent as Event;
   const inOrg = (
     kind: "activity" | "common-field-set" | "officials",
     ids?: string[],
@@ -29,7 +45,7 @@ export function readEventDocuments(
       .from(documents)
       .where(
         and(
-          eq(documents.organizationId, row.organizationId),
+          eq(documents.organizationId, organizationId),
           eq(documents.kind, kind),
           ...(ids ? [inArray(documents.id, ids)] : []),
         ),
@@ -46,18 +62,15 @@ export function readEventDocuments(
   ];
   const officials = inOrg("officials")
     .map((r) => JSON.parse(r.json) as { eventId?: string })
-    .find((doc) => doc.eventId === eventId);
+    .find((doc) => doc.eventId === event.id);
   return {
-    organizationId: row.organizationId,
-    bundle: {
-      event: JSON.parse(row.json),
-      activities: inOrg("activity", activityIds)
-        .sort((a, b) => a.slug.localeCompare(b.slug))
-        .map((r) => JSON.parse(r.json)),
-      commonFieldSets: inOrg("common-field-set", setIds).map((r) =>
-        JSON.parse(r.json),
-      ),
-      ...(officials && { officials }),
-    },
+    event: rawEvent,
+    activities: inOrg("activity", activityIds)
+      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .map((r) => JSON.parse(r.json)),
+    commonFieldSets: inOrg("common-field-set", setIds).map((r) =>
+      JSON.parse(r.json),
+    ),
+    ...(officials && { officials }),
   };
 }

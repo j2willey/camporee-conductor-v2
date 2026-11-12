@@ -82,3 +82,25 @@ export const documents = sqliteTable(
     check("documents_kind", oneOf("kind", DOCUMENT_KINDS)),
   ],
 );
+
+/**
+ * Who changed what, and when (ADR-0029 item 5). One row per save, create, delete, import, publish or accepted
+ * AI change. Never holds document bodies; `detail` is a small JSON object when an action needs one.
+ */
+export const auditLog = sqliteTable(
+  "audit_log",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    at: integer("at", { mode: "timestamp_ms" }).notNull(),
+    /** The auth provider's user id (ADR-0014); null for a CLI action. */
+    userId: text("user_id"),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    action: text("action").notNull(),
+    documentKind: text("document_kind", { enum: DOCUMENT_KINDS }),
+    documentId: text("document_id"),
+    detail: text("detail", { mode: "json" }),
+  },
+  (t) => [index("audit_log_organization_at").on(t.organizationId, t.at)],
+);

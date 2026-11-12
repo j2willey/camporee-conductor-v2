@@ -15,6 +15,13 @@
       "when": 1793994521050,
       "tag": "0001_wooden_tusk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794441583844,
+      "tag": "0002_aspiring_spirit",
+      "breakpoints": true
     }
   ]
 }
