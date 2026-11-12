@@ -60,11 +60,14 @@ export function OrganizationPage() {
                   {event.title}
                 </Link>
                 {canEdit && (
-                  <DuplicateEvent
-                    orgId={orgId}
-                    eventId={event.id}
-                    title={event.title}
-                  />
+                  <span className="flex flex-wrap items-center gap-2">
+                    <SaveAsTemplate eventId={event.id} title={event.title} />
+                    <DuplicateEvent
+                      orgId={orgId}
+                      eventId={event.id}
+                      title={event.title}
+                    />
+                  </span>
                 )}
               </li>
             ))}
@@ -250,6 +253,60 @@ function ImportCartridge({ orgId }: { orgId: string }) {
         </div>
       )}
     </form>
+  );
+}
+
+/**
+ * Save Event as Template (#102 PR 4): a private Template in this Organization, without contacts or Officials, then
+ * the Library page, where it's listed. A curator can publish it there.
+ */
+function SaveAsTemplate({
+  eventId,
+  title,
+}: {
+  eventId: string;
+  title: string;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const save = useMutation({
+    mutationFn: () =>
+      data(
+        client.api.events[":eventId"]["save-as-template"].$post({
+          param: { eventId },
+          json: {},
+        }),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["library"] });
+      void navigate("/library");
+    },
+  });
+  return (
+    <>
+      {save.isError && (
+        <span role="alert" className={ui.error}>
+          {save.error.message}
+        </span>
+      )}
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        aria-label={`Save ${title} as a Template`}
+        disabled={save.isPending}
+        onClick={() => {
+          if (
+            window.confirm(
+              `Save ${title} as a Template, with all its Activities? Its contacts and Officials stay out.`,
+            )
+          ) {
+            save.mutate();
+          }
+        }}
+      >
+        {save.isPending ? "Saving…" : "Save as Template"}
+      </button>
+    </>
   );
 }
 

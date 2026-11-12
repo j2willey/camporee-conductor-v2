@@ -4,12 +4,14 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import {
   checkEventBundle,
+  checkTemplateBundle,
   stripPersonalData,
   type EventBundle,
 } from "./bundle.ts";
 import {
   CartridgeError,
   exportCartridge,
+  exportTemplateCartridge,
   loadCartridge,
   type CartridgeManifest,
   type CartridgeProfile,
@@ -422,5 +424,123 @@ describe("personal data (ADR-0031 rule 4)", () => {
   it("leaves an Event with no contacts as it was", () => {
     const bundle = circus();
     expect(stripPersonalData(bundle).event).toEqual(bundle.event);
+  });
+});
+
+describe("Templates (ADR-0031 item 7, #102 PR 4)", () => {
+  /** Circus 2026 as a Template: Event-shaped, kind "template", no contacts and no Officials. */
+  const template = (): EventBundle => {
+    const bundle = circus();
+    delete bundle.officials;
+    const event = { ...(bundle.event as Record<string, unknown>) };
+    delete event["contacts"];
+    return { ...bundle, event: { ...event, kind: "template" } };
+  };
+
+  describe("checkTemplateBundle", () => {
+    it("passes a Template with its Activities and Common Field set", () => {
+      const check = checkTemplateBundle(template());
+      expect(check.ok).toBe(true);
+    });
+
+    it("applies the Event bundle rules, naming the Template", () => {
+      const bundle = template();
+      bundle.activities = bundle.activities.slice(1);
+      const check = checkTemplateBundle(bundle);
+      expect(check.ok).toBe(false);
+      expect(check.ok ? [] : check.issues).toEqual([
+        expect.stringMatching(
+          /^template coyote-creek-camporee-2026: activities: no Activity /,
+        ),
+      ]);
+    });
+
+    it("refuses an Event, contacts and Officials", () => {
+      const asEvent = checkTemplateBundle(circus());
+      expect(asEvent.ok ? [] : asEvent.issues).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/kind/),
+          expect.stringMatching(/^officials: .*never in a Template/),
+        ]),
+      );
+      const bundle = template();
+      bundle.event = { ...(bundle.event as object), contacts: [] };
+      const withContacts = checkTemplateBundle(bundle);
+      expect(withContacts.ok).toBe(false);
+    });
+
+    it("isn't an Event bundle", () => {
+      expect(checkEventBundle(template()).ok).toBe(false);
+    });
+  });
+
+  describe("exportTemplateCartridge", () => {
+    const zipOf = (bundle = template()) =>
+      exportTemplateCartridge(bundle, { exportedAt: EXPORTED_AT });
+
+    it("is a design cartridge of the Template, laid out like an Event's", () => {
+      const zip = zipOf();
+      const manifest = manifestOf(zip);
+      const event = read("event.json") as {
+        id: string;
+        slug: string;
+        title: string;
+      };
+      expect(manifest).toMatchObject({
+        profile: "design",
+        event: { id: event.id, slug: event.slug, title: event.title },
+      });
+      const names = Object.keys(files(zip));
+      expect(names).toContain("event.json");
+      expect(names).toContain("common-fields.json");
+      expect(names).not.toContain("officials.json");
+      expect(names.filter((n) => n.startsWith("activities/"))).toHaveLength(
+        circus().activities.length,
+      );
+      const doc = JSON.parse(
+        strFromU8(files(zip)["event.json"] ?? new Uint8Array()),
+      ) as {
+        kind: string;
+      };
+      expect(doc.kind).toBe("template");
+      // Every file is listed with its sha256.
+      for (const { path, sha256 } of manifest.files) {
+        const bytes = files(zip)[path] ?? new Uint8Array();
+        expect(createHash("sha256").update(bytes).digest("hex")).toBe(sha256);
+      }
+    });
+
+    it("strips personal data first: contacts and Officials never reach the zip", () => {
+      const bundle: EventBundle = {
+        ...template(),
+        officials: officials(),
+      };
+      bundle.event = {
+        ...(bundle.event as object),
+        contacts: [
+          {
+            role: "Director",
+            name: "Pat",
+            email: "pat@example.com",
+            phone: "",
+          },
+        ],
+      };
+      const zip = zipOf(bundle);
+      const all = Object.values(files(zip))
+        .map((f) => strFromU8(f))
+        .join("\n");
+      expect(all).not.toContain("pat@example.com");
+      expect(all).not.toContain("director@example.com");
+      expect(Object.keys(files(zip))).not.toContain("officials.json");
+    });
+
+    it("refuses a bundle that isn't a valid Template", () => {
+      const bundle = template();
+      bundle.activities = [];
+      expect(refusal(() => zipOf(bundle))).toEqual(
+        expect.arrayContaining([expect.stringMatching(/^template /)]),
+      );
+    });
   });
 });
