@@ -110,6 +110,7 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
         );
       }
     });
+    issues.push(...commonFieldIssues(event, activities, sets));
   }
 
   if (issues.length > 0 || !event) return { ok: false, issues };
@@ -123,6 +124,67 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
     },
     raw: bundle,
   };
+}
+
+/**
+ * Common Fields must resolve at runtime (ADR-0020, #99): each Competition's before/after ids are in its set,
+ * none twice; every Competition uses the same set (a cartridge holds one); and no Activity has a field with
+ * the id of a Common Field its Competition applies, so no Activity ever contains a Common Field. Sets that
+ * are missing or invalid are reported elsewhere and skipped here.
+ */
+function commonFieldIssues(
+  event: Event,
+  activities: readonly (Activity | undefined)[],
+  sets: readonly (CommonFieldSet | undefined)[],
+): string[] {
+  const issues: string[] = [];
+  const byId = new Map(
+    sets.filter((s) => s !== undefined).map((s) => [s.id, s]),
+  );
+  const firstSetId = event.competitions.find((c) => c.commonFields)
+    ?.commonFields?.setId;
+  const applied = new Map<string, { slug: string; ids: Set<string> }>();
+  event.competitions.forEach((competition, i) => {
+    const ref = competition.commonFields;
+    if (!ref) return;
+    const where = `event ${event.slug}: competitions.${i}.commonFields`;
+    if (ref.setId !== firstSetId) {
+      issues.push(
+        `${where}.setId: every Competition must use the same Common Field set (${firstSetId})`,
+      );
+    }
+    const set = byId.get(ref.setId);
+    const seen = new Set<string>();
+    for (const position of ["before", "after"] as const) {
+      ref[position].forEach((id, j) => {
+        if (set && !set.fields.some((f) => f.id === id)) {
+          issues.push(
+            `${where}.${position}.${j}: the Common Field set has no field ${id}`,
+          );
+        } else if (seen.has(id)) {
+          issues.push(`${where}.${position}.${j}: ${id} is listed twice`);
+        }
+        seen.add(id);
+      });
+    }
+    applied.set(competition.id, { slug: competition.slug, ids: seen });
+  });
+  const competitionOf = new Map(
+    event.activities.map((a) => [a.activityId, a.competitionId]),
+  );
+  for (const activity of activities) {
+    if (!activity) continue;
+    const common = applied.get(competitionOf.get(activity.id) ?? "");
+    if (!common) continue;
+    activity.scoring.fields.forEach((field, j) => {
+      if (common.ids.has(field.id)) {
+        issues.push(
+          `activity ${activity.slug}: scoring.fields.${j}.id: ${field.id} is a Common Field of ${common.slug}, applied at runtime; it can't be an Activity field too`,
+        );
+      }
+    });
+  }
+  return issues;
 }
 
 const stringProp = (raw: unknown, key: string): string | undefined => {

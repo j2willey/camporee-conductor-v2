@@ -1,5 +1,9 @@
 import { checkEventBundle } from "@camporee-conductor/cartridge";
-import { ActivitySchema, EventSchema } from "@camporee-conductor/schema";
+import {
+  ActivitySchema,
+  CommonFieldSetSchema,
+  EventSchema,
+} from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { requireRole } from "../authz.ts";
@@ -7,8 +11,8 @@ import type { Db } from "../db/open.ts";
 import { auditLog, documents } from "../db/schema.ts";
 import { eventBundleFor } from "../export/read-event-documents.ts";
 
-/** The document kinds the Composer saves so far (ADR-0029; more come with #99 and #100). */
-export type SavableKind = "event" | "activity";
+/** The document kinds the Composer saves so far (ADR-0029; more come with #100). */
+export type SavableKind = "event" | "activity" | "common-field-set";
 
 /**
  * Saves a whole document (ADR-0029): checks the caller's role, `If-Match` against the stored `updatedAt`, the
@@ -45,7 +49,9 @@ export function saveDocument(
     const issues =
       kind === "event"
         ? eventIssues(db, opened.organizationId, raw)
-        : activityIssues(db, opened.organizationId, id, raw);
+        : kind === "activity"
+          ? activityIssues(db, opened.organizationId, id, raw)
+          : commonFieldSetIssues(db, opened.organizationId, id, raw);
     if (issues.length > 0) {
       throw new HTTPException(422, { message: issues.join("\n") });
     }
@@ -236,6 +242,46 @@ export function activityIssues(
     const bundle = eventBundleFor(db, organizationId, event);
     bundle.activities = bundle.activities.map((a) =>
       asRecord(a)?.["id"] === id ? raw : a,
+    );
+    const check = checkEventBundle(bundle);
+    if (!check.ok) issues.push(...check.issues);
+  }
+  return [...new Set(issues)];
+}
+
+/** The Common Field set on its own, then against every Event in the Organization whose Competitions use it (#99). */
+export function commonFieldSetIssues(
+  db: Db,
+  organizationId: string,
+  id: string,
+  raw: unknown,
+): string[] {
+  const parsed = CommonFieldSetSchema.safeParse(raw);
+  if (!parsed.success) return schemaIssues("common-field-set", raw, parsed);
+  const issues: string[] = [];
+  const events = db
+    .select({ json: documents.json })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        eq(documents.kind, "event"),
+      ),
+    )
+    .all()
+    .map(
+      (r) =>
+        JSON.parse(r.json) as {
+          competitions: { commonFields?: { setId: string } }[];
+        },
+    )
+    .filter((event) =>
+      event.competitions.some((c) => c.commonFields?.setId === id),
+    );
+  for (const event of events) {
+    const bundle = eventBundleFor(db, organizationId, event);
+    bundle.commonFieldSets = bundle.commonFieldSets.map((s) =>
+      asRecord(s)?.["id"] === id ? raw : s,
     );
     const check = checkEventBundle(bundle);
     if (!check.ok) issues.push(...check.issues);

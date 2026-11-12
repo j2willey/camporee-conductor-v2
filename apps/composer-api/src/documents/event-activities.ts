@@ -23,7 +23,7 @@ import {
  * and the enable switch need no route of their own: they're an Event save.
  */
 
-type Change = {
+export type Change = {
   eventId: string;
   userId: string;
   ifMatch: string | undefined;
@@ -202,7 +202,10 @@ export function removeActivity(
   });
 }
 
-function openEvent(db: Db, change: Change): { opened: Opened; event: Event } {
+export function openEvent(
+  db: Db,
+  change: Change,
+): { opened: Opened; event: Event } {
   const opened = openForEdit(db, {
     kind: "event",
     id: change.eventId,

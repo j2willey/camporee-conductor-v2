@@ -69,6 +69,95 @@ describe("checkEventBundle: one set of rules for Composer import and Collator lo
     ]);
   });
 
+  describe("Common Fields (ADR-0020): applied at runtime, so they must resolve", () => {
+    interface Fields {
+      setId: string;
+      before: string[];
+      after: string[];
+    }
+    interface Bundle {
+      event: {
+        competitions: { id: string; commonFields?: Fields }[];
+        activities: { activityId: string; competitionId: string }[];
+      };
+      commonFieldSets: { id: string; slug: string }[];
+      activities: {
+        id: string;
+        slug: string;
+        scoring: { fields: { id: string }[] };
+      }[];
+    }
+    const bundle = () => circus() as unknown as Bundle;
+    const check = (b: Bundle) => issues(b as unknown as EventBundle);
+    const patrolGames = (b: Bundle): Fields => {
+      const fields = b.event.competitions[0]?.commonFields;
+      if (!fields) throw new Error("fixture changed");
+      return fields;
+    };
+    /** The first Activity of Patrol Games, with one more field, given this id. */
+    const addFieldTo = (b: Bundle, id: string) => {
+      const competitionId = b.event.competitions[0]?.id;
+      const entry = b.event.activities.find(
+        (a) => a.competitionId === competitionId,
+      );
+      const activity = b.activities.find((a) => a.id === entry?.activityId);
+      const [first] = activity?.scoring.fields ?? [];
+      if (!activity || !first) throw new Error("fixture changed");
+      activity.scoring.fields.push({ ...first, id });
+      return activity;
+    };
+
+    it("rejects a before or after id the set doesn't have", () => {
+      const b = bundle();
+      patrolGames(b).before.push("no_such");
+      patrolGames(b).after.unshift("nor_this");
+      expect(check(b)).toEqual([
+        "event coyote-creek-camporee-2026: competitions.0.commonFields.before.4: the Common Field set has no field no_such",
+        "event coyote-creek-camporee-2026: competitions.0.commonFields.after.0: the Common Field set has no field nor_this",
+      ]);
+    });
+
+    it("rejects a Common Field listed twice in one Competition", () => {
+      const b = bundle();
+      patrolGames(b).after.push("p_flag");
+      expect(check(b)).toEqual([
+        "event coyote-creek-camporee-2026: competitions.0.commonFields.after.2: p_flag is listed twice",
+      ]);
+    });
+
+    it("rejects Competitions that use different sets: a cartridge holds one (until more are needed)", () => {
+      const b = bundle();
+      const [set] = b.commonFieldSets;
+      const second = b.event.competitions[1];
+      if (!set || !second) throw new Error("fixture changed");
+      const other = {
+        ...set,
+        id: "0196cfa2-4c00-7000-8000-000000000301",
+        slug: "other-common-fields",
+      };
+      b.commonFieldSets.push(other);
+      second.commonFields = { setId: other.id, before: ["p_flag"], after: [] };
+      expect(check(b)).toEqual([
+        `event coyote-creek-camporee-2026: competitions.1.commonFields.setId: every Competition must use the same Common Field set (${set.id})`,
+      ]);
+    });
+
+    it("rejects an Activity holding a field with an applied Common Field's id: no Activity contains a Common Field", () => {
+      const b = bundle();
+      const activity = addFieldTo(b, "unscout");
+      expect(check(b)).toEqual([
+        `activity ${activity.slug}: scoring.fields.${activity.scoring.fields.length - 1}.id: unscout is a Common Field of patrol-games, applied at runtime; it can't be an Activity field too`,
+      ]);
+    });
+
+    it("allows that id when the Activity's Competition doesn't apply that Common Field", () => {
+      const b = bundle();
+      patrolGames(b).after = [];
+      addFieldTo(b, "unscout");
+      expect(check(b)).toEqual([]);
+    });
+  });
+
   describe("Officials (event-day only, ADR-0027 item 5)", () => {
     const officials = (eventId: string) => ({
       schemaVersion: "4.0",
