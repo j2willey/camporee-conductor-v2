@@ -10,6 +10,7 @@ import { CompetitionsPage } from "./pages/CompetitionsPage.tsx";
 import { EventDetailsPage } from "./pages/EventDetailsPage.tsx";
 import { EventPage } from "./pages/EventPage.tsx";
 import { GuidesPage } from "./pages/GuidesPage.tsx";
+import { OfficialsPage } from "./pages/OfficialsPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { OrganizationsPage } from "./pages/OrganizationsPage.tsx";
 import { NotFound } from "./pages/ErrorMessage.tsx";
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
         path: "/events/:eventId/common-fields",
         element: <CommonFieldsPage />,
       },
+      { path: "/events/:eventId/officials", element: <OfficialsPage /> },
       {
         path: "/events/:eventId/competitions",
         element: <CompetitionsPage />,

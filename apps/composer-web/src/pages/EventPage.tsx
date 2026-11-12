@@ -32,7 +32,12 @@ export function EventPage() {
         {event.organizerName && (
           <p className={ui.muted}>Organizer: {event.organizerName}</p>
         )}
-        <ProgramGuideButton eventId={eventId} />
+        <ProgramGuideButton
+          eventId={eventId}
+          canEdit={
+            result.data.role === "owner" || result.data.role === "editor"
+          }
+        />
         <CartridgeButtons
           eventId={eventId}
           slug={event.slug}
@@ -47,7 +52,13 @@ export function EventPage() {
 }
 
 /** Opens the Event's Program Guide in a new tab (issue #5). */
-function ProgramGuideButton({ eventId }: { eventId: string }) {
+function ProgramGuideButton({
+  eventId,
+  canEdit,
+}: {
+  eventId: string;
+  canEdit: boolean;
+}) {
   const { open, opening, error } = useOpenHtmlInNewTab(
     () =>
       client.api.events[":eventId"]["program-guide"].$get({
@@ -81,6 +92,12 @@ function ProgramGuideButton({ eventId }: { eventId: string }) {
         >
           Common Fields
         </Link>
+        {/* Officials' emails are for editors and owners only (ADR-0027 item 5). */}
+        {canEdit && (
+          <Link to={`/events/${eventId}/officials`} className={ui.buttonQuiet}>
+            Officials
+          </Link>
+        )}
       </div>
       {error && (
         <p role="alert" className={ui.error}>

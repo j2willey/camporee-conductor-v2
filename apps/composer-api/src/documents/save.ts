@@ -3,6 +3,7 @@ import {
   ActivitySchema,
   CommonFieldSetSchema,
   EventSchema,
+  OfficialsSchema,
 } from "@camporee-conductor/schema";
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -11,8 +12,9 @@ import type { Db } from "../db/open.ts";
 import { auditLog, documents } from "../db/schema.ts";
 import { eventBundleFor } from "../export/read-event-documents.ts";
 
-/** The document kinds the Composer saves so far (ADR-0029; more come with #100). */
-export type SavableKind = "event" | "activity" | "common-field-set";
+/** The document kinds the Composer saves (ADR-0029). */
+export type SavableKind =
+  "event" | "activity" | "common-field-set" | "officials";
 
 /**
  * Saves a whole document (ADR-0029): checks the caller's role, `If-Match` against the stored `updatedAt`, the
@@ -51,7 +53,9 @@ export function saveDocument(
         ? eventIssues(db, opened.organizationId, raw)
         : kind === "activity"
           ? activityIssues(db, opened.organizationId, id, raw)
-          : commonFieldSetIssues(db, opened.organizationId, id, raw);
+          : kind === "common-field-set"
+            ? commonFieldSetIssues(db, opened.organizationId, id, raw)
+            : officialsIssues(db, id, raw);
     if (issues.length > 0) {
       throw new HTTPException(422, { message: issues.join("\n") });
     }
@@ -287,4 +291,23 @@ export function commonFieldSetIssues(
     if (!check.ok) issues.push(...check.issues);
   }
   return [...new Set(issues)];
+}
+
+/** The Officials document on its own, and still for the Event it was made for (#100). */
+export function officialsIssues(db: Db, id: string, raw: unknown): string[] {
+  const parsed = OfficialsSchema.safeParse(raw);
+  if (!parsed.success) return schemaIssues("officials", raw, parsed);
+  const row = db
+    .select({ json: documents.json })
+    .from(documents)
+    .where(eq(documents.id, id))
+    .get();
+  const storedEventId = row
+    ? (JSON.parse(row.json) as { eventId?: string }).eventId
+    : undefined;
+  return storedEventId !== undefined && storedEventId !== parsed.data.eventId
+    ? [
+        `officials ${parsed.data.slug}: eventId: Officials stay with their Event`,
+      ]
+    : [];
 }

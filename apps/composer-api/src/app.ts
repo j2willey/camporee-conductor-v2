@@ -37,6 +37,7 @@ import {
 } from "./documents/event-activities.ts";
 import { createEvent, duplicateEvent } from "./documents/events.ts";
 import { importUpload } from "./import/import-upload.ts";
+import { createOfficials, readOfficials } from "./documents/officials.ts";
 import {
   createCommonFields,
   readCommonFields,
@@ -80,6 +81,9 @@ const ImportedActivity = z.strictObject({
   competitionId: z.string(),
   activity: z.unknown(),
 });
+
+/** The Event's first Officials list (#100 PR 4), checked by `createOfficials`. */
+const NewOfficials = z.strictObject({ officials: z.unknown() });
 
 const NewMember = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -575,6 +579,29 @@ export function createApp({
       requireRole(db, found.organizationId, c.var.user.userId, "viewer");
       return c.json(found.bundle.commonFieldSets as CommonFieldSet[]);
     })
+
+    /** The Event's Officials (#100 PR 4): editors and owners only, even to read (emails, ADR-0027 item 5). */
+    .get("/events/:eventId/officials", (c) =>
+      c.json(readOfficials(db, c.req.param("eventId"), c.var.user.userId)),
+    )
+
+    /** Creates the Event's Officials document (#100 PR 4); 409 if it has one. */
+    .post("/events/:eventId/officials", jsonBody(NewOfficials), (c) =>
+      c.json(
+        createOfficials(db, {
+          eventId: c.req.param("eventId"),
+          officials: c.req.valid("json").officials,
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+        201,
+      ),
+    )
+
+    /** Saves the whole Officials document (ADR-0029, #100 PR 4): editors and owners, with If-Match. */
+    .put("/officials/:officialsId", anyJson, (c) =>
+      save(c, "officials", c.req.param("officialsId"), c.req.valid("json")),
+    )
 
     /** The Event's Program Guide as one print-ready HTML page (issue #5). */
     .get("/events/:eventId/program-guide", (c) => {
