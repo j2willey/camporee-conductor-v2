@@ -476,3 +476,65 @@ test("an owner adds the venue, introduction and a contact", async ({
   await expect(guide.getByText("Camp Chesebrough")).toBeVisible();
   await expect(guide.locator("strong", { hasText: "Big Top" })).toBeVisible();
 });
+
+// #99 PR 2: the Event's Common Fields, and each Competition's picks, saved with the Event.
+test("an owner edits Common Fields and picks them for a Competition", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "Common Fields" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Common Fields",
+  );
+  await expect(page.getByRole("list", { name: "Used by" })).toContainText(
+    "Patrol Games: before: Patrol Flag, Patrol Yell",
+  );
+
+  // A field a Competition uses can't go: the page says which Competition, and won't save.
+  const field = (label: string) =>
+    page.getByRole("listitem", { name: new RegExp(`: ${label}`) });
+  await field("10 Essentials")
+    .getByRole("button", { name: /^Remove field/ })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Patrol Games uses ten_ess.",
+  );
+  await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+  await page.getByRole("button", { name: "Discard changes" }).click();
+
+  // Variables filled from one Activity.
+  await page
+    .getByRole("region", { name: "Variables" })
+    .getByLabel("Activity")
+    .selectOption({ label: "Clown Car" });
+  await expect(page.getByText("10 Essentials: Buddy")).toBeVisible();
+
+  await field("Patrol Yell")
+    .getByLabel(/^Label of field/)
+    .fill("Patrol Cheer");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+
+  // Exhibition Events picks the renamed field, after its Activities' own.
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  await page.getByRole("link", { name: "Competitions and Awards" }).click();
+  const exhibitions = page.getByRole("region", {
+    name: "Competition: Exhibition Events",
+  });
+  await exhibitions
+    .getByLabel("Patrol Cheer in Exhibition Events")
+    .selectOption("after");
+  await expect(exhibitions.getByText("After each Activity's")).toBeVisible();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+  await page.reload();
+  await expect(
+    page.getByLabel("Patrol Cheer in Exhibition Events"),
+  ).toHaveValue("after");
+});

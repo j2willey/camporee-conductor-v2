@@ -101,16 +101,23 @@ describe("editing the set", () => {
     expect(inUseMissing(circus, ids)).toEqual([
       "Patrol Games uses ten_ess. Take it off on the Competitions page first, or put the field back.",
     ]);
-    expect(inUseMissing(circus, SET.fields.map((f) => f.id))).toEqual([]);
+    expect(
+      inUseMissing(
+        circus,
+        SET.fields.map((f) => f.id),
+      ),
+    ).toEqual([]);
   });
 
   it("lists the {{variables}} its labels and placeholders use, once each, in order", () => {
+    const [first, second] = SET.fields;
+    if (!first || !second) throw new Error("fixture changed");
     expect(variablesUsed(SET.fields)).toEqual(["ten_essentials"]);
     expect(
       variablesUsed([
-        { ...SET.fields[0]!, label: "{{ b }} and {{a}}" },
+        { ...first, label: "{{ b }} and {{a}}" },
         {
-          ...SET.fields[1]!,
+          ...second,
           label: "x",
           config: { placeholder: "{{a}} {{c}}" },
         },

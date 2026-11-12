@@ -1,10 +1,20 @@
+import { useQuery } from "@tanstack/react-query";
 import {
   type Award,
+  type CommonFieldSet,
   type Competition,
   type Event,
 } from "@camporee-conductor/schema";
 import { DEFAULT_PLACEMENT_POINTS } from "@camporee-conductor/scoring";
 import { useState } from "react";
+import { Link, useParams } from "react-router";
+import { client, data } from "../api.ts";
+import {
+  moveCommonField,
+  placeCommonField,
+  placementOf,
+  type Place,
+} from "../common-fields.ts";
 import {
   addAward,
   addCompetition,
@@ -22,7 +32,8 @@ import { EventEditorPage } from "./EventEditor.tsx";
 /**
  * An Event's Competitions and Awards (#6 PR 6): label, level, registration, Divisions, placement points and
  * Program Guide listing; Awards by places, top percent or by hand. Edits a draft of the Event and saves it whole
- * with If-Match (ADR-0029). Common Fields are chosen in #99.
+ * with If-Match (ADR-0029). Each Competition picks the Event's Common Fields it shows before and after its Activities'
+ * own fields (#99); the set itself is edited on the Common Fields page.
  */
 export function CompetitionsPage() {
   const [removeProblem, setRemoveProblem] = useState<string | null>(null);
@@ -54,6 +65,17 @@ function Competitions({
   removeProblem: string | null;
   setRemoveProblem: (problem: string | null) => void;
 }) {
+  const { eventId = "" } = useParams();
+  const common = useQuery({
+    queryKey: ["events", eventId, "common-fields"],
+    queryFn: () =>
+      data(
+        client.api.events[":eventId"]["common-fields"].$get({
+          param: { eventId },
+        }),
+      ),
+  });
+  const set = common.data?.set as CommonFieldSet | null | undefined;
   const counts = new Map<string, number>();
   for (const a of draft.activities) {
     counts.set(a.competitionId, (counts.get(a.competitionId) ?? 0) + 1);
@@ -65,6 +87,8 @@ function Competitions({
           key={competition.id}
           competition={competition}
           activities={counts.get(competition.id) ?? 0}
+          eventId={eventId}
+          set={set}
           index={index}
           count={draft.competitions.length}
           onChange={(change) =>
@@ -156,6 +180,8 @@ function Competitions({
 function CompetitionEditor({
   competition,
   activities,
+  eventId,
+  set,
   index,
   count,
   onChange,
@@ -165,6 +191,9 @@ function CompetitionEditor({
 }: {
   competition: Competition;
   activities: number;
+  eventId: string;
+  /** The Event's Common Field set; null when it has none, undefined while loading. */
+  set: CommonFieldSet | null | undefined;
   index: number;
   count: number;
   onChange: (change: (c: Competition) => Competition) => void;
@@ -175,7 +204,6 @@ function CompetitionEditor({
   const name = competition.label || `Competition ${index + 1}`;
   const listed = competition.programGuide?.listActivities !== false;
   const points = competition.placementPoints;
-  const common = competition.commonFields;
   return (
     <section
       className={`${ui.card} space-y-4`}
@@ -333,14 +361,120 @@ function CompetitionEditor({
         </button>
       </div>
 
-      <p className={ui.muted}>
-        Common Fields:{" "}
-        {common
-          ? `${common.before.length} before and ${common.after.length} after each Activity's own fields.`
-          : "none."}{" "}
-        (Chosen in the Common Fields editor, coming in #99.)
-      </p>
+      <CommonFieldsPicker
+        competition={competition}
+        name={name}
+        eventId={eventId}
+        set={set}
+        onChange={onChange}
+      />
     </section>
+  );
+}
+
+/**
+ * The Event's Common Fields this Competition shows, before or after each Activity's own fields (ADR-0020, v1's
+ * Common Fields modal), and their order. Saved with the Event.
+ */
+function CommonFieldsPicker({
+  competition,
+  name,
+  eventId,
+  set,
+  onChange,
+}: {
+  competition: Competition;
+  name: string;
+  eventId: string;
+  set: CommonFieldSet | null | undefined;
+  onChange: (change: (c: Competition) => Competition) => void;
+}) {
+  const setPage = (
+    <Link to={`/events/${eventId}/common-fields`} className={ui.link}>
+      Common Fields page
+    </Link>
+  );
+  if (set === undefined) {
+    return <p className={ui.muted}>Loading Common Fields…</p>;
+  }
+  if (set === null) {
+    return (
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium text-stone-700">Common Fields</h3>
+        <p className={ui.muted}>
+          This Event has none yet. Start them on the {setPage}.
+        </p>
+      </div>
+    );
+  }
+  const labelOf = (id: string) =>
+    set.fields.find((f) => f.id === id)?.label ?? id;
+  const ref = competition.commonFields;
+  const ordered = (place: Place) => (
+    <div className="space-y-1">
+      <h4 className="text-sm text-stone-700">
+        {place === "before"
+          ? "Before each Activity's own fields"
+          : "After each Activity's own fields"}
+      </h4>
+      {(ref?.[place] ?? []).length === 0 ? (
+        <p className={ui.muted}>None.</p>
+      ) : (
+        <ol className="space-y-1">
+          {(ref?.[place] ?? []).map((id, i, ids) => (
+            <li key={id} className="flex items-center gap-2 text-sm">
+              <span className="flex-1">{labelOf(id)}</span>
+              <RowButtons
+                name={`Common Field ${labelOf(id)} of ${name}`}
+                index={i}
+                count={ids.length}
+                onMove={(step) =>
+                  onChange((c) => moveCommonField(c, place, i, step))
+                }
+                onRemove={() =>
+                  onChange((c) => placeCommonField(c, set.id, id, null))
+                }
+              />
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium text-stone-700">Common Fields</h3>
+      <p className={ui.muted}>
+        Shown on every {name} Activity's form. Edit the fields themselves on the{" "}
+        {setPage}.
+      </p>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {set.fields.map((field) => (
+          <li key={field.id}>
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <select
+                className={`${ui.input} w-28`}
+                aria-label={`${field.label} in ${name}`}
+                value={placementOf(competition, field.id) ?? ""}
+                onChange={(e) => {
+                  const place = (e.target.value || null) as Place | null;
+                  onChange((c) => placeCommonField(c, set.id, field.id, place));
+                }}
+              >
+                <option value="">Not used</option>
+                <option value="before">Before</option>
+                <option value="after">After</option>
+              </select>
+              {field.label}
+            </label>
+          </li>
+        ))}
+      </ul>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ordered("before")}
+        {ordered("after")}
+      </div>
+    </div>
   );
 }
 

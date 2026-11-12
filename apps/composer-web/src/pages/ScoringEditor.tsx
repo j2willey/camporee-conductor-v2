@@ -87,6 +87,26 @@ export function ScoringCard({
         (a time or a count) can be the primary metric: entries are listed by it,
         and you say whether higher or lower wins.
       </p>
+      <FieldList fields={fields} onChange={setFields} allowPrimary />
+    </section>
+  );
+}
+
+/**
+ * An editable list of scoring fields (sorted), with "+ Add field": the Activity's own fields, and a Common Field
+ * set's (#99), where `allowPrimary` is off because a Common Field can't be a primary metric.
+ */
+export function FieldList({
+  fields,
+  onChange,
+  allowPrimary,
+}: {
+  fields: Field[];
+  onChange: (fields: Field[]) => void;
+  allowPrimary: boolean;
+}) {
+  return (
+    <>
       <ol className="space-y-3">
         {fields.map((field, index) => (
           <FieldEditor
@@ -94,26 +114,27 @@ export function ScoringCard({
             field={field}
             index={index}
             count={fields.length}
-            onField={(change) => setFields(updateField(fields, index, change))}
-            onType={(type) => setFields(setType(fields, index, type))}
-            onKind={(kind) => setFields(setKind(fields, index, kind))}
+            allowPrimary={allowPrimary}
+            onField={(change) => onChange(updateField(fields, index, change))}
+            onType={(type) => onChange(setType(fields, index, type))}
+            onKind={(kind) => onChange(setKind(fields, index, kind))}
             onPrimary={(direction) =>
-              setFields(setPrimary(fields, index, direction))
+              onChange(setPrimary(fields, index, direction))
             }
-            onMove={(step) => setFields(moveField(fields, index, step))}
-            onDuplicate={() => setFields(duplicateField(fields, index))}
-            onRemove={() => setFields(removeField(fields, index))}
+            onMove={(step) => onChange(moveField(fields, index, step))}
+            onDuplicate={() => onChange(duplicateField(fields, index))}
+            onRemove={() => onChange(removeField(fields, index))}
           />
         ))}
       </ol>
       <button
         type="button"
         className={ui.buttonQuiet}
-        onClick={() => setFields(addField(fields))}
+        onClick={() => onChange(addField(fields))}
       >
         + Add field
       </button>
-    </section>
+    </>
   );
 }
 
@@ -121,6 +142,7 @@ function FieldEditor({
   field,
   index,
   count,
+  allowPrimary,
   onField,
   onType,
   onKind,
@@ -132,6 +154,7 @@ function FieldEditor({
   field: Field;
   index: number;
   count: number;
+  allowPrimary: boolean;
   onField: (change: (field: Field) => Field) => void;
   onType: (type: Field["type"]) => void;
   onKind: (kind: Field["kind"]) => void;
@@ -159,6 +182,7 @@ function FieldEditor({
   const numberOrBlank = (text: string) =>
     text.trim() === "" ? undefined : Number(text);
   const canBePrimary =
+    allowPrimary &&
     field.kind === "metric" &&
     (field.type === "number" || field.type === "stopwatch");
   const small =
