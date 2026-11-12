@@ -136,6 +136,24 @@ test("an Organizer prints Patrol Games guides two-sided", async ({ page }) => {
   await expect(supplies.locator("section.per-page")).toHaveCount(0);
 });
 
+// #102 PR 2: the Library page, from the header. The smoke database has no Templates or saved Activities yet
+// (an Event's own Activities aren't listed), so this checks the empty state and the filters.
+test("an Organizer opens the Library", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Library" }).click();
+  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  await expect(page.getByText(/^Nothing here yet/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Activities" }).click();
+  await expect(
+    page.getByRole("button", { name: "Activities" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await page.getByLabel("Search").fill("clown");
+  await expect(page.getByText("Nothing matches these filters.")).toBeVisible();
+});
+
 test("not found replaces the whole page", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Email").fill("smoke@example.com");

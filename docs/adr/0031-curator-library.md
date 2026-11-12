@@ -60,6 +60,7 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
 ## Notes
 
 **The catalog (#102 PR 2, 2026-11-12).**
+
 - The catalog lists the library, plus the caller's Organizations' own private Templates and **saved** Activities.
   A saved Activity is one that no Event or Template in its Organization lists: it's kept for reuse. An Activity a
   private Template lists belongs to that Template, so it isn't listed on its own.

@@ -17,6 +17,22 @@ const TAGGED = ACTIVITIES.find((a) => Array.isArray(a["tags"])) as {
   id: string;
   title: string;
 };
+const EVENT_DOC = bundle.event as {
+  competitions: { id: string; programGuide?: { listActivities: boolean } }[];
+  activities: { activityId: string; competitionId: string }[];
+};
+/** An Activity in a Competition the Program Guide lists (Circus 2026 hides its Patrol Games). */
+const LISTED = (() => {
+  const shown = new Set(
+    EVENT_DOC.competitions
+      .filter((c) => c.programGuide?.listActivities !== false)
+      .map((c) => c.id),
+  );
+  const entry = EVENT_DOC.activities.find((a) => shown.has(a.competitionId));
+  return ACTIVITIES.find((a) => a["id"] === entry?.activityId) as {
+    title: string;
+  };
+})();
 const TEMPLATE_ID = "0196cfa2-4c00-7000-8000-000000000300";
 const SAVED_ID = "0196cfa2-4c00-7000-8000-000000000301";
 const OTHER_SAVED_ID = "0196cfa2-4c00-7000-8000-000000000302";
@@ -243,12 +259,21 @@ describe("GET /api/library/:id/preview", () => {
     expect(html).toMatch(new RegExp(`[A-Z]\\d+\\. ${TAGGED.title}`));
   });
 
+  it("numbers a library Activity only from a library Template", async () => {
+    storeTemplate(); // private
+    const res = await call(CURATOR, "/api/library/publish", { id: TAGGED.id });
+    expect(res.status).toBe(200);
+    const { status, html } = await preview(OUTSIDER, TAGGED.id);
+    expect(status).toBe(200);
+    expect(html).not.toMatch(new RegExp(`[A-Z]\\d+\\. ${TAGGED.title}`));
+  });
+
   it("shows a Template as its Program Guide", async () => {
     storeTemplate();
     const { status, html } = await preview(CURATOR, TEMPLATE_ID);
     expect(status).toBe(200);
     expect(html).toContain("Circus Template");
-    expect(html).toContain(TAGGED.title);
+    expect(html).toContain(LISTED.title);
   });
 
   it("is 404 to outsiders until it's in the library", async () => {
