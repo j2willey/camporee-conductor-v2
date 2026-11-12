@@ -1,6 +1,6 @@
 ---
 created: 2026-11-11
-updated: 2026-11-11
+updated: 2026-11-12
 ---
 
 # ADR-0031 — The Curator: a library of Templates and Activities
@@ -96,3 +96,20 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
   and Common Field set sit beside it as in an Event's cartridge. `checkTemplateBundle` applies the Event bundle rules
   with the Template schema, and a Template bundle never holds Officials. Loading a Template zip (v1's sysadmin
   upload) isn't parity-critical and isn't built yet: the Collator loads only event-day cartridges.
+
+**Editing library documents (#102 PR 5, 2026-11-12).**
+
+- **Who edits** (item 6). A library document: any curator, whether or not they're in its Organization. They look
+  after the whole library, as they do for unpublishing. Its Organization's editors who aren't curators see it
+  read-only; to change it, a curator unpublishes it, or they fork it. A private document: its Organization's editors
+  and owners, as before. One check (`documentRole` in `authz.ts`) gives the caller's role for any document, and every
+  read and change of an Event, Template, Activity or Common Field set goes through it.
+- **A Template opens in the Event editor**, at the same pages (`/events/:id/…`) and through the same API routes. It's
+  checked with the Template rules (`TemplateSchema`, `checkTemplateBundle`). The pages leave out what a Template never
+  has: contacts, Officials and the event-day cartridge. Its design-cartridge button downloads the Template zip.
+- **A Template stays whole.** An Activity or Common Field set added to a library Template is in the library too, so
+  everyone who can read the Template can read its parts.
+- **An Activity on its own** (a saved one, or a library one) opens at `/activities/:id`, outside any Event: its guide
+  previews as in the catalog, and there's no judge's form preview, since Common Fields come from a Competition.
+- **An Activity or Common Field set save** is checked against every Event **and Template** in the Organization that
+  lists it. Before, a save only checked Events.
