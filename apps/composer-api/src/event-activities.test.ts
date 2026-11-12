@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
-import { auditLog, documents } from "./db/schema.ts";
+import { documents } from "./db/schema.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
-import { CIRCUS_2026, testDb } from "./test-support.ts";
+import { CIRCUS_2026, documentAudit, testDb } from "./test-support.ts";
 
 /** Adding, duplicating and removing an Event's Activities (ADR-0029, #6 PR 2b). */
 
@@ -116,11 +116,7 @@ const order = (event: EventDoc, competitionId: string) =>
     .map((a) => a.activityId);
 
 const actions = () =>
-  db
-    .select()
-    .from(auditLog)
-    .all()
-    .map((r) => `${r.action} ${r.documentId}`);
+  documentAudit(db).map((r) => `${r.action} ${r.documentId}`);
 
 const add = (
   who: string,

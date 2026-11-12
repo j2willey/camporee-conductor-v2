@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
-import { auditLog, documents } from "./db/schema.ts";
+import { documents } from "./db/schema.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
-import { CIRCUS_2026, testDb } from "./test-support.ts";
+import { CIRCUS_2026, documentAudit, testDb } from "./test-support.ts";
 
 /** One Activity out as JSON, and in again as a new Activity with lineage (ADR-0031 rule 4, #100 PR 3). */
 
@@ -187,13 +187,10 @@ describe("POST /api/events/:id/activities/import", () => {
       (a) => a.competitionId === competition("exhibition"),
     );
     expect(exhibition?.at(-1)?.activityId).toBe(res.json.activityId);
-    expect(
-      db
-        .select()
-        .from(auditLog)
-        .all()
-        .map((r) => r.action),
-    ).toEqual(["activity.create", "event.update"]);
+    expect(documentAudit(db).map((r) => r.action)).toEqual([
+      "activity.create",
+      "event.update",
+    ]);
   });
 
   it("refuses an invalid Activity, naming the problem, and changes nothing", async () => {
@@ -208,7 +205,7 @@ describe("POST /api/events/:id/activities/import", () => {
     );
     expect(res.status).toBe(422);
     expect(res.json.error).toContain("activity clown-car: title");
-    expect(db.select().from(auditLog).all()).toHaveLength(0);
+    expect(documentAudit(db)).toHaveLength(0);
   });
 
   it("refuses an Activity holding a Common Field the Competition applies", async () => {

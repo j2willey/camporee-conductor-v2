@@ -749,3 +749,22 @@ test("an owner adds a Director, then downloads the event-day cartridge", async (
     "coyote-creek-camporee-2026-event-day.zip",
   );
 });
+
+// #101 PR 1: the members list; the last owner can't be demoted.
+test("an owner sees the members and can't demote the last owner", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+
+  const members = page.getByRole("region", { name: "Members" });
+  const role = members.getByLabel("Role of smoke@example.com");
+  await expect(role).toHaveValue("owner");
+  await role.selectOption("editor");
+  await expect(members.getByRole("alert")).toHaveText(
+    "An Organization needs at least one owner.",
+  );
+  await expect(role).toHaveValue("owner");
+});

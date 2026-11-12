@@ -72,7 +72,7 @@ export function OrganizationPage() {
       </section>
       {canEdit && <NewEvent orgId={orgId} />}
       {canEdit && <ImportCartridge orgId={orgId} />}
-      {org?.role === "owner" && <AddMember orgId={orgId} />}
+      <Members orgId={orgId} isOwner={org?.role === "owner"} />
     </div>
   );
 }
@@ -310,7 +310,104 @@ function DuplicateEvent({
 const ROLES = ["owner", "editor", "viewer"] as const;
 type Role = (typeof ROLES)[number];
 
+/**
+ * Who's in the Organization (#101): everyone sees the list; owners change roles, remove members and add them.
+ * The API keeps at least one owner and says so when a change would leave none.
+ */
+function Members({ orgId, isOwner }: { orgId: string; isOwner: boolean }) {
+  const queryClient = useQueryClient();
+  const members = useQuery({
+    queryKey: ["organizations", orgId, "members"],
+    queryFn: () =>
+      data(
+        client.api.organizations[":orgId"].members.$get({ param: { orgId } }),
+      ),
+  });
+  const change = useMutation({
+    mutationFn: (run: () => Promise<unknown>) => run(),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["organizations", orgId, "members"],
+      }),
+  });
+  const member = client.api.organizations[":orgId"].members[":userId"];
+  return (
+    <section className="space-y-3" aria-label="Members">
+      <h2 className={ui.h2}>Members</h2>
+      {members.isPending && <p className={ui.muted}>Loading…</p>}
+      {members.isError && <ErrorMessage error={members.error} />}
+      {members.data && (
+        <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
+          {members.data.map((m) => (
+            <li
+              key={m.userId}
+              className="flex flex-wrap items-center justify-between gap-2 px-4 py-2"
+            >
+              <span>{m.email}</span>
+              {isOwner ? (
+                <span className="flex items-center gap-2">
+                  <select
+                    className={ui.input}
+                    aria-label={`Role of ${m.email}`}
+                    value={m.role}
+                    disabled={change.isPending}
+                    onChange={(e) => {
+                      const role = e.target.value as Role;
+                      change.mutate(() =>
+                        data(
+                          member.$patch({
+                            param: { orgId, userId: m.userId },
+                            json: { role },
+                          }),
+                        ),
+                      );
+                    }}
+                  >
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={ui.buttonQuiet}
+                    aria-label={`Remove ${m.email}`}
+                    disabled={change.isPending}
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          `Remove ${m.email} from this Organization?`,
+                        )
+                      ) {
+                        change.mutate(() =>
+                          data(
+                            member.$delete({
+                              param: { orgId, userId: m.userId },
+                            }),
+                          ),
+                        );
+                      }
+                    }}
+                  >
+                    Remove
+                  </button>
+                </span>
+              ) : (
+                <span className={ui.muted}>{m.role}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {change.isError && <ErrorMessage error={change.error} />}
+      {isOwner && <AddMember orgId={orgId} />}
+    </section>
+  );
+}
+
 function AddMember({ orgId }: { orgId: string }) {
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("viewer");
   const add = useMutation({
@@ -321,7 +418,12 @@ function AddMember({ orgId }: { orgId: string }) {
           json: { email, role },
         }),
       ),
-    onSuccess: () => setEmail(""),
+    onSuccess: () => {
+      setEmail("");
+      return queryClient.invalidateQueries({
+        queryKey: ["organizations", orgId, "members"],
+      });
+    },
   });
   const submit = (e: FormEvent) => {
     e.preventDefault();

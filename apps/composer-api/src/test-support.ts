@@ -1,5 +1,6 @@
 import { openDb, type Db } from "./db/open.ts";
-import { organizations } from "./db/schema.ts";
+import { isNotNull } from "drizzle-orm";
+import { auditLog, organizations } from "./db/schema.ts";
 
 export const CIRCUS_2026 = new URL(
   "../../../packages/schema/fixtures/circus-2026/",
@@ -16,3 +17,10 @@ export function testDb(...orgSlugs: string[]): Db {
   }
   return db;
 }
+
+/**
+ * The audit rows about documents (ADR-0029 item 5): saves, creates, deletes, imports. Leaves out membership rows
+ * (#101), which every test's setup writes when it adds members.
+ */
+export const documentAudit = (db: Db) =>
+  db.select().from(auditLog).where(isNotNull(auditLog.documentKind)).all();

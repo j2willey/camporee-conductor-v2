@@ -4,11 +4,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
-import { auditLog, documents } from "./db/schema.ts";
+import { documents } from "./db/schema.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
-import { CIRCUS_2026, testDb } from "./test-support.ts";
+import { CIRCUS_2026, documentAudit, testDb } from "./test-support.ts";
 
 /** New Event and Duplicate Event (ADR-0029, #100 PR 1). */
 
@@ -72,12 +72,7 @@ const storedDoc = <T>(id: string): T | undefined => {
     .get();
   return row ? (JSON.parse(row.json) as T) : undefined;
 };
-const actions = () =>
-  db
-    .select()
-    .from(auditLog)
-    .all()
-    .map((r) => r.action);
+const actions = () => documentAudit(db).map((r) => r.action);
 const create = (who: string, body: unknown, orgId = org) =>
   call(who, "POST", `/api/organizations/${orgId}/events`, body);
 const duplicate = (who: string, body: unknown = {}) =>
