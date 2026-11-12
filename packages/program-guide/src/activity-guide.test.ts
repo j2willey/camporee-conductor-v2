@@ -124,12 +124,14 @@ describe("buildActivityGuide", () => {
     ]);
   });
 
-  it("leaves out Rules & Constraints when there are no rules", () => {
+  it('keeps Rules & Constraints with no rules, saying "To be defined."', () => {
     const guide = buildActivityGuide(
       circus,
       withContent(clownCar, { rules: [] }),
     );
-    expect(headings(guide, "script")).not.toContain("Rules & Constraints");
+    expect(section(guide, "script", "Rules & Constraints").blocks).toEqual([
+      { kind: "note", text: "To be defined." },
+    ]);
   });
 
   it("puts custom sections in the playbook, in order, before Station Reset", () => {
@@ -155,20 +157,24 @@ describe("buildActivityGuide", () => {
     ]);
   });
 
-  it("omits Notes & Background when blank, and shows the real custom sections", () => {
+  it('keeps Notes & Background when blank, saying "To be defined.", and shows the real custom sections', () => {
     const guide = buildActivityGuide(
       circus,
       withContent(clownCar, { notes: "  \n", customSections: undefined }),
     );
     expect(headings(guide, "playbook")).toEqual([
       "Scoring Overview",
+      "Notes & Background",
       "Station Reset",
+    ]);
+    expect(section(guide, "playbook", "Notes & Background").blocks).toEqual([
+      { kind: "note", text: "To be defined." },
     ]);
     const real = buildActivityGuide(circus, clownCar);
     expect(headings(real, "playbook")).toContain("Scoring Notes");
   });
 
-  it("falls back for a missing reset, staffing, setup and supplies", () => {
+  it('says "To be defined." for a missing reset, staffing, setup and supplies', () => {
     const guide = buildActivityGuide(
       circus,
       withContent(clownCar, {
@@ -179,16 +185,16 @@ describe("buildActivityGuide", () => {
       }),
     );
     expect(section(guide, "playbook", "Station Reset").blocks).toEqual([
-      { kind: "note", text: "No specific reset required." },
+      { kind: "note", text: "To be defined." },
     ]);
     expect(section(guide, "logistics", "Supplies").blocks).toEqual([
-      { kind: "note", text: "No supplies listed." },
+      { kind: "note", text: "To be defined." },
     ]);
     expect(section(guide, "logistics", "Staffing").blocks).toEqual([
-      { kind: "note", text: "Not given." },
+      { kind: "note", text: "To be defined." },
     ]);
     expect(section(guide, "logistics", "Setup Instructions").blocks).toEqual([
-      { kind: "note", text: "Not given." },
+      { kind: "note", text: "To be defined." },
     ]);
   });
 

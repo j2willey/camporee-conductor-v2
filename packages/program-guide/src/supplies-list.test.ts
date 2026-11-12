@@ -99,9 +99,9 @@ describe("renderSuppliesListHtml", () => {
     expect(page).toContain("Garbage can lid (1)");
   });
 
-  it('says "No supplies listed." for an Activity with none', () => {
+  it('says "To be defined." for an Activity with none', () => {
     expect(html(buildSuppliesList(circus, [showtime]))).toContain(
-      "No supplies listed.",
+      "To be defined.",
     );
   });
 

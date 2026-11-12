@@ -26,7 +26,8 @@ type CustomSection = NonNullable<Content["customSections"]>[number];
 /**
  * One Activity's text (#6 PR 3): title, tags, every content section, supplies, custom sections and variables.
  * Editors and owners change a draft and save it whole with If-Match (ADR-0029); viewers see the same form,
- * read-only. Scoring fields come in PR 5.
+ * read-only. An emptied list or set stays in the document, empty, so it's visibly empty (Jim, 2026-11-11);
+ * only a supply's group is removed when blank, since the schema allows no empty group. Scoring fields come in PR 5.
  */
 export function ActivityPage() {
   const { eventId = "", activityId = "" } = useParams();
@@ -131,7 +132,7 @@ function Editor({
             item="tag"
             items={draft.tags ?? []}
             multiline={false}
-            onChange={(tags) => setDraft(withOptional(draft, "tags", tags))}
+            onChange={(tags) => setDraft({ ...draft, tags })}
           />
         </Card>
 
@@ -177,7 +178,7 @@ function Editor({
             onChange={(sections) =>
               setDraft({
                 ...draft,
-                content: withOptional(content, "customSections", sections),
+                content: { ...content, customSections: sections },
               })
             }
           />
@@ -212,9 +213,7 @@ function Editor({
           </p>
           <Variables
             variables={draft.variables ?? {}}
-            onChange={(variables) =>
-              setDraft(withOptional(draft, "variables", variables))
-            }
+            onChange={(variables) => setDraft({ ...draft, variables })}
           />
         </Card>
       </fieldset>
@@ -568,9 +567,7 @@ function Supplies({
                 aria-label={`Quantity of ${name}`}
                 placeholder="Quantity"
                 value={supply.quantity ?? ""}
-                onChange={(e) =>
-                  set(withOptional(supply, "quantity", e.target.value))
-                }
+                onChange={(e) => set({ ...supply, quantity: e.target.value })}
               />
               <RowButtons
                 name={name}

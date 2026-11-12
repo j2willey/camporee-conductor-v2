@@ -79,3 +79,12 @@ imported Event. They are separate from the event-wide Program Guide (ADR-0018, #
 
 - Printing guides from the Collator box on the day is later, not parity (Jim, 2026-11-11).
 - The Program Guide's teasers can reuse the Markdown subset.
+
+## Amendment (2026-11-11, Jim): empty sections print "To be defined."
+
+Every section heading prints, even when the Activity leaves it empty, so an empty one is visibly empty:
+Rules & Constraints and Notes & Background are no longer left out. An empty section, and an Activity with no
+supplies on the supplies list, reads **"To be defined."**, replacing "No specific reset required", "No supplies
+listed." and "Not given.". This is the plan for now; it may change once 2027's Activities are written. The Composer
+keeps an emptied list (tags, rules, extra sections, supplies) or variable set in the document as `[]` or `{}`
+rather than removing it.

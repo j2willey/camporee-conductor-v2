@@ -60,9 +60,12 @@ const markdown = (text: string): ActivityGuideBlock => ({
   text,
 });
 const note = (text: string): ActivityGuideBlock => ({ kind: "note", text });
-/** The text as a Markdown block, or a note when it's blank. */
-const textOr = (text: string, fallback: string): ActivityGuideBlock =>
-  hasText(text) ? markdown(text) : note(fallback);
+/** What an empty section says (Jim, 2026-11-11): every heading prints, so an empty one is visibly empty. */
+export const TO_BE_DEFINED = "To be defined.";
+const toBeDefined = note(TO_BE_DEFINED);
+/** The text as a Markdown block, or "To be defined." when it's blank. */
+const textOr = (text: string): ActivityGuideBlock =>
+  hasText(text) ? markdown(text) : toBeDefined;
 
 /** Consecutive supplies with the same `group` form one group, in the Activity's order. */
 function groupSupplies(
@@ -129,29 +132,26 @@ export function buildActivityGuide(
     { heading: "Background", blocks: [markdown(content.story)] },
     { heading: "The Objective", blocks: [markdown(content.objective)] },
     { heading: "Instructions", blocks: [markdown(content.description)] },
-  ];
-  if (content.rules.length > 0) {
-    script.push({
+    {
       heading: "Rules & Constraints",
-      blocks: [{ kind: "list", items: content.rules }],
-    });
-  }
+      blocks: [
+        content.rules.length > 0
+          ? { kind: "list", items: content.rules }
+          : toBeDefined,
+      ],
+    },
+  ];
 
   const playbook: ActivityGuideSection[] = [
     { heading: "Scoring Overview", blocks: [markdown(content.timeAndScoring)] },
+    { heading: "Notes & Background", blocks: [textOr(content.notes)] },
   ];
-  if (hasText(content.notes)) {
-    playbook.push({
-      heading: "Notes & Background",
-      blocks: [markdown(content.notes)],
-    });
-  }
   for (const custom of content.customSections ?? []) {
     playbook.push({ heading: custom.title, blocks: [markdown(custom.body)] });
   }
   playbook.push({
     heading: "Station Reset",
-    blocks: [textOr(content.reset, "No specific reset required.")],
+    blocks: [textOr(content.reset)],
   });
 
   const logistics: ActivityGuideSection[] = [
@@ -160,15 +160,15 @@ export function buildActivityGuide(
       blocks:
         content.supplies.length > 0
           ? [{ kind: "supplies", groups: groupSupplies(content.supplies) }]
-          : [note("No supplies listed.")],
+          : [toBeDefined],
     },
     {
       heading: "Staffing",
-      blocks: [textOr(content.staffing, "Not given.")],
+      blocks: [textOr(content.staffing)],
     },
     {
       heading: "Setup Instructions",
-      blocks: [textOr(content.setup, "Not given.")],
+      blocks: [textOr(content.setup)],
     },
   ];
 
