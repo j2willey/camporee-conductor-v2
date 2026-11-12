@@ -23,6 +23,11 @@ import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
+import {
+  addActivity,
+  duplicateActivity,
+  removeActivity,
+} from "./documents/event-activities.ts";
 import { saveDocument, type SavableKind } from "./documents/save.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
@@ -37,6 +42,11 @@ import {
 const NewOrganization = z.strictObject({
   name: z.string().trim().min(1),
   slug: Slug,
+});
+
+const NewActivity = z.strictObject({
+  competitionId: z.string(),
+  title: z.string().trim().min(1, "Give the Activity a title."),
 });
 
 const NewMember = z.strictObject({
@@ -140,7 +150,7 @@ export function createApp({
       .where(and(eq(documents.id, eventId), eq(documents.kind, "event")))
       .get();
     if (!row) throw new HTTPException(404, { message: "Not found." });
-    requireRole(db, row.organizationId, userId, "viewer");
+    const role = requireRole(db, row.organizationId, userId, "viewer");
     // Validated on import (ADR-0012); stored exactly as given.
     const event = JSON.parse(row.json) as Event;
     const ids = new Set(event.activities.map((a) => a.activityId));
@@ -159,7 +169,7 @@ export function createApp({
       )
       .all()
       .filter((a) => ids.has(a.id));
-    return { event, activities, updatedAt: row.updatedAt.getTime() };
+    return { event, activities, updatedAt: row.updatedAt.getTime(), role };
   };
 
   /** One Activity document and its `updatedAt`, for editing (ADR-0029). 404 like `readEvent`. */
@@ -194,6 +204,14 @@ export function createApp({
         now: now(),
       }),
     });
+
+  /** The parts of an Event change every add, duplicate and remove needs (ADR-0029). */
+  const changeOf = (c: Context<{ Variables: { user: AuthUser } }>) => ({
+    eventId: c.req.param("eventId") ?? "",
+    userId: c.var.user.userId,
+    ifMatch: c.req.header("if-match"),
+    now: now(),
+  });
 
   /**
    * The Event and the full Activity documents for `ids`, in that order. 404 if any isn't an Activity of this Event
@@ -360,6 +378,32 @@ export function createApp({
     /** Saves the whole Event (ADR-0029): editors and owners, with If-Match. */
     .put("/events/:eventId", anyJson, (c) =>
       save(c, "event", c.req.param("eventId"), c.req.valid("json")),
+    )
+
+    /** Adds a new Activity to one of the Event's Competitions (#6 PR 2b): editors and owners, with If-Match. */
+    .post("/events/:eventId/activities", jsonBody(NewActivity), (c) =>
+      c.json(addActivity(db, { ...changeOf(c), ...c.req.valid("json") }), 201),
+    )
+
+    /** Copies one of the Event's Activities, listed right after it (#6 PR 2b). */
+    .post("/events/:eventId/activities/:activityId/duplicate", (c) =>
+      c.json(
+        duplicateActivity(db, {
+          ...changeOf(c),
+          activityId: c.req.param("activityId"),
+        }),
+        201,
+      ),
+    )
+
+    /** Takes an Activity off the Event, and deletes it if nothing else lists it (#6 PR 2b). */
+    .delete("/events/:eventId/activities/:activityId", (c) =>
+      c.json(
+        removeActivity(db, {
+          ...changeOf(c),
+          activityId: c.req.param("activityId"),
+        }),
+      ),
     )
 
     .get("/activities/:activityId", (c) =>

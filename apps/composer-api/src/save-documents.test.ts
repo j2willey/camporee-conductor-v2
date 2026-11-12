@@ -246,6 +246,7 @@ describe("saving an Event", () => {
       event: EVENT,
       updatedAt,
       activities: expect.anything(),
+      role: "owner",
     });
   });
 
