@@ -4,6 +4,7 @@ import type {
   Competition,
   Event,
 } from "@camporee-conductor/schema";
+import { isActivityEnabled } from "@camporee-conductor/schema";
 
 /**
  * Where a section's missing content will come from (ARCHITECTURE §18's four tiers, generic names):
@@ -76,7 +77,10 @@ export function buildGuide(event: Event, activities: GuideActivity[]): Guide {
   const competitionSection = (competition: Competition): GuideSection => {
     const listed = competition.programGuide?.listActivities ?? true;
     const titles = event.activities
-      .filter((entry) => entry.competitionId === competition.id)
+      .filter(
+        (entry) =>
+          entry.competitionId === competition.id && isActivityEnabled(entry),
+      )
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .map((entry) => titleById.get(entry.activityId) ?? "(missing Activity)");
     let blocks: GuideBlock[];

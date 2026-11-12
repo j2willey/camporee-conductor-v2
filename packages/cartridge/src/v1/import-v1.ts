@@ -152,13 +152,6 @@ export function importV1Cartridge(
   );
   if (!commonFieldSet || issues.length > 0) throw new V1ImportError(issues);
 
-  // Games v1 itself leaves out: information, not skips.
-  const disabled = camporee.playlist.filter((e) => e.enabled === false);
-  if (disabled.length > 0) {
-    notes.push(
-      `Left out ${count(disabled.length, "game")} the v1 playlist disables: ${disabled.map((e) => e.gameId).join(", ")}.`,
-    );
-  }
   const listed = new Set(camporee.playlist.map((e) => e.gameId));
   const unlisted = games.filter((g) => !listed.has(g.id));
   if (unlisted.length > 0) {
@@ -185,6 +178,36 @@ export function importV1Cartridge(
       });
     }
   }
+  // Games v1's playlist disables come across as disabled Activities (ADR-0029 item 9), when they're valid ones:
+  // information, never skips, and never refused by strict.
+  const disabled = camporee.playlist.filter((e) => e.enabled === false);
+  const disabledKept: string[] = [];
+  const disabledLeft: string[] = [];
+  for (const entry of disabled) {
+    const game = gameById.get(entry.gameId);
+    const activity =
+      game && leagueIds.has(game.league) && !game.bracketMode
+        ? check(ActivitySchema, toActivity(game, id), "", [])
+        : undefined;
+    if (activity) {
+      kept.push(entry);
+      activities.push(activity);
+      disabledKept.push(entry.gameId);
+    } else {
+      disabledLeft.push(entry.gameId);
+    }
+  }
+  if (disabledKept.length > 0) {
+    notes.push(
+      `Imported ${count(disabledKept.length, "game")} the v1 playlist disables, as disabled: ${disabledKept.join(", ")}.`,
+    );
+  }
+  if (disabledLeft.length > 0) {
+    notes.push(
+      `Left out ${count(disabledLeft.length, "disabled game")} that isn't a valid v2 Activity: ${disabledLeft.join(", ")}.`,
+    );
+  }
+  kept.sort((a, b) => a.order - b.order);
   activities.sort((a, b) => a.slug.localeCompare(b.slug));
   if (strict && skipped.length > 0) {
     throw new V1ImportError(
@@ -352,6 +375,7 @@ function toEvent(
       activityId: id(`activity:${entry.gameId}`),
       competitionId: id(`competition:${gameById.get(entry.gameId)?.league}`),
       sortOrder: entry.order,
+      ...(entry.enabled === false && { enabled: false }),
     })),
     // v1 always numbered ties densely; recorded rather than left to the default (ADR-0019).
     tieNumbering: "dense",

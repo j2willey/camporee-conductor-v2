@@ -1,4 +1,8 @@
-import type { Activity, Event } from "@camporee-conductor/schema";
+import {
+  isActivityEnabled,
+  type Activity,
+  type Event,
+} from "@camporee-conductor/schema";
 import { renderInlineMarkdown, renderMarkdown } from "./markdown.ts";
 import { escapeHtml } from "./render.ts";
 
@@ -95,7 +99,7 @@ export function activityGuideNumbers(event: Event): Map<string, string> {
   event.competitions.forEach((competition, index) => {
     const prefix = clash ? `${index + 1}-` : (initials[index] ?? "");
     event.activities
-      .filter((a) => a.competitionId === competition.id)
+      .filter((a) => a.competitionId === competition.id && isActivityEnabled(a))
       .sort((a, b) => a.sortOrder - b.sortOrder)
       .forEach((entry, place) => {
         numbers.set(entry.activityId, `${prefix}${place + 1}`);

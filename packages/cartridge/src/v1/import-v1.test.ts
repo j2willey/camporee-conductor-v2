@@ -373,7 +373,7 @@ describe("importV1Cartridge: the Event", () => {
     ]);
   });
 
-  it("leaves out a game the playlist disables, as v1's Collator did, as info, not a skip", () => {
+  it("imports a game the playlist disables as a disabled Activity, so the design keeps it (ADR-0029 item 9)", () => {
     const disabled = camporee();
     disabled.playlist = [
       { gameId: "relay", order: 1, enabled: true },
@@ -381,11 +381,44 @@ describe("importV1Cartridge: the Event", () => {
       { gameId: "tug", order: 3 },
     ];
     const result = run({ camporee: disabled });
-    expect(result.activities.map((a) => a.slug)).toEqual(["relay", "tug"]);
-    expect(result.event.activities.map((e) => e.sortOrder)).toEqual([1, 3]);
+    expect(result.activities.map((a) => a.slug)).toEqual([
+      "archery",
+      "relay",
+      "tug",
+    ]);
+    expect(
+      result.event.activities.map(({ sortOrder, enabled }) => ({
+        sortOrder,
+        enabled,
+      })),
+    ).toEqual([
+      { sortOrder: 1, enabled: undefined },
+      { sortOrder: 2, enabled: false },
+      { sortOrder: 3, enabled: undefined },
+    ]);
+    expect(result.event.activities[0]).not.toHaveProperty("enabled");
     expect(result.skipped).toEqual([]);
     expect(result.notes).toContain(
-      "Left out 1 game the v1 playlist disables: archery.",
+      "Imported 1 game the v1 playlist disables, as disabled: archery.",
+    );
+  });
+
+  it("leaves out a disabled game that isn't a valid Activity yet, as info, not a skip", () => {
+    const disabled = camporee();
+    disabled.playlist = disabled.playlist.map((e) =>
+      e.gameId === "tug" ? { ...e, enabled: false } : e,
+    );
+    const tugUnfinished = tug();
+    tugUnfinished.scoring_model.inputs = [];
+    tugUnfinished.bracketMode = true;
+    const result = run({
+      camporee: disabled,
+      games: [relay(), archery(), tugUnfinished],
+    });
+    expect(result.activities.map((a) => a.slug)).toEqual(["archery", "relay"]);
+    expect(result.skipped).toEqual([]);
+    expect(result.notes).toContain(
+      "Left out 1 disabled game that isn't a valid v2 Activity: tug.",
     );
   });
 
@@ -579,6 +612,20 @@ describe("importV1Cartridge: unfinished games (designs change until about April)
       importV1Cartridge(cartridge({ camporee: disabled }), options(), {
         strict: true,
       }).skipped,
+    ).toEqual([]);
+    const disabledUnfinished = camporee();
+    disabledUnfinished.playlist = disabledUnfinished.playlist.map((e) =>
+      e.gameId === "tug" ? { ...e, enabled: false } : e,
+    );
+    expect(
+      importV1Cartridge(
+        cartridge({
+          camporee: disabledUnfinished,
+          games: [relay(), archery(), unfinished()],
+        }),
+        options(),
+        { strict: true },
+      ).skipped,
     ).toEqual([]);
   });
 });

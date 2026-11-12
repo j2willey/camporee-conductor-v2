@@ -4,6 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { z } from "zod";
 import {
   checkEventBundle,
+  withoutDisabledActivities,
   type CheckedBundle,
   type EventBundle,
 } from "./bundle.ts";
@@ -75,6 +76,11 @@ export function exportCartridge(
   profile: CartridgeProfile,
   { exportedAt }: { exportedAt: Date },
 ): Uint8Array {
+  const designCheck = checkEventBundle(bundle);
+  if (!designCheck.ok) throw new CartridgeError(designCheck.issues);
+  // The Collator never sees a disabled Activity (ADR-0029 item 9); the design keeps it.
+  if (profile === "event-day")
+    bundle = withoutDisabledActivities(bundle).bundle;
   const check = checkEventBundle(bundle);
   if (!check.ok) throw new CartridgeError(check.issues);
   const issues: string[] = [];
@@ -244,7 +250,14 @@ export function loadCartridge(
     ...("officials.json" in files && { officials: json("officials.json") }),
   };
   if (issues.length > 0) return fail(issues);
-  const check = checkEventBundle(raw);
+  const designCheck = checkEventBundle(raw);
+  if (!designCheck.ok) return fail(designCheck.issues);
+  // An event-day cartridge shouldn't hold disabled Activities (ADR-0029 item 9); one made by hand might.
+  const { bundle: kept, left } =
+    profile === "event-day"
+      ? withoutDisabledActivities(raw)
+      : { bundle: raw, left: [] };
+  const check = checkEventBundle(kept);
   if (!check.ok) return fail(check.issues);
   const { bundle } = check;
   if (bundle.event.id !== manifest.event.id) {
@@ -256,8 +269,13 @@ export function loadCartridge(
   if (issues.length > 0) return fail(issues);
 
   const [set] = bundle.commonFieldSets;
-  const notes = set
-    ? unresolvedVariables(bundle.event, set, bundle.activities)
-    : [];
-  return { ok: true, manifest, bundle, raw, notes };
+  const notes = [
+    ...(left.length > 0
+      ? [
+          `Left out ${left.length === 1 ? "1 disabled Activity" : `${left.length} disabled Activities`}: ${left.join(", ")}.`,
+        ]
+      : []),
+    ...(set ? unresolvedVariables(bundle.event, set, bundle.activities) : []),
+  ];
+  return { ok: true, manifest, bundle, raw: kept, notes };
 }

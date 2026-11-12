@@ -175,13 +175,13 @@ describe("import-v1 CLI", () => {
     expect(openDb(dbPath).select().from(documents).all()).toHaveLength(0);
   });
 
-  it("lists a game the playlist disables as info, even with --strict", () => {
+  it("imports a game the playlist disables as a disabled Activity, as info, even with --strict", () => {
     const zip = circusZip({ camporee: disableCircusLine });
     const result = run("coyote-creek", zip, "--overlay", OVERLAY, "--strict");
     expect(result.status).toBe(0);
     expect(result.stdout).not.toMatch(/SKIPPED/);
     expect(result.stdout).toContain(
-      "note: Left out 1 game the v1 playlist disables: circus-line.",
+      "note: Imported 1 game the v1 playlist disables, as disabled: circus-line.",
     );
   });
 

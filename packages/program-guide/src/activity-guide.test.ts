@@ -380,6 +380,19 @@ describe("activityGuideNumbers", () => {
     ]);
   });
 
+  it("skips a disabled Activity: it has no number, and the next one takes its place (ADR-0029 item 9)", () => {
+    const [a, b] = inOrder("Patrol Games");
+    if (!a || !b) throw new Error("need two");
+    const n = activityGuideNumbers({
+      ...circus,
+      activities: circus.activities.map((e) =>
+        e.activityId === a.activityId ? { ...e, enabled: false } : e,
+      ),
+    });
+    expect(n.has(a.activityId)).toBe(false);
+    expect(n.get(b.activityId)).toBe("P1");
+  });
+
   it("uses the Competition's position when two labels share an initial", () => {
     const clash = {
       ...circus,

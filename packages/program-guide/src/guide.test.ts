@@ -82,6 +82,24 @@ describe("buildGuide: listing a Competition's Activities", () => {
     ]);
   });
 
+  it("leaves a disabled Activity out of the guide (ADR-0029 item 9)", () => {
+    const wildWest = circusActivities.find(
+      (a) => a.title === "The Wild West Show",
+    );
+    const activities = circus.activities.map((e) =>
+      e.activityId === wildWest?.id ? { ...e, enabled: false } : e,
+    );
+    const { sections } = buildGuide(
+      circusWith({ activities }),
+      circusActivities,
+    );
+    expect(listItems(section(sections, "competition-exhibition"))).toEqual([
+      "The High Wire Act",
+      "The Human Fly",
+      "William Tell No Apple",
+    ]);
+  });
+
   it("leaves the Activities out when listActivities is false, and says they'll be announced", () => {
     const { sections } = buildGuide(circus, circusActivities);
     const patrolGames = section(sections, "competition-patrol-games");

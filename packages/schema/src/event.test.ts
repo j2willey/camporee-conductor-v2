@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { EventSchema, TemplateSchema, type Event } from "./event.ts";
+import {
+  EventSchema,
+  isActivityEnabled,
+  TemplateSchema,
+  type Event,
+} from "./event.ts";
 import { issuesOf } from "./test-support.ts";
 
 const COMPETITION = "0196cfa2-4c00-7000-8000-000000000020";
@@ -277,6 +282,27 @@ describe("EventSchema", () => {
     ];
     expect(issuesOf(EventSchema, { ...event, activities })).toContain(
       "activities.0.competitionId: no Competition with this id in the Event",
+    );
+  });
+
+  it("takes `enabled` on an Activity entry; left out means enabled, with no default added (ADR-0029 item 9)", () => {
+    const event = validEvent();
+    const entry = event.activities[0] as Event["activities"][number];
+    const disabled = { ...event, activities: [{ ...entry, enabled: false }] };
+    expect(EventSchema.parse(disabled)).toEqual(disabled);
+    expect(EventSchema.parse(event).activities[0]).not.toHaveProperty(
+      "enabled",
+    );
+    expect(isActivityEnabled(entry)).toBe(true);
+    expect(isActivityEnabled({ ...entry, enabled: true })).toBe(true);
+    expect(isActivityEnabled({ ...entry, enabled: false })).toBe(false);
+    expect(
+      issuesOf(EventSchema, {
+        ...event,
+        activities: [{ ...entry, enabled: "no" }],
+      }),
+    ).toContain(
+      "activities.0.enabled: Invalid input: expected boolean, received string",
     );
   });
 

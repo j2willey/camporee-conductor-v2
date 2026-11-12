@@ -2,6 +2,7 @@ import {
   ActivitySchema,
   CommonFieldSetSchema,
   EventSchema,
+  isActivityEnabled,
   OfficialsSchema,
   type Activity,
   type CommonFieldSet,
@@ -131,3 +132,40 @@ const stringProp = (raw: unknown, key: string): string | undefined => {
 };
 const slugOf = (raw: unknown) => stringProp(raw, "slug");
 const idOf = (raw: unknown) => stringProp(raw, "id");
+
+/**
+ * The bundle without the Event's disabled Activities (ADR-0029 item 9): their entries leave the Event's list
+ * and their documents leave the bundle, so the Collator never sees them. Everything else is as given. Call it on
+ * a bundle that passed `checkEventBundle`. `left` names the Activities left out, by slug.
+ */
+export function withoutDisabledActivities(bundle: EventBundle): {
+  bundle: EventBundle;
+  left: string[];
+} {
+  const event = bundle.event as {
+    activities: { activityId: string; enabled?: boolean }[];
+  };
+  const disabled = new Set(
+    event.activities
+      .filter((entry) => !isActivityEnabled(entry))
+      .map((entry) => entry.activityId),
+  );
+  if (disabled.size === 0) return { bundle, left: [] };
+  const left = bundle.activities
+    .filter((doc) => disabled.has(idOf(doc) ?? ""))
+    .map((doc) => slugOf(doc) ?? idOf(doc) ?? "?")
+    .sort();
+  return {
+    bundle: {
+      ...bundle,
+      event: {
+        ...event,
+        activities: event.activities.filter((e) => !disabled.has(e.activityId)),
+      },
+      activities: bundle.activities.filter(
+        (doc) => !disabled.has(idOf(doc) ?? ""),
+      ),
+    },
+    left,
+  };
+}

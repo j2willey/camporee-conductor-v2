@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { activityGuideNumbers } from "@camporee-conductor/program-guide";
+import { isActivityEnabled } from "@camporee-conductor/schema";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import { client, data } from "../api.ts";
@@ -49,7 +50,15 @@ function GuidesPicker({
   }));
   // Event order: Competition order, then sortOrder.
   const ordered = groups.flatMap((g) => g.entries.map((e) => e.activityId));
-  const [picked, setPicked] = useState(() => new Set(ordered));
+  // Disabled Activities (ADR-0029 item 9) are listed and can be picked, but start unticked.
+  const disabled = new Set(
+    event.activities
+      .filter((a) => !isActivityEnabled(a))
+      .map((a) => a.activityId),
+  );
+  const [picked, setPicked] = useState(
+    () => new Set(ordered.filter((id) => !disabled.has(id))),
+  );
   const [twoSided, setTwoSided] = useState(true);
   const ids = ordered.filter((id) => picked.has(id));
 
@@ -129,6 +138,9 @@ function GuidesPicker({
                       />
                       {numbers.get(entry.activityId)}{" "}
                       {titles.get(entry.activityId)}
+                      {disabled.has(entry.activityId) && (
+                        <span className="text-stone-500">(disabled)</span>
+                      )}
                     </label>
                   </li>
                 ))}
