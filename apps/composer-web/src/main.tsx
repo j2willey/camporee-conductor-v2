@@ -41,6 +41,8 @@ const router = createBrowserRouter([
         path: "/events/:eventId/activities/:activityId",
         element: <ActivityPage />,
       },
+      // A saved or library Activity on its own (ADR-0031 item 6, #102 PR 5).
+      { path: "/activities/:activityId", element: <ActivityPage /> },
       { path: "*", element: <NotFound /> },
     ],
   },

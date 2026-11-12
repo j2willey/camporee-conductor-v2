@@ -261,3 +261,34 @@ export function StringList({
     </div>
   );
 }
+
+/**
+ * Says whose a library document or Template is to change (ADR-0031 item 6, #102 PR 5): a library one is the
+ * curators', and a change reaches everyone who uses the library from then on, though never copies already made.
+ */
+export function LibraryNote({
+  what,
+  visibility,
+  canEdit,
+}: {
+  what: "Template" | "Activity";
+  visibility: "private" | "library";
+  canEdit: boolean;
+}) {
+  if (visibility === "private") {
+    return (
+      <p className={ui.muted}>
+        {what} · Private to your Organization. A curator can publish it from the
+        Library.
+      </p>
+    );
+  }
+  return (
+    <p className="rounded-md bg-teal-50 px-3 py-2 text-sm text-teal-900">
+      {what} · In the library.{" "}
+      {canEdit
+        ? "Your changes reach everyone who uses it from now on; copies already made don't change."
+        : "Only a curator can change it. Use it from the Library to make your own copy."}
+    </p>
+  );
+}

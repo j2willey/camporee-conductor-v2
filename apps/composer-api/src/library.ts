@@ -2,7 +2,7 @@ import { stripPersonalData } from "@camporee-conductor/cartridge";
 import type { Event } from "@camporee-conductor/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { requireRole } from "./authz.ts";
+import { isCurator, requireRole } from "./authz.ts";
 import type { Db } from "./db/open.ts";
 import { auditLog, documents, users, type DocumentKind } from "./db/schema.ts";
 
@@ -22,15 +22,7 @@ export function setCurator(db: Db, email: string, curator: boolean): boolean {
   return updated.length > 0;
 }
 
-export function isCurator(db: Db, userId: string): boolean {
-  return (
-    db
-      .select({ curator: users.curator })
-      .from(users)
-      .where(eq(users.id, userId))
-      .get()?.curator ?? false
-  );
-}
+export { isCurator };
 
 type Change = { id: string; userId: string; now: Date };
 

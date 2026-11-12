@@ -5,9 +5,13 @@ import { useDownload } from "../useDownload.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import { ui } from "../ui.ts";
 import { ActivityList } from "./ActivityList.tsx";
+import { LibraryNote } from "./editing.tsx";
 import { Loading, PageError } from "./ErrorMessage.tsx";
 
-/** An Event: its details, then its Competitions and their Activities in order (issues #4, #6). */
+/**
+ * An Event: its details, then its Competitions and their Activities in order (issues #4, #6). A Template opens here
+ * too (ADR-0031 item 6, #102 PR 5), without what a Template never has: Officials and the event-day cartridge.
+ */
 export function EventPage() {
   const { eventId = "" } = useParams();
   const result = useQuery({
@@ -17,34 +21,50 @@ export function EventPage() {
   });
   if (result.isPending) return <Loading />;
   if (result.isError) return <PageError error={result.error} />;
-  const { event } = result.data;
+  const { event, kind, visibility } = result.data;
+  const isTemplate = kind === "template";
+  const canEdit = result.data.role === "owner" || result.data.role === "editor";
   const dates = [event.startDate, event.endDate].filter(Boolean).join(" – ");
   return (
     <div className="space-y-8">
       <div className="space-y-1">
         <p>
-          <Link to="/" className={ui.link}>
-            ← Your Organizations
-          </Link>
+          {isTemplate ? (
+            <Link to="/library" className={ui.link}>
+              ← Library
+            </Link>
+          ) : (
+            <Link to="/" className={ui.link}>
+              ← Your Organizations
+            </Link>
+          )}
         </p>
         <h1 className={ui.h1}>{event.title}</h1>
+        {isTemplate && (
+          <LibraryNote
+            what="Template"
+            visibility={visibility}
+            canEdit={canEdit}
+          />
+        )}
         {dates && <p className="text-stone-600">{dates}</p>}
         {event.organizerName && (
           <p className={ui.muted}>Organizer: {event.organizerName}</p>
         )}
         <ProgramGuideButton
           eventId={eventId}
-          canEdit={
-            result.data.role === "owner" || result.data.role === "editor"
-          }
+          canEdit={canEdit}
+          isTemplate={isTemplate}
         />
-        <CartridgeButtons
-          eventId={eventId}
-          slug={event.slug}
-          canEdit={
-            result.data.role === "owner" || result.data.role === "editor"
-          }
-        />
+        {isTemplate ? (
+          <TemplateZipButton templateId={eventId} slug={event.slug} />
+        ) : (
+          <CartridgeButtons
+            eventId={eventId}
+            slug={event.slug}
+            canEdit={canEdit}
+          />
+        )}
       </div>
       <ActivityList eventId={eventId} read={result.data} />
     </div>
@@ -55,9 +75,11 @@ export function EventPage() {
 function ProgramGuideButton({
   eventId,
   canEdit,
+  isTemplate,
 }: {
   eventId: string;
   canEdit: boolean;
+  isTemplate: boolean;
 }) {
   const { open, opening, error } = useOpenHtmlInNewTab(
     () =>
@@ -81,7 +103,7 @@ function ProgramGuideButton({
           Guides
         </Link>
         <Link to={`/events/${eventId}/details`} className={ui.buttonQuiet}>
-          Event details
+          {isTemplate ? "Template details" : "Event details"}
         </Link>
         <Link to={`/events/${eventId}/competitions`} className={ui.buttonQuiet}>
           Competitions and Awards
@@ -92,8 +114,8 @@ function ProgramGuideButton({
         >
           Common Fields
         </Link>
-        {/* Officials' emails are for editors and owners only (ADR-0027 item 5). */}
-        {canEdit && (
+        {/* Officials' emails are for editors and owners only (ADR-0027 item 5); a Template never has them. */}
+        {canEdit && !isTemplate && (
           <Link to={`/events/${eventId}/officials`} className={ui.buttonQuiet}>
             Officials
           </Link>
@@ -157,6 +179,40 @@ function CartridgeButtons({
       {error && (
         <p role="alert" className={`${ui.error} whitespace-pre-line`}>
           {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** The Template zip (ADR-0031 item 7, #102 PR 4): a design cartridge of the Template, without personal data. */
+function TemplateZipButton({
+  templateId,
+  slug,
+}: {
+  templateId: string;
+  slug: string;
+}) {
+  const zip = useDownload(
+    () =>
+      client.api.templates[":templateId"].cartridge.$get({
+        param: { templateId },
+      }),
+    `${slug}-template.zip`,
+  );
+  return (
+    <div className="space-y-2 pt-2">
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        disabled={zip.downloading}
+        onClick={() => void zip.download()}
+      >
+        Download Template zip
+      </button>
+      {zip.error && (
+        <p role="alert" className={`${ui.error} whitespace-pre-line`}>
+          {zip.error}
         </p>
       )}
     </div>

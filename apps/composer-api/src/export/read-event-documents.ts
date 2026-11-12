@@ -12,7 +12,13 @@ import { documents } from "../db/schema.ts";
 export function readEventDocuments(
   db: Db,
   eventId: string,
-): { organizationId: string; bundle: EventBundle } | undefined {
+):
+  | {
+      organizationId: string;
+      visibility: "private" | "library";
+      bundle: EventBundle;
+    }
+  | undefined {
   const row = db
     .select()
     .from(documents)
@@ -21,6 +27,7 @@ export function readEventDocuments(
   if (!row) return undefined;
   return {
     organizationId: row.organizationId,
+    visibility: row.visibility,
     bundle: eventBundleFor(db, row.organizationId, JSON.parse(row.json)),
   };
 }

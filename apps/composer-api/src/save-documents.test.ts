@@ -264,6 +264,8 @@ describe("saving an Event", () => {
       updatedAt,
       activities: expect.anything(),
       role: "owner",
+      kind: "event",
+      visibility: "private",
     });
   });
 

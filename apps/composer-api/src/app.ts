@@ -27,7 +27,7 @@ import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
-import { readRole, requireRole } from "./authz.ts";
+import { documentRole, readRole, requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
@@ -49,7 +49,12 @@ import {
   createCommonFields,
   readCommonFields,
 } from "./documents/common-fields.ts";
-import { saveDocument, type SavableKind } from "./documents/save.ts";
+import {
+  DESIGN_KINDS,
+  saveDocument,
+  type DesignKind,
+  type SavableKind,
+} from "./documents/save.ts";
 import { saveToLibrary } from "./documents/library-activities.ts";
 import {
   readEventDocuments,
@@ -253,18 +258,21 @@ export function createApp({
       .all();
 
   /**
-   * An Event the user can view, plus its Activities' ids, slugs and titles. 404 if there's no such
-   * Event or the user isn't a member of its Organization (`requireRole`).
+   * An Event or Template the user can view (the Event editor opens both, ADR-0031 item 6), plus its Activities' ids,
+   * slugs and titles, its visibility and the caller's role (`documentRole`: curators edit library documents). 404 if
+   * there's no such document or the user can't read it.
    */
   const readEvent = (eventId: string, userId: string) => {
     const row = db
       .select()
       .from(documents)
-      .where(and(eq(documents.id, eventId), eq(documents.kind, "event")))
+      .where(
+        and(eq(documents.id, eventId), inArray(documents.kind, DESIGN_KINDS)),
+      )
       .get();
     if (!row) throw new HTTPException(404, { message: "Not found." });
-    const role = requireRole(db, row.organizationId, userId, "viewer");
-    // Validated on import (ADR-0012); stored exactly as given.
+    const role = documentRole(db, row, userId);
+    // Validated on import and on every save (ADR-0012); a Template is Event-shaped (ADR-0017), read as one.
     const event = JSON.parse(row.json) as Event;
     const ids = new Set(event.activities.map((a) => a.activityId));
     const activities = db
@@ -282,7 +290,14 @@ export function createApp({
       )
       .all()
       .filter((a) => ids.has(a.id));
-    return { event, activities, updatedAt: row.updatedAt.getTime(), role };
+    return {
+      event,
+      activities,
+      updatedAt: row.updatedAt.getTime(),
+      role,
+      kind: row.kind as DesignKind,
+      visibility: row.visibility,
+    };
   };
 
   /** One Activity document, its `updatedAt` and the caller's role, for editing (ADR-0029). 404 like `readEvent`. */
@@ -293,12 +308,13 @@ export function createApp({
       .where(and(eq(documents.id, activityId), eq(documents.kind, "activity")))
       .get();
     if (!row) throw new HTTPException(404, { message: "Not found." });
-    // A library Activity is readable by everyone signed in (ADR-0031); saving still needs its Organization.
-    const role = readRole(db, row.organizationId, userId, row.visibility);
+    // A library Activity is readable by everyone signed in; only curators change it (ADR-0031 item 6).
+    const role = documentRole(db, row, userId);
     return {
       activity: JSON.parse(row.json) as Activity,
       updatedAt: row.updatedAt.getTime(),
       role,
+      visibility: row.visibility,
     };
   };
 
@@ -743,9 +759,10 @@ export function createApp({
 
     /** The Common Field sets the Event's Competitions use, as stored: for the scoring preview (#6 PR 5). */
     .get("/events/:eventId/common-field-sets", (c) => {
-      const found = readEventDocuments(db, c.req.param("eventId"));
+      const id = c.req.param("eventId");
+      const found = readEventDocuments(db, id) ?? readTemplateDocuments(db, id);
       if (!found) throw new HTTPException(404, { message: "Not found." });
-      requireRole(db, found.organizationId, c.var.user.userId, "viewer");
+      documentRole(db, found, c.var.user.userId);
       return c.json(found.bundle.commonFieldSets as CommonFieldSet[]);
     })
 

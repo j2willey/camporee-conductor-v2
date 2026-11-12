@@ -32,12 +32,17 @@ const LABELS: {
 /**
  * The Event's details (#6 PR 7): title, theme, year, dates, organizer, what this pack calls its people
  * (ADR-0003), the theme colors (with v1's "reset to defaults"), tie numbering and the Program Guide's skills.
- * Saved with the Event (ADR-0029). Venue, introduction and contacts too (ADR-0029 item 8, PR 8).
+ * Saved with the Event (ADR-0029). Venue, introduction and contacts too (ADR-0029 item 8, PR 8). A Template's
+ * details are the same but for contacts, which a Template never has (ADR-0031 rule 4).
  */
 export function EventDetailsPage() {
   return (
-    <EventEditorPage heading="Event details">
-      {({ draft, setDraft }) => <Details draft={draft} setDraft={setDraft} />}
+    <EventEditorPage
+      heading={{ event: "Event details", template: "Template details" }}
+    >
+      {({ draft, setDraft, isTemplate }) => (
+        <Details draft={draft} setDraft={setDraft} isTemplate={isTemplate} />
+      )}
     </EventEditorPage>
   );
 }
@@ -45,9 +50,11 @@ export function EventDetailsPage() {
 function Details({
   draft,
   setDraft,
+  isTemplate,
 }: {
   draft: Event;
   setDraft: (event: Event) => void;
+  isTemplate: boolean;
 }) {
   const colors = draft.presentation.themeColors;
   const setColors = (themeColors: Colors) =>
@@ -145,17 +152,19 @@ function Details({
         />
       </Card>
 
-      <Card title="Contacts">
-        <p className={ui.muted}>
-          Who to contact about the Event, e.g. the director. Personal data: kept
-          in this Event's own cartridges, and taken out of anything shared
-          beyond it (Templates, the library).
-        </p>
-        <Contacts
-          contacts={draft.contacts ?? []}
-          onChange={(contacts) => setDraft({ ...draft, contacts })}
-        />
-      </Card>
+      {!isTemplate && (
+        <Card title="Contacts">
+          <p className={ui.muted}>
+            Who to contact about the Event, e.g. the director. Personal data:
+            kept in this Event's own cartridges, and taken out of anything
+            shared beyond it (Templates, the library).
+          </p>
+          <Contacts
+            contacts={draft.contacts ?? []}
+            onChange={(contacts) => setDraft({ ...draft, contacts })}
+          />
+        </Card>
+      )}
 
       <Card title="What people are called">
         <p className={ui.muted}>

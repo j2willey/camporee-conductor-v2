@@ -1,20 +1,27 @@
-import { checkEventBundle } from "@camporee-conductor/cartridge";
+import {
+  checkEventBundle,
+  checkTemplateBundle,
+} from "@camporee-conductor/cartridge";
 import {
   ActivitySchema,
   CommonFieldSetSchema,
   EventSchema,
   OfficialsSchema,
+  TemplateSchema,
 } from "@camporee-conductor/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { requireRole } from "../authz.ts";
+import { requireDocumentEditor } from "../authz.ts";
 import type { Db } from "../db/open.ts";
 import { auditLog, documents } from "../db/schema.ts";
 import { eventBundleFor } from "../export/read-event-documents.ts";
 
 /** The document kinds the Composer saves (ADR-0029). */
 export type SavableKind =
-  "event" | "activity" | "common-field-set" | "officials";
+  "event" | "template" | "activity" | "common-field-set" | "officials";
+
+/** An Event-shaped document (ADR-0017): the Event editor opens both (ADR-0031 item 6, #102 PR 5). */
+export type DesignKind = "event" | "template";
 
 /**
  * Saves a whole document (ADR-0029): checks the caller's role, `If-Match` against the stored `updatedAt`, the
@@ -42,15 +49,17 @@ export function saveDocument(
 ): number {
   return db.transaction(() => {
     const opened = openForEdit(db, { kind, id, userId, ifMatch });
+    // The Event routes save a Template too; a save never changes a document's kind.
+    const stored = opened.kind;
     const doc = asRecord(raw);
-    if (doc?.["id"] !== id || doc["kind"] !== kind) {
+    if (doc?.["id"] !== id || doc["kind"] !== stored) {
       throw new HTTPException(400, {
-        message: `The body must be the ${kind} ${id}: its id and kind must match.`,
+        message: `The body must be the ${stored} ${id}: its id and kind must match.`,
       });
     }
     const issues =
-      kind === "event"
-        ? eventIssues(db, opened.organizationId, raw)
+      stored === "event" || stored === "template"
+        ? eventIssues(db, opened.organizationId, raw, stored)
         : kind === "activity"
           ? activityIssues(db, opened.organizationId, id, raw)
           : kind === "common-field-set"
@@ -61,12 +70,12 @@ export function saveDocument(
     }
     return writeDocument(db, {
       ...opened,
-      kind,
+      kind: stored,
       id,
       raw,
       userId,
       now,
-      action: `${kind}.update`,
+      action: `${stored}.update`,
     });
   });
 }
@@ -75,11 +84,16 @@ export function saveDocument(
 export interface Opened {
   organizationId: string;
   stored: number;
+  /** The stored kind: `template` when the Event routes opened a Template. */
+  kind: SavableKind;
+  /** New parts of a library Template go in the library with it (ADR-0031 notes, #102 PR 5). */
+  visibility: "private" | "library";
 }
 
 /**
- * The first steps of every change (ADR-0029): 404 if there's no such document, 403/404 below editor, 428 without
- * If-Match, 409 if it's stale. Call inside the change's transaction.
+ * The first steps of every change (ADR-0029): 404 if there's no such document, 403/404 below editor (`documentRole`:
+ * curators for a library document), 428 without If-Match, 409 if it's stale. `event` opens a Template too.
+ * Call inside the change's transaction.
  */
 export function openForEdit(
   db: Db,
@@ -97,14 +111,21 @@ export function openForEdit(
 ): Opened {
   const row = db
     .select({
+      kind: documents.kind,
       organizationId: documents.organizationId,
+      visibility: documents.visibility,
       updatedAt: documents.updatedAt,
     })
     .from(documents)
-    .where(and(eq(documents.id, id), eq(documents.kind, kind)))
+    .where(
+      and(
+        eq(documents.id, id),
+        inArray(documents.kind, kind === "event" ? DESIGN_KINDS : [kind]),
+      ),
+    )
     .get();
   if (!row) throw new HTTPException(404, { message: "Not found." });
-  requireRole(db, row.organizationId, userId, "editor");
+  requireDocumentEditor(db, row, userId);
 
   const expected = parseIfMatch(ifMatch);
   if (expected === undefined) {
@@ -119,8 +140,15 @@ export function openForEdit(
         "Someone else saved this since you opened it. Reload to see their changes.",
     });
   }
-  return { organizationId: row.organizationId, stored };
+  return {
+    organizationId: row.organizationId,
+    stored,
+    kind: row.kind as SavableKind,
+    visibility: row.visibility,
+  };
 }
+
+export const DESIGN_KINDS: DesignKind[] = ["event", "template"];
 
 /**
  * Stores a checked document exactly as given (ADR-0012), keeps `slug` and `title` in step, and writes one audit
@@ -138,7 +166,7 @@ export function writeDocument(
     now,
     action,
     detail = null,
-  }: Opened & {
+  }: Omit<Opened, "kind" | "visibility"> & {
     kind: SavableKind;
     id: string;
     raw: unknown;
@@ -207,20 +235,55 @@ function schemaIssues(
   );
 }
 
-/** The Event against the Organization's documents it references. */
+/** The Event or Template against the Organization's documents it references. */
 export function eventIssues(
   db: Db,
   organizationId: string,
   raw: unknown,
+  kind: DesignKind = "event",
 ): string[] {
-  const parsed = EventSchema.safeParse(raw);
+  const parsed = (kind === "event" ? EventSchema : TemplateSchema).safeParse(
+    raw,
+  );
   // The bundle needs the Event's lists, so a malformed Event is reported on its own first.
-  if (!parsed.success) return schemaIssues("event", raw, parsed);
-  const check = checkEventBundle(eventBundleFor(db, organizationId, raw));
+  if (!parsed.success) return schemaIssues(kind, raw, parsed);
+  return bundleIssues(kind, eventBundleFor(db, organizationId, raw));
+}
+
+/** The bundle checked by its main document's rules; a Template never has Officials. */
+function bundleIssues(
+  kind: DesignKind,
+  bundle: ReturnType<typeof eventBundleFor>,
+): string[] {
+  if (kind === "template") delete bundle.officials;
+  const check =
+    kind === "event" ? checkEventBundle(bundle) : checkTemplateBundle(bundle);
   return check.ok ? [] : check.issues;
 }
 
-/** The Activity on its own, then against every Event in the Organization that lists it. */
+/** The Events and Templates in the Organization (ADR-0031 notes, #102 PR 5), parsed, with their kind. */
+function designsIn(db: Db, organizationId: string) {
+  return db
+    .select({ kind: documents.kind, json: documents.json })
+    .from(documents)
+    .where(
+      and(
+        eq(documents.organizationId, organizationId),
+        inArray(documents.kind, DESIGN_KINDS),
+      ),
+    )
+    .all()
+    .map((r) => ({
+      kind: r.kind as DesignKind,
+      // Validated on import and on every save (ADR-0012, ADR-0029).
+      doc: JSON.parse(r.json) as {
+        activities: { activityId: string }[];
+        competitions: { commonFields?: { setId: string } }[];
+      },
+    }));
+}
+
+/** The Activity on its own, then against every Event and Template in the Organization that lists it. */
 export function activityIssues(
   db: Db,
   organizationId: string,
@@ -230,30 +293,20 @@ export function activityIssues(
   const parsed = ActivitySchema.safeParse(raw);
   if (!parsed.success) return schemaIssues("activity", raw, parsed);
   const issues: string[] = [];
-  const events = db
-    .select({ json: documents.json })
-    .from(documents)
-    .where(
-      and(
-        eq(documents.organizationId, organizationId),
-        eq(documents.kind, "event"),
-      ),
-    )
-    .all()
-    .map((r) => JSON.parse(r.json) as { activities: { activityId: string }[] })
-    .filter((event) => event.activities.some((a) => a.activityId === id));
-  for (const event of events) {
-    const bundle = eventBundleFor(db, organizationId, event);
+  const listing = designsIn(db, organizationId).filter(({ doc }) =>
+    doc.activities.some((a) => a.activityId === id),
+  );
+  for (const { kind, doc } of listing) {
+    const bundle = eventBundleFor(db, organizationId, doc);
     bundle.activities = bundle.activities.map((a) =>
       asRecord(a)?.["id"] === id ? raw : a,
     );
-    const check = checkEventBundle(bundle);
-    if (!check.ok) issues.push(...check.issues);
+    issues.push(...bundleIssues(kind, bundle));
   }
   return [...new Set(issues)];
 }
 
-/** The Common Field set on its own, then against every Event in the Organization whose Competitions use it (#99). */
+/** The Common Field set on its own, then against every Event and Template in the Organization whose Competitions use it (#99). */
 export function commonFieldSetIssues(
   db: Db,
   organizationId: string,
@@ -263,32 +316,15 @@ export function commonFieldSetIssues(
   const parsed = CommonFieldSetSchema.safeParse(raw);
   if (!parsed.success) return schemaIssues("common-field-set", raw, parsed);
   const issues: string[] = [];
-  const events = db
-    .select({ json: documents.json })
-    .from(documents)
-    .where(
-      and(
-        eq(documents.organizationId, organizationId),
-        eq(documents.kind, "event"),
-      ),
-    )
-    .all()
-    .map(
-      (r) =>
-        JSON.parse(r.json) as {
-          competitions: { commonFields?: { setId: string } }[];
-        },
-    )
-    .filter((event) =>
-      event.competitions.some((c) => c.commonFields?.setId === id),
-    );
-  for (const event of events) {
-    const bundle = eventBundleFor(db, organizationId, event);
+  const using = designsIn(db, organizationId).filter(({ doc }) =>
+    doc.competitions.some((c) => c.commonFields?.setId === id),
+  );
+  for (const { kind, doc } of using) {
+    const bundle = eventBundleFor(db, organizationId, doc);
     bundle.commonFieldSets = bundle.commonFieldSets.map((s) =>
       asRecord(s)?.["id"] === id ? raw : s,
     );
-    const check = checkEventBundle(bundle);
-    if (!check.ok) issues.push(...check.issues);
+    issues.push(...bundleIssues(kind, bundle));
   }
   return [...new Set(issues)];
 }
