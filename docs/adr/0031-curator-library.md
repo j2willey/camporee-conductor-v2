@@ -72,12 +72,12 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
 
 **Activities to and from the library (#102 PR 3, 2026-11-12).**
 
-- **Save to library** forks an Activity into its own Organization as a saved, private Activity, with
+- **Copy to library** (the issue's "Save to library"; the button says Copy, so it isn't taken for the editor's Save) forks an Activity into its own Organization as a saved, private Activity, with
   `lineage.parentId`. The original stays in its Event. A curator then publishes the copy from the Library page.
 - **Add from library** forks any Activity the caller's catalog shows (a library one, or their Organization's own
   saved one) into a Competition of the Event, last in it, with `lineage.parentId` and no `legacy`. It's an Event
   change, with the Event's If-Match, like adding or importing an Activity.
 - **Tags** are normalized by one function, `normalizeTags` in `packages/schema`: trimmed, lowercased, without
   duplicates or blanks, in their first order. A leading `#` stays (the catalog's tag filter ignores it). Every fork
-  (save to library, add from library, import) normalizes, and so does the Activity editor when it saves. A save
+  (copy to library, add from library, import) normalizes, and so does the Activity editor when it saves. A save
   through the API is still stored exactly as sent (CLAUDE.md rule 5).

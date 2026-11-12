@@ -1,6 +1,12 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
 import { useDeferredValue, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { client, data } from "../api.ts";
 import { ui } from "../ui.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
@@ -16,12 +22,26 @@ const KINDS: { value: Kind; label: string }[] = [
   { value: "activity", label: "Activities" },
 ];
 
+/** What a row can do besides Preview: add to the Event being filled, publish, unpublish (#102 PR 3). */
+type RowActions = {
+  /** "Add to Patrol Games", when the page was opened from an Event's Competition. */
+  add?: { label: string; run: () => void };
+  publish?: () => void;
+  unpublish?: () => void;
+  busy: boolean;
+};
+
 /**
  * The library catalog (ADR-0031, #102 PR 2): the library plus your Organizations' private Templates and saved
- * Activities, filtered by kind, tag and text, each with a preview.
+ * Activities, filtered by kind, tag and text, each with a preview. Opened from an Event's Competition
+ * (`?addTo=<eventId>&competition=<id>`), each Activity can be added to it as a copy (#102 PR 3). Curators publish
+ * their Organizations' private documents and unpublish library ones.
  */
 export function LibraryPage() {
-  const [kind, setKind] = useState<Kind>("");
+  const [params, setParams] = useSearchParams();
+  const addTo = params.get("addTo") ?? "";
+  const competitionId = params.get("competition") ?? "";
+  const [kind, setKind] = useState<Kind>(addTo ? "activity" : "");
   const [text, setText] = useState("");
   const [tag, setTag] = useState("");
   const q = useDeferredValue(text.trim());
@@ -51,6 +71,78 @@ export function LibraryPage() {
       ),
   });
 
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const me = useQuery({
+    queryKey: ["me"],
+    queryFn: () => data(client.api.me.$get()),
+  });
+  const target = useQuery({
+    queryKey: ["events", addTo],
+    queryFn: () =>
+      data(client.api.events[":eventId"].$get({ param: { eventId: addTo } })),
+    enabled: addTo !== "",
+  });
+  const competition = target.data?.event.competitions.find(
+    (c) => c.id === competitionId,
+  );
+
+  const add = useMutation({
+    mutationFn: (activityId: string) =>
+      data(
+        client.api.events[":eventId"].activities["from-library"].$post(
+          { param: { eventId: addTo }, json: { competitionId, activityId } },
+          { headers: { "if-match": String(target.data?.updatedAt ?? "") } },
+        ),
+      ),
+    onSuccess: ({ activityId }) =>
+      queryClient
+        .invalidateQueries({ queryKey: ["events", addTo] })
+        .then(() => navigate(`/events/${addTo}/activities/${activityId}`)),
+    // A stale Event (someone else changed it) is read again, so the next try can succeed.
+    onError: () =>
+      queryClient.invalidateQueries({ queryKey: ["events", addTo] }),
+  });
+  const curate = useMutation({
+    mutationFn: ({
+      id,
+      to,
+    }: {
+      id: string;
+      to: "publish" | "unpublish";
+    }): Promise<unknown> =>
+      to === "publish"
+        ? data(client.api.library.publish.$post({ json: { id } }))
+        : data(client.api.library.unpublish.$post({ json: { id } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["library"] }),
+  });
+  const busy = add.isPending || curate.isPending;
+  const editorOf = new Set(
+    (me.data?.organizations ?? [])
+      .filter((o) => o.role === "owner" || o.role === "editor")
+      .map((o) => o.id),
+  );
+  const actionsFor = (item: Item): RowActions => {
+    const actions: RowActions = { busy };
+    if (competition && target.data && item.kind === "activity") {
+      actions.add = {
+        label: `Add to ${competition.label}`,
+        run: () => add.mutate(item.id),
+      };
+    }
+    if (me.data?.curator) {
+      // Publishing also needs an editor of the document's Organization (ADR-0031 item 3, #102 PR 1).
+      if (item.visibility === "private" && editorOf.has(item.organization.id)) {
+        actions.publish = () => curate.mutate({ id: item.id, to: "publish" });
+      }
+      if (item.visibility === "library") {
+        actions.unpublish = () =>
+          curate.mutate({ id: item.id, to: "unpublish" });
+      }
+    }
+    return actions;
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -60,6 +152,48 @@ export function LibraryPage() {
           ones your Organizations keep for themselves.
         </p>
       </div>
+
+      {addTo !== "" &&
+        (target.isPending ? (
+          <Loading />
+        ) : target.isError ? (
+          <PageError error={target.error} />
+        ) : (
+          <div className={`${ui.card} space-y-3 border-teal-200 bg-teal-50/40`}>
+            <p>
+              <Link to={`/events/${addTo}`} className={ui.link}>
+                ← Back to {target.data.event.title}
+              </Link>
+            </p>
+            <label className={ui.label}>
+              Adding an Activity to
+              <select
+                value={competition ? competitionId : ""}
+                onChange={(e) =>
+                  setParams({ addTo, competition: e.target.value })
+                }
+                className={ui.input}
+              >
+                <option value="" disabled>
+                  Pick a Competition
+                </option>
+                {target.data.event.competitions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className={ui.muted}>
+              The Activity is copied into {target.data.event.title}. Later
+              changes to the original don't reach the copy.
+            </p>
+          </div>
+        ))}
+
+      {(add.error ?? curate.error) && (
+        <ErrorMessage error={(add.error ?? curate.error) as Error} />
+      )}
 
       <div className={`${ui.card} flex flex-wrap items-end gap-3`}>
         <fieldset className="flex flex-col gap-1">
@@ -125,7 +259,7 @@ export function LibraryPage() {
       ) : (
         <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
           {items.data.map((item) => (
-            <CatalogRow key={item.id} item={item} />
+            <CatalogRow key={item.id} item={item} actions={actionsFor(item)} />
           ))}
         </ul>
       )}
@@ -133,7 +267,7 @@ export function LibraryPage() {
   );
 }
 
-function CatalogRow({ item }: { item: Item }) {
+function CatalogRow({ item, actions }: { item: Item; actions: RowActions }) {
   const preview = useOpenHtmlInNewTab(
     () => client.api.library[":id"].preview.$get({ param: { id: item.id } }),
     "Couldn't load the preview.",
@@ -151,7 +285,7 @@ function CatalogRow({ item }: { item: Item }) {
             {detail} · {item.organization.name}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span
             className={
               item.visibility === "library"
@@ -170,6 +304,39 @@ function CatalogRow({ item }: { item: Item }) {
           >
             Preview
           </button>
+          {actions.publish && (
+            <button
+              type="button"
+              onClick={actions.publish}
+              disabled={actions.busy}
+              aria-label={`Publish ${item.title}`}
+              className={ui.buttonQuiet}
+            >
+              Publish
+            </button>
+          )}
+          {actions.unpublish && (
+            <button
+              type="button"
+              onClick={actions.unpublish}
+              disabled={actions.busy}
+              aria-label={`Unpublish ${item.title}`}
+              className={ui.buttonQuiet}
+            >
+              Unpublish
+            </button>
+          )}
+          {actions.add && (
+            <button
+              type="button"
+              onClick={actions.add.run}
+              disabled={actions.busy}
+              aria-label={`${actions.add.label}: ${item.title}`}
+              className={ui.button}
+            >
+              {actions.add.label}
+            </button>
+          )}
         </div>
       </div>
       {item.tags.length > 0 && (

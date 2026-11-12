@@ -1,11 +1,13 @@
 import { randomBytes } from "node:crypto";
 import {
+  normalizeTags,
   SCHEMA_VERSION,
   type Activity,
   type Event,
 } from "@camporee-conductor/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { readRole } from "../authz.ts";
 import type { Db } from "../db/open.ts";
 import { documents } from "../db/schema.ts";
 import {
@@ -159,68 +161,122 @@ export function importActivity(
 ): { activityId: string; updatedAt: number } {
   return db.transaction(() => {
     const { opened, event } = openEvent(db, change);
-    if (!event.competitions.some((c) => c.id === change.competitionId)) {
-      throw new HTTPException(400, {
-        message: "The Event has no Competition with that id.",
-      });
-    }
+    requireCompetition(event, change.competitionId);
     const given = change.activity;
     if (typeof given !== "object" || given === null || Array.isArray(given)) {
       throw new HTTPException(422, {
         message: "The file isn't an Activity: expected a JSON object.",
       });
     }
-    const source = given as Record<string, unknown>;
-    const title = typeof source["title"] === "string" ? source["title"] : "";
-    const base =
-      typeof source["slug"] === "string" && source["slug"]
-        ? source["slug"]
-        : slugify(title);
-    const parentId =
-      typeof source["id"] === "string" ? source["id"] : undefined;
-    const activityId = newUuid7(change.now);
-    const lineage = {
-      ...(source["lineage"] as Record<string, unknown> | undefined),
-      ...(parentId && { parentId }),
-    };
-    const copy: Record<string, unknown> = {
-      ...source,
-      id: activityId,
-      slug: freeSlug(db, opened.organizationId, base),
-      ...(Object.keys(lineage).length > 0 && { lineage }),
-    };
-    delete copy["legacy"];
-    // The name in problems is the one in the file.
-    const issues = activityIssues(db, opened.organizationId, activityId, {
-      ...copy,
-      slug: base,
+    return addCopy(db, change, opened, event, {
+      source: given as Record<string, unknown>,
+      how: "import",
     });
-    if (issues.length > 0) {
-      throw new HTTPException(422, { message: issues.join("\n") });
-    }
-    insertActivity(db, opened, copy as Activity, change, {
-      ...(parentId && { parentId }),
-      change: "import",
-    });
-    const updatedAt = saveEvent(
-      db,
-      opened,
-      change,
-      {
-        ...event,
-        activities: [
-          ...event.activities,
-          {
-            activityId,
-            competitionId: change.competitionId,
-            sortOrder: nextSortOrder(event),
-          },
-        ],
-      },
-      { activityId, change: "import" },
-    );
-    return { activityId, updatedAt };
   });
+}
+
+/**
+ * Forks an Activity the caller's catalog shows (ADR-0031 rule 5, #102 PR 3): a library one, or their own
+ * Organization's, into one of the Event's Competitions, last in it, with lineage. 404 for anything else.
+ */
+export function addFromLibrary(
+  db: Db,
+  change: Change & { competitionId: string; activityId: string },
+): { activityId: string; updatedAt: number } {
+  return db.transaction(() => {
+    const { opened, event } = openEvent(db, change);
+    requireCompetition(event, change.competitionId);
+    const row = db
+      .select()
+      .from(documents)
+      .where(
+        and(
+          eq(documents.id, change.activityId),
+          eq(documents.kind, "activity"),
+        ),
+      )
+      .get();
+    if (!row) throw new HTTPException(404, { message: "Not found." });
+    readRole(db, row.organizationId, change.userId, row.visibility);
+    return addCopy(db, change, opened, event, {
+      source: JSON.parse(row.json) as Record<string, unknown>,
+      how: "library",
+    });
+  });
+}
+
+function requireCompetition(event: Event, competitionId: string): void {
+  if (!event.competitions.some((c) => c.id === competitionId)) {
+    throw new HTTPException(400, {
+      message: "The Event has no Competition with that id.",
+    });
+  }
+}
+
+/**
+ * A copy of `source` with a new id, a free slug, lineage to its id, normalized tags and no `legacy`, checked like a
+ * save, added last to the Competition: the one fork for import and the library.
+ */
+function addCopy(
+  db: Db,
+  change: Change & { competitionId: string },
+  opened: Opened,
+  event: Event,
+  { source, how }: { source: Record<string, unknown>; how: string },
+): { activityId: string; updatedAt: number } {
+  const title = typeof source["title"] === "string" ? source["title"] : "";
+  const base =
+    typeof source["slug"] === "string" && source["slug"]
+      ? source["slug"]
+      : slugify(title);
+  const parentId = typeof source["id"] === "string" ? source["id"] : undefined;
+  const activityId = newUuid7(change.now);
+  const lineage = {
+    ...(source["lineage"] as Record<string, unknown> | undefined),
+    ...(parentId && { parentId }),
+  };
+  const copy: Record<string, unknown> = {
+    ...source,
+    id: activityId,
+    slug: freeSlug(db, opened.organizationId, base),
+    ...(Object.keys(lineage).length > 0 && { lineage }),
+  };
+  if (Array.isArray(source["tags"])) {
+    copy["tags"] = normalizeTags(
+      (source["tags"] as unknown[]).filter((t) => typeof t === "string"),
+    );
+  }
+  delete copy["legacy"];
+  // The name in problems is the one in the source.
+  const issues = activityIssues(db, opened.organizationId, activityId, {
+    ...copy,
+    slug: base,
+  });
+  if (issues.length > 0) {
+    throw new HTTPException(422, { message: issues.join("\n") });
+  }
+  insertActivity(db, opened, copy as Activity, change, {
+    ...(parentId && { parentId }),
+    change: how,
+  });
+  const updatedAt = saveEvent(
+    db,
+    opened,
+    change,
+    {
+      ...event,
+      activities: [
+        ...event.activities,
+        {
+          activityId,
+          competitionId: change.competitionId,
+          sortOrder: nextSortOrder(event),
+        },
+      ],
+    },
+    { activityId, change: how },
+  );
+  return { activityId, updatedAt };
 }
 
 /**
@@ -419,7 +475,7 @@ export function slugify(title: string): string {
 }
 
 /** `base`, or `base-2`, `base-3`… : the first no other Activity in the Organization has. */
-function freeSlug(db: Db, organizationId: string, base: string): string {
+export function freeSlug(db: Db, organizationId: string, base: string): string {
   const taken = new Set(
     db
       .select({ slug: documents.slug })

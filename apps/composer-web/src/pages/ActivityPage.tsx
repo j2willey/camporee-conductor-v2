@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ActivitySchema,
+  normalizeTags,
   type Activity,
   type Competition,
 } from "@camporee-conductor/schema";
@@ -102,18 +103,22 @@ function Editor({
   ) as Competition | undefined;
 
   const queryClient = useQueryClient();
+  // Tags are stored normalized (ADR-0031 notes, #102 PR 3): trimmed, lowercased, no duplicates.
+  const toSave: Activity = draft.tags
+    ? { ...draft, tags: normalizeTags(draft.tags) }
+    : draft;
   const save = useMutation({
     mutationFn: () =>
       data(
         client.api.activities[":activityId"].$put(
-          { param: { activityId }, json: draft },
+          { param: { activityId }, json: toSave },
           { headers: { "if-match": String(read.updatedAt) } },
         ),
       ),
     onSuccess: ({ updatedAt }) => {
       queryClient.setQueryData<ActivityRead>(["activities", activityId], {
         ...read,
-        activity: draft as ActivityRead["activity"],
+        activity: toSave as ActivityRead["activity"],
         updatedAt,
       });
       return queryClient.invalidateQueries({ queryKey: ["events", eventId] });
@@ -141,7 +146,12 @@ function Editor({
           {competition?.label ?? ""} · Text is Markdown: **bold**, *italic*,
           lists and links.
         </p>
-        <PreviewGuide eventId={eventId} activityId={activityId} dirty={dirty} />
+        <PreviewGuide
+          eventId={eventId}
+          activityId={activityId}
+          dirty={dirty}
+          canEdit={canEdit}
+        />
       </div>
 
       <fieldset disabled={!canEdit} className="space-y-6">
@@ -283,10 +293,12 @@ function PreviewGuide({
   eventId,
   activityId,
   dirty,
+  canEdit,
 }: {
   eventId: string;
   activityId: string;
   dirty: boolean;
+  canEdit: boolean;
 }) {
   const { open, opening, error } = useOpenHtmlInNewTab(
     () =>
@@ -307,6 +319,7 @@ function PreviewGuide({
         Preview guide
       </button>
       <ExportActivity activityId={activityId} />
+      {canEdit && <SaveToLibrary activityId={activityId} />}
       {dirty && <span className={ui.muted}>Shows the last saved version.</span>}
       {error && (
         <span role="alert" className={ui.error}>
@@ -314,6 +327,49 @@ function PreviewGuide({
         </span>
       )}
     </div>
+  );
+}
+
+/**
+ * Saves a copy of the saved Activity in the Organization's library (#102 PR 3): private, and not in any Event, for
+ * reuse. A curator can then publish it from the Library page.
+ */
+function SaveToLibrary({ activityId }: { activityId: string }) {
+  const queryClient = useQueryClient();
+  const save = useMutation({
+    mutationFn: () =>
+      data(
+        client.api.activities[":activityId"]["save-to-library"].$post({
+          param: { activityId },
+        }),
+      ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["library"] }),
+  });
+  return (
+    <>
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        onClick={() => save.mutate()}
+        disabled={save.isPending}
+      >
+        Copy to library
+      </button>
+      {save.isSuccess && (
+        <span role="status" className={ui.success}>
+          Copied to your{" "}
+          <Link to="/library" className={ui.link}>
+            library
+          </Link>
+          .
+        </span>
+      )}
+      {save.error && (
+        <span role="alert" className={ui.error}>
+          {save.error.message}
+        </span>
+      )}
+    </>
   );
 }
 

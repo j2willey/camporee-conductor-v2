@@ -31,6 +31,7 @@ import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
   addActivity,
+  addFromLibrary,
   importActivity,
   duplicateActivity,
   removeActivity,
@@ -43,6 +44,7 @@ import {
   readCommonFields,
 } from "./documents/common-fields.ts";
 import { saveDocument, type SavableKind } from "./documents/save.ts";
+import { saveToLibrary } from "./documents/library-activities.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import { isCurator, publish, unpublish } from "./library.ts";
@@ -84,6 +86,12 @@ const DuplicateEvent = z.strictObject({
 
 /** The new Common Field set's fields; the set itself is checked by `createCommonFields` (#99). */
 const NewCommonFields = z.strictObject({ fields: z.unknown() });
+
+/** A library or saved Activity to fork into one of the Event's Competitions (#102 PR 3). */
+const LibraryActivity = z.strictObject({
+  competitionId: z.string(),
+  activityId: z.string(),
+});
 
 /** An exported Activity (#100 PR 3), checked by `importActivity`. */
 const ImportedActivity = z.strictObject({
@@ -573,6 +581,17 @@ export function createApp({
         ),
     )
 
+    /** Forks a library or saved Activity into one of the Event's Competitions, with lineage (#102 PR 3). */
+    .post(
+      "/events/:eventId/activities/from-library",
+      jsonBody(LibraryActivity),
+      (c) =>
+        c.json(
+          addFromLibrary(db, { ...changeOf(c), ...c.req.valid("json") }),
+          201,
+        ),
+    )
+
     /** Copies one of the Event's Activities, listed right after it (#6 PR 2b). */
     .post("/events/:eventId/activities/:activityId/duplicate", (c) =>
       c.json(
@@ -613,6 +632,18 @@ export function createApp({
         "content-disposition": `attachment; filename="${activity.slug}.activity.json"`,
       });
     })
+
+    /** Forks the Activity as a saved, private Activity in its Organization (#102 PR 3): editors and owners. */
+    .post("/activities/:activityId/save-to-library", (c) =>
+      c.json(
+        saveToLibrary(db, {
+          activityId: c.req.param("activityId"),
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+        201,
+      ),
+    )
 
     .get("/activities/:activityId", (c) =>
       c.json(readActivity(c.req.param("activityId"), c.var.user.userId)),

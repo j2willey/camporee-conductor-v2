@@ -241,7 +241,7 @@ describe("POST /api/events/:eventId/activities/from-library", () => {
     expect(copy?.visibility).toBe("private");
     expect(stored<ActivityDoc>(id)).toMatchObject({
       title: CLOWN_CAR.title,
-      slug: CLOWN_CAR.slug,
+      slug: stored<ActivityDoc>(source)?.slug, // "clown-car-2": the library copy's own slug
       lineage: { parentId: source },
     });
     const { event, updatedAt } = await readEvent(OUTSIDER, elsewhereEvent);
