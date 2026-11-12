@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@camporee-conductor/judge-form": "workspace:*",
     "@camporee-conductor/scoring": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1",

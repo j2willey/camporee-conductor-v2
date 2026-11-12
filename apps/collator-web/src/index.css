@@ -1,1 +1,3 @@
 @import "tailwindcss";
+/* The shared judge form (ADR-0029 item 6) lives outside this app: Tailwind scans it too. */
+@source "../../../packages/judge-form/src";

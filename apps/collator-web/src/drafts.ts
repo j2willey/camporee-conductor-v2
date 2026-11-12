@@ -1,5 +1,4 @@
-import type { Entry } from "./form.ts";
-import type { TimerState } from "./stopwatch.ts";
+import type { Entry, TimerState } from "@camporee-conductor/judge-form";
 
 // Half-filled forms (#41 PR 4), kept on the phone per Activity × Team, so leaving the screen, a locked
 // phone or a reload loses nothing. A draft is forgotten once its score is saved (sent or kept in the

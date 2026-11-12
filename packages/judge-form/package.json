@@ -1,0 +1,25 @@
+{
+  "name": "@camporee-conductor/judge-form",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The judge's score form, shared by the Collator's judge page and the Composer's scoring preview: field inputs, the stopwatch, and reading an entry with packages/scoring's checks (ADR-0029 item 6).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@camporee-conductor/schema": "workspace:*",
+    "@camporee-conductor/scoring": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.1"
+  }
+}

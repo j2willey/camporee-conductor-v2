@@ -17,6 +17,7 @@ COPY packages/schema/package.json packages/schema/
 COPY packages/scoring/package.json packages/scoring/
 COPY packages/program-guide/package.json packages/program-guide/
 COPY packages/cartridge/package.json packages/cartridge/
+COPY packages/judge-form/package.json packages/judge-form/
 COPY apps/composer-api/package.json apps/composer-api/
 COPY apps/composer-web/package.json apps/composer-web/
 COPY apps/collator/package.json apps/collator/
@@ -30,6 +31,7 @@ COPY tsconfig.base.json ./
 COPY packages/schema packages/schema
 COPY packages/scoring packages/scoring
 COPY packages/cartridge packages/cartridge
+COPY packages/judge-form packages/judge-form
 COPY apps/collator apps/collator
 COPY apps/collator-web apps/collator-web
 # The commit shown on the judge page (#41); there is no .git in here. compose.yaml passes it in.

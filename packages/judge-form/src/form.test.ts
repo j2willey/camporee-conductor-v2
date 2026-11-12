@@ -1,12 +1,12 @@
-import type { JudgeField } from "@camporee-conductor/collator/types";
+import type { FormField } from "./field.ts";
 import { describe, expect, it } from "vitest";
 import { initialEntry, readEntry } from "./form.ts";
 
 const field = (
   id: string,
-  type: JudgeField["type"],
-  extra: Partial<JudgeField> = {},
-): JudgeField => ({
+  type: FormField["type"],
+  extra: Partial<FormField> = {},
+): FormField => ({
   id,
   label: id,
   type,
