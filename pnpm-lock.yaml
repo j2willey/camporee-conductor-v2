@@ -350,6 +350,9 @@ importers:
         specifier: 8.5.0
         version: 8.5.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
     devDependencies:
+      '@camporee-conductor/cartridge':
+        specifier: workspace:*
+        version: link:../../packages/cartridge
       '@camporee-conductor/composer-api':
         specifier: workspace:*
         version: link:../composer-api

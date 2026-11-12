@@ -240,7 +240,14 @@ function Editor({
           />
         </Card>
 
-        <ScoringCard draft={draft} onChange={setDraft} />
+        <ScoringCard
+          draft={draft}
+          onChange={setDraft}
+          commonFieldIds={[
+            ...(competition?.commonFields?.before ?? []),
+            ...(competition?.commonFields?.after ?? []),
+          ]}
+        />
       </fieldset>
 
       <ScoringPreview
