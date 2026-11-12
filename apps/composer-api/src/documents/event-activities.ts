@@ -399,6 +399,8 @@ function insertActivity(
       id: activity.id,
       kind: "activity",
       organizationId: opened.organizationId,
+      // A library Template's new Activity is in the library with it, so the Template stays whole.
+      visibility: opened.visibility,
       slug: activity.slug,
       title: activity.title,
       json: JSON.stringify(activity),
@@ -424,18 +426,20 @@ function saveEvent(
   event: Event,
   detail: Record<string, unknown>,
 ): number {
-  const issues = eventIssues(db, opened.organizationId, event);
+  // The Event routes change a Template too (ADR-0031 notes, #102 PR 5), with the Template rules.
+  const kind = opened.kind === "template" ? "template" : "event";
+  const issues = eventIssues(db, opened.organizationId, event, kind);
   if (issues.length > 0) {
     throw new HTTPException(422, { message: issues.join("\n") });
   }
   return writeDocument(db, {
     ...opened,
-    kind: "event",
+    kind,
     id: change.eventId,
     raw: event,
     userId: change.userId,
     now: change.now,
-    action: "event.update",
+    action: `${kind}.update`,
     detail,
   });
 }

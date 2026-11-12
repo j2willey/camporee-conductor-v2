@@ -937,3 +937,87 @@ test("an owner makes a Template of Circus 2026 and a new Event from it", async (
     page.getByRole("region", { name: "Troop Challenges" }),
   ).toBeVisible();
 });
+
+// #102 PR 5: one editor. A Template opens in the Event editor (no contacts, no Officials); once it's in the library,
+// it's the curators' to change. A saved Activity opens on its own. Runs after PR 4's test, so its Template exists too.
+test("an owner edits a Template, publishes it, and opens a saved Activity", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  page.on("dialog", (dialog) => void dialog.accept());
+  await page
+    .getByRole("button", {
+      name: "Save Coyote Creek District Camporee 2026 as a Template",
+    })
+    .click();
+  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  await page.getByRole("button", { name: "Templates" }).click();
+  const fresh = page
+    .getByRole("listitem")
+    .filter({ hasText: "Template ·" })
+    .filter({ hasText: "Coyote Creek District Camporee 2026" })
+    .filter({ hasText: "Private" });
+  await fresh.getByRole("link", { name: /^Open / }).click();
+
+  // The Event editor, as a Template.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Coyote Creek District Camporee 2026",
+  );
+  await expect(page.getByText("Template · Private")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Officials" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Template details" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Template details",
+  );
+  await expect(page.getByRole("region", { name: "Contacts" })).toHaveCount(0);
+  await page.getByLabel("Title", { exact: true }).fill("Big Top Template");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+  await page.getByRole("link", { name: "← Back to the Template" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Big Top Template",
+  );
+
+  // Published, it's the curators' (the smoke user is one): the note says changes reach everyone.
+  await page.getByRole("link", { name: "← Library" }).click();
+  await page.getByRole("button", { name: "Templates" }).click();
+  await page.getByRole("button", { name: "Publish Big Top Template" }).click();
+  const published = page
+    .getByRole("listitem")
+    .filter({ hasText: "Big Top Template" });
+  await expect(published).toContainText("Library");
+  await published.getByRole("link", { name: "Open Big Top Template" }).click();
+  await expect(page.getByText("Template · In the library.")).toContainText(
+    "Your changes reach everyone",
+  );
+  await page
+    .getByRole("region", { name: "Patrol Games" })
+    .getByRole("link", { name: "Clown Car" })
+    .click();
+  await expect(page.getByText("Activity · In the library.")).toBeVisible();
+  await expect(page.getByLabel("Title", { exact: true })).toBeEnabled();
+  await page.getByRole("link", { name: "← Back to the Template" }).click();
+
+  // A saved Activity (PR 3's test copied Clown Car) opens on its own.
+  await page.getByRole("link", { name: "← Library" }).click();
+  await page.getByRole("button", { name: "Activities" }).click();
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: "Clown Car" })
+    .filter({ hasText: "Private" })
+    .getByRole("link", { name: "Open Clown Car" })
+    .click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Clown Car");
+  await expect(page.getByText("Activity · Private")).toBeVisible();
+  await page.getByLabel("Title", { exact: true }).fill("Clown Car (saved)");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+  await page.getByRole("link", { name: "← Library" }).click();
+  await page.getByRole("button", { name: "Activities" }).click();
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "Clown Car (saved)" }),
+  ).toBeVisible();
+});

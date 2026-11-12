@@ -22,6 +22,7 @@ import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import {
   Area,
   Card,
+  LibraryNote,
   RowButtons,
   SaveBar,
   StringList,
@@ -44,6 +45,10 @@ type CustomSection = NonNullable<Content["customSections"]>[number];
  * Editors and owners change a draft and save it whole with If-Match (ADR-0029); viewers see the same form,
  * read-only. An emptied list or set stays in the document, empty, so it's visibly empty (Jim, 2026-11-11);
  * only a supply's group is removed when blank, since the schema allows no empty group. Scoring fields and the judge's form preview are in ScoringEditor.tsx (PR 5).
+ *
+ * It opens in an Event or Template (`/events/:eventId/activities/:activityId`), or on its own (`/activities/:id`) for a
+ * saved or library Activity (ADR-0031 item 6, #102 PR 5). On its own, there's no Competition, so no Common Fields and
+ * no judge's form preview.
  */
 export function ActivityPage() {
   const { eventId = "", activityId = "" } = useParams();
@@ -91,10 +96,12 @@ function Editor({
           `${i.path.length > 0 ? `${i.path.map(String).join(".")}: ` : ""}${i.message}`,
       );
 
+  const inEvent = eventId !== "";
   const eventRead = useQuery({
     queryKey: ["events", eventId],
     queryFn: () =>
       data(client.api.events[":eventId"].$get({ param: { eventId } })),
+    enabled: inEvent,
   });
   const event = eventRead.data?.event;
   const listed = event?.activities.find((a) => a.activityId === activityId);
@@ -121,7 +128,10 @@ function Editor({
         activity: toSave as ActivityRead["activity"],
         updatedAt,
       });
-      return queryClient.invalidateQueries({ queryKey: ["events", eventId] });
+      void queryClient.invalidateQueries({ queryKey: ["library"] });
+      return inEvent
+        ? queryClient.invalidateQueries({ queryKey: ["events", eventId] })
+        : undefined;
     },
   });
   const reload = () =>
@@ -137,14 +147,28 @@ function Editor({
     <div className="space-y-6 pb-24">
       <div className="space-y-1">
         <p>
-          <Link to={`/events/${eventId}`} className={ui.link}>
-            ← Back to the Event
-          </Link>
+          {inEvent ? (
+            <Link to={`/events/${eventId}`} className={ui.link}>
+              ← Back to the{" "}
+              {eventRead.data?.kind === "template" ? "Template" : "Event"}
+            </Link>
+          ) : (
+            <Link to="/library" className={ui.link}>
+              ← Library
+            </Link>
+          )}
         </p>
         <h1 className={ui.h1}>{stored.title}</h1>
+        {(!inEvent || read.visibility === "library") && (
+          <LibraryNote
+            what="Activity"
+            visibility={read.visibility}
+            canEdit={canEdit}
+          />
+        )}
         <p className={ui.muted}>
-          {competition?.label ?? ""} · Text is Markdown: **bold**, *italic*,
-          lists and links.
+          {competition ? `${competition.label} · ` : ""}Text is Markdown:
+          **bold**, *italic*, lists and links.
         </p>
         <PreviewGuide
           eventId={eventId}
@@ -261,11 +285,18 @@ function Editor({
         />
       </fieldset>
 
-      <ScoringPreview
-        eventId={eventId}
-        draft={draft}
-        competition={competition}
-      />
+      {inEvent ? (
+        <ScoringPreview
+          eventId={eventId}
+          draft={draft}
+          competition={competition}
+        />
+      ) : (
+        <p className={ui.muted}>
+          The judge's form preview needs a Competition's Common Fields: it shows
+          once the Activity is in an Event or Template.
+        </p>
+      )}
 
       {canEdit && (
         <SaveBar
@@ -300,12 +331,15 @@ function PreviewGuide({
   dirty: boolean;
   canEdit: boolean;
 }) {
+  // On its own, the guide previews as in the catalog (ADR-0031 notes, #102 PR 2).
   const { open, opening, error } = useOpenHtmlInNewTab(
     () =>
-      client.api.events[":eventId"]["activity-guides"].$get({
-        param: { eventId },
-        query: { ids: activityId },
-      }),
+      eventId === ""
+        ? client.api.library[":id"].preview.$get({ param: { id: activityId } })
+        : client.api.events[":eventId"]["activity-guides"].$get({
+            param: { eventId },
+            query: { ids: activityId },
+          }),
     "Couldn't load the guide.",
   );
   return (
@@ -319,7 +353,8 @@ function PreviewGuide({
         Preview guide
       </button>
       <ExportActivity activityId={activityId} />
-      {canEdit && <SaveToLibrary activityId={activityId} />}
+      {/* On its own, it's already kept for reuse. */}
+      {canEdit && eventId !== "" && <SaveToLibrary activityId={activityId} />}
       {dirty && <span className={ui.muted}>Shows the last saved version.</span>}
       {error && (
         <span role="alert" className={ui.error}>

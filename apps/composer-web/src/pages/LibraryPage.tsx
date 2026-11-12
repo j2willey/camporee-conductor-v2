@@ -312,6 +312,18 @@ function CatalogRow({ item, actions }: { item: Item; actions: RowActions }) {
           >
             Preview
           </button>
+          {/* One editor (ADR-0031 item 6, #102 PR 5): read-only unless it's yours to change. */}
+          <Link
+            to={
+              item.kind === "template"
+                ? `/events/${item.id}`
+                : `/activities/${item.id}`
+            }
+            aria-label={`Open ${item.title}`}
+            className={ui.buttonQuiet}
+          >
+            Open
+          </Link>
           {actions.publish && (
             <button
               type="button"

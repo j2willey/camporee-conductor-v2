@@ -142,6 +142,7 @@ describe("a private Template", () => {
     const read = await readTemplate(EDITOR);
     expect(read).toMatchObject({
       event: { id: templateId, kind: "template" },
+      kind: "template",
       role: "editor",
       visibility: "private",
     });

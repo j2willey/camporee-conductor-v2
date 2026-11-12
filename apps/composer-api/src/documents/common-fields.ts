@@ -3,9 +3,9 @@ import {
   type CommonFieldSet,
   type Event,
 } from "@camporee-conductor/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
-import { requireRole } from "../authz.ts";
+import { documentRole } from "../authz.ts";
 import type { Db } from "../db/open.ts";
 import { documents, type Role } from "../db/schema.ts";
 import {
@@ -17,6 +17,7 @@ import {
 import {
   audit,
   commonFieldSetIssues,
+  DESIGN_KINDS,
   eventIssues,
   writeDocument,
 } from "./save.ts";
@@ -37,10 +38,13 @@ export function readCommonFields(
   const eventRow = db
     .select()
     .from(documents)
-    .where(and(eq(documents.id, eventId), eq(documents.kind, "event")))
+    .where(
+      and(eq(documents.id, eventId), inArray(documents.kind, DESIGN_KINDS)),
+    )
     .get();
   if (!eventRow) throw new HTTPException(404, { message: "Not found." });
-  const role = requireRole(db, eventRow.organizationId, userId, "viewer");
+  // A Template's set is in the library with it, so the Template's role is the set's (ADR-0031 notes, #102 PR 5).
+  const role = documentRole(db, eventRow, userId);
   const setId = setIdOf(JSON.parse(eventRow.json) as Event);
   const row =
     setId === undefined
@@ -113,6 +117,7 @@ export function createCommonFields(
         id: setId,
         kind: "common-field-set",
         organizationId: opened.organizationId,
+        visibility: opened.visibility,
         slug: set.slug,
         title: set.title,
         json: JSON.stringify(set),
@@ -135,18 +140,19 @@ export function createCommonFields(
         commonFields: { setId, before: [], after: [] },
       })),
     };
-    const issues = eventIssues(db, opened.organizationId, linked);
+    const kind = opened.kind === "template" ? "template" : "event";
+    const issues = eventIssues(db, opened.organizationId, linked, kind);
     if (issues.length > 0) {
       throw new HTTPException(422, { message: issues.join("\n") });
     }
     const updatedAt = writeDocument(db, {
       ...opened,
-      kind: "event",
+      kind,
       id: change.eventId,
       raw: linked,
       userId: change.userId,
       now: change.now,
-      action: "event.update",
+      action: `${kind}.update`,
       detail: { commonFieldSetId: setId, change: "create" },
     });
     return { setId, updatedAt };
