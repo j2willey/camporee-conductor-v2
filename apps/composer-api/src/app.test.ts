@@ -128,7 +128,7 @@ describe("unverified emails (second layer behind Clerk's own verification)", () 
     expect(db.select().from(users).all()).toEqual([]);
   });
 
-  it("can't be added as a member, since it was never stored", async () => {
+  it("never becomes a member: it's never stored, so an invite to it is never redeemed", async () => {
     const org = await createOrg("ann@example.com", "coyote-creek");
     await asUnverified("mallory@example.com", "GET", "/api/me");
     const res = await call(
@@ -140,7 +140,15 @@ describe("unverified emails (second layer behind Clerk's own verification)", () 
         role: "editor",
       },
     );
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(201);
+    await asUnverified("mallory@example.com", "GET", "/api/me");
+    expect(
+      db
+        .select()
+        .from(memberships)
+        .all()
+        .map((m) => m.userId),
+    ).not.toContain("dev|mallory@example.com");
   });
 
   it("doesn't let an unverified email take over a stored user's email", async () => {
@@ -418,7 +426,7 @@ describe("members", () => {
     expect((await addBob("eve@example.com", "editor")).status).toBe(404);
   });
 
-  it("can't add someone who hasn't signed in yet (no invitations in #4)", async () => {
+  it("invites someone who hasn't signed in yet (#35; members.test.ts has the rest)", async () => {
     const res = await call(
       "ann@example.com",
       "POST",
@@ -428,9 +436,11 @@ describe("members", () => {
         role: "viewer",
       },
     );
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(201);
     expect(res.json).toEqual({
-      error: "No one with that email has signed in yet.",
+      invited: true,
+      email: "new@example.com",
+      role: "viewer",
     });
   });
 

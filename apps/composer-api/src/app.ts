@@ -47,8 +47,10 @@ import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import {
   addMember,
+  listInvites,
   listMembers,
   removeMember,
+  revokeInvite,
   setMemberRole,
 } from "./members.ts";
 import { documents, memberships, organizations, ROLES } from "./db/schema.ts";
@@ -365,14 +367,34 @@ export function createApp({
 
     /** Adds a member who has signed in, or changes their role: owners only (#4). */
     .post("/organizations/:orgId/members", jsonBody(NewMember), (c) => {
-      const { member, created } = addMember(db, {
+      const added = addMember(db, {
         organizationId: c.req.param("orgId"),
         actorId: c.var.user.userId,
         now: now(),
         ...c.req.valid("json"),
       });
-      return c.json(member, created ? 201 : 200);
+      const status = added.created ? 201 : 200;
+      return "member" in added
+        ? c.json(added.member, status)
+        : c.json(added.invite, status);
     })
+
+    /** Pending invites (#35): owners only. */
+    .get("/organizations/:orgId/invites", (c) =>
+      c.json(listInvites(db, c.req.param("orgId"), c.var.user.userId)),
+    )
+
+    /** Revokes a pending invite (#35): owners only. */
+    .delete("/organizations/:orgId/invites/:email", (c) =>
+      c.json(
+        revokeInvite(db, {
+          organizationId: c.req.param("orgId"),
+          actorId: c.var.user.userId,
+          now: now(),
+          email: c.req.param("email"),
+        }),
+      ),
+    )
 
     /** Changes a member's role: owners only; never the last owner (#101). */
     .patch("/organizations/:orgId/members/:userId", jsonBody(MemberRole), (c) =>

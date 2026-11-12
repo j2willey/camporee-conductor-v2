@@ -197,15 +197,15 @@ describe("pending invites (#35)", () => {
     await invite(ANN, NEW, "editor");
     const again = await invite(ANN, NEW, "viewer");
     expect(again.status).toBe(200);
-    expect((await invites()).json).toMatchObject([{ email: NEW, role: "viewer" }]);
+    expect((await invites()).json).toMatchObject([
+      { email: NEW, role: "viewer" },
+    ]);
   });
 
   it("turns into a membership at the first sign-in with that verified email", async () => {
     await invite(ANN, NEW, "editor");
     expect((await call(NEW, "GET", "/api/me")).status).toBe(200);
-    expect(
-      (await members()).find((m) => m.email === NEW)?.role,
-    ).toBe("editor");
+    expect((await members()).find((m) => m.email === NEW)?.role).toBe("editor");
     expect((await invites()).json).toEqual([]);
     expect(actions().at(-1)).toBe("member.add");
     // The new member can open the Organization.
