@@ -81,3 +81,18 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
   duplicates or blanks, in their first order. A leading `#` stays (the catalog's tag filter ignores it). Every fork
   (copy to library, add from library, import) normalizes, and so does the Activity editor when it saves. A save
   through the API is still stored exactly as sent (CLAUDE.md rule 5).
+
+**Templates (#102 PR 4, 2026-11-12).**
+
+- **One fork for Events and Templates.** Duplicate Event, Save Event as Template and New Event from Template all copy
+  a document with its Activities and Common Field set: new ids, each copy naming its source in `lineage.parentId`,
+  no `legacy`, and never the Officials. The result is checked as one bundle before anything is stored.
+- **Save Event as Template** runs `stripPersonalData` first, so a Template never holds contacts (its schema refuses
+  them too). The Template is private to the Event's Organization until a curator publishes it.
+- **New Event from Template** forks a Template the caller can read (a library one, or their Organization's) into an
+  Organization they edit. The Event's `lineage.parentId` names the Template.
+- **The Template zip** (item 7) is a design cartridge of the Template, unchanged in format: `event.json` holds the
+  Template (Event-shaped, ADR-0017; its `kind` says `template`), the manifest's `event` names it, and its Activities
+  and Common Field set sit beside it as in an Event's cartridge. `checkTemplateBundle` applies the Event bundle rules
+  with the Template schema, and a Template bundle never holds Officials. Loading a Template zip (v1's sysadmin
+  upload) isn't parity-critical and isn't built yet: the Collator loads only event-day cartridges.
