@@ -11,6 +11,7 @@ Never copied into Challenges. One merge implementation shared by judge form and 
 ## Amendment 2026-11-12 (issue #99): the checks that keep the merge safe
 
 `checkEventBundle` (import, every Composer save, the Collator's load) refuses:
+
 - a Competition's `before`/`after` id that isn't in its set, or an id listed twice;
 - Competitions that use different sets. A cartridge holds one set per Event, and this moves that limit from
   export time to save time. More sets per Event can come later if a real event needs them;
