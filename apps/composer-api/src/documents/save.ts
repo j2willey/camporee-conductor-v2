@@ -35,31 +35,7 @@ export function saveDocument(
   },
 ): number {
   return db.transaction(() => {
-    const row = db
-      .select({
-        organizationId: documents.organizationId,
-        updatedAt: documents.updatedAt,
-      })
-      .from(documents)
-      .where(and(eq(documents.id, id), eq(documents.kind, kind)))
-      .get();
-    if (!row) throw new HTTPException(404, { message: "Not found." });
-    requireRole(db, row.organizationId, userId, "editor");
-
-    const expected = parseIfMatch(ifMatch);
-    if (expected === undefined) {
-      throw new HTTPException(428, {
-        message: "Send If-Match with the updatedAt you last read.",
-      });
-    }
-    const stored = row.updatedAt.getTime();
-    if (expected !== stored) {
-      throw new HTTPException(409, {
-        message:
-          "Someone else saved this since you opened it. Reload to see their changes.",
-      });
-    }
-
+    const opened = openForEdit(db, { kind, id, userId, ifMatch });
     const doc = asRecord(raw);
     if (doc?.["id"] !== id || doc["kind"] !== kind) {
       throw new HTTPException(400, {
@@ -68,36 +44,127 @@ export function saveDocument(
     }
     const issues =
       kind === "event"
-        ? eventIssues(db, row.organizationId, raw)
-        : activityIssues(db, row.organizationId, id, raw);
+        ? eventIssues(db, opened.organizationId, raw)
+        : activityIssues(db, opened.organizationId, id, raw);
     if (issues.length > 0) {
       throw new HTTPException(422, { message: issues.join("\n") });
     }
-
-    // Always forward, even for two saves in the same millisecond, so If-Match never matches a stale read.
-    const updatedAt = Math.max(now.getTime(), stored + 1);
-    db.update(documents)
-      .set({
-        json: JSON.stringify(raw),
-        slug: String(doc["slug"]),
-        title: String(doc["title"]),
-        updatedAt: new Date(updatedAt),
-      })
-      .where(eq(documents.id, id))
-      .run();
-    db.insert(auditLog)
-      .values({
-        at: new Date(updatedAt),
-        userId,
-        organizationId: row.organizationId,
-        action: `${kind}.update`,
-        documentKind: kind,
-        documentId: id,
-        detail: null,
-      })
-      .run();
-    return updatedAt;
+    return writeDocument(db, {
+      ...opened,
+      kind,
+      id,
+      raw,
+      userId,
+      now,
+      action: `${kind}.update`,
+    });
   });
+}
+
+/** A stored document, opened for a change: its Organization and the `updatedAt` the change replaces. */
+export interface Opened {
+  organizationId: string;
+  stored: number;
+}
+
+/**
+ * The first steps of every change (ADR-0029): 404 if there's no such document, 403/404 below editor, 428 without
+ * If-Match, 409 if it's stale. Call inside the change's transaction.
+ */
+export function openForEdit(
+  db: Db,
+  {
+    kind,
+    id,
+    userId,
+    ifMatch,
+  }: {
+    kind: SavableKind;
+    id: string;
+    userId: string;
+    ifMatch: string | undefined;
+  },
+): Opened {
+  const row = db
+    .select({
+      organizationId: documents.organizationId,
+      updatedAt: documents.updatedAt,
+    })
+    .from(documents)
+    .where(and(eq(documents.id, id), eq(documents.kind, kind)))
+    .get();
+  if (!row) throw new HTTPException(404, { message: "Not found." });
+  requireRole(db, row.organizationId, userId, "editor");
+
+  const expected = parseIfMatch(ifMatch);
+  if (expected === undefined) {
+    throw new HTTPException(428, {
+      message: "Send If-Match with the updatedAt you last read.",
+    });
+  }
+  const stored = row.updatedAt.getTime();
+  if (expected !== stored) {
+    throw new HTTPException(409, {
+      message:
+        "Someone else saved this since you opened it. Reload to see their changes.",
+    });
+  }
+  return { organizationId: row.organizationId, stored };
+}
+
+/**
+ * Stores a checked document exactly as given (ADR-0012), keeps `slug` and `title` in step, and writes one audit
+ * row. Returns the new `updatedAt` in ms.
+ */
+export function writeDocument(
+  db: Db,
+  {
+    kind,
+    id,
+    raw,
+    organizationId,
+    stored,
+    userId,
+    now,
+    action,
+    detail = null,
+  }: Opened & {
+    kind: SavableKind;
+    id: string;
+    raw: unknown;
+    userId: string;
+    now: Date;
+    action: string;
+    detail?: Record<string, unknown> | null;
+  },
+): number {
+  const doc = asRecord(raw) ?? {};
+  // Always forward, even for two saves in the same millisecond, so If-Match never matches a stale read.
+  const updatedAt = Math.max(now.getTime(), stored + 1);
+  db.update(documents)
+    .set({
+      json: JSON.stringify(raw),
+      slug: String(doc["slug"]),
+      title: String(doc["title"]),
+      updatedAt: new Date(updatedAt),
+    })
+    .where(eq(documents.id, id))
+    .run();
+  audit(db, {
+    at: new Date(updatedAt),
+    userId,
+    organizationId,
+    action,
+    documentKind: kind,
+    documentId: id,
+    detail,
+  });
+  return updatedAt;
+}
+
+/** One audit row (ADR-0029 item 5): never a document body. */
+export function audit(db: Db, row: typeof auditLog.$inferInsert): void {
+  db.insert(auditLog).values(row).run();
 }
 
 /** `123`, `"123"` or `W/"123"` → 123; anything else → undefined. */
@@ -106,7 +173,7 @@ function parseIfMatch(header: string | undefined): number | undefined {
   return match ? Number(match[1]) : undefined;
 }
 
-function asRecord(raw: unknown): Record<string, unknown> | undefined {
+export function asRecord(raw: unknown): Record<string, unknown> | undefined {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw)
     ? (raw as Record<string, unknown>)
     : undefined;
@@ -131,7 +198,11 @@ function schemaIssues(
 }
 
 /** The Event against the Organization's documents it references. */
-function eventIssues(db: Db, organizationId: string, raw: unknown): string[] {
+export function eventIssues(
+  db: Db,
+  organizationId: string,
+  raw: unknown,
+): string[] {
   const parsed = EventSchema.safeParse(raw);
   // The bundle needs the Event's lists, so a malformed Event is reported on its own first.
   if (!parsed.success) return schemaIssues("event", raw, parsed);
@@ -140,7 +211,7 @@ function eventIssues(db: Db, organizationId: string, raw: unknown): string[] {
 }
 
 /** The Activity on its own, then against every Event in the Organization that lists it. */
-function activityIssues(
+export function activityIssues(
   db: Db,
   organizationId: string,
   id: string,

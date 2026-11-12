@@ -28,7 +28,7 @@ test("an Organizer opens Circus 2026 read-only", async ({ page }) => {
       page.getByRole("heading", { name: competition }),
     ).toBeVisible();
   }
-  // Read-only: nothing to edit.
+  // Nothing to type into until you ask to add an Activity (#6 PR 2b).
   await expect(page.locator("main").getByRole("textbox")).toHaveCount(0);
 
   // A reload of a deep link still works: the API sends the app for its own routes.
@@ -152,4 +152,75 @@ test("not found replaces the whole page", async ({ page }) => {
       "Not found",
     );
   }
+});
+
+// #6 PR 2b: an owner adds, duplicates, reorders, disables, moves and removes Activities. It runs last in this
+// file and leaves the Event as it found it, so the tests above always see Circus 2026 as imported.
+test("an owner edits the Activity list", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  const exhibitions = page.getByRole("region", { name: "Exhibition Events" });
+  const challenges = page.getByRole("region", { name: "Troop Challenges" });
+  const items = (region: typeof exhibitions) => region.getByRole("listitem");
+
+  await page
+    .getByRole("button", { name: "Add an Activity to Exhibition Events" })
+    .click();
+  await page
+    .getByLabel("Title of the new Exhibition Events Activity")
+    .fill("Tightrope Walk");
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Exhibition Events (5)" }),
+  ).toBeVisible();
+  await expect(items(exhibitions).last()).toContainText("Tightrope Walk");
+
+  await page.getByRole("button", { name: "Duplicate Tightrope Walk" }).click();
+  await expect(items(exhibitions).last()).toContainText(
+    "Tightrope Walk (copy)",
+  );
+
+  await page
+    .getByRole("button", { name: "Move Tightrope Walk (copy) up" })
+    .click();
+  await expect(items(exhibitions).last()).toContainText("Tightrope Walk");
+  await expect(items(exhibitions).last()).not.toContainText("(copy)");
+
+  // click(), not uncheck(): the box follows the saved list a tick after the click.
+  await page.getByLabel("Tightrope Walk (copy) enabled").click();
+  await expect(
+    page.getByLabel("Tightrope Walk (copy) enabled"),
+  ).not.toBeChecked();
+  await expect(
+    items(exhibitions).filter({ hasText: "Tightrope Walk (copy)" }),
+  ).toContainText("(disabled)");
+
+  await page
+    .getByLabel("Move Tightrope Walk (copy) to")
+    .selectOption({ label: "Troop Challenges" });
+  await expect(items(challenges).last()).toContainText("Tightrope Walk (copy)");
+  await expect(
+    page.getByRole("heading", { name: "Troop Challenges (12)" }),
+  ).toBeVisible();
+
+  // The changes are saved: a reload shows them.
+  await page.reload();
+  await expect(items(challenges).last()).toContainText("(disabled)");
+
+  page.on("dialog", (dialog) => void dialog.accept());
+  await page
+    .getByRole("button", { name: "Remove Tightrope Walk (copy)" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Troop Challenges (11)" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Remove Tightrope Walk" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Exhibition Events (4)" }),
+  ).toBeVisible();
 });
