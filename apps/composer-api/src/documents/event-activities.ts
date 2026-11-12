@@ -149,6 +149,81 @@ export function duplicateActivity(
 }
 
 /**
+ * An exported Activity (#100 PR 3) added to one of the Event's Competitions, last: a new document with a new id,
+ * a free slug and `lineage.parentId` naming the exported one, without `legacy`. Checked like any Activity, then
+ * with the Event (e.g. no Common Field of that Competition in it); 422 names the problem.
+ */
+export function importActivity(
+  db: Db,
+  change: Change & { competitionId: string; activity: unknown },
+): { activityId: string; updatedAt: number } {
+  return db.transaction(() => {
+    const { opened, event } = openEvent(db, change);
+    if (!event.competitions.some((c) => c.id === change.competitionId)) {
+      throw new HTTPException(400, {
+        message: "The Event has no Competition with that id.",
+      });
+    }
+    const given = change.activity;
+    if (typeof given !== "object" || given === null || Array.isArray(given)) {
+      throw new HTTPException(422, {
+        message: "The file isn't an Activity: expected a JSON object.",
+      });
+    }
+    const source = given as Record<string, unknown>;
+    const title = typeof source["title"] === "string" ? source["title"] : "";
+    const base =
+      typeof source["slug"] === "string" && source["slug"]
+        ? source["slug"]
+        : slugify(title);
+    const parentId =
+      typeof source["id"] === "string" ? source["id"] : undefined;
+    const activityId = newUuid7(change.now);
+    const lineage = {
+      ...(source["lineage"] as Record<string, unknown> | undefined),
+      ...(parentId && { parentId }),
+    };
+    const copy: Record<string, unknown> = {
+      ...source,
+      id: activityId,
+      slug: freeSlug(db, opened.organizationId, base),
+      ...(Object.keys(lineage).length > 0 && { lineage }),
+    };
+    delete copy["legacy"];
+    // The name in problems is the one in the file.
+    const issues = activityIssues(db, opened.organizationId, activityId, {
+      ...copy,
+      slug: base,
+    });
+    if (issues.length > 0) {
+      throw new HTTPException(422, { message: issues.join("\n") });
+    }
+    insertActivity(db, opened, copy as Activity, change, {
+      ...(parentId && { parentId }),
+      change: "import",
+    });
+    const updatedAt = saveEvent(
+      db,
+      opened,
+      change,
+      {
+        ...event,
+        activities: [
+          ...event.activities,
+          {
+            activityId,
+            competitionId: change.competitionId,
+            sortOrder: nextSortOrder(event),
+          },
+        ],
+      },
+      { activityId, change: "import" },
+    );
+    return { activityId, updatedAt };
+  });
+}
+
+/**
  * Takes an Activity off the Event. Its document is deleted too, unless another Event or Template in the
  * Organization still lists it. `deleted` says which.
  */

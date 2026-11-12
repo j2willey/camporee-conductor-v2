@@ -16,6 +16,7 @@ import {
   withOptional,
 } from "../draft.ts";
 import { ui } from "../ui.ts";
+import { useDownload } from "../useDownload.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import {
   Area,
@@ -305,6 +306,7 @@ function PreviewGuide({
       >
         Preview guide
       </button>
+      <ExportActivity activityId={activityId} />
       {dirty && <span className={ui.muted}>Shows the last saved version.</span>}
       {error && (
         <span role="alert" className={ui.error}>
@@ -312,6 +314,34 @@ function PreviewGuide({
         </span>
       )}
     </div>
+  );
+}
+
+/** Downloads the saved Activity as a JSON file, to import into another Event (#100 PR 3). */
+function ExportActivity({ activityId }: { activityId: string }) {
+  const { download, downloading, error } = useDownload(
+    () =>
+      client.api.activities[":activityId"].export.$get({
+        param: { activityId },
+      }),
+    "activity.json",
+  );
+  return (
+    <>
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        onClick={() => void download()}
+        disabled={downloading}
+      >
+        Export Activity
+      </button>
+      {error && (
+        <span role="alert" className={ui.error}>
+          {error}
+        </span>
+      )}
+    </>
   );
 }
 

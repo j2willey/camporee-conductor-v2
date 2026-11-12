@@ -88,6 +88,24 @@ export function ActivityList({
       ),
     );
   };
+  /** An exported Activity file (#100 PR 3), added as a new Activity of this Competition. */
+  const importFile = (competitionId: string, file: File) =>
+    change.mutate(async () => {
+      let activity: unknown;
+      try {
+        activity = JSON.parse(await file.text());
+      } catch {
+        throw new Error(
+          `${file.name}: not valid JSON, so not an Activity file`,
+        );
+      }
+      return data(
+        client.api.events[":eventId"].activities.import.$post(
+          { param: { eventId }, json: { competitionId, activity } },
+          { headers },
+        ),
+      );
+    });
   const add = (competitionId: string, title: string) =>
     new Promise<boolean>((resolve) =>
       change.mutate(
@@ -213,11 +231,18 @@ export function ActivityList({
                 })}
               </ol>
               {canEdit && (
-                <AddActivity
-                  label={competition.label}
-                  busy={busy}
-                  onAdd={(title) => add(competition.id, title)}
-                />
+                <div className="flex flex-wrap items-start gap-2">
+                  <AddActivity
+                    label={competition.label}
+                    busy={busy}
+                    onAdd={(title) => add(competition.id, title)}
+                  />
+                  <ImportActivity
+                    label={competition.label}
+                    busy={busy}
+                    onFile={(file) => importFile(competition.id, file)}
+                  />
+                </div>
               )}
             </section>
           );
@@ -409,6 +434,37 @@ function AddActivity({
 }
 
 /** A refused change. A stale one (409) offers a reload, which shows the other person's changes. */
+/** Picks an exported Activity (.json) to add to the Competition (#100 PR 3). */
+function ImportActivity({
+  label,
+  busy,
+  onFile,
+}: {
+  label: string;
+  busy: boolean;
+  onFile: (file: File) => void;
+}) {
+  return (
+    <label
+      className={`${ui.buttonQuiet} mt-3 cursor-pointer ${busy ? "opacity-50" : ""}`}
+    >
+      Import an Activity…
+      <input
+        type="file"
+        accept=".json,application/json"
+        className="sr-only"
+        aria-label={`Import an Activity into ${label}`}
+        disabled={busy}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (file) onFile(file);
+        }}
+      />
+    </label>
+  );
+}
+
 function ChangeError({
   error,
   onReload,
@@ -422,7 +478,7 @@ function ChangeError({
       role="alert"
       className={`${ui.error} flex flex-wrap items-center gap-3`}
     >
-      <span>{error.message}</span>
+      <span className="whitespace-pre-line">{error.message}</span>
       {stale && (
         <button type="button" className={ui.buttonQuiet} onClick={onReload}>
           Reload
