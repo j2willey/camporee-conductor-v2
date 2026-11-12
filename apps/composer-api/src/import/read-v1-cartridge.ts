@@ -42,7 +42,18 @@ function readDirectory(dir: string): V1Cartridge {
 }
 
 function readZip(path: string): V1Cartridge {
-  const entries = unzipSync(new Uint8Array(readFileSync(path)));
+  return readV1Zip(new Uint8Array(readFileSync(path)), path);
+}
+
+/** A v1 cartridge from zip bytes (an upload, #100); `label` names it in errors. */
+export function readV1Zip(bytes: Uint8Array, label: string): V1Cartridge {
+  const path = label;
+  let entries: Record<string, Uint8Array>;
+  try {
+    entries = unzipSync(bytes);
+  } catch {
+    throw new CartridgeReadError(`${label}: not a zip file`);
+  }
   const names = Object.keys(entries);
   // v1 puts camporee.json at the root; tolerate one enclosing folder (a re-zipped download).
   const manifest =

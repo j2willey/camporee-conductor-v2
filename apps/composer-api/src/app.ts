@@ -34,6 +34,7 @@ import {
   removeActivity,
 } from "./documents/event-activities.ts";
 import { createEvent, duplicateEvent } from "./documents/events.ts";
+import { importUpload } from "./import/import-upload.ts";
 import {
   createCommonFields,
   readCommonFields,
@@ -86,6 +87,31 @@ const jsonBody = <S extends z.ZodType>(schema: S) =>
     }
     return result.data;
   });
+
+/** `?profile=design|event-day` (design when left out; 400 otherwise), typed for the web client. */
+const profileQuery = validator(
+  "query",
+  (value): { profile: "design" | "event-day" } => {
+    const profile = CartridgeProfileSchema.safeParse(
+      value["profile"] ?? "design",
+    );
+    if (!profile.success) {
+      throw new HTTPException(400, {
+        message: 'profile must be "design" or "event-day".',
+      });
+    }
+    return { profile: profile.data };
+  },
+);
+
+/** A multipart upload with one file, `file` (400 without it): the web client's form type comes from here. */
+const zipUpload = validator("form", (value): { file: File } => {
+  const file = value["file"];
+  if (!(file instanceof File)) {
+    throw new HTTPException(400, { message: "Send the zip as `file`." });
+  }
+  return { file };
+});
 
 /** Any JSON body (400 if it isn't JSON): a whole document, checked by `saveDocument` (ADR-0029). */
 const anyJson = validator("json", (value): unknown => value);
@@ -421,6 +447,23 @@ export function createApp({
       ),
     )
 
+    /**
+     * Imports an uploaded zip (#100 PR 2): a design cartridge or a v1 export, as multipart field `file`. Editors
+     * and owners; 422 names the file and each problem.
+     */
+    .post("/organizations/:orgId/import", zipUpload, async (c) => {
+      const { file } = c.req.valid("form");
+      return c.json(
+        importUpload(db, {
+          organizationId: c.req.param("orgId"),
+          userId: c.var.user.userId,
+          name: file.name || "upload.zip",
+          bytes: new Uint8Array(await file.arrayBuffer()),
+          now: now(),
+        }),
+      );
+    })
+
     .get("/events/:eventId", (c) =>
       c.json(readEvent(c.req.param("eventId"), c.var.user.userId)),
     )
@@ -542,15 +585,8 @@ export function createApp({
      * The Event's cartridge (issue #8). `design` (default) for any viewer; `event-day`, which holds the
      * Officials' emails (ADR-0027 item 5), for editors and owners only.
      */
-    .get("/events/:eventId/cartridge", (c) => {
-      const profile = CartridgeProfileSchema.safeParse(
-        c.req.query("profile") ?? "design",
-      );
-      if (!profile.success) {
-        throw new HTTPException(400, {
-          message: 'profile must be "design" or "event-day".',
-        });
-      }
+    .get("/events/:eventId/cartridge", profileQuery, (c) => {
+      const profile = { data: c.req.valid("query").profile };
       const found = readEventDocuments(db, c.req.param("eventId"));
       if (!found) throw new HTTPException(404, { message: "Not found." });
       requireRole(

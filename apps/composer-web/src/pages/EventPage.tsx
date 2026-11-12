@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { client, data } from "../api.ts";
+import { useDownload } from "../useDownload.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import { ui } from "../ui.ts";
 import { ActivityList } from "./ActivityList.tsx";
@@ -32,6 +33,13 @@ export function EventPage() {
           <p className={ui.muted}>Organizer: {event.organizerName}</p>
         )}
         <ProgramGuideButton eventId={eventId} />
+        <CartridgeButtons
+          eventId={eventId}
+          slug={event.slug}
+          canEdit={
+            result.data.role === "owner" || result.data.role === "editor"
+          }
+        />
       </div>
       <ActivityList eventId={eventId} read={result.data} />
     </div>
@@ -76,6 +84,61 @@ function ProgramGuideButton({ eventId }: { eventId: string }) {
       </div>
       {error && (
         <p role="alert" className={ui.error}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The Event's cartridges (#8, #100): the design cartridge for any member (to keep, or to import elsewhere), and
+ * the event-day cartridge, with the Officials' emails, for editors and owners: it goes to the box.
+ */
+function CartridgeButtons({
+  eventId,
+  slug,
+  canEdit,
+}: {
+  eventId: string;
+  slug: string;
+  canEdit: boolean;
+}) {
+  const cartridge = (profile: "design" | "event-day") =>
+    client.api.events[":eventId"].cartridge.$get({
+      param: { eventId },
+      query: { profile },
+    });
+  const design = useDownload(() => cartridge("design"), `${slug}-design.zip`);
+  const eventDay = useDownload(
+    () => cartridge("event-day"),
+    `${slug}-event-day.zip`,
+  );
+  const error = design.error ?? eventDay.error;
+  return (
+    <div className="space-y-2 pt-2">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={ui.buttonQuiet}
+          disabled={design.downloading}
+          onClick={() => void design.download()}
+        >
+          Download design cartridge
+        </button>
+        {canEdit && (
+          <button
+            type="button"
+            className={ui.buttonQuiet}
+            disabled={eventDay.downloading}
+            onClick={() => void eventDay.download()}
+          >
+            Download event-day cartridge (for the box)
+          </button>
+        )}
+      </div>
+      {error && (
+        <p role="alert" className={`${ui.error} whitespace-pre-line`}>
           {error}
         </p>
       )}
