@@ -3,6 +3,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import {
   CartridgeError,
   CartridgeProfileSchema,
+  stripPersonalData,
   exportCartridge,
 } from "@camporee-conductor/cartridge";
 import {
@@ -30,6 +31,7 @@ import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
   addActivity,
+  importActivity,
   duplicateActivity,
   removeActivity,
 } from "./documents/event-activities.ts";
@@ -72,6 +74,12 @@ const DuplicateEvent = z.strictObject({
 
 /** The new Common Field set's fields; the set itself is checked by `createCommonFields` (#99). */
 const NewCommonFields = z.strictObject({ fields: z.unknown() });
+
+/** An exported Activity (#100 PR 3), checked by `importActivity`. */
+const ImportedActivity = z.strictObject({
+  competitionId: z.string(),
+  activity: z.unknown(),
+});
 
 const NewMember = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -478,6 +486,17 @@ export function createApp({
       c.json(addActivity(db, { ...changeOf(c), ...c.req.valid("json") }), 201),
     )
 
+    /** Adds an exported Activity to one of the Event's Competitions as a new Activity (#100 PR 3). */
+    .post(
+      "/events/:eventId/activities/import",
+      jsonBody(ImportedActivity),
+      (c) =>
+        c.json(
+          importActivity(db, { ...changeOf(c), ...c.req.valid("json") }),
+          201,
+        ),
+    )
+
     /** Copies one of the Event's Activities, listed right after it (#6 PR 2b). */
     .post("/events/:eventId/activities/:activityId/duplicate", (c) =>
       c.json(
@@ -498,6 +517,26 @@ export function createApp({
         }),
       ),
     )
+
+    /**
+     * One Activity as a JSON file (#100 PR 3), for any member: to import into another Event. Through
+     * `stripPersonalData` like every export but the Event's own cartridges (ADR-0031 rule 4).
+     */
+    .get("/activities/:activityId/export", (c) => {
+      const { activity } = readActivity(
+        c.req.param("activityId"),
+        c.var.user.userId,
+      );
+      const [clean] = stripPersonalData({
+        event: undefined,
+        activities: [activity],
+        commonFieldSets: [],
+      }).activities;
+      return c.body(`${JSON.stringify(clean, null, 2)}\n`, 200, {
+        "content-type": "application/json",
+        "content-disposition": `attachment; filename="${activity.slug}.activity.json"`,
+      });
+    })
 
     .get("/activities/:activityId", (c) =>
       c.json(readActivity(c.req.param("activityId"), c.var.user.userId)),

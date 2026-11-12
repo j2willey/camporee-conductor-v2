@@ -21,7 +21,11 @@ type ActivityDoc = {
 type EventDoc = {
   id: string;
   competitions: { id: string; slug: string }[];
-  activities: { activityId: string; competitionId: string; sortOrder: number }[];
+  activities: {
+    activityId: string;
+    competitionId: string;
+    sortOrder: number;
+  }[];
 };
 
 const bundle = readEventBundle(CIRCUS_2026);
@@ -117,7 +121,11 @@ beforeEach(async () => {
 
 describe("GET /api/activities/:id/export", () => {
   it("downloads the Activity as JSON for any member, with no personal data", async () => {
-    const res = await call(VIEWER, "GET", `/api/activities/${CLOWN_CAR.id}/export`);
+    const res = await call(
+      VIEWER,
+      "GET",
+      `/api/activities/${CLOWN_CAR.id}/export`,
+    );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-disposition")).toBe(
       'attachment; filename="clown-car.activity.json"',
@@ -140,11 +148,7 @@ describe("GET /api/activities/:id/export", () => {
 });
 
 describe("POST /api/events/:id/activities/import", () => {
-  const importInto = async (
-    who: string,
-    body: unknown,
-    ifMatch?: number,
-  ) => {
+  const importInto = async (who: string, body: unknown, ifMatch?: number) => {
     const res = await call(
       who,
       "POST",
@@ -225,12 +229,17 @@ describe("POST /api/events/:id/activities/import", () => {
       at,
     );
     expect(res.status).toBe(422);
-    expect(res.json.error).toContain("p_flag is a Common Field of patrol-games");
+    expect(res.json.error).toContain(
+      "p_flag is a Common Field of patrol-games",
+    );
   });
 
   it("refuses a viewer, a stale Event and an unknown Competition", async () => {
     const at = await eventUpdatedAt();
-    const body = { competitionId: competition("exhibition"), activity: CLOWN_CAR };
+    const body = {
+      competitionId: competition("exhibition"),
+      activity: CLOWN_CAR,
+    };
     expect((await importInto(VIEWER, body, at)).status).toBe(403);
     expect((await importInto(OWNER, body, at - 1)).status).toBe(409);
     expect(
