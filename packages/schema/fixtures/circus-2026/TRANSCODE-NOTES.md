@@ -133,6 +133,9 @@ New ids are UUID v7, derived from a hash of the v1 id with the timestamp fixed a
 - **Game `bracketMode`** (all `false`), **`match_label`** (all `""`), **`session`** (all `null`),
   **`sortOrder`**: per-league and repeated (10, 20, 30… in each league). Event order comes from the
   v1 `playlist` instead, as `activities[].sortOrder` 1–34 (the design skips 28, Top Dog's place).
+- **Playlist `enabled`** (all `true` in 2026): a game v1 disables comes across as `activities[].enabled: false`
+  (ADR-0029 item 9, #6), left out of the event-day cartridge and the Program Guide. Enabled entries carry no
+  `enabled`, so these fixtures don't change.
 - **Terminology `organizer: "Event Director"`**: packs relabel only the participant hierarchy and the event
   name (ADR-0003, amended).
 - **`sessions`, `officials`** (both empty) and **`rosters`** (empty; rosters are Collator-only, ADR-0026).

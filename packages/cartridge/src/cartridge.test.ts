@@ -288,3 +288,84 @@ describe("loadCartridge: the Collator's checks on load", () => {
     ]);
   });
 });
+
+describe("disabled Activities (ADR-0029 item 9)", () => {
+  /** Circus with `3-ring-circus` disabled, and its id. */
+  const withDisabled = () => {
+    const bundle = circus();
+    const activity = bundle.activities.find(
+      (a) => (a as { slug: string }).slug === "3-ring-circus",
+    ) as { id: string };
+    const event = bundle.event as {
+      activities: { activityId: string; enabled?: boolean }[];
+    };
+    for (const entry of event.activities) {
+      if (entry.activityId === activity.id) entry.enabled = false;
+    }
+    return { bundle, id: activity.id };
+  };
+  const eventJson = (zip: Uint8Array) =>
+    JSON.parse(strFromU8(files(zip)["event.json"] ?? new Uint8Array())) as {
+      activities: { activityId: string; enabled?: boolean }[];
+    };
+
+  it("leaves a disabled Activity out of the event-day cartridge: its file and its Event entry", () => {
+    const { bundle, id } = withDisabled();
+    const zip = exported("event-day", bundle);
+    expect(Object.keys(files(zip))).not.toContain(
+      "activities/3-ring-circus.json",
+    );
+    expect(
+      Object.keys(files(zip)).filter((n) => n.startsWith("activities/")),
+    ).toHaveLength(32);
+    const entries = eventJson(zip).activities;
+    expect(entries).toHaveLength(32);
+    expect(entries.some((e) => e.activityId === id)).toBe(false);
+    expect(loadIssues(zip)).toEqual([]);
+  });
+
+  it("keeps it in the design cartridge, marked disabled", () => {
+    const { bundle, id } = withDisabled();
+    const zip = exported("design", bundle);
+    expect(Object.keys(files(zip))).toContain("activities/3-ring-circus.json");
+    expect(
+      eventJson(zip).activities.find((e) => e.activityId === id),
+    ).toMatchObject({
+      enabled: false,
+    });
+  });
+
+  it("drops one on load too, if an event-day cartridge carries it (made by hand or by an older export), with a note", () => {
+    const { bundle, id } = withDisabled();
+    // Build an event-day cartridge that still holds the disabled Activity: the design layout plus Officials.
+    const design = files(exported("design", bundle));
+    design["officials.json"] = strToU8(
+      `${JSON.stringify(bundle.officials, null, 2)}\n`,
+    );
+    const manifest = JSON.parse(
+      strFromU8(design["manifest.json"] ?? new Uint8Array()),
+    );
+    manifest.profile = "event-day";
+    manifest.files = Object.keys(design)
+      .filter((p) => p !== "manifest.json")
+      .sort()
+      .map((path) => ({
+        path,
+        sha256: createHash("sha256")
+          .update(design[path] ?? new Uint8Array())
+          .digest("hex"),
+      }));
+    design["manifest.json"] = strToU8(JSON.stringify(manifest));
+    const result = loadCartridge(zipSync(design), { profile: "event-day" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.bundle.activities.map((a) => a.id)).not.toContain(id);
+    expect(
+      result.bundle.event.activities.map((a) => a.activityId),
+    ).not.toContain(id);
+    expect(result.raw.activities).toHaveLength(32);
+    expect(result.notes).toContain(
+      "Left out 1 disabled Activity: 3-ring-circus.",
+    );
+  });
+});

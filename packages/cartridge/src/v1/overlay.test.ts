@@ -100,13 +100,12 @@ describe("overlays that don't fit the cartridge are refused, by name", () => {
 
   it("ignores a primary metric for a game that was left out (designs are unfinished until April)", () => {
     const cartridge = circus();
-    cartridge.camporee.playlist = cartridge.camporee.playlist.map((e) =>
-      e.gameId === "circus-line" ? { ...e, enabled: false } : e,
-    );
+    for (const game of cartridge.games) {
+      if (game.id === "circus-line") game.scoring_model.inputs = [];
+    }
     const result = importV1(cartridge, overlay());
-    expect(result.notes).toEqual([
-      "Left out 1 game the v1 playlist disables: circus-line.",
-    ]);
+    expect(result.skipped.map((s) => s.game)).toEqual(["circus-line"]);
+    expect(result.notes).toEqual([]);
     expect(result.activities.map((a) => a.slug)).not.toContain("circus-line");
   });
 });

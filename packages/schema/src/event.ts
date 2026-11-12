@@ -128,7 +128,17 @@ export const EventActivitySchema = z.strictObject({
   activityId: Uuid7,
   competitionId: Uuid7,
   sortOrder: z.int(),
+  /**
+   * v1's per-game switch (ADR-0029 item 9). `false` leaves the Activity out of the event-day cartridge and the
+   * Program Guide; it stays in the design. Left out = enabled (no default added, so stored documents don't change).
+   */
+  enabled: z.boolean().optional(),
 });
+
+/** Whether an Event's Activity entry is enabled (ADR-0029 item 9): only an explicit `false` disables it. */
+export const isActivityEnabled = (entry: {
+  enabled?: boolean | undefined;
+}): boolean => entry.enabled !== false;
 
 const eventShape = {
   ...documentBase,
