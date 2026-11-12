@@ -169,3 +169,22 @@ export function withoutDisabledActivities(bundle: EventBundle): {
     left,
   };
 }
+
+/**
+ * The bundle without personal data (ADR-0031 rule 4): the Event's `contacts` and its Officials document go.
+ * Every export other than the Event's own design and event-day cartridges calls this: Templates, library
+ * documents, single-Activity exports and demo data (#102, #103). The bundle given is left alone.
+ */
+export function stripPersonalData(bundle: EventBundle): EventBundle {
+  const event =
+    typeof bundle.event === "object" && bundle.event !== null
+      ? Object.fromEntries(
+          Object.entries(bundle.event).filter(([key]) => key !== "contacts"),
+        )
+      : bundle.event;
+  return {
+    event,
+    activities: bundle.activities,
+    commonFieldSets: bundle.commonFieldSets,
+  };
+}

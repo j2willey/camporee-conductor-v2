@@ -217,7 +217,7 @@ export function importV1Cartridge(
 
   const event = check(
     EventSchema,
-    toEvent(camporee, kept, gameById, commonFieldSet, id, options),
+    toEvent(camporee, kept, gameById, commonFieldSet, id, options, notes),
     "event",
     issues,
   );
@@ -312,6 +312,7 @@ function toEvent(
   set: CommonFieldSet,
   id: (key: string) => string,
   options: V1ImportOptions,
+  notes: string[],
 ): Event {
   const keptFieldIds = new Set(set.fields.map((f) => f.id));
   const competitions: Competition[] = camporee.leagues.map((league) => {
@@ -346,7 +347,9 @@ function toEvent(
     title: meta.title,
     theme: meta.theme,
     year: meta.year,
+    ...eventDates(meta.dates, notes),
     organizerName: meta.director,
+    ...eventDetails(meta),
     terminology: {
       pack: "scouting",
       labels: {
@@ -549,4 +552,59 @@ function slugify(title: string): string {
     .normalize("NFKD")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * v1's location, introduction and contacts (ADR-0029 item 8), as given: empty strings stay, missing contact
+ * fields become "". Contacts are personal data (ADR-0031 rule 4); they go only into the Event itself.
+ */
+function eventDetails(
+  meta: V1Camporee["meta"],
+): Pick<Event, "venue" | "introduction" | "contacts"> {
+  return {
+    ...(meta.location && {
+      venue: {
+        name: meta.location.name ?? "",
+        address: meta.location.address ?? "",
+      },
+    }),
+    ...(typeof meta.introduction === "string" && {
+      introduction: meta.introduction,
+    }),
+    ...(meta.contacts && {
+      contacts: meta.contacts.map((c) => ({
+        role: c.role ?? "",
+        name: c.name ?? "",
+        email: c.email ?? "",
+        phone: c.phone ?? "",
+      })),
+    }),
+  };
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** v1's `meta.dates`: blank ones left out; one that isn't YYYY-MM-DD, or an end before the start, noted. */
+function eventDates(
+  dates: V1Camporee["meta"]["dates"],
+  notes: string[],
+): Pick<Event, "startDate" | "endDate"> {
+  const read = (value: string | undefined, which: string) => {
+    if (value === undefined || value.trim() === "") return undefined;
+    if (ISO_DATE.test(value) && !Number.isNaN(Date.parse(value))) return value;
+    notes.push(
+      `Left out v1's ${which} date "${value}": not a date (YYYY-MM-DD).`,
+    );
+    return undefined;
+  };
+  const start = read(dates?.start, "start");
+  let end = read(dates?.end, "end");
+  if (start && end && end < start) {
+    notes.push(`Left out v1's end date "${end}": it's before the start date.`);
+    end = undefined;
+  }
+  return {
+    ...(start && { startDate: start }),
+    ...(end && { endDate: end }),
+  };
 }

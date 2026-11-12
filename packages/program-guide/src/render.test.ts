@@ -145,3 +145,25 @@ describe("renderGuideHtml", () => {
     expect(html).not.toContain("<b>");
   });
 });
+
+describe("renderGuideHtml: Markdown blocks (an Event's introduction, ADR-0029 item 8)", () => {
+  it("renders the ADR-0028 subset, escaping HTML", () => {
+    const html = renderGuideHtml(
+      guide({
+        sections: [
+          section("cover"),
+          section("introduction", {
+            blocks: [
+              {
+                kind: "markdown",
+                text: "Welcome, **units**! <script>x</script>",
+              },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(html).toContain("<strong>units</strong>");
+    expect(html).not.toContain("<script>x");
+  });
+});

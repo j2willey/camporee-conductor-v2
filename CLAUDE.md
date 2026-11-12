@@ -40,8 +40,10 @@ Announcer script. There are three pillars (ADR-0026): the **Curator** (Template 
 7. **Common Fields are defined once per Competition and applied at runtime** (ADR-0020). Never copy
    them into Activities.
 8. **AI is never on the event-day critical path** (ADR-0010). The Collator must work fully offline.
-9. **Rosters live only in the Collator** (ADR-0026). Groups, Teams, Participants and contacts are not
-   Composer documents and never go into a design cartridge or Template.
+9. **Rosters live only in the Collator** (ADR-0026). Groups, Teams, Participants and their contacts are not
+   Composer documents and never go into a design cartridge or Template. The Event's own `contacts` (its
+   director and staff, ADR-0029 item 8) are personal data too: kept in the Event's own cartridges and stripped
+   from every other export by `stripPersonalData` (ADR-0031 rule 4).
 
 ## Workflow
 

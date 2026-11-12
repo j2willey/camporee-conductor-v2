@@ -40,6 +40,25 @@
     "organizerName": {
       "type": "string"
     },
+    "venue": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "address"
+      ],
+      "additionalProperties": false
+    },
+    "introduction": {
+      "type": "string"
+    },
     "terminology": {
       "type": "object",
       "properties": {

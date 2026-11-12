@@ -2,7 +2,11 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import type { EventBundle } from "./bundle.ts";
+import {
+  checkEventBundle,
+  stripPersonalData,
+  type EventBundle,
+} from "./bundle.ts";
 import {
   CartridgeError,
   exportCartridge,
@@ -367,5 +371,56 @@ describe("disabled Activities (ADR-0029 item 9)", () => {
     expect(result.notes).toContain(
       "Left out 1 disabled Activity: 3-ring-circus.",
     );
+  });
+});
+
+describe("personal data (ADR-0031 rule 4)", () => {
+  const CONTACTS = [
+    {
+      role: "Camporee Director",
+      name: "Pat Director",
+      email: "pat@example.com",
+      phone: "555-0100",
+    },
+  ];
+  const withContacts = (): EventBundle => {
+    const bundle = circus();
+    bundle.event = { ...(bundle.event as object), contacts: CONTACTS };
+    return bundle;
+  };
+  const eventIn = (zip: Uint8Array) =>
+    JSON.parse(strFromU8(unzipSync(zip)["event.json"] ?? new Uint8Array())) as {
+      contacts?: unknown;
+    };
+
+  it("keeps contacts in the Event's own design and event-day cartridges", () => {
+    expect(eventIn(exported("design", withContacts())).contacts).toEqual(
+      CONTACTS,
+    );
+    expect(eventIn(exported("event-day", withContacts())).contacts).toEqual(
+      CONTACTS,
+    );
+  });
+
+  it("stripPersonalData takes out the contacts and the Officials, and changes nothing else", () => {
+    const bundle = withContacts();
+    const before = structuredClone(bundle);
+    const stripped = stripPersonalData(bundle);
+    expect(stripped.event).not.toHaveProperty("contacts");
+    expect(stripped).not.toHaveProperty("officials");
+    expect(stripped.activities).toEqual(bundle.activities);
+    expect(stripped.commonFieldSets).toEqual(bundle.commonFieldSets);
+    expect({ ...(stripped.event as object), contacts: CONTACTS }).toEqual(
+      bundle.event,
+    );
+    // The bundle given is left alone.
+    expect(bundle).toEqual(before);
+    // What's left is still a valid design.
+    expect(checkEventBundle(stripped).ok).toBe(true);
+  });
+
+  it("leaves an Event with no contacts as it was", () => {
+    const bundle = circus();
+    expect(stripPersonalData(bundle).event).toEqual(bundle.event);
   });
 });

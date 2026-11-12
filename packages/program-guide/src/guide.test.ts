@@ -5,7 +5,7 @@ import {
   type Event,
 } from "@camporee-conductor/schema";
 import { describe, expect, it } from "vitest";
-import { buildGuide, type GuideSection } from "./guide.ts";
+import { buildGuide, formatDates, type GuideSection } from "./guide.ts";
 
 // Real data: the Circus 2026 design fixture (CLAUDE.md: use real fixtures where possible).
 const FIXTURE = new URL("../../schema/fixtures/circus-2026/", import.meta.url);
@@ -271,5 +271,79 @@ describe("buildGuide: theme present or absent (no new field: absent = no theme y
       "support",
       "theme-ticklers",
     ]);
+  });
+});
+
+describe("buildGuide: dates, venue and introduction (ADR-0029 item 8)", () => {
+  it("puts the dates and venue on the cover, in place of the stub", () => {
+    const { sections } = buildGuide(
+      circusWith({
+        startDate: "2027-05-14",
+        endDate: "2027-05-16",
+        venue: { name: "Camp Chesebrough", address: "123 Camp Rd" },
+      }),
+      circusActivities,
+    );
+    const cover = section(sections, "cover");
+    expect(cover.blocks).toEqual([
+      {
+        kind: "cover",
+        title: "Coyote Creek District Camporee 2026",
+        lines: [
+          "The Circus",
+          "2026",
+          "Organizer: Jim Willey",
+          "May 14–16, 2027",
+          "Camp Chesebrough",
+          "123 Camp Rd",
+        ],
+      },
+    ]);
+  });
+
+  it("stubs only what's missing", () => {
+    const datesOnly = buildGuide(
+      circusWith({ startDate: "2027-05-14", venue: { name: "", address: "" } }),
+      circusActivities,
+    );
+    expect(stubs(section(datesOnly.sections, "cover"))).toEqual([
+      { kind: "stub", source: "event", holds: "the venue" },
+    ]);
+    const venueOnly = buildGuide(
+      circusWith({ venue: { name: "Camp Chesebrough", address: "" } }),
+      circusActivities,
+    );
+    expect(stubs(section(venueOnly.sections, "cover"))).toEqual([
+      { kind: "stub", source: "event", holds: "the dates" },
+    ]);
+  });
+
+  it("uses the introduction as Markdown, or stubs it when blank", () => {
+    const withIntro = buildGuide(
+      circusWith({ introduction: "Welcome, **units**!" }),
+      circusActivities,
+    );
+    expect(section(withIntro.sections, "introduction").blocks).toEqual([
+      { kind: "markdown", text: "Welcome, **units**!" },
+    ]);
+    const blank = buildGuide(
+      circusWith({ introduction: "  " }),
+      circusActivities,
+    );
+    expect(stubs(section(blank.sections, "introduction"))).toHaveLength(1);
+  });
+
+  it("writes date ranges the way people do", () => {
+    expect(formatDates("2027-05-14", "2027-05-16")).toBe("May 14–16, 2027");
+    expect(formatDates("2027-05-30", "2027-06-01")).toBe(
+      "May 30 – June 1, 2027",
+    );
+    expect(formatDates("2026-12-30", "2027-01-01")).toBe(
+      "December 30, 2026 – January 1, 2027",
+    );
+    expect(formatDates("2027-05-14", "2027-05-14")).toBe("May 14, 2027");
+    expect(formatDates("2027-05-14", undefined)).toBe("May 14, 2027");
+    expect(formatDates(undefined, "2027-05-16")).toBe("Until May 16, 2027");
+    expect(formatDates(undefined, undefined)).toBeUndefined();
   });
 });

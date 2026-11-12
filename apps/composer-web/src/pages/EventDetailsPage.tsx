@@ -1,4 +1,4 @@
-import type { Event } from "@camporee-conductor/schema";
+import type { Contact, Event } from "@camporee-conductor/schema";
 import {
   DEFAULT_THEME_COLORS,
   setDate,
@@ -6,7 +6,8 @@ import {
   setYear,
 } from "../event-details.ts";
 import { ui } from "../ui.ts";
-import { Card, StringList, Text } from "./editing.tsx";
+import { moveItem, removeItem, replaceItem } from "../draft.ts";
+import { Area, Card, RowButtons, StringList, Text } from "./editing.tsx";
 import { EventEditorPage } from "./EventEditor.tsx";
 
 type Colors = Event["presentation"]["themeColors"];
@@ -31,7 +32,7 @@ const LABELS: {
 /**
  * The Event's details (#6 PR 7): title, theme, year, dates, organizer, what this pack calls its people
  * (ADR-0003), the theme colors (with v1's "reset to defaults"), tie numbering and the Program Guide's skills.
- * Saved with the Event (ADR-0029). Venue, introduction and contacts come in PR 8.
+ * Saved with the Event (ADR-0029). Venue, introduction and contacts too (ADR-0029 item 8, PR 8).
  */
 export function EventDetailsPage() {
   return (
@@ -111,6 +112,49 @@ function Details({
           Slug: <code>{draft.slug}</code> (names its cartridges; it doesn't
           change).
         </p>
+      </Card>
+
+      <Card title="Venue and introduction">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Text
+            label="Venue"
+            value={draft.venue?.name ?? ""}
+            onChange={(name) =>
+              setDraft({
+                ...draft,
+                venue: { name, address: draft.venue?.address ?? "" },
+              })
+            }
+          />
+          <Text
+            label="Venue address"
+            value={draft.venue?.address ?? ""}
+            onChange={(address) =>
+              setDraft({
+                ...draft,
+                venue: { name: draft.venue?.name ?? "", address },
+              })
+            }
+          />
+        </div>
+        <Area
+          label="Introduction (the Program Guide's welcome, in Markdown)"
+          rows={8}
+          value={draft.introduction ?? ""}
+          onChange={(introduction) => setDraft({ ...draft, introduction })}
+        />
+      </Card>
+
+      <Card title="Contacts">
+        <p className={ui.muted}>
+          Who to contact about the Event, e.g. the director. Personal data: kept
+          in this Event's own cartridges, and taken out of anything shared
+          beyond it (Templates, the library).
+        </p>
+        <Contacts
+          contacts={draft.contacts ?? []}
+          onChange={(contacts) => setDraft({ ...draft, contacts })}
+        />
       </Card>
 
       <Card title="What people are called">
@@ -240,5 +284,68 @@ function Details({
         />
       </Card>
     </>
+  );
+}
+
+const CONTACT_FIELDS: { key: keyof Contact; label: string; type: string }[] = [
+  { key: "role", label: "Role", type: "text" },
+  { key: "name", label: "Name", type: "text" },
+  { key: "email", label: "Email", type: "email" },
+  { key: "phone", label: "Phone", type: "tel" },
+];
+
+function Contacts({
+  contacts,
+  onChange,
+}: {
+  contacts: Contact[];
+  onChange: (contacts: Contact[]) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <ol className="space-y-2">
+        {contacts.map((contact, index) => {
+          const name = `contact ${index + 1}`;
+          return (
+            <li key={index} className="flex flex-wrap items-center gap-2">
+              {CONTACT_FIELDS.map(({ key, label, type }) => (
+                <input
+                  key={key}
+                  className={`${ui.input} min-w-36 flex-1`}
+                  type={type}
+                  aria-label={`${label} of ${name}`}
+                  placeholder={label}
+                  value={contact[key]}
+                  onChange={(e) =>
+                    onChange(
+                      replaceItem(contacts, index, {
+                        ...contact,
+                        [key]: e.target.value,
+                      }),
+                    )
+                  }
+                />
+              ))}
+              <RowButtons
+                name={name}
+                index={index}
+                count={contacts.length}
+                onMove={(step) => onChange(moveItem(contacts, index, step))}
+                onRemove={() => onChange(removeItem(contacts, index))}
+              />
+            </li>
+          );
+        })}
+      </ol>
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        onClick={() =>
+          onChange([...contacts, { role: "", name: "", email: "", phone: "" }])
+        }
+      >
+        + Add contact
+      </button>
+    </div>
   );
 }

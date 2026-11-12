@@ -159,6 +159,25 @@ describe("Circus 2026: the v1 cartridge imported vs the design fixture", () => {
     expect(bySortOrder(imported.event)).toEqual(bySortOrder(expected));
   });
 
+  it("would carry a venue, introduction and contacts: Circus 2026's v1 source has none (ADR-0029 item 8)", () => {
+    const source = v1();
+    source.camporee.meta = {
+      ...source.camporee.meta,
+      location: { name: "Camp Chesebrough", address: "Coyote Creek" },
+      introduction: "Welcome to the Circus!",
+      contacts: [{ role: "Director", name: "Jim", email: "", phone: "" }],
+    };
+    const { event } = importV1Cartridge(source, CIRCUS);
+    expect(event.venue).toEqual({
+      name: "Camp Chesebrough",
+      address: "Coyote Creek",
+    });
+    expect(event.introduction).toBe("Welcome to the Circus!");
+    expect(event.contacts).toEqual([
+      { role: "Director", name: "Jim", email: "", phone: "" },
+    ]);
+  });
+
   it("notes only the v1 {{ten_essentials_item}} bug, which the design fixed", () => {
     expect(imported.notes).toHaveLength(1);
     expect(imported.notes[0]).toMatch(

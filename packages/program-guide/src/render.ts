@@ -4,6 +4,7 @@ import type {
   GuideBlock,
   GuideSection,
 } from "./guide.ts";
+import { renderMarkdown } from "./markdown.ts";
 
 /** Escapes text for HTML content and attribute values. Every piece of text goes through this. */
 export function escapeHtml(text: string): string {
@@ -44,6 +45,8 @@ export function renderGuideHtml(guide: Guide): string {
         ].join("\n");
       case "paragraph":
         return `<p>${escapeHtml(block.text)}</p>`;
+      case "markdown":
+        return renderMarkdown(block.text);
       case "list":
         return `<ul>\n${block.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("\n")}\n</ul>`;
       case "stub":
