@@ -13,7 +13,11 @@ const bundle = readEventBundle(CIRCUS_2026);
 const EVENT = bundle.event as {
   id: string;
   title: string;
-  activities: { activityId: string }[];
+  activities: {
+    activityId: string;
+    competitionId: string;
+    sortOrder: number;
+  }[];
 };
 const ACTIVITY = bundle.activities[0] as {
   id: string;
@@ -31,12 +35,15 @@ let app: ReturnType<typeof createApp>;
 let clock: number;
 let org: string;
 
+/** A JSON answer: an error message, a save's updatedAt, or a document read (cast through `unknown`). */
+type Reply = { error: string; updatedAt: number };
+
 async function call(
   who: string | null,
   method: string,
   path: string,
   { body, ifMatch }: { body?: unknown; ifMatch?: string | number } = {},
-): Promise<{ status: number; json: Record<string, unknown> }> {
+): Promise<{ status: number; json: Reply }> {
   const headers: Record<string, string> = {};
   if (who) headers[DEV_USER_HEADER] = who;
   if (body !== undefined) headers["content-type"] = "application/json";
@@ -55,7 +62,7 @@ const clone = <T>(value: T): T => structuredClone(value);
 async function readEvent(who = OWNER) {
   const res = await call(who, "GET", `/api/events/${EVENT.id}`);
   expect(res.status).toBe(200);
-  return res.json as {
+  return res.json as unknown as {
     event: typeof EVENT & Record<string, unknown>;
     updatedAt: number;
   };
@@ -64,7 +71,7 @@ async function readEvent(who = OWNER) {
 async function readActivity(who = OWNER) {
   const res = await call(who, "GET", `/api/activities/${ACTIVITY.id}`);
   expect(res.status).toBe(200);
-  return res.json as {
+  return res.json as unknown as {
     activity: typeof ACTIVITY & Record<string, unknown>;
     updatedAt: number;
   };
@@ -84,7 +91,7 @@ beforeEach(async () => {
   const res = await call(OWNER, "POST", "/api/organizations", {
     body: { name: "Coyote Creek", slug: "coyote-creek" },
   });
-  org = (res.json as { id: string }).id;
+  org = (res.json as unknown as { id: string }).id;
   importEvent(db, org, bundle, new Date(clock - 60_000));
   for (const [who, role] of [
     [EDITOR, "editor"],
@@ -144,7 +151,7 @@ describe("saving an Event", () => {
   it("stores the document exactly as sent, with no defaults added (ADR-0012)", async () => {
     const { event, updatedAt } = await readEvent();
     const sent = clone(event) as Record<string, unknown>;
-    delete sent.tieNumbering; // has a schema default
+    delete sent["tieNumbering"]; // has a schema default
     await call(OWNER, "PUT", `/api/events/${EVENT.id}`, {
       body: sent,
       ifMatch: updatedAt,
@@ -202,25 +209,39 @@ describe("saving an Event", () => {
 
   it("refuses an invalid document with 422, naming each problem, and changes nothing", async () => {
     const { event, updatedAt } = await readEvent();
-    const broken = clone(event);
-    broken.title = "";
-    broken.activities = [
-      ...broken.activities,
+    const put = (body: unknown) =>
+      call(OWNER, "PUT", `/api/events/${EVENT.id}`, {
+        body,
+        ifMatch: updatedAt,
+      });
+
+    // The document itself: every schema problem, one line each.
+    const badSchema = { ...clone(event), title: "", year: "2027" };
+    const schema = await put(badSchema);
+    expect(schema.status).toBe(422);
+    expect(schema.json.error).toMatch(
+      /^event coyote-creek-camporee-2026: title: /m,
+    );
+    expect(schema.json.error).toMatch(
+      /^event coyote-creek-camporee-2026: year: /m,
+    );
+
+    // Against the Organization's documents: an Activity that isn't there.
+    const missing = clone(event);
+    missing.activities = [
+      ...missing.activities,
       {
-        ...broken.activities[0]!,
+        competitionId: EVENT.activities[0]?.competitionId ?? "",
         activityId: "0196cfa2-4c00-7000-8000-00000000ffff",
         sortOrder: 999,
       },
     ];
-    const res = await call(OWNER, "PUT", `/api/events/${EVENT.id}`, {
-      body: broken,
-      ifMatch: updatedAt,
-    });
-    expect(res.status).toBe(422);
-    expect(res.json.error).toContain("title");
-    expect(res.json.error).toContain(
+    const bundle = await put(missing);
+    expect(bundle.status).toBe(422);
+    expect(bundle.json.error).toContain(
       "no Activity 0196cfa2-4c00-7000-8000-00000000ffff",
     );
+
     expect(await readEvent()).toEqual({
       event: EVENT,
       updatedAt,
@@ -279,7 +300,7 @@ describe("saving an Activity", () => {
     expect(res).toEqual({ status: 200, json: { updatedAt: clock } });
     expect((await readActivity()).activity).toEqual(changed);
     const { activities } = (await call(OWNER, "GET", `/api/events/${EVENT.id}`))
-      .json as {
+      .json as unknown as {
       activities: { id: string; title: string }[];
     };
     expect(activities.find((a) => a.id === ACTIVITY.id)?.title).toBe(
@@ -347,7 +368,7 @@ describe("the audit log (ADR-0029 item 5)", () => {
       body: a.activity,
       ifMatch: a.updatedAt,
     });
-    expect(auditRows().map(({ id: _id, ...row }) => row)).toEqual([
+    expect(auditRows().map((row) => ({ ...row, id: undefined }))).toEqual([
       {
         at: new Date(clock - 1_000),
         userId: `dev|${EDITOR}`,
