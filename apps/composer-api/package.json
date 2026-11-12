@@ -16,7 +16,8 @@
     "export-cartridge": "node src/cli/export-cartridge.ts",
     "seed-demo": "node src/cli/seed-demo.ts",
     "set-curator": "node src/cli/set-curator.ts",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "test-ai-key": "node --env-file-if-exists=../../.env.local src/cli/test-ai-key.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

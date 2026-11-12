@@ -37,6 +37,7 @@ parity plan) brings the four features to v2.
    Fields, Competitions, Awards, Officials and contacts. The API enforces it as a **structural diff against the
    current document**: only the allowed paths may differ. One pure function does it, with a test for each allowed
    and each refused path.
+
 5. **No personal data is sent to the provider.** Prompts carry the Activity or Event design only, never contacts,
    Officials or anything from a roster (ADR-0026, ADR-0031 rule 4).
 6. **Composer only.** The Collator never imports the adapter, and a dependency check in CI keeps it that way

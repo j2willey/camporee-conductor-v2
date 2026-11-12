@@ -26,6 +26,7 @@ import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
+import type { AiProvider } from "./ai/provider.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { documentRole, readRole, requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
@@ -232,11 +233,14 @@ export function createApp({
   authConfig,
   webRoot = null,
   now = () => new Date(),
+  ai = null,
 }: {
   db: Db;
   auth: AuthAdapter;
   authConfig: AuthConfig;
   webRoot?: string | null;
+  /** AI assistance (ADR-0030); none without a key, and then the AI buttons are hidden. */
+  ai?: AiProvider | null;
   /** The clock for saves (tests pass a fixed one). */
   now?: () => Date;
 }) {
@@ -394,6 +398,7 @@ export function createApp({
         id: userId,
         email,
         curator: isCurator(db, userId),
+        ai: ai !== null,
         organizations: myOrganizations(userId),
       });
     })

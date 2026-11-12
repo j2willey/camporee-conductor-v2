@@ -97,6 +97,7 @@ describe("signing in", () => {
         id: "dev|ann@example.com",
         email: "ann@example.com",
         curator: false,
+        ai: false,
         organizations: [],
       },
     });

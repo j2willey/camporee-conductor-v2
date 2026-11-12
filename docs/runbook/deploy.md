@@ -178,13 +178,18 @@ touch .env && chmod 600 .env
 #   TAG=<the tag from 4.1>
 #   CLERK_SECRET_KEY=sk_test_...        (Camporee Conductor v2, development instance)
 #   CLERK_PUBLISHABLE_KEY=pk_test_...
+#   ANTHROPIC_API_KEY=sk-ant-...        (optional: AI assistance, ADR-0030; leave it out and AI is off)
+#   AI_MODEL=claude-sonnet-5-5          (optional: the default)
 ```
 
 **5.4 [vps]: start, and check it from Caddy's side of the network.**
 
 ```sh
 docker compose up -d
-docker compose logs --tail 20          # expect "auth: clerk (development instance)" and "listening on :3010"
+docker compose logs --tail 20          # expect "auth: clerk (development instance)", "ai: claude-sonnet-5-5"
+                                       #   (or "ai: off (no ANTHROPIC_API_KEY)") and "listening on :3010"
+# With a key set, test it once: one tiny request; prints the model's answer or the error, never the key.
+docker compose exec composer node apps/composer-api/src/cli/test-ai-key.ts
 docker exec camporee-caddy wget -qO- http://composer-v2:3010/health   # expect {"ok":true}
 docker stats --no-stream               # memory gate, 2nd half: composer-v2 vs the v1 containers
 free -h                                # 'available' should still be ≥ ~1 GiB
