@@ -1758,3 +1758,36 @@ test("an Official downloads all results as a zip and the awards as a CSV, and no
   expect(text.slice(1).split("\r\n")[0]).toMatch(/^Competition,Category,Place/);
   expect(strangers).toEqual([]);
 });
+
+// #100 PR 5 (ADR-0027, provisional): a Director loads a new version of the cartridge from the Overview;
+// an Official who isn't a Director doesn't get the button.
+test("a Director loads a new version of the event-day cartridge from the Official view", async ({
+  page,
+}) => {
+  await page.goto("/official");
+  await page.getByLabel("Email").fill("lead.judge@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("button", { name: "Reset" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Event cartridge" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out" }).click();
+
+  await page.getByLabel("Email").fill("director@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Event cartridge" }).click();
+  const form = page.getByRole("form", {
+    name: "Load the event-day cartridge",
+  });
+  await expect(form.getByLabel("Setup code")).toHaveCount(0);
+  await form
+    .getByLabel("Cartridge (.zip)")
+    .setInputFiles(
+      resolve(import.meta.dirname, "../test-results/circus-event-day.zip"),
+    );
+  await form.getByRole("button", { name: "Load" }).click();
+  await expect(
+    page.getByRole("button", { name: "Event cartridge" }),
+  ).toBeVisible();
+  await expect(page.getByRole("row", { name: /Clown Car/ })).toBeVisible();
+});

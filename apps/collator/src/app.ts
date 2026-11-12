@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { CheckedBundle } from "@camporee-conductor/cartridge";
 import { serveStatic } from "@hono/node-server/serve-static";
 import type { Official } from "@camporee-conductor/schema";
@@ -6,9 +7,9 @@ import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
-import type { BackupConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
+import { firstLoadFrom, type BackupConfig, type FirstLoad } from "./config.ts";
 import { awardLabelView, recordAwardLabel } from "./award-label.ts";
 import { recordClosure } from "./closures.ts";
 import {
@@ -20,7 +21,7 @@ import {
 import { currentEpoch, epochsSince } from "./epoch.ts";
 import { resetBox } from "./reset.ts";
 import { judgeEvent } from "./judge-event.ts";
-import { loadedEvent } from "./load-event.ts";
+import { loadEventCartridge, loadedEvent } from "./load-event.ts";
 import { recordOfficialAction } from "./official-actions.ts";
 import { normalEmail, officialByEmail } from "./officials.ts";
 import { officialAwards } from "./awards.ts";
@@ -513,8 +514,11 @@ export function createApp({
   db,
   webRoot = null,
   backup = null,
+  firstLoad = firstLoadFrom({}),
 }: {
   db: Db;
+  /** Who may load the first cartridge from the browser (ADR-0027, provisional); a made-up code unless given. */
+  firstLoad?: FirstLoad;
   /** The built web app (judge page) to serve, or null in development, where Vite serves it. */
   webRoot?: string | null;
   /** Where a reset takes its backup first (ADR-0027); null when no backup folder is set, which refuses resets. */
@@ -532,6 +536,56 @@ export function createApp({
   app.get("/api/health", (c) => {
     const event = loadedEvent(db);
     return c.json({ ok: true, event: event?.manifest.event ?? null });
+  });
+
+  // Setting up the box from the browser (ADR-0027, #100 PR 5, provisional).
+  app.get("/api/box", (c) =>
+    c.json({
+      event: loadedEvent(db)?.manifest.event ?? null,
+      firstLoad: firstLoad.mode,
+    }),
+  );
+
+  /**
+   * Loads an event-day cartridge (multipart `file`), with the same rules as `load-cartridge`. On an empty box the
+   * first load needs the setup code (`setupCode`) unless FIRST_LOAD=open; once an Event is loaded, only a signed-in
+   * Director may load (the Official email header).
+   */
+  app.post("/api/cartridge", async (c) => {
+    const form = await c.req.parseBody();
+    const file = form["file"];
+    if (!(file instanceof File)) {
+      return c.json({ error: "Send the cartridge as `file`." }, 400);
+    }
+    const loaded = loadedEvent(db);
+    if (loaded) {
+      const email = c.req.header(OFFICIAL_EMAIL_HEADER)?.trim() ?? "";
+      if (email === "") {
+        return c.json({ error: "Sign in as the Event's Director." }, 401);
+      }
+      const official = officialByEmail(db, loaded.bundle, email);
+      if (official?.role !== "director") {
+        return c.json({ error: "Only a Director can load a cartridge." }, 403);
+      }
+    } else if (firstLoad.mode === "code") {
+      const given =
+        typeof form["setupCode"] === "string" ? form["setupCode"].trim() : "";
+      if (!sameCode(given, firstLoad.code)) {
+        return c.json(
+          {
+            error:
+              "Enter the box's setup code: it's in the box's settings (SETUP_CODE), or in its log when it started.",
+          },
+          403,
+        );
+      }
+    }
+    const result = loadEventCartridge(
+      db,
+      new Uint8Array(await file.arrayBuffer()),
+    );
+    if (!result.ok) return c.json({ error: result.issues.join("\n") }, 422);
+    return c.json({ event: result.event, notes: result.notes });
   });
 
   app.get("/api/event", (c) => {
@@ -618,4 +672,11 @@ export function createApp({
       .get("*", serveStatic({ root: webRoot, path: "index.html" }));
   }
   return app;
+}
+
+/** The setup code as typed, compared without leaking its length or letters through timing; case doesn't matter. */
+function sameCode(given: string, expected: string): boolean {
+  const a = createHash("sha256").update(given.toUpperCase()).digest();
+  const b = createHash("sha256").update(expected.toUpperCase()).digest();
+  return given !== "" && timingSafeEqual(a, b);
 }

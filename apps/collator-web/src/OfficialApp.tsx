@@ -3,7 +3,13 @@ import type {
   SignedInOfficial,
 } from "@camporee-conductor/collator/types";
 import { useEffect, useState } from "react";
-import { errorMessage, officialApi, wasRefused } from "./api.ts";
+import {
+  boxApi,
+  errorMessage,
+  officialApi,
+  wasRefused,
+  type BoxState,
+} from "./api.ts";
 import {
   forgetOfficialEmail,
   savedOfficialEmail,
@@ -16,6 +22,7 @@ import { StickersPage } from "./screens/StickersPage.tsx";
 import { ExhibitionResultsPage } from "./screens/ExhibitionResultsPage.tsx";
 import { OfficialActivityView } from "./screens/OfficialActivityView.tsx";
 import { OfficialOverview } from "./screens/OfficialOverview.tsx";
+import { LoadCartridge } from "./screens/LoadCartridge.tsx";
 import { OfficialSignIn } from "./screens/OfficialSignIn.tsx";
 import { ResetPage } from "./screens/ResetPage.tsx";
 import { RosterPage } from "./screens/RosterPage.tsx";
@@ -44,6 +51,28 @@ export function OfficialApp() {
   const [announcerOpen, setAnnouncerOpen] = useState(false);
   const [rosterOpen, setRosterOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [loadingCartridge, setLoadingCartridge] = useState(false);
+  /** Bumped to read the Event again, e.g. after a Director loads a new version. */
+  const [reloads, setReloads] = useState(0);
+  /** An empty box offers the first load instead of a sign-in (ADR-0027, provisional). */
+  const [box, setBox] = useState<BoxState | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (email) return;
+    let current = true;
+    boxApi.state().then(
+      (state) => {
+        if (current) setBox(state);
+      },
+      (e: unknown) => {
+        if (current) setProblem(errorMessage(e));
+      },
+    );
+    return () => {
+      current = false;
+    };
+  }, [email, reloads]);
 
   // Signing in, or coming back with a saved email: the box checks it, as it does on every call.
   useEffect(() => {
@@ -69,7 +98,7 @@ export function OfficialApp() {
     return () => {
       current = false;
     };
-  }, [email]);
+  }, [email, reloads]);
 
   const signOut = () => {
     forgetOfficialEmail();
@@ -85,12 +114,33 @@ export function OfficialApp() {
     setAnnouncerOpen(false);
     setRosterOpen(false);
     setResetting(false);
+    setLoadingCartridge(false);
     setProblem(null);
   };
 
   if (!email) {
+    if (box && box.event === null) {
+      return (
+        <Shell>
+          <LoadCartridge
+            needsCode={box.firstLoad === "code"}
+            onLoaded={({ event: loaded }) => {
+              setNotice(
+                `Loaded ${loaded.title}. Sign in with an Official's email from its list.`,
+              );
+              setReloads((n) => n + 1);
+            }}
+          />
+        </Shell>
+      );
+    }
     return (
       <Shell>
+        {notice && (
+          <p className={`${ui.success} mb-4`} role="status">
+            {notice}
+          </p>
+        )}
         <OfficialSignIn problem={problem} onSignIn={setEmail} />
       </Shell>
     );
@@ -120,7 +170,18 @@ export function OfficialApp() {
           </button>
         </p>
       </header>
-      {printing ? (
+      {loadingCartridge ? (
+        <LoadCartridge
+          email={email}
+          needsCode={false}
+          currentTitle={event.event.title}
+          onBack={() => setLoadingCartridge(false)}
+          onLoaded={() => {
+            setLoadingCartridge(false);
+            setReloads((n) => n + 1);
+          }}
+        />
+      ) : printing ? (
         <QrCodesPage
           eventTitle={event.event.title}
           activities={event.activities}
@@ -173,6 +234,7 @@ export function OfficialApp() {
         />
       ) : (
         <OfficialOverview
+          key={reloads}
           email={email}
           event={event}
           onPick={setActivity}
@@ -182,6 +244,9 @@ export function OfficialApp() {
           onAwards={() => setAwardsOpen(true)}
           onRoster={() => setRosterOpen(true)}
           onReset={() => setResetting(true)}
+          {...(official.role === "director" && {
+            onLoadCartridge: () => setLoadingCartridge(true),
+          })}
         />
       )}
     </Shell>

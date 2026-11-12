@@ -76,12 +76,24 @@ first load after an update may still be the copy the phone kept.
 
 ## 4. Load the event-day cartridge
 
-Export it from the Composer with `--profile event-day` (it carries the Officials list), put it in the
-cartridges folder (default `deploy/collator/cartridges/`, gitignored), and:
+Download it from the Composer: the Event page's **Download event-day cartridge (for the box)**. It carries
+the Officials list, and needs at least one Director. Then either:
+
+- **From a browser (#100):** open `https://<COLLATOR_HOSTNAME>/official`. On an empty box the page offers
+  **Load the event-day cartridge**. Pick the zip and click Load.
+  - It asks for the **setup code** unless the box's `.env` has `FIRST_LOAD=open`, which is only for a box
+    with no internet. The code is `SETUP_CODE` in `.env`, or, when that's blank, the one in the log:
+    `docker compose logs collator | grep "setup code"`. A made-up code changes each time the box starts.
+  - Once an Event is loaded, a signed-in **Director** loads a new version from the Overview's **Event
+    cartridge** section. A different Event is still refused while the box holds roster or scores.
+- **From the console,** as before: put the zip in the cartridges folder (default `deploy/collator/cartridges/`,
+  gitignored), and:
 
 ```sh
 docker compose exec collator node apps/collator/src/cli/load-cartridge.ts /cartridges/<file>.zip
 ```
+
+These rules are provisional (ADR-0027, 2026-11-12).
 
 ### Add an Official on site
 

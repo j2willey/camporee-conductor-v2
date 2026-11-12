@@ -1,6 +1,6 @@
 ---
 created: 2026-11-06
-updated: 2026-11-06
+updated: 2026-11-12
 ---
 
 # ADR-0027 — On-site Collator: box, network, HTTPS, judge sync, recovery
@@ -258,6 +258,27 @@ carries (ADR-0015). Where each item is built: #40 Collator tracer, #41 Judge app
   - The archive lives in the phone's storage for the Event, at about 1 KB per score.
 - Item 8's promise, "phones resend what the box lost", is now true after a restore, and deliberately false after a
   reset. The runbook's §5 says which is which.
+
+## Loading a cartridge from the browser (2026-11-12, #100 PR 5): provisional
+
+**Status: provisional.** Jim agreed to it on 2026-11-12 to get going, and said it may change once the
+cloud and internet cases are better understood. Revisit it before a box ever runs where the internet can
+reach it.
+
+The Official view can load the event-day cartridge, so setting up the box needs no console command (#100
+acceptance). The console's `load-cartridge` stays, and works as before. Both use `loadEventCartridge`, so
+the rules are the same: all or nothing, and a different Event is refused while the box holds roster or scores.
+
+- **Once an Event is loaded,** only a signed-in **Director** may upload, through the email gate (item 5).
+- **On an empty box** no one can sign in, because there's no Officials list yet. So the first upload is
+  allowed by a box setting, `FIRST_LOAD`:
+  - `code`, the default: the upload needs the box's **setup code**. That's `SETUP_CODE` from the box's
+    settings, or, when it isn't set, a random code the box makes at start and prints in its log. Meant for
+    a box the internet can reach, or one in the cloud.
+  - `open`: no code. Meant **only for a box with no internet** (Jim's on-site box, where the box's own
+    network is the trust, as with the console in item 5). `deploy/collator/env.example` says so.
+- The setup code only opens the first load. It isn't a password for anything else, and Judges never see it
+  (ADR-0023).
 
 ## Consequences
 

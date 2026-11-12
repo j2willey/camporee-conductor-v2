@@ -26,6 +26,7 @@ export function OfficialOverview({
   onAwards,
   onRoster,
   onReset,
+  onLoadCartridge,
 }: {
   email: string;
   event: OfficialEvent;
@@ -36,6 +37,8 @@ export function OfficialOverview({
   onAwards: () => void;
   onRoster: () => void;
   onReset: () => void;
+  /** Directors only (ADR-0027, #100 PR 5): load a new version of the event-day cartridge. */
+  onLoadCartridge?: () => void;
 }) {
   const [event, setEvent] = useState(first);
   const [updatedAt, setUpdatedAt] = useState(() => new Date());
@@ -204,6 +207,14 @@ export function OfficialOverview({
         <button className={`${ui.buttonQuiet} w-full`} onClick={onReset}>
           Reset
         </button>
+        {onLoadCartridge && (
+          <button
+            className={`${ui.buttonQuiet} w-full`}
+            onClick={onLoadCartridge}
+          >
+            Event cartridge
+          </button>
+        )}
       </div>
       <div className="flex flex-col gap-1">
         <button

@@ -143,6 +143,39 @@ export function saveDownload(blob: Blob, fileName: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
+/** What the box holds, and whether a first load needs the setup code (ADR-0027, #100 PR 5, provisional). */
+export interface BoxState {
+  event: { id: string; slug: string; title: string } | null;
+  firstLoad: "code" | "open";
+}
+
+/** The loaded Event's identity, as the box answers a load. */
+export interface CartridgeLoaded {
+  event: { id: string; slug: string; title: string };
+  notes: string[];
+}
+
+export const boxApi = {
+  state: () => call<BoxState>("/api/box"),
+  /**
+   * Loads an event-day cartridge: a Director's email once an Event is loaded, or on an empty box the setup code
+   * (unless the box's first load is open). The box's refusal names each problem.
+   */
+  loadCartridge: (
+    file: File,
+    { email, setupCode }: { email?: string; setupCode?: string },
+  ) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (setupCode !== undefined) form.append("setupCode", setupCode);
+    return call<CartridgeLoaded>("/api/cartridge", {
+      method: "POST",
+      headers: email ? { [OFFICIAL_EMAIL_HEADER]: email } : {},
+      body: form,
+    });
+  },
+};
+
 export const officialApi = {
   download: downloadAsOfficial,
   me: (email: string) => asOfficial<SignedInOfficial>(email, "/me"),

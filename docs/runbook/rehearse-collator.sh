@@ -120,9 +120,23 @@ pass "judge page served"
 echo "== 3. load the Circus 2026 event-day cartridge"
 (cd "$repo" && node apps/collator-web/e2e/make-cartridge.ts "$work/cartridges/circus-event-day.zip")
 chmod 644 "$work/cartridges/circus-event-day.zip"
+# From the browser first (#100, ADR-0027 provisional): an empty box needs the setup code it printed at start.
+upload() { # upload [setup code] -> prints "<body> <status>"
+  curl -sS --max-time 20 --cacert "$work/root.crt" --resolve "$host:$https_port:127.0.0.1" \
+    -F "file=@$work/cartridges/circus-event-day.zip" ${1:+-F "setupCode=$1"} \
+    -w ' %{http_code}' "https://$host:$https_port/api/cartridge"
+}
+refused=$(upload)
+[ "$(status_of "$refused")" = 403 ] || fail "an upload with no setup code wasn't refused: $refused"
+code=$(compose logs collator 2>/dev/null | sed -n 's/.*first load: setup code \([A-Z0-9-]*\).*/\1/p' | tail -1)
+[ -n "$code" ] || fail "the box didn't print a setup code in its log"
+loaded=$(upload "$code")
+[ "$(status_of "$loaded")" = 200 ] || fail "upload with the setup code: $loaded"
+pass "cartridge loaded from the browser with the setup code from the log"
+# The console still works: loading the same Event again keeps everything.
 compose exec -T collator node apps/collator/src/cli/load-cartridge.ts /cartridges/circus-event-day.zip ||
   fail "load-cartridge"
-pass "cartridge loaded"
+pass "cartridge loaded again from the console"
 
 echo "== 4. a Group, a Team, a score, and the score resent"
 fixtures=$repo/packages/schema/fixtures/circus-2026
