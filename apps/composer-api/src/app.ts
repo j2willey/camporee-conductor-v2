@@ -13,7 +13,12 @@ import {
   renderGuideHtml,
   renderSuppliesListHtml,
 } from "@camporee-conductor/program-guide";
-import { Slug, type Activity, type Event } from "@camporee-conductor/schema";
+import {
+  Slug,
+  type Activity,
+  type CommonFieldSet,
+  type Event,
+} from "@camporee-conductor/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -415,6 +420,14 @@ export function createApp({
     .put("/activities/:activityId", anyJson, (c) =>
       save(c, "activity", c.req.param("activityId"), c.req.valid("json")),
     )
+
+    /** The Common Field sets the Event's Competitions use, as stored: for the scoring preview (#6 PR 5). */
+    .get("/events/:eventId/common-field-sets", (c) => {
+      const found = readEventDocuments(db, c.req.param("eventId"));
+      if (!found) throw new HTTPException(404, { message: "Not found." });
+      requireRole(db, found.organizationId, c.var.user.userId, "viewer");
+      return c.json(found.bundle.commonFieldSets as CommonFieldSet[]);
+    })
 
     /** The Event's Program Guide as one print-ready HTML page (issue #5). */
     .get("/events/:eventId/program-guide", (c) => {

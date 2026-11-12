@@ -1,5 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ActivitySchema, type Activity } from "@camporee-conductor/schema";
+import {
+  ActivitySchema,
+  type Activity,
+  type Competition,
+} from "@camporee-conductor/schema";
 import type { InferResponseType } from "hono/client";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useBlocker, useParams } from "react-router";
@@ -14,6 +18,7 @@ import {
 import { ui } from "../ui.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import { Loading, PageError } from "./ErrorMessage.tsx";
+import { ScoringCard, ScoringPreview } from "./ScoringEditor.tsx";
 
 type ActivityRead = InferResponseType<
   (typeof client.api.activities)[":activityId"]["$get"],
@@ -27,7 +32,7 @@ type CustomSection = NonNullable<Content["customSections"]>[number];
  * One Activity's text (#6 PR 3): title, tags, every content section, supplies, custom sections and variables.
  * Editors and owners change a draft and save it whole with If-Match (ADR-0029); viewers see the same form,
  * read-only. An emptied list or set stays in the document, empty, so it's visibly empty (Jim, 2026-11-11);
- * only a supply's group is removed when blank, since the schema allows no empty group. Scoring fields come in PR 5.
+ * only a supply's group is removed when blank, since the schema allows no empty group. Scoring fields and the judge's form preview are in ScoringEditor.tsx (PR 5).
  */
 export function ActivityPage() {
   const { eventId = "", activityId = "" } = useParams();
@@ -75,6 +80,17 @@ function Editor({
           `${i.path.length > 0 ? `${i.path.map(String).join(".")}: ` : ""}${i.message}`,
       );
 
+  const eventRead = useQuery({
+    queryKey: ["events", eventId],
+    queryFn: () =>
+      data(client.api.events[":eventId"].$get({ param: { eventId } })),
+  });
+  const event = eventRead.data?.event;
+  const listed = event?.activities.find((a) => a.activityId === activityId);
+  const competition = event?.competitions.find(
+    (c) => c.id === listed?.competitionId,
+  ) as Competition | undefined;
+
   const queryClient = useQueryClient();
   const save = useMutation({
     mutationFn: () =>
@@ -112,10 +128,8 @@ function Editor({
         </p>
         <h1 className={ui.h1}>{stored.title}</h1>
         <p className={ui.muted}>
-          {stored.scoringType === "ranked" ? "Ranked" : "Exhibition"} ·{" "}
-          {stored.scoring.fields.length} scoring{" "}
-          {stored.scoring.fields.length === 1 ? "field" : "fields"} · Text is
-          Markdown: **bold**, *italic*, lists and links.
+          {competition?.label ?? ""} · Text is Markdown: **bold**, *italic*,
+          lists and links.
         </p>
         <PreviewGuide eventId={eventId} activityId={activityId} dirty={dirty} />
       </div>
@@ -216,7 +230,15 @@ function Editor({
             onChange={(variables) => setDraft({ ...draft, variables })}
           />
         </Card>
+
+        <ScoringCard draft={draft} onChange={setDraft} />
       </fieldset>
+
+      <ScoringPreview
+        eventId={eventId}
+        draft={draft}
+        competition={competition}
+      />
 
       {canEdit && (
         <SaveBar

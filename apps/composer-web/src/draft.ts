@@ -66,3 +66,7 @@ export function renameVariable(
     ]),
   );
 }
+
+/** `doc` without `key`. */
+export const omit = <D extends object, K extends keyof D>(doc: D, key: K): D =>
+  Object.fromEntries(Object.entries(doc).filter(([k]) => k !== key)) as D;

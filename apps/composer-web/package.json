@@ -12,8 +12,10 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@camporee-conductor/judge-form": "workspace:*",
     "@camporee-conductor/program-guide": "workspace:*",
     "@camporee-conductor/schema": "workspace:*",
+    "@camporee-conductor/scoring": "workspace:*",
     "@clerk/react": "6.18.0",
     "@tanstack/react-query": "5.104.5",
     "hono": "4.13.13",
