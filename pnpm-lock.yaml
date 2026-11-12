@@ -230,6 +230,9 @@ importers:
 
   apps/collator-web:
     dependencies:
+      '@camporee-conductor/judge-form':
+        specifier: workspace:*
+        version: link:../../packages/judge-form
       '@camporee-conductor/scoring':
         specifier: workspace:*
         version: link:../../packages/scoring
@@ -377,6 +380,22 @@ importers:
       zod:
         specifier: 4.6.7
         version: 4.6.7
+
+  packages/judge-form:
+    dependencies:
+      '@camporee-conductor/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@camporee-conductor/scoring':
+        specifier: workspace:*
+        version: link:../scoring
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.1
+        version: 19.3.1
 
   packages/program-guide:
     dependencies:

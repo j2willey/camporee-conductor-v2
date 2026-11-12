@@ -1,4 +1,4 @@
-import type { JudgeField } from "@camporee-conductor/collator/types";
+import type { FormField } from "./field.ts";
 import { numberOf, valueProblem } from "@camporee-conductor/scoring";
 
 /** What the inputs hold: text for most fields, a boolean for checkboxes. */
@@ -7,7 +7,7 @@ export type Entry = Record<string, string | boolean>;
 /** A score's values, as the Collator stores them (ADR-0019: as entered). */
 export type Values = Record<string, number | string | boolean>;
 
-export function initialEntry(fields: readonly JudgeField[]): Entry {
+export function initialEntry(fields: readonly FormField[]): Entry {
   return Object.fromEntries(
     fields.map((f) => {
       const value = f.config.defaultValue;
@@ -29,7 +29,7 @@ export function initialEntry(fields: readonly JudgeField[]): Entry {
  * written by the timer, stopwatch.ts).
  */
 export function readEntry(
-  fields: readonly JudgeField[],
+  fields: readonly FormField[],
   entry: Entry,
 ): { ok: true; values: Values } | { ok: false; problems: string[] } {
   const values: Values = {};
