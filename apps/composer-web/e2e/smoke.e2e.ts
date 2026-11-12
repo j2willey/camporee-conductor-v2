@@ -892,3 +892,48 @@ test("an owner copies an Activity to the library and adds it elsewhere", async (
     page.getByRole("listitem").filter({ hasText: "Clown Car" }),
   ).toContainText("Private");
 });
+
+// #102 PR 4 (the #102 acceptance, through the UI): Circus 2026 saved as a Template, published, downloaded, and a
+// new Event made from it. It runs last; the Template and the new Event stay (no earlier test looks for them).
+test("an owner makes a Template of Circus 2026 and a new Event from it", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page
+    .getByRole("button", {
+      name: "Save Coyote Creek District Camporee 2026 as a Template",
+    })
+    .click();
+  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  await page.getByRole("button", { name: "Templates" }).click();
+  const row = page
+    .getByRole("listitem")
+    .filter({ hasText: "Template ·" })
+    .filter({ hasText: "Coyote Creek District Camporee 2026" });
+  await expect(row).toContainText("Private");
+  await row.getByRole("button", { name: /^Publish / }).click();
+  await expect(row).toContainText("Library");
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    row.getByRole("button", { name: /as a zip$/ }).click(),
+  ]);
+  expect(download.suggestedFilename()).toBe(
+    "coyote-creek-camporee-2026-template.zip",
+  );
+
+  await row.getByRole("button", { name: /^New Event from / }).click();
+  await row.getByLabel("Title").fill("Spring Camporee from the Template");
+  await row.getByRole("button", { name: "Create Event" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Spring Camporee from the Template",
+  );
+  await expect(
+    page.getByRole("region", { name: "Troop Challenges" }),
+  ).toBeVisible();
+});

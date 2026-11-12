@@ -4,6 +4,8 @@ import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { z } from "zod";
 import {
   checkEventBundle,
+  checkTemplateBundle,
+  stripPersonalData,
   withoutDisabledActivities,
   type CheckedBundle,
   type EventBundle,
@@ -20,6 +22,9 @@ import { unresolvedVariables } from "./v1/import-v1.ts";
 //   activities/<slug>.json   each Activity the Event lists
 //   officials.json           event-day only
 //   assets/<sha256>.<ext>    when documents reference assets (none until #7)
+//
+// A Template's zip (ADR-0031 item 7, #102 PR 4) is a design cartridge in the same layout: event.json holds the
+// Template (Event-shaped, ADR-0017; its `kind` says so) and the manifest's `event` names it.
 
 export const CARTRIDGE_FORMAT = "camporee-conductor-cartridge";
 /** The zip layout and manifest. Bump when they change; documents carry their own schemaVersion. */
@@ -94,16 +99,55 @@ export function exportCartridge(
   }
   if (issues.length > 0) throw new CartridgeError(issues);
 
-  const { event, activities } = check.bundle;
+  return zipDocuments(
+    bundle,
+    check.bundle.activities.map((a) => a.slug),
+    check.bundle.event,
+    profile,
+    exportedAt,
+  );
+}
+
+/**
+ * A Template's zip (ADR-0031 item 7, #102 PR 4): a design cartridge of the Template, after `stripPersonalData`
+ * (ADR-0031 rule 4), so it never holds contacts or Officials. Refused unless it passes `checkTemplateBundle`.
+ */
+export function exportTemplateCartridge(
+  bundle: EventBundle,
+  { exportedAt }: { exportedAt: Date },
+): Uint8Array {
+  const stripped = stripPersonalData(bundle);
+  const check = checkTemplateBundle(stripped);
+  if (!check.ok) throw new CartridgeError(check.issues);
+  if (stripped.commonFieldSets.length > 1) {
+    throw new CartridgeError([
+      "common fields: more than one Common Field set isn't supported yet",
+    ]);
+  }
+  return zipDocuments(
+    stripped,
+    check.bundle.activities.map((a) => a.slug),
+    check.bundle.event,
+    "design",
+    exportedAt,
+  );
+}
+
+/** The zip: each document exactly as given (pretty-printed), plus the manifest. Same input, same bytes. */
+function zipDocuments(
+  bundle: EventBundle,
+  activitySlugs: string[],
+  main: { id: string; slug: string; title: string },
+  profile: CartridgeProfile,
+  exportedAt: Date,
+): Uint8Array {
   const contents: Record<string, Uint8Array> = {
     "event.json": documentFile(bundle.event),
   };
   const [set] = bundle.commonFieldSets;
   if (set !== undefined) contents["common-fields.json"] = documentFile(set);
-  activities.forEach((activity, i) => {
-    contents[`activities/${activity.slug}.json`] = documentFile(
-      bundle.activities[i],
-    );
+  activitySlugs.forEach((slug, i) => {
+    contents[`activities/${slug}.json`] = documentFile(bundle.activities[i]);
   });
   if (profile === "event-day") {
     contents["officials.json"] = documentFile(bundle.officials);
@@ -114,7 +158,7 @@ export function exportCartridge(
     formatVersion: CARTRIDGE_FORMAT_VERSION,
     schemaVersion: SCHEMA_VERSION,
     profile,
-    event: { id: event.id, slug: event.slug, title: event.title },
+    event: { id: main.id, slug: main.slug, title: main.title },
     exportedAt: exportedAt.toISOString(),
     files: Object.keys(contents)
       .sort()

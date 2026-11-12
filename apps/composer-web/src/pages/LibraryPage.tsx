@@ -5,10 +5,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import type { InferResponseType } from "hono/client";
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { client, data } from "../api.ts";
 import { ui } from "../ui.ts";
+import { useDownload } from "../useDownload.ts";
 import { useOpenHtmlInNewTab } from "../useOpenHtmlInNewTab.ts";
 import { ErrorMessage, Loading, PageError } from "./ErrorMessage.tsx";
 
@@ -28,6 +29,8 @@ type RowActions = {
   add?: { label: string; run: () => void };
   publish?: () => void;
   unpublish?: () => void;
+  /** A Template's New Event form: the Organizations the caller can make Events in (#102 PR 4). */
+  newEventIn?: { id: string; name: string }[];
   busy: boolean;
 };
 
@@ -139,6 +142,11 @@ export function LibraryPage() {
         actions.unpublish = () =>
           curate.mutate({ id: item.id, to: "unpublish" });
       }
+    }
+    if (item.kind === "template") {
+      actions.newEventIn = (me.data?.organizations ?? []).filter((o) =>
+        editorOf.has(o.id),
+      );
     }
     return actions;
   };
@@ -351,7 +359,135 @@ function CatalogRow({ item, actions }: { item: Item; actions: RowActions }) {
           ))}
         </ul>
       )}
+      {item.kind === "template" && (
+        <TemplateActions
+          templateId={item.id}
+          title={item.title}
+          organizations={actions.newEventIn ?? []}
+        />
+      )}
       {preview.error && <ErrorMessage error={new Error(preview.error)} />}
     </li>
+  );
+}
+
+/**
+ * A Template's own actions (#102 PR 4): New Event (a copy in one of your Organizations, then it opens) and the
+ * Template's zip.
+ */
+function TemplateActions({
+  templateId,
+  title,
+  organizations,
+}: {
+  templateId: string;
+  title: string;
+  organizations: { id: string; name: string }[];
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState("");
+  // The first of your Organizations until you pick one: they may load after this row first renders.
+  const organizationId = picked || (organizations[0]?.id ?? "");
+  const [eventTitle, setEventTitle] = useState("");
+  const create = useMutation({
+    mutationFn: () =>
+      data(
+        client.api.templates[":templateId"]["new-event"].$post({
+          param: { templateId },
+          json: {
+            organizationId,
+            ...(eventTitle.trim() !== "" && { title: eventTitle.trim() }),
+          },
+        }),
+      ),
+    onSuccess: async ({ eventId }) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["organizations", organizationId, "events"],
+      });
+      void navigate(`/events/${eventId}`);
+    },
+  });
+  const zip = useDownload(
+    () =>
+      client.api.templates[":templateId"].cartridge.$get({
+        param: { templateId },
+      }),
+    "template.zip",
+  );
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    create.mutate();
+  };
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {organizations.length > 0 && (
+          <button
+            type="button"
+            className={ui.buttonQuiet}
+            aria-expanded={open}
+            aria-label={`New Event from ${title}`}
+            onClick={() => setOpen(!open)}
+          >
+            New Event…
+          </button>
+        )}
+        <button
+          type="button"
+          className={ui.buttonQuiet}
+          aria-label={`Download ${title} as a zip`}
+          disabled={zip.downloading}
+          onClick={() => void zip.download()}
+        >
+          Download zip
+        </button>
+        {zip.error && (
+          <span role="alert" className={ui.error}>
+            {zip.error}
+          </span>
+        )}
+      </div>
+      {open && (
+        <form
+          onSubmit={submit}
+          className="flex flex-wrap items-end gap-3 rounded-md bg-stone-50 p-3"
+          aria-label={`New Event from ${title}`}
+        >
+          <label className={ui.label}>
+            Organization
+            <select
+              value={organizationId}
+              onChange={(e) => setPicked(e.target.value)}
+              className={ui.input}
+            >
+              {organizations.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className={`${ui.label} min-w-40 flex-1`}>
+            Title
+            <input
+              value={eventTitle}
+              onChange={(e) => setEventTitle(e.target.value)}
+              placeholder={title}
+              className={ui.input}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={create.isPending || organizationId === ""}
+            className={ui.button}
+          >
+            {create.isPending ? "Creating…" : "Create Event"}
+          </button>
+          {create.isError && <ErrorMessage error={create.error} />}
+        </form>
+      )}
+    </div>
   );
 }

@@ -4,10 +4,12 @@ import {
   EventSchema,
   isActivityEnabled,
   OfficialsSchema,
+  TemplateSchema,
   type Activity,
   type CommonFieldSet,
   type Event,
   type Officials,
+  type Template,
 } from "@camporee-conductor/schema";
 import type { z } from "zod";
 
@@ -44,6 +46,42 @@ export type BundleCheck =
  * one line each, naming the document.
  */
 export function checkEventBundle(bundle: EventBundle): BundleCheck {
+  return checkBundle(bundle, EventSchema, "event") as BundleCheck;
+}
+
+/** A Template, with the documents it references: no Officials, ever (ADR-0031 rule 4). */
+export interface CheckedTemplateBundle {
+  /** The Template, under the bundle's `event` key: Event-shaped (ADR-0017). */
+  event: Template;
+  activities: Activity[];
+  commonFieldSets: CommonFieldSet[];
+}
+
+export type TemplateBundleCheck =
+  | { ok: true; bundle: CheckedTemplateBundle; raw: EventBundle }
+  | { ok: false; issues: string[] };
+
+/**
+ * The Event bundle rules for a Template (ADR-0031 item 7, #102 PR 4): the main document must pass the Template
+ * schema (so no contacts), and the bundle never holds Officials. Problems name the Template.
+ */
+export function checkTemplateBundle(bundle: EventBundle): TemplateBundleCheck {
+  const check = checkBundle(bundle, TemplateSchema, "template");
+  if (bundle.officials === undefined) return check as TemplateBundleCheck;
+  const officials =
+    "officials: Officials are never in a Template (ADR-0031 rule 4)";
+  return {
+    ok: false,
+    issues: [...(check.ok ? [] : check.issues), officials],
+  };
+}
+
+/** The shared rules, with the main document's schema and the kind its problems are named by. */
+function checkBundle(
+  bundle: EventBundle,
+  mainSchema: typeof EventSchema | typeof TemplateSchema,
+  mainKind: "event" | "template",
+): BundleCheck | TemplateBundleCheck {
   const issues: string[] = [];
   const parse = <S extends z.ZodType>(
     schema: S,
@@ -62,7 +100,9 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
     return undefined;
   };
 
-  const event = parse(EventSchema, "event", bundle.event, "event");
+  // Event-shaped either way (ADR-0017): the rules below read the same fields.
+  const event = parse(mainSchema, mainKind, bundle.event, mainKind) as
+    Event | undefined;
   const activities = bundle.activities.map((raw, i) =>
     parse(ActivitySchema, "activity", raw, `activities[${i}]`),
   );
@@ -76,7 +116,7 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
   );
 
   const officials =
-    bundle.officials === undefined
+    bundle.officials === undefined || mainKind === "template"
       ? undefined
       : parse(OfficialsSchema, "officials", bundle.officials, "officials");
 
@@ -92,13 +132,15 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
     for (const id of listed) {
       if (!activityIds.has(id)) {
         issues.push(
-          `event ${event.slug}: activities: no Activity ${id} in the bundle`,
+          `${mainKind} ${event.slug}: activities: no Activity ${id} in the bundle`,
         );
       }
     }
     for (const activity of activities) {
       if (activity && !listed.has(activity.id)) {
-        issues.push(`activity ${activity.slug}: not listed in the Event`);
+        issues.push(
+          `activity ${activity.slug}: not listed in the ${mainKind === "event" ? "Event" : "Template"}`,
+        );
       }
     }
     const setIds = new Set(bundle.commonFieldSets.map(idOf));
@@ -106,11 +148,11 @@ export function checkEventBundle(bundle: EventBundle): BundleCheck {
       const setId = competition.commonFields?.setId;
       if (setId && !setIds.has(setId)) {
         issues.push(
-          `event ${event.slug}: competitions.${i}.commonFields.setId: no Common Field set ${setId} in the bundle`,
+          `${mainKind} ${event.slug}: competitions.${i}.commonFields.setId: no Common Field set ${setId} in the bundle`,
         );
       }
     });
-    issues.push(...commonFieldIssues(event, activities, sets));
+    issues.push(...commonFieldIssues(event, activities, sets, mainKind));
   }
 
   if (issues.length > 0 || !event) return { ok: false, issues };
@@ -136,6 +178,7 @@ function commonFieldIssues(
   event: Event,
   activities: readonly (Activity | undefined)[],
   sets: readonly (CommonFieldSet | undefined)[],
+  mainKind: "event" | "template",
 ): string[] {
   const issues: string[] = [];
   const byId = new Map(
@@ -147,7 +190,7 @@ function commonFieldIssues(
   event.competitions.forEach((competition, i) => {
     const ref = competition.commonFields;
     if (!ref) return;
-    const where = `event ${event.slug}: competitions.${i}.commonFields`;
+    const where = `${mainKind} ${event.slug}: competitions.${i}.commonFields`;
     if (ref.setId !== firstSetId) {
       issues.push(
         `${where}.setId: every Competition must use the same Common Field set (${firstSetId})`,

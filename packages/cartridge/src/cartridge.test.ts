@@ -430,7 +430,8 @@ describe("personal data (ADR-0031 rule 4)", () => {
 describe("Templates (ADR-0031 item 7, #102 PR 4)", () => {
   /** Circus 2026 as a Template: Event-shaped, kind "template", no contacts and no Officials. */
   const template = (): EventBundle => {
-    const { officials: _officials, ...bundle } = circus();
+    const bundle = circus();
+    delete bundle.officials;
     const event = { ...(bundle.event as Record<string, unknown>) };
     delete event["contacts"];
     return { ...bundle, event: { ...event, kind: "template" } };
@@ -526,7 +527,9 @@ describe("Templates (ADR-0031 item 7, #102 PR 4)", () => {
         ],
       };
       const zip = zipOf(bundle);
-      const all = Object.values(files(zip)).map(strFromU8).join("\n");
+      const all = Object.values(files(zip))
+        .map((f) => strFromU8(f))
+        .join("\n");
       expect(all).not.toContain("pat@example.com");
       expect(all).not.toContain("director@example.com");
       expect(Object.keys(files(zip))).not.toContain("officials.json");

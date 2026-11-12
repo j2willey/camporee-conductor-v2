@@ -5,6 +5,7 @@ import {
   CartridgeProfileSchema,
   stripPersonalData,
   exportCartridge,
+  exportTemplateCartridge,
 } from "@camporee-conductor/cartridge";
 import {
   buildActivityGuide,
@@ -36,7 +37,12 @@ import {
   duplicateActivity,
   removeActivity,
 } from "./documents/event-activities.ts";
-import { createEvent, duplicateEvent } from "./documents/events.ts";
+import {
+  createEvent,
+  duplicateEvent,
+  newEventFromTemplate,
+  saveEventAsTemplate,
+} from "./documents/events.ts";
 import { importUpload } from "./import/import-upload.ts";
 import { createOfficials, readOfficials } from "./documents/officials.ts";
 import {
@@ -45,7 +51,10 @@ import {
 } from "./documents/common-fields.ts";
 import { saveDocument, type SavableKind } from "./documents/save.ts";
 import { saveToLibrary } from "./documents/library-activities.ts";
-import { readEventDocuments } from "./export/read-event-documents.ts";
+import {
+  readEventDocuments,
+  readTemplateDocuments,
+} from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import { isCurator, publish, unpublish } from "./library.ts";
 import {
@@ -80,6 +89,13 @@ const NewEvent = z.strictObject({
 });
 
 const DuplicateEvent = z.strictObject({
+  title: z.string().trim().min(1).optional(),
+  slug: Slug.optional(),
+});
+
+/** A new Event from a Template (#102 PR 4): into `organizationId`, titled and slugged like the Template unless given. */
+const EventFromTemplate = z.strictObject({
+  organizationId: z.string(),
   title: z.string().trim().min(1).optional(),
   slug: Slug.optional(),
 });
@@ -538,6 +554,56 @@ export function createApp({
         201,
       ),
     )
+
+    /** Save Event as Template (#102 PR 4): a private Template, without contacts or Officials. Editors and owners. */
+    .post("/events/:eventId/save-as-template", jsonBody(DuplicateEvent), (c) =>
+      c.json(
+        saveEventAsTemplate(db, {
+          eventId: c.req.param("eventId"),
+          ...c.req.valid("json"),
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+        201,
+      ),
+    )
+
+    /** New Event from Template (#102 PR 4): into an Organization the caller edits, with lineage. */
+    .post(
+      "/templates/:templateId/new-event",
+      jsonBody(EventFromTemplate),
+      (c) =>
+        c.json(
+          newEventFromTemplate(db, {
+            templateId: c.req.param("templateId"),
+            ...c.req.valid("json"),
+            userId: c.var.user.userId,
+            now: now(),
+          }),
+          201,
+        ),
+    )
+
+    /** The Template's zip (ADR-0031 item 7, #102 PR 4): its design cartridge, for anyone who can read it. */
+    .get("/templates/:templateId/cartridge", (c) => {
+      const found = readTemplateDocuments(db, c.req.param("templateId"));
+      if (!found) throw new HTTPException(404, { message: "Not found." });
+      readRole(db, found.organizationId, c.var.user.userId, found.visibility);
+      let zip: Uint8Array;
+      try {
+        zip = exportTemplateCartridge(found.bundle, { exportedAt: new Date() });
+      } catch (error) {
+        if (error instanceof CartridgeError) {
+          throw new HTTPException(422, { message: error.issues.join("\n") });
+        }
+        throw error;
+      }
+      const slug = (found.bundle.event as { slug: string }).slug;
+      return c.body(zip as Uint8Array<ArrayBuffer>, 200, {
+        "content-type": "application/zip",
+        "content-disposition": `attachment; filename="${slug}-template.zip"`,
+      });
+    })
 
     /**
      * Imports an uploaded zip (#100 PR 2): a design cartridge or a v1 export, as multipart field `file`. Editors

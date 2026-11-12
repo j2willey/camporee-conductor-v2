@@ -17,10 +17,13 @@ export {
 } from "./v1/overlay.ts";
 export {
   checkEventBundle,
+  checkTemplateBundle,
   stripPersonalData,
   withoutDisabledActivities,
   type BundleCheck,
   type CheckedBundle,
+  type CheckedTemplateBundle,
+  type TemplateBundleCheck,
   type EventBundle,
 } from "./bundle.ts";
 export {
@@ -30,6 +33,7 @@ export {
   CartridgeManifestSchema,
   CartridgeProfileSchema,
   exportCartridge,
+  exportTemplateCartridge,
   loadCartridge,
   type CartridgeLoad,
   type CartridgeManifest,

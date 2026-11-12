@@ -26,6 +26,36 @@ export function readEventDocuments(
 }
 
 /**
+ * A Template and the documents it references, exactly as stored (#102 PR 4), like `readEventDocuments`. A Template
+ * never has Officials. `undefined` if there's no such Template.
+ */
+export function readTemplateDocuments(
+  db: Db,
+  templateId: string,
+):
+  | {
+      organizationId: string;
+      visibility: "private" | "library";
+      bundle: EventBundle;
+    }
+  | undefined {
+  const row = db
+    .select()
+    .from(documents)
+    .where(and(eq(documents.id, templateId), eq(documents.kind, "template")))
+    .get();
+  if (!row) return undefined;
+  // Event-shaped (ADR-0017): its Activities and set are found the same way.
+  const bundle = eventBundleFor(db, row.organizationId, JSON.parse(row.json));
+  delete bundle.officials;
+  return {
+    organizationId: row.organizationId,
+    visibility: row.visibility,
+    bundle,
+  };
+}
+
+/**
  * The bundle for `rawEvent` (stored, or about to be saved, ADR-0029) with the documents it references from its
  * Organization only. Documents it names that aren't there are left out, so `checkEventBundle` reports them.
  * `rawEvent` must already pass `EventSchema`.
