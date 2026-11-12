@@ -46,12 +46,12 @@ import { saveDocument, type SavableKind } from "./documents/save.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import {
-  documents,
-  memberships,
-  organizations,
-  ROLES,
-  users,
-} from "./db/schema.ts";
+  addMember,
+  listMembers,
+  removeMember,
+  setMemberRole,
+} from "./members.ts";
+import { documents, memberships, organizations, ROLES } from "./db/schema.ts";
 
 const NewOrganization = z.strictObject({
   name: z.string().trim().min(1),
@@ -84,6 +84,8 @@ const ImportedActivity = z.strictObject({
 
 /** The Event's first Officials list (#100 PR 4), checked by `createOfficials`. */
 const NewOfficials = z.strictObject({ officials: z.unknown() });
+
+const MemberRole = z.strictObject({ role: z.enum(ROLES) });
 
 const NewMember = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -356,59 +358,46 @@ export function createApp({
       return c.json({ id, slug, name, role: "owner" as const }, 201);
     })
 
+    /** The Organization's members, for any member (#101). */
+    .get("/organizations/:orgId/members", (c) =>
+      c.json(listMembers(db, c.req.param("orgId"), c.var.user.userId)),
+    )
+
+    /** Adds a member who has signed in, or changes their role: owners only (#4). */
     .post("/organizations/:orgId/members", jsonBody(NewMember), (c) => {
-      const orgId = c.req.param("orgId");
-      requireRole(db, orgId, c.var.user.userId, "owner");
-      const { email, role } = c.req.valid("json");
-      const user = db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.email, email))
-        .get();
-      if (!user) {
-        throw new HTTPException(404, {
-          message: "No one with that email has signed in yet.",
-        });
-      }
-      const status = db.transaction((tx) => {
-        const current = tx
-          .select({ role: memberships.role })
-          .from(memberships)
-          .where(
-            and(
-              eq(memberships.organizationId, orgId),
-              eq(memberships.userId, user.id),
-            ),
-          )
-          .get();
-        if (current?.role === "owner" && role !== "owner") {
-          const owners = tx
-            .select({ userId: memberships.userId })
-            .from(memberships)
-            .where(
-              and(
-                eq(memberships.organizationId, orgId),
-                eq(memberships.role, "owner"),
-              ),
-            )
-            .all();
-          if (owners.length === 1) {
-            throw new HTTPException(409, {
-              message: "An Organization needs at least one owner.",
-            });
-          }
-        }
-        tx.insert(memberships)
-          .values({ organizationId: orgId, userId: user.id, role })
-          .onConflictDoUpdate({
-            target: [memberships.organizationId, memberships.userId],
-            set: { role },
-          })
-          .run();
-        return current ? 200 : 201;
+      const { member, created } = addMember(db, {
+        organizationId: c.req.param("orgId"),
+        actorId: c.var.user.userId,
+        now: now(),
+        ...c.req.valid("json"),
       });
-      return c.json({ userId: user.id, email, role }, status);
+      return c.json(member, created ? 201 : 200);
     })
+
+    /** Changes a member's role: owners only; never the last owner (#101). */
+    .patch("/organizations/:orgId/members/:userId", jsonBody(MemberRole), (c) =>
+      c.json(
+        setMemberRole(db, {
+          organizationId: c.req.param("orgId"),
+          actorId: c.var.user.userId,
+          now: now(),
+          userId: c.req.param("userId"),
+          role: c.req.valid("json").role,
+        }),
+      ),
+    )
+
+    /** Removes a member: owners only; never the last owner (#101). */
+    .delete("/organizations/:orgId/members/:userId", (c) =>
+      c.json(
+        removeMember(db, {
+          organizationId: c.req.param("orgId"),
+          actorId: c.var.user.userId,
+          now: now(),
+          userId: c.req.param("userId"),
+        }),
+      ),
+    )
 
     .get("/organizations/:orgId/events", (c) => {
       const orgId = c.req.param("orgId");

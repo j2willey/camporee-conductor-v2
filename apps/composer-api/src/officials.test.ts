@@ -3,10 +3,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
-import { auditLog } from "./db/schema.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
-import { CIRCUS_2026, testDb } from "./test-support.ts";
+import { CIRCUS_2026, documentAudit, testDb } from "./test-support.ts";
 
 /** The Event's Officials (ADR-0027 item 5, #100 PR 4): editors and owners only; no accounts. */
 
@@ -63,12 +62,7 @@ const save = (who: string, doc: unknown, ifMatch?: number) =>
     body: doc,
     ...(ifMatch !== undefined && { ifMatch }),
   });
-const actions = () =>
-  db
-    .select()
-    .from(auditLog)
-    .all()
-    .map((r) => r.action);
+const actions = () => documentAudit(db).map((r) => r.action);
 
 beforeEach(async () => {
   db = testDb();

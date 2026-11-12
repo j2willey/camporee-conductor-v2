@@ -7,9 +7,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
-import { auditLog, documents } from "./db/schema.ts";
+import { documents } from "./db/schema.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
-import { CIRCUS_2026, testDb } from "./test-support.ts";
+import { CIRCUS_2026, documentAudit, testDb } from "./test-support.ts";
 
 /** Importing a cartridge in the browser (#100 PR 2): a v2 design cartridge or a v1 zip. */
 
@@ -145,13 +145,10 @@ describe("POST /api/organizations/:orgId/import", () => {
     expect(count("activity")).toBe(33);
     const again = await upload(OWNER, DESIGN);
     expect(again.json).toMatchObject({ created: 0, updated: 35 });
-    expect(
-      db
-        .select()
-        .from(auditLog)
-        .all()
-        .map((r) => r.action),
-    ).toEqual(["event.import", "event.import"]);
+    expect(documentAudit(db).map((r) => r.action)).toEqual([
+      "event.import",
+      "event.import",
+    ]);
   });
 
   it("imports a v1 zip, reporting games it skipped", async () => {

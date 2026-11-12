@@ -2,10 +2,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
-import { auditLog } from "./db/schema.ts";
 import { importEvent } from "./import/import-event.ts";
 import { readEventBundle } from "./import/read-event-bundle.ts";
-import { CIRCUS_2026, testDb } from "./test-support.ts";
+import { CIRCUS_2026, documentAudit, testDb } from "./test-support.ts";
 
 /** Saving documents (ADR-0029, #6 PR 1): whole-document PUT, If-Match, audit log. */
 
@@ -78,7 +77,7 @@ async function readActivity(who = OWNER) {
   };
 }
 
-const auditRows = () => db.select().from(auditLog).all();
+const auditRows = () => documentAudit(db);
 
 beforeEach(async () => {
   db = testDb();

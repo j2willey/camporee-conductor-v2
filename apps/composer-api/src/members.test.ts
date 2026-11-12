@@ -84,7 +84,9 @@ beforeEach(async () => {
 
 describe("GET /api/organizations/:orgId/members", () => {
   it("lists every member by email for any member, owners first", async () => {
-    expect((await members(BOB)).map(({ email, role }) => [email, role])).toEqual([
+    expect(
+      (await members(BOB)).map(({ email, role }) => [email, role]),
+    ).toEqual([
       [ANN, "owner"],
       [ED, "editor"],
       [BOB, "viewer"],
