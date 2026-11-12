@@ -33,6 +33,10 @@ import {
   duplicateActivity,
   removeActivity,
 } from "./documents/event-activities.ts";
+import {
+  createCommonFields,
+  readCommonFields,
+} from "./documents/common-fields.ts";
 import { saveDocument, type SavableKind } from "./documents/save.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
@@ -53,6 +57,9 @@ const NewActivity = z.strictObject({
   competitionId: z.string(),
   title: z.string().trim().min(1, "Give the Activity a title."),
 });
+
+/** The new Common Field set's fields; the set itself is checked by `createCommonFields` (#99). */
+const NewCommonFields = z.strictObject({ fields: z.unknown() });
 
 const NewMember = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -419,6 +426,27 @@ export function createApp({
     /** Saves the whole Activity (ADR-0029): editors and owners, with If-Match. */
     .put("/activities/:activityId", anyJson, (c) =>
       save(c, "activity", c.req.param("activityId"), c.req.valid("json")),
+    )
+
+    /** The Event's Common Field set for editing (#99): `{ set, updatedAt, role }`, `set: null` when it has none. */
+    .get("/events/:eventId/common-fields", (c) =>
+      c.json(readCommonFields(db, c.req.param("eventId"), c.var.user.userId)),
+    )
+
+    /** Creates the Event's Common Field set and links its Competitions to it (#99): with the Event's If-Match. */
+    .post("/events/:eventId/common-fields", jsonBody(NewCommonFields), (c) =>
+      c.json(
+        createCommonFields(db, {
+          ...changeOf(c),
+          fields: c.req.valid("json").fields,
+        }),
+        201,
+      ),
+    )
+
+    /** Saves the whole Common Field set (ADR-0029, #99): editors and owners, with If-Match. */
+    .put("/common-field-sets/:setId", anyJson, (c) =>
+      save(c, "common-field-set", c.req.param("setId"), c.req.valid("json")),
     )
 
     /** The Common Field sets the Event's Competitions use, as stored: for the scoring preview (#6 PR 5). */

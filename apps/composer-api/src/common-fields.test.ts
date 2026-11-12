@@ -89,9 +89,11 @@ async function dropCommonFields() {
   const res = await call(OWNER, "PUT", `/api/events/${EVENT.id}`, {
     body: {
       ...event,
-      competitions: event.competitions.map(
-        ({ commonFields: _, ...c }) => c,
-      ),
+      competitions: event.competitions.map((c) => {
+        const copy = { ...c };
+        delete copy.commonFields;
+        return copy;
+      }),
     },
     ifMatch: updatedAt,
   });
@@ -210,7 +212,7 @@ describe("PUT /api/common-field-sets/:id", () => {
       {
         ...SET,
         fields: SET.fields.map((f, i) =>
-          i === 0 ? { ...f, primary: { direction: "higher" } } : f,
+          i === 0 ? { ...f, primary: { direction: "higher-wins" } } : f,
         ),
       },
       clock - 60_000,
@@ -221,7 +223,11 @@ describe("PUT /api/common-field-sets/:id", () => {
 });
 
 describe("POST /api/events/:id/common-fields", () => {
-  const create = (who: string, ifMatch: number | undefined, fields = [SPIRIT]) =>
+  const create = (
+    who: string,
+    ifMatch: number | undefined,
+    fields = [SPIRIT],
+  ) =>
     call(who, "POST", `/api/events/${EVENT.id}/common-fields`, {
       body: { fields },
       ...(ifMatch !== undefined && { ifMatch }),
