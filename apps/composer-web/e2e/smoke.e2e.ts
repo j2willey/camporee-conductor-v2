@@ -610,3 +610,55 @@ test("an owner starts a new Event and duplicates one", async ({ page }) => {
     page.getByRole("heading", { name: "Patrol Games (18)" }),
   ).toBeVisible();
 });
+
+// #100 PR 2: the design cartridge downloads and imports back as an update; event-day says what's missing.
+test("an owner downloads a cartridge and imports it again", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", {
+      name: "Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+
+  // The seeded Event has no Officials, so the event-day export says it needs a Director.
+  await page
+    .getByRole("button", { name: "Download event-day cartridge (for the box)" })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "an event-day cartridge needs at least one Director",
+  );
+
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download design cartridge" }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe(
+    "coyote-creek-camporee-2026-design.zip",
+  );
+  const zip = await download.path();
+
+  await page.getByRole("link", { name: "← Your Organizations" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  const form = page.getByRole("form", { name: "Import a cartridge" });
+  await form.getByLabel("Zip file").setInputFiles(zip);
+  await form.getByRole("button", { name: "Import" }).click();
+  await expect(form.getByRole("status")).toContainText(
+    "Imported Coyote Creek District Camporee 2026: 0 created",
+  );
+
+  // Not a zip: refused, naming the file.
+  await form.getByLabel("Zip file").setInputFiles({
+    name: "notes.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("hello"),
+  });
+  await form.getByRole("button", { name: "Import" }).click();
+  await expect(form.getByRole("alert")).toHaveText(
+    "notes.txt: not a zip file, so neither a cartridge nor a v1 export",
+  );
+});
