@@ -1,5 +1,5 @@
 import type { Activity, Event } from "@camporee-conductor/schema";
-import { activityGuideNumbers } from "./activity-guide.ts";
+import { activityGuideNumbers, TO_BE_DEFINED } from "./activity-guide.ts";
 import { escapeHtml } from "./render.ts";
 
 // The supplies list (ADR-0028 item 10, #44 PR 3): v1's printSupplies, per Activity, from the design. Quantities
@@ -89,7 +89,7 @@ export function renderSuppliesListHtml(
     const cls = perPage ? "entry per-page" : "entry";
     if (entry.lines.length === 0) {
       return [
-        `<section class="${cls}"><h2>${heading}</h2><p class="none">No supplies listed.</p></section>`,
+        `<section class="${cls}"><h2>${heading}</h2><p class="none">${TO_BE_DEFINED}</p></section>`,
       ];
     }
     const pieces =
