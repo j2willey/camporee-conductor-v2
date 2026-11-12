@@ -42,3 +42,32 @@ describe("backup settings (ADR-0027 item 11)", () => {
     );
   });
 });
+
+describe("the first load's setting (ADR-0027, #100 PR 5, provisional)", () => {
+  it("needs a setup code by default, made up at start when SETUP_CODE is unset", () => {
+    const config = loadConfig({}, () => "ABCD-2345");
+    expect(config.firstLoad).toEqual({
+      mode: "code",
+      code: "ABCD-2345",
+      generated: true,
+    });
+  });
+
+  it("takes the box's own SETUP_CODE", () => {
+    expect(loadConfig({ SETUP_CODE: " pine-cone " }).firstLoad).toEqual({
+      mode: "code",
+      code: "pine-cone",
+      generated: false,
+    });
+  });
+
+  it("is open with FIRST_LOAD=open, for a box with no internet", () => {
+    expect(loadConfig({ FIRST_LOAD: "open" }).firstLoad).toEqual({
+      mode: "open",
+    });
+  });
+
+  it("refuses anything else", () => {
+    expect(() => loadConfig({ FIRST_LOAD: "yes" })).toThrow(ConfigError);
+  });
+});
