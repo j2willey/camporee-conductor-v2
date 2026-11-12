@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
-import { devAuth, DEV_USER_HEADER } from "./auth/dev.ts";
+import {
+  devAuth,
+  DEV_EMAIL_VERIFIED_HEADER,
+  DEV_USER_HEADER,
+} from "./auth/dev.ts";
 import type { Db } from "./db/open.ts";
 import { auditLog } from "./db/schema.ts";
 import { testDb } from "./test-support.ts";
@@ -153,5 +157,84 @@ describe("removing a member", () => {
 
   it("is for owners only", async () => {
     expect((await remove(ED, BOB)).status).toBe(403);
+  });
+});
+
+describe("pending invites (#35)", () => {
+  const NEW = "newcomer@example.com";
+  const invite = (who: string, email: string, role: string) =>
+    call(who, "POST", `/api/organizations/${org}/members`, { email, role });
+  type Invite = { email: string; role: string };
+  const invites = async (who = ANN) =>
+    call(who, "GET", `/api/organizations/${org}/invites`);
+  const revoke = (who: string, email: string) =>
+    call(
+      who,
+      "DELETE",
+      `/api/organizations/${org}/invites/${encodeURIComponent(email)}`,
+    );
+  const unverifiedSignIn = (email: string) =>
+    app.request("/api/me", {
+      headers: {
+        [DEV_USER_HEADER]: email,
+        [DEV_EMAIL_VERIFIED_HEADER]: "false",
+      },
+    });
+
+  it("invites an email no one has signed in with, and says so", async () => {
+    const res = await invite(ANN, "NewComer@Example.com", "editor");
+    expect(res.status).toBe(201);
+    expect(res.json).toEqual({ invited: true, email: NEW, role: "editor" });
+    const list = await invites();
+    expect(list.status).toBe(200);
+    expect(
+      (list.json as Invite[]).map(({ email, role }) => [email, role]),
+    ).toEqual([[NEW, "editor"]]);
+    expect(actions().at(-1)).toBe("member.invite");
+  });
+
+  it("updates the role when the same email is invited again", async () => {
+    await invite(ANN, NEW, "editor");
+    const again = await invite(ANN, NEW, "viewer");
+    expect(again.status).toBe(200);
+    expect((await invites()).json).toMatchObject([{ email: NEW, role: "viewer" }]);
+  });
+
+  it("turns into a membership at the first sign-in with that verified email", async () => {
+    await invite(ANN, NEW, "editor");
+    expect((await call(NEW, "GET", "/api/me")).status).toBe(200);
+    expect(
+      (await members()).find((m) => m.email === NEW)?.role,
+    ).toBe("editor");
+    expect((await invites()).json).toEqual([]);
+    expect(actions().at(-1)).toBe("member.add");
+    // The new member can open the Organization.
+    expect(
+      (await call(NEW, "GET", `/api/organizations/${org}/members`)).status,
+    ).toBe(200);
+  });
+
+  it("never turns into a membership for an unverified email", async () => {
+    await invite(ANN, NEW, "editor");
+    expect((await unverifiedSignIn(NEW)).status).toBe(403);
+    expect((await members()).map((m) => m.email)).not.toContain(NEW);
+    expect((await invites()).json).toMatchObject([{ email: NEW }]);
+  });
+
+  it("can be revoked by an owner, and then gives nothing", async () => {
+    await invite(ANN, NEW, "editor");
+    expect((await revoke(ANN, NEW)).status).toBe(200);
+    expect((await invites()).json).toEqual([]);
+    expect(actions().at(-1)).toBe("member.uninvite");
+    await call(NEW, "GET", "/api/me");
+    expect((await members()).map((m) => m.email)).not.toContain(NEW);
+    expect((await revoke(ANN, NEW)).status).toBe(404);
+  });
+
+  it("is for owners only: inviting, listing and revoking", async () => {
+    expect((await invite(ED, NEW, "viewer")).status).toBe(403);
+    await invite(ANN, NEW, "viewer");
+    expect((await invites(ED)).status).toBe(403);
+    expect((await revoke(ED, NEW)).status).toBe(403);
   });
 });
