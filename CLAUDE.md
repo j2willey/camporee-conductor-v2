@@ -83,6 +83,7 @@ node packages/cartridge/scripts/transcode-circus-2026.ts   # regenerate both Cir
 pnpm --filter @camporee-conductor/composer-api export-cartridge <org-slug> <event-slug> [--profile design|event-day] [--out file.zip]  # #8
 pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
 pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> packages/schema/fixtures/circus-2026  # owner + Org + Event
+pnpm --filter @camporee-conductor/composer-api set-curator <email> [--off]   # library curator (ADR-0031); user must have signed in
 pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
 
 # Collator (apps/collator), :3030, collator.db (#40). One Event per box; no accounts for Judges. Officials

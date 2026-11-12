@@ -62,6 +62,8 @@ export function recordUser(db: Db, user: AuthUser, now: Date): void {
         id: user.userId,
         email: user.email,
         createdAt: previous?.createdAt ?? now,
+        // A curator stays one when their email comes back under a new id (#102).
+        ...(previous?.curator && { curator: true }),
       })
       .onConflictDoUpdate({ target: users.id, set: { email: user.email } })
       .run();

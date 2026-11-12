@@ -21,6 +21,13 @@ export const DOCUMENT_KINDS = [
 ] as const;
 export type DocumentKind = (typeof DOCUMENT_KINDS)[number];
 
+/**
+ * Who can see a document (ADR-0031 item 2): `private`, its Organization only, or `library`, everyone signed in. A
+ * storage column, never document content, so a cartridge never says whether its documents are published.
+ */
+export const VISIBILITIES = ["private", "library"] as const;
+export type Visibility = (typeof VISIBILITIES)[number];
+
 /** `column IN ('a', 'b')`, so the DB enforces what the TypeScript enum only types. */
 const oneOf = (column: string, values: readonly string[]) =>
   sql.raw(`${column} IN (${values.map((v) => `'${v}'`).join(", ")})`);
@@ -30,6 +37,8 @@ export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  /** Publishes to and unpublishes from the library (ADR-0031 item 3). Set by a sysadmin (`set-curator`, #104). */
+  curator: integer("curator", { mode: "boolean" }).notNull().default(false),
 });
 
 /** Owns Events and, later, profiles and private Templates (ADR-0021). */
@@ -73,6 +82,9 @@ export const documents = sqliteTable(
     slug: text("slug").notNull(),
     title: text("title").notNull(),
     json: text("json").notNull(),
+    visibility: text("visibility", { enum: VISIBILITIES })
+      .notNull()
+      .default("private"),
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
@@ -80,6 +92,7 @@ export const documents = sqliteTable(
   (t) => [
     index("documents_organization_kind").on(t.organizationId, t.kind),
     check("documents_kind", oneOf("kind", DOCUMENT_KINDS)),
+    check("documents_visibility", oneOf("visibility", VISIBILITIES)),
   ],
 );
 
