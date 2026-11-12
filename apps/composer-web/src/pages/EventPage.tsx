@@ -61,6 +61,9 @@ function ProgramGuideButton({ eventId }: { eventId: string }) {
         <Link to={`/events/${eventId}/guides`} className={ui.buttonQuiet}>
           Guides
         </Link>
+        <Link to={`/events/${eventId}/competitions`} className={ui.buttonQuiet}>
+          Competitions and Awards
+        </Link>
       </div>
       {error && (
         <p role="alert" className={ui.error}>

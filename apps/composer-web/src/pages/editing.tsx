@@ -1,0 +1,202 @@
+import { useEffect, type ReactNode } from "react";
+import { useBlocker } from "react-router";
+import { ApiError } from "../api.ts";
+import { ui } from "../ui.ts";
+
+// Pieces shared by the Composer's editing pages (ADR-0029): the Save bar, the leave warning, and form parts.
+
+/** Warns before leaving with unsaved changes: another page in the app, or closing or reloading the tab. */
+export function useLeaveWarning(when: boolean) {
+  const blocker = useBlocker(when);
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    if (window.confirm("You have unsaved changes. Leave without saving?")) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
+  useEffect(() => {
+    if (!when) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [when]);
+}
+
+export function SaveBar({
+  dirty,
+  issues,
+  saving,
+  error,
+  onSave,
+  onDiscard,
+  onReload,
+}: {
+  dirty: boolean;
+  issues: string[];
+  saving: boolean;
+  error: Error | null;
+  onSave: () => void;
+  onDiscard: () => void;
+  onReload: () => void;
+}) {
+  const stale = error instanceof ApiError && error.status === 409;
+  return (
+    <div className="fixed inset-x-0 bottom-0 border-t border-stone-200 bg-white/95 px-4 py-3 shadow">
+      <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3">
+        <span role="status" className="text-sm text-stone-700">
+          {saving ? "Saving…" : dirty ? "Unsaved changes" : "All changes saved"}
+        </span>
+        <button
+          type="button"
+          className={ui.button}
+          disabled={!dirty || saving || issues.length > 0}
+          onClick={onSave}
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          className={ui.buttonQuiet}
+          disabled={!dirty || saving}
+          onClick={onDiscard}
+        >
+          Discard changes
+        </button>
+        {issues.length > 0 && (
+          <ul role="alert" className={`${ui.error} w-full list-disc pl-6`}>
+            {issues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        )}
+        {error && (
+          <div
+            role="alert"
+            className={`${ui.error} flex w-full flex-wrap items-center gap-3`}
+          >
+            <span className="whitespace-pre-line">{error.message}</span>
+            {stale && (
+              <button
+                type="button"
+                className={ui.buttonQuiet}
+                onClick={onReload}
+              >
+                Reload (drops your changes)
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className={`${ui.card} space-y-4`} aria-label={title}>
+      <h2 className={ui.h2}>{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+export function Text({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className={ui.label}>
+      {label}
+      <input
+        className={ui.input}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+export function Area({
+  label,
+  value,
+  rows = 4,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  rows?: number;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className={ui.label}>
+      {label}
+      <textarea
+        className={`${ui.input} font-mono text-sm`}
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
+  );
+}
+
+/** Up, down and remove for one row of a list editor. */
+export function RowButtons({
+  name,
+  index,
+  count,
+  onMove,
+  onRemove,
+}: {
+  name: string;
+  index: number;
+  count: number;
+  onMove: (step: -1 | 1) => void;
+  onRemove: () => void;
+}) {
+  const small =
+    "rounded border border-stone-300 px-1.5 text-xs hover:bg-stone-100 disabled:opacity-40";
+  return (
+    <span className="flex gap-1">
+      <button
+        type="button"
+        className={small}
+        aria-label={`Move ${name} up`}
+        disabled={index === 0}
+        onClick={() => onMove(-1)}
+      >
+        ↑
+      </button>
+      <button
+        type="button"
+        className={small}
+        aria-label={`Move ${name} down`}
+        disabled={index === count - 1}
+        onClick={() => onMove(1)}
+      >
+        ↓
+      </button>
+      <button
+        type="button"
+        className={`${small} text-red-700`}
+        aria-label={`Remove ${name}`}
+        onClick={onRemove}
+      >
+        ✕
+      </button>
+    </span>
+  );
+}

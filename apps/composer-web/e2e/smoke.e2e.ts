@@ -332,3 +332,64 @@ test("an owner edits scoring fields and tries the judge's form", async ({
       .getByLabel("Ringmaster bonus"),
   ).toBeVisible();
 });
+
+// #6 PR 6: Competitions (Divisions, placement points) and Awards, saved with the Event.
+test("an owner edits Competitions and Awards", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "Competitions and Awards" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Competitions and Awards",
+  );
+
+  // A Competition with Activities can't be removed.
+  await page.getByRole("button", { name: "Remove Patrol Games" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Can't remove Patrol Games: It has 18 Activities.",
+  );
+
+  const exhibitions = page.getByRole("region", {
+    name: "Competition: Exhibition Events",
+  });
+  await exhibitions
+    .getByRole("button", { name: "Add a division to Exhibition Events" })
+    .click();
+  await exhibitions
+    .getByLabel("Label of Exhibition Events division 1")
+    .fill("Under 13");
+  await exhibitions.getByLabel(/^Its own points/).check();
+  await exhibitions.getByLabel(/^1st, 2nd, 3rd/).fill("10, 8, 6");
+
+  await page.getByRole("button", { name: "+ Add award" }).click();
+  await page.getByLabel("Name of award 3").fill("Gold Axe");
+  await page
+    .getByLabel("Competition of award 3")
+    .selectOption({ label: "Troop Challenges" });
+  await page
+    .getByLabel("Rule of award 3")
+    .selectOption({ label: "The top percent" });
+  await page.getByLabel("Percent of award 3").fill("10");
+
+  // A new, empty Competition comes and goes.
+  await page.getByRole("button", { name: "+ Add Competition" }).click();
+  await page.getByRole("button", { name: "Remove New Competition" }).click();
+
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+
+  await page.reload();
+  await expect(
+    page.getByLabel("Label of Exhibition Events division 1"),
+  ).toHaveValue("Under 13");
+  await expect(page.getByLabel(/^1st, 2nd, 3rd/)).toHaveValue("10, 8, 6");
+  await expect(page.getByLabel("Name of award 3")).toHaveValue("Gold Axe");
+  await expect(page.getByLabel("Percent of award 3")).toHaveValue("10");
+  await expect(
+    page.getByRole("region", { name: "Competition: New Competition" }),
+  ).toHaveCount(0);
+});
