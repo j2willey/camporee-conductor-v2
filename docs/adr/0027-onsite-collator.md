@@ -279,6 +279,21 @@ the rules are the same: all or nothing, and a different Event is refused while t
     network is the trust, as with the console in item 5). `deploy/collator/env.example` says so.
 - The setup code only opens the first load. It isn't a password for anything else, and Judges never see it
   (ADR-0023).
+- **Hardening (2026-11-12, after the Advisor's review; still provisional):**
+  - **Strong and single use.** A made-up code has 16 characters from a 31-letter alphabet, about 79 bits
+    (`XXXX-XXXX-XXXX-XXXX`). A `SETUP_CODE` must have at least 16 letters or digits, or the box won't start.
+    It's compared in constant time. After one successful load it's spent until the box restarts: a made-up code
+    is new at every start, and a `SETUP_CODE` from the settings works again after a restart (the operator's choice).
+  - **Wrong codes slow down:** after 5 wrong tries from one address, that address waits, doubling from
+    30 seconds up to 15 minutes (429 with `Retry-After`). The address is the one Caddy forwards, because the
+    Collator is reachable only through Caddy (`compose.yaml` publishes no port for it).
+  - **Reset and restore don't reopen it.** A reset keeps the loaded Event, so only a Director may load after it
+    (tested). A restore runs with the server stopped, so the box restarts with a new made-up code. The box counts
+    as empty only when it has never loaded a cartridge.
+  - **`open` announces itself:** a `WARNING` line in the log at start, and a note on the Official page while the
+    box is empty and open.
+  - **Case B's assumption:** only the box's operator can read its log or settings. The code lives only there,
+    never on a page or in an API answer.
 
 ## Consequences
 

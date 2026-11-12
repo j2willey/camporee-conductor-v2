@@ -1,8 +1,14 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { strToU8 } from "fflate";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "./app.ts";
 import type { FirstLoad } from "./config.ts";
 import type { Db } from "./db/open.ts";
+import { cartridgeLoads, eventDocuments } from "./db/schema.ts";
+import { resetBox } from "./reset.ts";
+import { firstLoadLine } from "./server.ts";
 import { OFFICIAL_EMAIL_HEADER } from "./headers.ts";
 import { loadedEvent, loadEventCartridge } from "./load-event.ts";
 import {
@@ -22,7 +28,18 @@ const CODE: FirstLoad = { mode: "code", code: "pine-cone", generated: false };
 function upload(
   firstLoad: FirstLoad,
   bytes: Uint8Array,
-  { email, setupCode }: { email?: string; setupCode?: string } = {},
+  {
+    email,
+    setupCode,
+    from,
+    on = app(firstLoad),
+  }: {
+    email?: string;
+    setupCode?: string;
+    /** The address Caddy forwards. */
+    from?: string;
+    on?: ReturnType<typeof createApp>;
+  } = {},
 ) {
   const form = new FormData();
   form.append(
@@ -30,9 +47,12 @@ function upload(
     new File([bytes as Uint8Array<ArrayBuffer>], "circus-event-day.zip"),
   );
   if (setupCode !== undefined) form.append("setupCode", setupCode);
-  return app(firstLoad).request("/api/cartridge", {
+  return on.request("/api/cartridge", {
     method: "POST",
-    headers: email ? { [OFFICIAL_EMAIL_HEADER]: email } : {},
+    headers: {
+      ...(email && { [OFFICIAL_EMAIL_HEADER]: email }),
+      ...(from && { "x-forwarded-for": from }),
+    },
     body: form,
   });
 }
@@ -146,5 +166,87 @@ describe("POST /api/cartridge once an Event is loaded", () => {
     );
     expect(res.status).toBe(422);
     expect((await body(res)).error).toContain("it's for a different Event");
+  });
+});
+
+describe("hardening the first load (ADR-0027, provisional)", () => {
+  it("spends the setup code on the first load: an emptied box doesn't take it again", async () => {
+    const box = app(CODE);
+    const first = await upload(CODE, circusCartridge(), {
+      setupCode: "pine-cone",
+      on: box,
+    });
+    expect(first.status).toBe(200);
+    // However the box came to be empty again, the spent code doesn't open it.
+    db.delete(cartridgeLoads).run();
+    db.delete(eventDocuments).run();
+    expect(loadedEvent(db)).toBeUndefined();
+    const again = await upload(CODE, circusCartridge(), {
+      setupCode: "pine-cone",
+      on: box,
+    });
+    expect(again.status).toBe(403);
+    expect((await body(again)).error).toBe(
+      "This setup code has loaded a cartridge already. Restart the box for a new one.",
+    );
+  });
+
+  it("slows down wrong codes from one address, and not from another", async () => {
+    const box = app(CODE);
+    for (let i = 0; i < 5; i++) {
+      const res = await upload(CODE, circusCartridge(), {
+        setupCode: "wrong",
+        from: "10.0.0.5",
+        on: box,
+      });
+      expect(res.status).toBe(403);
+    }
+    const blocked = await upload(CODE, circusCartridge(), {
+      setupCode: "pine-cone",
+      from: "10.0.0.5",
+      on: box,
+    });
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("retry-after")).toBe("30");
+    expect((await body(blocked)).error).toBe(
+      "Too many wrong setup codes. Wait 30 seconds and try again.",
+    );
+    const other = await upload(CODE, circusCartridge(), {
+      setupCode: "pine-cone",
+      from: "10.0.0.6",
+      on: box,
+    });
+    expect(other.status).toBe(200);
+  });
+
+  it("doesn't reopen after a reset: the Event stays loaded, so only a Director may load", async () => {
+    expect(loadEventCartridge(db, circusCartridge()).ok).toBe(true);
+    const dir = mkdtempSync(join(tmpdir(), "collator-reset-"));
+    const reset = resetBox(
+      db,
+      { dir, everyMinutes: 5, keep: 10 },
+      {
+        kind: "scores",
+        confirm: "Coyote Creek District Camporee 2026",
+        officialEmail: DIRECTOR_EMAIL,
+      },
+    );
+    expect(reset.ok).toBe(true);
+    expect(
+      (await upload(CODE, circusCartridge(), { setupCode: "pine-cone" }))
+        .status,
+    ).toBe(401);
+    expect((await upload({ mode: "open" }, circusCartridge())).status).toBe(
+      401,
+    );
+  });
+
+  it("says loudly in the log when the first load is open", () => {
+    expect(firstLoadLine({ mode: "open" })).toMatch(
+      /^WARNING: first load is open/,
+    );
+    expect(
+      firstLoadLine({ mode: "code", code: "X", generated: false }),
+    ).not.toContain("X");
   });
 });

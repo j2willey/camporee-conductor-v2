@@ -538,7 +538,11 @@ export function createApp({
     return c.json({ ok: true, event: event?.manifest.event ?? null });
   });
 
-  // Setting up the box from the browser (ADR-0027, #100 PR 5, provisional).
+  // Setting up the box from the browser (ADR-0027, #100 PR 5, provisional). The code's state lives in memory:
+  // spent after a first load, and wrong tries counted per address; a restart starts both afresh.
+  let codeSpent = false;
+  const wrongCodes = backoff();
+
   app.get("/api/box", (c) =>
     c.json({
       event: loadedEvent(db)?.manifest.event ?? null,
@@ -568,9 +572,32 @@ export function createApp({
         return c.json({ error: "Only a Director can load a cartridge." }, 403);
       }
     } else if (firstLoad.mode === "code") {
+      // The address Caddy forwards: the Collator is reachable only through Caddy (compose.yaml publishes no port).
+      const from =
+        c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "direct";
+      const wait = wrongCodes.waitSeconds(from);
+      if (wait > 0) {
+        c.header("retry-after", String(wait));
+        return c.json(
+          {
+            error: `Too many wrong setup codes. Wait ${wait} seconds and try again.`,
+          },
+          429,
+        );
+      }
+      if (codeSpent) {
+        return c.json(
+          {
+            error:
+              "This setup code has loaded a cartridge already. Restart the box for a new one.",
+          },
+          403,
+        );
+      }
       const given =
         typeof form["setupCode"] === "string" ? form["setupCode"].trim() : "";
       if (!sameCode(given, firstLoad.code)) {
+        wrongCodes.fail(from);
         return c.json(
           {
             error:
@@ -579,12 +606,15 @@ export function createApp({
           403,
         );
       }
+      wrongCodes.clear(from);
     }
     const result = loadEventCartridge(
       db,
       new Uint8Array(await file.arrayBuffer()),
     );
     if (!result.ok) return c.json({ error: result.issues.join("\n") }, 422);
+    // Single use (ADR-0027): a first load spends the code until the box restarts.
+    if (!loaded) codeSpent = true;
     return c.json({ event: result.event, notes: result.notes });
   });
 
@@ -679,4 +709,26 @@ function sameCode(given: string, expected: string): boolean {
   const a = createHash("sha256").update(given.toUpperCase()).digest();
   const b = createHash("sha256").update(expected.toUpperCase()).digest();
   return given !== "" && timingSafeEqual(a, b);
+}
+
+/**
+ * Wrong setup codes per address (ADR-0027): after 5, that address waits 30 s, doubling with each further wrong
+ * try, up to 15 minutes. In memory only.
+ */
+function backoff(now: () => number = Date.now) {
+  const tries = new Map<string, { wrong: number; until: number }>();
+  return {
+    waitSeconds(from: string): number {
+      const until = tries.get(from)?.until ?? 0;
+      return until > now() ? Math.ceil((until - now()) / 1000) : 0;
+    },
+    fail(from: string): void {
+      const wrong = (tries.get(from)?.wrong ?? 0) + 1;
+      const seconds = wrong >= 5 ? Math.min(30 * 2 ** (wrong - 5), 15 * 60) : 0;
+      tries.set(from, { wrong, until: now() + seconds * 1000 });
+    },
+    clear(from: string): void {
+      tries.delete(from);
+    },
+  };
 }
