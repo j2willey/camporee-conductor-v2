@@ -67,6 +67,12 @@ function ProgramGuideButton({ eventId }: { eventId: string }) {
         <Link to={`/events/${eventId}/competitions`} className={ui.buttonQuiet}>
           Competitions and Awards
         </Link>
+        <Link
+          to={`/events/${eventId}/common-fields`}
+          className={ui.buttonQuiet}
+        >
+          Common Fields
+        </Link>
       </div>
       {error && (
         <p role="alert" className={ui.error}>

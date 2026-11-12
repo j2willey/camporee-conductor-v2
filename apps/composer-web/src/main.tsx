@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthProvider } from "./auth.tsx";
 import { Layout } from "./pages/Layout.tsx";
 import { ActivityPage } from "./pages/ActivityPage.tsx";
+import { CommonFieldsPage } from "./pages/CommonFieldsPage.tsx";
 import { CompetitionsPage } from "./pages/CompetitionsPage.tsx";
 import { EventDetailsPage } from "./pages/EventDetailsPage.tsx";
 import { EventPage } from "./pages/EventPage.tsx";
@@ -24,6 +25,10 @@ const router = createBrowserRouter([
       { path: "/events/:eventId", element: <EventPage /> },
       { path: "/events/:eventId/guides", element: <GuidesPage /> },
       { path: "/events/:eventId/details", element: <EventDetailsPage /> },
+      {
+        path: "/events/:eventId/common-fields",
+        element: <CommonFieldsPage />,
+      },
       {
         path: "/events/:eventId/competitions",
         element: <CompetitionsPage />,
