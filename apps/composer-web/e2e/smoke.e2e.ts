@@ -224,3 +224,64 @@ test("an owner edits the Activity list", async ({ page }) => {
     page.getByRole("heading", { name: "Exhibition Events (4)" }),
   ).toBeVisible();
 });
+
+// #6 PR 3: an owner edits one Activity's text, is warned before leaving unsaved, saves, and sees it in the guide.
+test("an owner edits an Activity and sees it in the guide", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "The Human Fly" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "The Human Fly",
+  );
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+
+  await page
+    .getByLabel("The Objective")
+    .fill("Climb as high as you dare, then come down safely.");
+  await page.getByRole("button", { name: "+ Add supply" }).click();
+  await page.getByLabel("Item of supply 3").fill("Chalk bag");
+  await page.getByLabel("Quantity of supply 3").fill("2");
+  await expect(page.getByRole("status")).toHaveText("Unsaved changes");
+
+  // Leaving with unsaved changes asks first; saying no stays on the page.
+  page.once("dialog", (dialog) => void dialog.dismiss());
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "The Human Fly",
+  );
+
+  // An empty title can't be saved: the problem is named.
+  await page.getByLabel("Title", { exact: true }).fill(" ");
+  await expect(page.getByRole("alert")).toContainText("title");
+  await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+  await page.getByLabel("Title", { exact: true }).fill("The Human Fly");
+
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+
+  const [guide] = await Promise.all([
+    page.context().waitForEvent("page"),
+    page.getByRole("button", { name: "Preview guide" }).click(),
+  ]);
+  await expect(
+    guide.getByText("Climb as high as you dare, then come down safely."),
+  ).toBeVisible();
+  await expect(guide.getByText("Chalk bag")).toBeVisible();
+
+  // Saved: a reload shows it, and leaving no longer asks.
+  await page.reload();
+  await expect(page.getByLabel("The Objective")).toHaveValue(
+    "Climb as high as you dare, then come down safely.",
+  );
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Coyote Creek District Camporee 2026",
+  );
+});

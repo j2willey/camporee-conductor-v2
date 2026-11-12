@@ -172,7 +172,7 @@ export function createApp({
     return { event, activities, updatedAt: row.updatedAt.getTime(), role };
   };
 
-  /** One Activity document and its `updatedAt`, for editing (ADR-0029). 404 like `readEvent`. */
+  /** One Activity document, its `updatedAt` and the caller's role, for editing (ADR-0029). 404 like `readEvent`. */
   const readActivity = (activityId: string, userId: string) => {
     const row = db
       .select()
@@ -180,10 +180,11 @@ export function createApp({
       .where(and(eq(documents.id, activityId), eq(documents.kind, "activity")))
       .get();
     if (!row) throw new HTTPException(404, { message: "Not found." });
-    requireRole(db, row.organizationId, userId, "viewer");
+    const role = requireRole(db, row.organizationId, userId, "viewer");
     return {
       activity: JSON.parse(row.json) as Activity,
       updatedAt: row.updatedAt.getTime(),
+      role,
     };
   };
 

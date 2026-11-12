@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { isActivityEnabled } from "@camporee-conductor/schema";
 import type { InferResponseType } from "hono/client";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { Link } from "react-router";
 import { ApiError, client, data } from "../api.ts";
 import { entriesOf, moveTo, moveWithin, setEnabled } from "../activity-list.ts";
 import { ui } from "../ui.ts";
@@ -139,11 +140,16 @@ export function ActivityList({
                       <span className="w-6 text-right text-stone-500">
                         {index + 1}.
                       </span>
-                      <span
-                        className={enabled ? "" : "text-stone-500 line-through"}
-                      >
-                        {title ?? "(missing Activity)"}
-                      </span>
+                      {title === undefined ? (
+                        <span>(missing Activity)</span>
+                      ) : (
+                        <Link
+                          to={`/events/${eventId}/activities/${entry.activityId}`}
+                          className={`${ui.link} ${enabled ? "" : "text-stone-500 line-through"}`}
+                        >
+                          {title}
+                        </Link>
+                      )}
                       {!enabled && (
                         <span className="text-stone-500">(disabled)</span>
                       )}

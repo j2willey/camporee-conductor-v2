@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthProvider } from "./auth.tsx";
 import { Layout } from "./pages/Layout.tsx";
+import { ActivityPage } from "./pages/ActivityPage.tsx";
 import { EventPage } from "./pages/EventPage.tsx";
 import { GuidesPage } from "./pages/GuidesPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
       { path: "/organizations/:orgId", element: <OrganizationPage /> },
       { path: "/events/:eventId", element: <EventPage /> },
       { path: "/events/:eventId/guides", element: <GuidesPage /> },
+      {
+        path: "/events/:eventId/activities/:activityId",
+        element: <ActivityPage />,
+      },
       { path: "*", element: <NotFound /> },
     ],
   },
