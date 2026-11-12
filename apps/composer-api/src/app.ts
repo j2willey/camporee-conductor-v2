@@ -26,7 +26,7 @@ import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
-import { requireRole } from "./authz.ts";
+import { readRole, requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
@@ -45,6 +45,7 @@ import {
 import { saveDocument, type SavableKind } from "./documents/save.ts";
 import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
+import { isCurator, publish, unpublish } from "./library.ts";
 import {
   addMember,
   listInvites,
@@ -88,6 +89,8 @@ const ImportedActivity = z.strictObject({
 const NewOfficials = z.strictObject({ officials: z.unknown() });
 
 const MemberRole = z.strictObject({ role: z.enum(ROLES) });
+
+const LibraryChange = z.strictObject({ id: z.string() });
 
 const NewMember = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -245,7 +248,8 @@ export function createApp({
       .where(and(eq(documents.id, activityId), eq(documents.kind, "activity")))
       .get();
     if (!row) throw new HTTPException(404, { message: "Not found." });
-    const role = requireRole(db, row.organizationId, userId, "viewer");
+    // A library Activity is readable by everyone signed in (ADR-0031); saving still needs its Organization.
+    const role = readRole(db, row.organizationId, userId, row.visibility);
     return {
       activity: JSON.parse(row.json) as Activity,
       updatedAt: row.updatedAt.getTime(),
@@ -328,11 +332,34 @@ export function createApp({
       return c.json({
         id: userId,
         email,
+        curator: isCurator(db, userId),
         organizations: myOrganizations(userId),
       });
     })
 
     .get("/organizations", (c) => c.json(myOrganizations(c.var.user.userId)))
+
+    /** Puts a Template (with its parts) or an Activity in the library (ADR-0031, #102): curators only. */
+    .post("/library/publish", jsonBody(LibraryChange), (c) =>
+      c.json(
+        publish(db, {
+          id: c.req.valid("json").id,
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+      ),
+    )
+
+    /** Takes a document out of the library (ADR-0031, #102): any curator. */
+    .post("/library/unpublish", jsonBody(LibraryChange), (c) =>
+      c.json(
+        unpublish(db, {
+          id: c.req.valid("json").id,
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+      ),
+    )
 
     .post("/organizations", jsonBody(NewOrganization), (c) => {
       const { name, slug } = c.req.valid("json");

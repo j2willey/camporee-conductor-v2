@@ -15,6 +15,7 @@
     "import-v1": "node src/cli/import-v1.ts",
     "export-cartridge": "node src/cli/export-cartridge.ts",
     "seed-demo": "node src/cli/seed-demo.ts",
+    "set-curator": "node src/cli/set-curator.ts",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

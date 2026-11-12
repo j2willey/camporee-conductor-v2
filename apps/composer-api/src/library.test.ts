@@ -59,10 +59,8 @@ const unpublish = (who: string, id: string) =>
 
 /** The Circus Event as a Template document (Event-shaped, no contacts), listing the same Activities. */
 function storeTemplate(extra: Record<string, unknown> = {}) {
-  const { contacts: _contacts, ...rest } = bundle.event as Record<
-    string,
-    unknown
-  >;
+  const rest = { ...(bundle.event as Record<string, unknown>) };
+  delete rest["contacts"];
   const template = {
     ...rest,
     ...extra,
@@ -114,9 +112,7 @@ describe("curators", () => {
     expect((await call(CURATOR, "GET", "/api/me")).json["curator"]).toBe(true);
     expect((await call(ANN, "GET", "/api/me")).json["curator"]).toBe(false);
     expect(setCurator(db, CURATOR, false)).toBe(true);
-    expect((await call(CURATOR, "GET", "/api/me")).json["curator"]).toBe(
-      false,
-    );
+    expect((await call(CURATOR, "GET", "/api/me")).json["curator"]).toBe(false);
     expect(setCurator(db, "nobody@example.com", true)).toBe(false);
   });
 });
@@ -128,7 +124,9 @@ describe("publishing", () => {
   });
 
   it("lets a curator publish an Activity, and anyone signed in read it", async () => {
-    expect((await call(OUTSIDER, "GET", `/api/activities/${ACTIVITY}`)).status).toBe(404);
+    expect(
+      (await call(OUTSIDER, "GET", `/api/activities/${ACTIVITY}`)).status,
+    ).toBe(404);
     const res = await publish(CURATOR, ACTIVITY);
     expect(res.status).toBe(200);
     expect(res.json).toEqual({ published: [ACTIVITY] });
@@ -142,7 +140,9 @@ describe("publishing", () => {
   it("refuses a non-curator (#102 acceptance)", async () => {
     const res = await publish(ANN, ACTIVITY);
     expect(res.status).toBe(403);
-    expect(res.json["error"]).toBe("Only a curator can publish to the library.");
+    expect(res.json["error"]).toBe(
+      "Only a curator can publish to the library.",
+    );
     expect(visibility(ACTIVITY)).toBe("private");
   });
 
@@ -173,7 +173,9 @@ describe("publishing", () => {
       "Only Templates and Activities go in the library.",
     );
     storeTemplate({
-      contacts: [{ role: "Director", name: "Ann", email: "a@x.org", phone: "1" }],
+      contacts: [
+        { role: "Director", name: "Ann", email: "a@x.org", phone: "1" },
+      ],
     });
     const personal = await publish(CURATOR, TEMPLATE_ID);
     expect(personal.status).toBe(422);
@@ -193,7 +195,9 @@ describe("unpublishing", () => {
     expect(res.status).toBe(200);
     expect(visibility(ACTIVITY)).toBe("private");
     setCurator(db, OUTSIDER, false);
-    expect((await call(OUTSIDER, "GET", `/api/activities/${ACTIVITY}`)).status).toBe(404);
+    expect(
+      (await call(OUTSIDER, "GET", `/api/activities/${ACTIVITY}`)).status,
+    ).toBe(404);
     expect(documentAudit(db).map((r) => r.action)).toContain(
       "library.unpublish",
     );

@@ -35,3 +35,28 @@ export function requireRole(
   }
   return membership.role;
 }
+
+/**
+ * The caller's role for reading a document: their role in its Organization, or `viewer` for a library document
+ * (ADR-0031 item 2: everyone signed in can see it). Anything else is 404, as `requireRole`.
+ */
+export function readRole(
+  db: Db,
+  organizationId: string,
+  userId: string,
+  visibility: "private" | "library",
+): Role {
+  const membership = db
+    .select({ role: memberships.role })
+    .from(memberships)
+    .where(
+      and(
+        eq(memberships.organizationId, organizationId),
+        eq(memberships.userId, userId),
+      ),
+    )
+    .get();
+  if (membership) return membership.role;
+  if (visibility === "library") return "viewer";
+  throw new HTTPException(404, { message: "Not found." });
+}
