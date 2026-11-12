@@ -768,3 +768,49 @@ test("an owner sees the members and can't demote the last owner", async ({
   );
   await expect(role).toHaveValue("owner");
 });
+
+// #101 PR 2 (#35): invite someone who hasn't signed in; their first sign-in makes them a member.
+test("an owner invites someone, who becomes a member when they sign in", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+
+  const members = page.getByRole("region", { name: "Members" });
+  await members.getByLabel("Email").fill("newcomer@example.com");
+  await members.getByLabel("Role of the new member").selectOption("editor");
+  await members.getByRole("button", { name: "Add" }).click();
+  await expect(members.getByRole("status")).toHaveText(
+    "newcomer@example.com hasn't signed in yet: they'll be added as an editor when they sign in.",
+  );
+  const pending = members.getByRole("group", { name: "Pending invites" });
+  await expect(pending).toContainText("newcomer@example.com");
+
+  // Revoke and invite again, then they sign in elsewhere.
+  await pending
+    .getByRole("button", { name: "Revoke the invite for newcomer@example.com" })
+    .click();
+  await expect(pending).toHaveCount(0);
+  await members.getByLabel("Email").fill("newcomer@example.com");
+  await members.getByRole("button", { name: "Add" }).click();
+  await expect(pending).toContainText("newcomer@example.com");
+
+  const theirs = await browser.newContext();
+  const them = await theirs.newPage();
+  await them.goto("/");
+  await them.getByLabel("Email").fill("newcomer@example.com");
+  await them.getByRole("button", { name: "Sign in" }).click();
+  await expect(them.getByRole("link", { name: "Smoke Test" })).toBeVisible();
+  await theirs.close();
+
+  await page.reload();
+  await expect(page.getByLabel("Role of newcomer@example.com")).toHaveValue(
+    "editor",
+  );
+  await expect(
+    page.getByRole("group", { name: "Pending invites" }),
+  ).toHaveCount(0);
+});

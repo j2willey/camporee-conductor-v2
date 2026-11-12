@@ -3,6 +3,7 @@ import type { AuthUser } from "./auth/index.ts";
 import { atLeast } from "./authz.ts";
 import type { Db } from "./db/open.ts";
 import { memberships, users } from "./db/schema.ts";
+import { redeemInvites } from "./members.ts";
 
 /**
  * Stores a signed-in user with a verified email (ADR-0014 amendment). Memberships follow the verified
@@ -64,5 +65,11 @@ export function recordUser(db: Db, user: AuthUser, now: Date): void {
       })
       .onConflictDoUpdate({ target: users.id, set: { email: user.email } })
       .run();
+    // Only a verified email gets here (the API refuses unverified ones first), so invites follow it (#35).
+    redeemInvites(tx, {
+      userId: user.userId,
+      email: user.email,
+      now,
+    });
   });
 }

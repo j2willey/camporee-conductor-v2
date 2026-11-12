@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
+import type { ClientResponse } from "hono/client";
 import { client, data } from "../api.ts";
 import { ui } from "../ui.ts";
 import { ErrorMessage, Loading, PageError } from "./ErrorMessage.tsx";
@@ -401,8 +402,71 @@ function Members({ orgId, isOwner }: { orgId: string; isOwner: boolean }) {
         </ul>
       )}
       {change.isError && <ErrorMessage error={change.error} />}
+      {isOwner && <Invites orgId={orgId} />}
       {isOwner && <AddMember orgId={orgId} />}
     </section>
+  );
+}
+
+type Added =
+  | { userId: string; email: string; role: Role }
+  | { invited: true; email: string; role: Role };
+
+const article = (role: string) => (role === "viewer" ? "a" : "an");
+
+/** Pending invites (#35): owners see them and can revoke one. Nothing shows when there are none. */
+function Invites({ orgId }: { orgId: string }) {
+  const queryClient = useQueryClient();
+  const invites = useQuery({
+    queryKey: ["organizations", orgId, "invites"],
+    queryFn: () =>
+      data(
+        client.api.organizations[":orgId"].invites.$get({ param: { orgId } }),
+      ),
+  });
+  const revoke = useMutation({
+    mutationFn: (email: string) =>
+      data(
+        client.api.organizations[":orgId"].invites[":email"].$delete({
+          param: { orgId, email },
+        }),
+      ),
+    onSettled: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["organizations", orgId, "invites"],
+      }),
+  });
+  if (!invites.data || invites.data.length === 0) {
+    return invites.isError ? <ErrorMessage error={invites.error} /> : null;
+  }
+  return (
+    <div className="space-y-2" aria-label="Pending invites" role="group">
+      <h3 className="text-sm font-medium text-stone-700">
+        Invited, not signed in yet
+      </h3>
+      <ul className="divide-y divide-stone-200 rounded-lg border border-dashed border-stone-300 bg-white">
+        {invites.data.map((i) => (
+          <li
+            key={i.email}
+            className="flex flex-wrap items-center justify-between gap-2 px-4 py-2"
+          >
+            <span>
+              {i.email} <span className={ui.muted}>({i.role})</span>
+            </span>
+            <button
+              type="button"
+              className={ui.buttonQuiet}
+              aria-label={`Revoke the invite for ${i.email}`}
+              disabled={revoke.isPending}
+              onClick={() => revoke.mutate(i.email)}
+            >
+              Revoke
+            </button>
+          </li>
+        ))}
+      </ul>
+      {revoke.isError && <ErrorMessage error={revoke.error} />}
+    </div>
   );
 }
 
@@ -413,16 +477,22 @@ function AddMember({ orgId }: { orgId: string }) {
   const add = useMutation({
     mutationFn: () =>
       data(
+        // A member, or a pending invite for someone who hasn't signed in yet (#35).
         client.api.organizations[":orgId"].members.$post({
           param: { orgId },
           json: { email, role },
-        }),
+        }) as Promise<ClientResponse<Added>>,
       ),
     onSuccess: () => {
       setEmail("");
-      return queryClient.invalidateQueries({
-        queryKey: ["organizations", orgId, "members"],
-      });
+      return Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["organizations", orgId, "members"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["organizations", orgId, "invites"],
+        }),
+      ]);
     },
   });
   const submit = (e: FormEvent) => {
@@ -433,7 +503,10 @@ function AddMember({ orgId }: { orgId: string }) {
     <form onSubmit={submit} className={`${ui.card} space-y-4`}>
       <div>
         <h2 className={ui.h2}>Add a member</h2>
-        <p className={ui.muted}>They need to have signed in once first.</p>
+        <p className={ui.muted}>
+          Someone who hasn't signed in yet gets an invite. They're added when
+          they first sign in with that email. No email is sent, so tell them.
+        </p>
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <label className={ui.label}>
@@ -449,6 +522,7 @@ function AddMember({ orgId }: { orgId: string }) {
         <label className={ui.label}>
           Role
           <select
+            aria-label="Role of the new member"
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
             className={ui.input}
@@ -466,8 +540,9 @@ function AddMember({ orgId }: { orgId: string }) {
       </div>
       {add.isSuccess && (
         <p role="status" className={ui.success}>
-          {add.data.email} is now {add.data.role === "viewer" ? "a" : "an"}{" "}
-          {add.data.role}.
+          {"invited" in add.data
+            ? `${add.data.email} hasn't signed in yet: they'll be added as ${article(add.data.role)} ${add.data.role} when they sign in.`
+            : `${add.data.email} is now ${article(add.data.role)} ${add.data.role}.`}
         </p>
       )}
       {add.isError && <ErrorMessage error={add.error} />}

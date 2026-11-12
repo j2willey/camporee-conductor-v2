@@ -84,6 +84,30 @@ export const documents = sqliteTable(
 );
 
 /**
+ * A pending invite (#35, #101): an owner added an email no one has signed in with yet. The first sign-in with
+ * that **verified** email turns it into a membership, and the invite goes (`recordUser`). Emails are stored
+ * lowercase. Re-inviting the same email updates the role.
+ */
+export const invites = sqliteTable(
+  "invites",
+  {
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id),
+    email: text("email").notNull(),
+    role: text("role", { enum: ROLES }).notNull(),
+    /** The owner who invited them: the auth provider's user id. */
+    invitedBy: text("invited_by").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.organizationId, t.email] }),
+    index("invites_email").on(t.email),
+    check("invites_role", oneOf("role", ROLES)),
+  ],
+);
+
+/**
  * Who changed what, and when (ADR-0029 item 5). One row per save, create, delete, import, publish or accepted
  * AI change. Never holds document bodies; `detail` is a small JSON object when an action needs one.
  */
