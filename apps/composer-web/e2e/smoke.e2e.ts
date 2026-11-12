@@ -709,3 +709,43 @@ test("an owner exports an Activity and imports it elsewhere", async ({
     "notes.txt: not valid JSON",
   );
 });
+
+// #100 PR 4: the Officials editor; with a Director, the event-day cartridge downloads.
+test("an owner adds a Director, then downloads the event-day cartridge", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", {
+      name: "Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("link", { name: "Officials" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Officials");
+  await expect(page.getByText("No Director yet.")).toBeVisible();
+
+  await page.getByRole("button", { name: "+ Add Official" }).click();
+  await page.getByLabel("Email of Official 1").fill("dana@example.com");
+  await page.getByLabel("Name of Official 1").fill("Dana");
+  await expect(page.getByLabel("Official 1 is a Director")).toBeChecked();
+  await expect(page.getByText("No Director yet.")).toHaveCount(0);
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("All changes saved");
+  await page.reload();
+  await expect(page.getByLabel("Email of Official 1")).toHaveValue(
+    "dana@example.com",
+  );
+
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  const downloading = page.waitForEvent("download");
+  await page
+    .getByRole("button", { name: "Download event-day cartridge (for the box)" })
+    .click();
+  expect((await downloading).suggestedFilename()).toBe(
+    "coyote-creek-camporee-2026-event-day.zip",
+  );
+});
