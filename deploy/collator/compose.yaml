@@ -26,6 +26,9 @@ services:
       BACKUP_DIR: /backups
       BACKUP_EVERY_MINUTES: ${BACKUP_EVERY_MINUTES:-5}
       BACKUP_KEEP: ${BACKUP_KEEP:-288}
+      # Loading the first cartridge from the Official page (ADR-0027, provisional): see env.example.
+      FIRST_LOAD: ${FIRST_LOAD:-code}
+      SETUP_CODE: ${SETUP_CODE:-}
     volumes:
       - collator-data:/data
       # A mounted USB stick is just a folder (ADR-0027 item 11). It must be writable by uid 1000 (node).
