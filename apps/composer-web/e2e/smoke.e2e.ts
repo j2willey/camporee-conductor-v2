@@ -572,3 +572,41 @@ test("an owner adds a starter field to an Activity", async ({ page }) => {
       .getByLabel("Judge's points"),
   ).toBeVisible();
 });
+
+// #100 PR 1: a new, empty Event, and a copy of Circus 2026. Last, since it adds Events to the list.
+test("an owner starts a new Event and duplicates one", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+
+  const form = page.getByRole("form", { name: "New Event" });
+  await form.getByLabel("Name").fill("Spring Jamboree 2027");
+  await form.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Spring Jamboree 2027",
+  );
+  await expect(page.getByText("No Competitions yet.")).toBeVisible();
+
+  // The same slug again is refused, naming the Event that has it.
+  await page.goBack();
+  await form.getByLabel("Name").fill("Spring Jamboree 2027");
+  await form.getByRole("button", { name: "Create" }).click();
+  await expect(form.getByRole("alert")).toContainText(
+    "Spring Jamboree 2027 already uses the slug spring-jamboree-2027",
+  );
+
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page
+    .getByRole("button", {
+      name: "Duplicate Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Coyote Creek District Camporee 2026 (copy)",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Patrol Games (18)" }),
+  ).toBeVisible();
+});
