@@ -31,6 +31,7 @@ import {
   type Field,
 } from "../scoring-fields.ts";
 import { omit } from "../draft.ts";
+import { addStarterField, STARTER_FIELDS } from "../starter-fields.ts";
 import { ui } from "../ui.ts";
 
 const TYPE_LABELS: Record<Field["type"], string> = {
@@ -51,14 +52,17 @@ const KIND_LABELS: Record<Field["kind"], string> = {
 /**
  * The Activity's scoring (#6 PR 5): its scoring type and fields. Add, copy, move and remove fields; set each
  * one's type, kind, audience, weight, min/max, options and placeholder; pick the primary metric and its
- * direction (ADR-0019). Edits the same draft as the rest of the page, saved with it.
+ * direction (ADR-0019); add a starter field (#99). Edits the same draft as the rest of the page, saved with it.
  */
 export function ScoringCard({
   draft,
   onChange,
+  commonFieldIds,
 }: {
   draft: Activity;
   onChange: (activity: Activity) => void;
+  /** The Common Fields the Activity's Competition applies: a starter never takes one of their ids. */
+  commonFieldIds: readonly string[];
 }) {
   const fields = sorted(draft.scoring.fields);
   const setFields = (next: Field[]) =>
@@ -88,6 +92,23 @@ export function ScoringCard({
         and you say whether higher or lower wins.
       </p>
       <FieldList fields={fields} onChange={setFields} allowPrimary />
+      <label className={`${ui.label} max-w-xs`}>
+        Add a starter field
+        <select
+          className={ui.input}
+          value=""
+          onChange={(e) =>
+            setFields(addStarterField(fields, e.target.value, commonFieldIds))
+          }
+        >
+          <option value="">Choose…</option>
+          {STARTER_FIELDS.map((s) => (
+            <option key={s.key} value={s.key}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </label>
     </section>
   );
 }

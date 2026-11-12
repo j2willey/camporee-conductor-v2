@@ -14,10 +14,13 @@ type Direction = NonNullable<Field["primary"]>["direction"];
 export const sorted = (fields: readonly Field[]): Field[] =>
   [...fields].sort((a, b) => a.sortOrder - b.sortOrder);
 
-const renumber = (fields: readonly Field[]): Field[] =>
+export const renumber = (fields: readonly Field[]): Field[] =>
   fields.map((f, i) => ({ ...f, sortOrder: (i + 1) * 10 }));
 
-const freeId = (fields: readonly Field[], base: string): string => {
+export const freeId = (
+  fields: readonly { id: string }[],
+  base: string,
+): string => {
   const taken = new Set(fields.map((f) => f.id));
   if (!taken.has(base)) return base;
   for (let n = 2; ; n++) {

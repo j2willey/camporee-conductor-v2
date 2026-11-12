@@ -538,3 +538,37 @@ test("an owner edits Common Fields and picks them for a Competition", async ({
     page.getByLabel("Patrol Cheer in Exhibition Events"),
   ).toHaveValue("after");
 });
+
+// #99 PR 3: a starter field becomes the Activity's own field, in the preview and after saving.
+test("an owner adds a starter field to an Activity", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "The Human Fly" }).click();
+
+  await page
+    .getByRole("region", { name: "Scoring" })
+    .getByLabel("Add a starter field")
+    .selectOption({ label: "Judge's points (1–10)" });
+  const preview = page.getByRole("region", { name: "Judge's form" });
+  await expect(preview.getByLabel("Judge's points")).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Scoring" })
+      .getByLabel(/^Id of field/)
+      .last(),
+  ).toHaveValue("judge_points");
+
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").last()).toHaveText("All changes saved");
+  await page.reload();
+  await expect(
+    page
+      .getByRole("region", { name: "Judge's form" })
+      .getByLabel("Judge's points"),
+  ).toBeVisible();
+});
