@@ -172,7 +172,9 @@ describe("the Event's Officials", () => {
       );
       expect(res.status).toBe(200);
       const zip = unzipSync(new Uint8Array(await res.arrayBuffer()));
-      return Object.values(zip).map(strFromU8).join("\n");
+      return Object.values(zip)
+        .map((bytes) => strFromU8(bytes))
+        .join("\n");
     };
     const design = await files("design");
     expect(design).not.toContain(DIRECTOR.email);
