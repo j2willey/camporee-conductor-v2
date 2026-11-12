@@ -56,3 +56,15 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
   lineage shows where a copy came from.
 - If #6 slips past about 2026-11-19, the curation gate (#102) is third on the `later` list. A library without a
   gate is still usable while Jim is its only curator.
+
+## Notes
+
+**The catalog (#102 PR 2, 2026-11-12).**
+- The catalog lists the library, plus the caller's Organizations' own private Templates and **saved** Activities.
+  A saved Activity is one that no Event or Template in its Organization lists: it's kept for reuse. An Activity a
+  private Template lists belongs to that Template, so it isn't listed on its own.
+- A tag filter ignores case, surrounding spaces and a leading `#` (Circus 2026's tags are `#knots`…). Storing tags
+  normalized is PR 3.
+- **Previews.** A Template previews as its Program Guide. An Activity previews as its guide (ADR-0028), numbered
+  and labelled by a Template in its Organization that lists it; otherwise it's shown on its own, with no number,
+  v1's default colors and no other Event's name, so a preview never shows a private Event.
