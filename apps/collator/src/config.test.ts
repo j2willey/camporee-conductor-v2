@@ -53,12 +53,24 @@ describe("the first load's setting (ADR-0027, #100 PR 5, provisional)", () => {
     });
   });
 
-  it("takes the box's own SETUP_CODE", () => {
-    expect(loadConfig({ SETUP_CODE: " pine-cone " }).firstLoad).toEqual({
+  it("takes the box's own SETUP_CODE, at least 16 letters or digits", () => {
+    expect(
+      loadConfig({ SETUP_CODE: " pine-cone-river-stone " }).firstLoad,
+    ).toEqual({
       mode: "code",
-      code: "pine-cone",
+      code: "pine-cone-river-stone",
       generated: false,
     });
+    expect(() => loadConfig({ SETUP_CODE: "pine-cone" })).toThrow(
+      "SETUP_CODE must have at least 16 letters or digits",
+    );
+  });
+
+  it("makes up a strong code: 16 characters, about 79 bits, easy to read aloud", () => {
+    const { firstLoad } = loadConfig({});
+    expect(firstLoad.mode === "code" && firstLoad.code).toMatch(
+      /^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/,
+    );
   });
 
   it("is open with FIRST_LOAD=open, for a box with no internet", () => {
