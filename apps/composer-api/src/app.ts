@@ -47,6 +47,12 @@ import { readEventDocuments } from "./export/read-event-documents.ts";
 import { recordUser } from "./users.ts";
 import { isCurator, publish, unpublish } from "./library.ts";
 import {
+  LIBRARY_KINDS,
+  listCatalog,
+  previewHtml,
+  type CatalogFilter,
+} from "./library-catalog.ts";
+import {
   addMember,
   listInvites,
   listMembers,
@@ -91,6 +97,21 @@ const NewOfficials = z.strictObject({ officials: z.unknown() });
 const MemberRole = z.strictObject({ role: z.enum(ROLES) });
 
 const LibraryChange = z.strictObject({ id: z.string() });
+
+/** The catalog's filters (#102 PR 2): `kind`, `q` (text) and `tag`, each optional; 400 for an unknown kind. */
+const catalogQuery = validator("query", (value): CatalogFilter => {
+  const result = z
+    .object({
+      kind: z.enum(LIBRARY_KINDS).optional(),
+      q: z.string().optional(),
+      tag: z.string().optional(),
+    })
+    .safeParse(value);
+  if (!result.success) {
+    throw new HTTPException(400, { message: z.prettifyError(result.error) });
+  }
+  return result.data;
+});
 
 const NewMember = z.strictObject({
   email: z.string().trim().toLowerCase().pipe(z.email()),
@@ -338,6 +359,19 @@ export function createApp({
     })
 
     .get("/organizations", (c) => c.json(myOrganizations(c.var.user.userId)))
+
+    /**
+     * The catalog (ADR-0031, #102 PR 2): the library, plus the caller's Organizations' private Templates and
+     * saved Activities, by title. Filters: `kind`, `q` (title, slug or tag) and `tag`.
+     */
+    .get("/library", catalogQuery, (c) =>
+      c.json(listCatalog(db, c.var.user.userId, c.req.valid("query"))),
+    )
+
+    /** A Template's Program Guide or an Activity's guide, as print-ready HTML (#102 PR 2). */
+    .get("/library/:id/preview", (c) =>
+      c.html(previewHtml(db, c.req.param("id"), c.var.user.userId)),
+    )
 
     /** Puts a Template (with its parts) or an Activity in the library (ADR-0031, #102): curators only. */
     .post("/library/publish", jsonBody(LibraryChange), (c) =>

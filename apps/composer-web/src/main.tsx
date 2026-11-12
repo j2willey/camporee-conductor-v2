@@ -10,6 +10,7 @@ import { CompetitionsPage } from "./pages/CompetitionsPage.tsx";
 import { EventDetailsPage } from "./pages/EventDetailsPage.tsx";
 import { EventPage } from "./pages/EventPage.tsx";
 import { GuidesPage } from "./pages/GuidesPage.tsx";
+import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { OfficialsPage } from "./pages/OfficialsPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { OrganizationsPage } from "./pages/OrganizationsPage.tsx";
@@ -23,6 +24,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <OrganizationsPage /> },
       { path: "/organizations/:orgId", element: <OrganizationPage /> },
+      { path: "/library", element: <LibraryPage /> },
       { path: "/events/:eventId", element: <EventPage /> },
       { path: "/events/:eventId/guides", element: <GuidesPage /> },
       { path: "/events/:eventId/details", element: <EventDetailsPage /> },
