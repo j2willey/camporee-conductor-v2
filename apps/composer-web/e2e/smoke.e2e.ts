@@ -662,3 +662,50 @@ test("an owner downloads a cartridge and imports it again", async ({
     "notes.txt: not a zip file, so neither a cartridge nor a v1 export",
   );
 });
+
+// #100 PR 3: one Activity out as a file, and into another Competition as a new Activity.
+test("an owner exports an Activity and imports it elsewhere", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", {
+      name: "Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("link", { name: "Clown Car" }).first().click();
+
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Export Activity" }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe("clown-car.activity.json");
+  const file = await download.path();
+
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  const exhibitions = page.getByRole("region", { name: "Exhibition Events" });
+  await expect(
+    exhibitions.getByRole("link", { name: "Clown Car" }),
+  ).toHaveCount(0);
+  await exhibitions
+    .getByLabel("Import an Activity into Exhibition Events")
+    .setInputFiles(file);
+  await expect(
+    exhibitions.getByRole("link", { name: "Clown Car" }),
+  ).toBeVisible();
+
+  // Not JSON: refused, naming the file.
+  await exhibitions
+    .getByLabel("Import an Activity into Exhibition Events")
+    .setInputFiles({
+      name: "notes.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("hello"),
+    });
+  await expect(page.getByRole("alert")).toContainText(
+    "notes.txt: not valid JSON",
+  );
+});
