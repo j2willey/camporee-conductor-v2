@@ -33,6 +33,7 @@ import {
   duplicateActivity,
   removeActivity,
 } from "./documents/event-activities.ts";
+import { createEvent, duplicateEvent } from "./documents/events.ts";
 import {
   createCommonFields,
   readCommonFields,
@@ -56,6 +57,16 @@ const NewOrganization = z.strictObject({
 const NewActivity = z.strictObject({
   competitionId: z.string(),
   title: z.string().trim().min(1, "Give the Activity a title."),
+});
+
+const NewEvent = z.strictObject({
+  title: z.string().trim().min(1, "Give the Event a title."),
+  slug: Slug.optional(),
+});
+
+const DuplicateEvent = z.strictObject({
+  title: z.string().trim().min(1).optional(),
+  slug: Slug.optional(),
 });
 
 /** The new Common Field set's fields; the set itself is checked by `createCommonFields` (#99). */
@@ -383,6 +394,32 @@ export function createApp({
           .all(),
       );
     })
+
+    /** A new, empty Event in the Organization (#100): editors and owners. */
+    .post("/organizations/:orgId/events", jsonBody(NewEvent), (c) =>
+      c.json(
+        createEvent(db, {
+          organizationId: c.req.param("orgId"),
+          ...c.req.valid("json"),
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+        201,
+      ),
+    )
+
+    /** A copy of the Event with new ids and lineage, without its Officials (#100): editors and owners. */
+    .post("/events/:eventId/duplicate", jsonBody(DuplicateEvent), (c) =>
+      c.json(
+        duplicateEvent(db, {
+          eventId: c.req.param("eventId"),
+          ...c.req.valid("json"),
+          userId: c.var.user.userId,
+          now: now(),
+        }),
+        201,
+      ),
+    )
 
     .get("/events/:eventId", (c) =>
       c.json(readEvent(c.req.param("eventId"), c.var.user.userId)),

@@ -113,6 +113,15 @@ export function ActivityList({
           }}
         />
       )}
+      {event.competitions.length === 0 && (
+        <p className={ui.card}>
+          No Competitions yet. Start with{" "}
+          <Link to={`/events/${eventId}/competitions`} className={ui.link}>
+            Competitions and Awards
+          </Link>
+          , e.g. Patrol Games; then add its Activities here.
+        </p>
+      )}
       <div className="grid gap-4 sm:grid-cols-2">
         {event.competitions.map((competition) => {
           const entries = entriesOf(event.activities, competition.id);

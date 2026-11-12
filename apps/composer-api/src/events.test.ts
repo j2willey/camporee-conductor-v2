@@ -170,6 +170,12 @@ describe("POST /api/organizations/:orgId/events", () => {
     expect(res.json.error).toBe(
       `${EVENT.title} already uses the slug ${EVENT.slug}. Choose another.`,
     );
+    expect((await create(EDITOR, { title: "Spring 2027" })).status).toBe(201);
+    const sameName = await create(OWNER, { title: "Spring 2027" });
+    expect(sameName.status).toBe(409);
+    expect(sameName.json.error).toBe(
+      "Spring 2027 already uses the slug spring-2027. Choose another.",
+    );
     const own = await create(EDITOR, { title: "Again", slug: "again-2027" });
     expect(storedDoc<EventDoc>(own.json.eventId)?.slug).toBe("again-2027");
   });
@@ -178,9 +184,9 @@ describe("POST /api/organizations/:orgId/events", () => {
     expect((await create(VIEWER, { title: "X" })).status).toBe(403);
     expect((await create(STRANGER, { title: "X" })).status).toBe(404);
     expect((await create(EDITOR, { title: "  " })).status).toBe(400);
-    expect((await create(EDITOR, { title: "X", slug: "Not A Slug" })).status).toBe(
-      400,
-    );
+    expect(
+      (await create(EDITOR, { title: "X", slug: "Not A Slug" })).status,
+    ).toBe(400);
     expect(actions()).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { client, data } from "../api.ts";
 import { ui } from "../ui.ts";
 import { ErrorMessage, Loading, PageError } from "./ErrorMessage.tsx";
@@ -23,6 +23,7 @@ export function OrganizationPage() {
   if (organizations.isError) return <PageError error={organizations.error} />;
   if (events.isPending || organizations.isPending) return <Loading />;
   const org = organizations.data.find((o) => o.id === orgId);
+  const canEdit = org?.role === "owner" || org?.role === "editor";
   return (
     <div className="space-y-8">
       <div className="space-y-1">
@@ -37,21 +38,157 @@ export function OrganizationPage() {
       <section className="space-y-3">
         <h2 className={ui.h2}>Events</h2>
         {events.data.length === 0 ? (
-          <p className="text-stone-600">No Events yet.</p>
+          <div className={`${ui.card} space-y-2`}>
+            <p className="font-medium">
+              Welcome! This Organization has no Events yet.
+            </p>
+            <p className={ui.muted}>
+              {canEdit
+                ? "Start one below: give it a name, then add its Competitions, Activities and Common Fields."
+                : "An editor or owner can start one."}
+            </p>
+          </div>
         ) : (
           <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
             {events.data.map((event) => (
-              <li key={event.id} className="px-4 py-3">
+              <li
+                key={event.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+              >
                 <Link to={`/events/${event.id}`} className={ui.link}>
                   {event.title}
                 </Link>
+                {canEdit && (
+                  <DuplicateEvent
+                    orgId={orgId}
+                    eventId={event.id}
+                    title={event.title}
+                  />
+                )}
               </li>
             ))}
           </ul>
         )}
       </section>
+      {canEdit && <NewEvent orgId={orgId} />}
       {org?.role === "owner" && <AddMember orgId={orgId} />}
     </div>
+  );
+}
+
+/** A new, empty Event (#100): a title, and a slug made from it unless given. */
+function NewEvent({ orgId }: { orgId: string }) {
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const create = useMutation({
+    mutationFn: () =>
+      data(
+        client.api.organizations[":orgId"].events.$post({
+          param: { orgId },
+          json: { title, ...(slug.trim() && { slug: slug.trim() }) },
+        }),
+      ),
+    onSuccess: async ({ eventId }) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["organizations", orgId, "events"],
+      });
+      void navigate(`/events/${eventId}`);
+    },
+  });
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    create.mutate();
+  };
+  return (
+    <form
+      onSubmit={submit}
+      className={`${ui.card} space-y-4`}
+      aria-label="New Event"
+    >
+      <h2 className={ui.h2}>New Event</h2>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className={`${ui.label} min-w-60 flex-1`}>
+          Name
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            placeholder="e.g. Coyote Creek Camporee 2027"
+            className={ui.input}
+          />
+        </label>
+        <label className={ui.label}>
+          Slug (optional)
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="made from the name"
+            className={`${ui.input} font-mono text-sm`}
+          />
+        </label>
+        <button type="submit" disabled={create.isPending} className={ui.button}>
+          Create
+        </button>
+      </div>
+      {create.isError && <ErrorMessage error={create.error} />}
+    </form>
+  );
+}
+
+/** Copies the Event with new ids, without its Officials (#100), then opens the copy. */
+function DuplicateEvent({
+  orgId,
+  eventId,
+  title,
+}: {
+  orgId: string;
+  eventId: string;
+  title: string;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const copy = useMutation({
+    mutationFn: () =>
+      data(
+        client.api.events[":eventId"].duplicate.$post({
+          param: { eventId },
+          json: {},
+        }),
+      ),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: ["organizations", orgId, "events"],
+      });
+      void navigate(`/events/${result.eventId}`);
+    },
+  });
+  return (
+    <span className="flex items-center gap-2">
+      {copy.isError && (
+        <span role="alert" className={ui.error}>
+          {copy.error.message}
+        </span>
+      )}
+      <button
+        type="button"
+        className={ui.buttonQuiet}
+        aria-label={`Duplicate ${title}`}
+        disabled={copy.isPending}
+        onClick={() => {
+          if (
+            window.confirm(
+              `Copy ${title}, with all its Activities? Its Officials aren't copied.`,
+            )
+          ) {
+            copy.mutate();
+          }
+        }}
+      >
+        {copy.isPending ? "Copying…" : "Duplicate"}
+      </button>
+    </span>
   );
 }
 
