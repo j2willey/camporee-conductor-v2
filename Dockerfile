@@ -15,6 +15,7 @@ COPY packages/schema/package.json packages/schema/
 COPY packages/scoring/package.json packages/scoring/
 COPY packages/program-guide/package.json packages/program-guide/
 COPY packages/cartridge/package.json packages/cartridge/
+COPY packages/judge-form/package.json packages/judge-form/
 COPY apps/composer-api/package.json apps/composer-api/
 COPY apps/composer-web/package.json apps/composer-web/
 
@@ -24,6 +25,8 @@ RUN corepack enable
 RUN pnpm install --frozen-lockfile --filter @camporee-conductor/composer-web...
 COPY tsconfig.base.json ./
 COPY packages/schema packages/schema
+COPY packages/scoring packages/scoring
+COPY packages/judge-form packages/judge-form
 COPY packages/program-guide packages/program-guide
 COPY packages/cartridge packages/cartridge
 COPY apps/composer-api apps/composer-api

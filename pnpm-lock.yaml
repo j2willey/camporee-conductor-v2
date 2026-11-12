@@ -319,12 +319,18 @@ importers:
 
   apps/composer-web:
     dependencies:
+      '@camporee-conductor/judge-form':
+        specifier: workspace:*
+        version: link:../../packages/judge-form
       '@camporee-conductor/program-guide':
         specifier: workspace:*
         version: link:../../packages/program-guide
       '@camporee-conductor/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@camporee-conductor/scoring':
+        specifier: workspace:*
+        version: link:../../packages/scoring
       '@clerk/react':
         specifier: 6.18.0
         version: 6.18.0(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

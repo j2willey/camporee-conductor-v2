@@ -130,6 +130,22 @@ describe("reading for editing", () => {
   });
 });
 
+describe("the Event's Common Field sets", () => {
+  it("gives the sets its Competitions use, to a viewer, and 404 to a non-member", async () => {
+    const res = await call(
+      VIEWER,
+      "GET",
+      `/api/events/${EVENT.id}/common-field-sets`,
+    );
+    expect(res.status).toBe(200);
+    expect(res.json).toEqual(bundle.commonFieldSets);
+    expect(
+      (await call(STRANGER, "GET", `/api/events/${EVENT.id}/common-field-sets`))
+        .status,
+    ).toBe(404);
+  });
+});
+
 describe("saving an Event", () => {
   it("lets an editor save the whole document; the list and the stored JSON follow", async () => {
     const { event, updatedAt } = await readEvent(EDITOR);

@@ -285,3 +285,50 @@ test("an owner edits an Activity and sees it in the guide", async ({
     "Coyote Creek District Camporee 2026",
   );
 });
+
+// #6 PR 5: the scoring fields, and the judge's form preview with the Competition's Common Fields.
+test("an owner edits scoring fields and tries the judge's form", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", { name: "Coyote Creek District Camporee 2026" })
+    .click();
+  await page.getByRole("link", { name: "Clown Car" }).click();
+
+  const preview = page.getByRole("region", { name: "Judge's form" });
+  // Common Fields before and after the Activity's own, with its variable filled in.
+  await expect(preview.getByLabel("Patrol Flag")).toBeVisible();
+  await expect(preview.getByText("10 Essentials: Buddy")).toBeVisible();
+  await expect(preview.getByLabel("Judges Notes").last()).toBeVisible();
+
+  // The judge's own checks: out of range is refused, in range is accepted.
+  await preview.getByLabel("Big Top Cruiser Clowns").fill("12");
+  await preview.getByRole("button", { name: "Check entry" }).click();
+  await expect(preview.getByRole("alert")).toBeVisible();
+  await preview.getByLabel("Big Top Cruiser Clowns").fill("3");
+  await preview.getByRole("button", { name: "Check entry" }).click();
+  await expect(preview.getByRole("status")).toContainText(
+    "The Collator would accept this entry",
+  );
+
+  // A new field shows in the preview before saving, and is kept after.
+  const scoring = page.getByRole("region", { name: "Scoring" });
+  await scoring.getByRole("button", { name: "+ Add field" }).click();
+  await scoring
+    .getByLabel(/^Label of field \d+$/)
+    .last()
+    .fill("Ringmaster bonus");
+  await expect(preview.getByLabel("Ringmaster bonus")).toBeVisible();
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status").last()).toHaveText("All changes saved");
+  await page.reload();
+  await expect(
+    page
+      .getByRole("region", { name: "Judge's form" })
+      .getByLabel("Ringmaster bonus"),
+  ).toBeVisible();
+});
