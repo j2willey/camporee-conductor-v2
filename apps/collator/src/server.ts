@@ -40,7 +40,7 @@ export function start(config: Config): ServerType {
 /** What the log says about the first load (ADR-0027, provisional): a made-up setup code is printed here only. */
 export function firstLoadLine(firstLoad: FirstLoad): string {
   if (firstLoad.mode === "open") {
-    return "first load: open, no setup code (FIRST_LOAD=open: only for a box with no internet)";
+    return "WARNING: first load is open: anyone who reaches the Official page can load the first cartridge, with no setup code (FIRST_LOAD=open). Only for a box with no internet.";
   }
   return firstLoad.generated
     ? `first load: setup code ${firstLoad.code} (made up at start; set SETUP_CODE to choose one)`

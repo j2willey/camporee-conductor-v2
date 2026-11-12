@@ -84,6 +84,7 @@ the Officials list, and needs at least one Director. Then either:
   - It asks for the **setup code** unless the box's `.env` has `FIRST_LOAD=open`, which is only for a box
     with no internet. The code is `SETUP_CODE` in `.env`, or, when that's blank, the one in the log:
     `docker compose logs collator | grep "setup code"`. A made-up code changes each time the box starts.
+    A code works for one load only, until the box restarts. After 5 wrong tries, that browser has to wait.
   - Once an Event is loaded, a signed-in **Director** loads a new version from the Overview's **Event
     cartridge** section. A different Event is still refused while the box holds roster or scores.
 - **From the console,** as before: put the zip in the cartridges folder (default `deploy/collator/cartridges/`,

@@ -68,17 +68,25 @@ export function firstLoadFrom(
     );
   }
   const given = env["SETUP_CODE"]?.trim();
+  if (given && given.replace(/[^A-Za-z0-9]/g, "").length < MIN_CODE_LENGTH) {
+    throw new ConfigError(
+      `SETUP_CODE must have at least ${MIN_CODE_LENGTH} letters or digits (or leave it blank for a made-up one).`,
+    );
+  }
   return given
     ? { mode: "code", code: given, generated: false }
     : { mode: "code", code: makeCode(), generated: true };
 }
 
-/** Eight letters and digits in two groups, easy to read aloud: no 0/O or 1/I/L. */
+/** A setup code needs this many letters or digits: 16 from 31 letters is about 79 bits (ADR-0027). */
+const MIN_CODE_LENGTH = 16;
+
+/** Sixteen letters and digits in four groups, easy to read aloud: no 0/O or 1/I/L. About 79 bits. */
 function randomSetupCode(): string {
   const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   const pick = () => alphabet[randomInt(alphabet.length)] ?? "A";
   const group = () => Array.from({ length: 4 }, pick).join("");
-  return `${group()}-${group()}`;
+  return [group(), group(), group(), group()].join("-");
 }
 
 /**

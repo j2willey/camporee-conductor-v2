@@ -70,6 +70,16 @@ export function LoadCartridge({
           ? `This box holds ${currentTitle}. Load a new version of it, downloaded from the Composer after a change. Its roster and scores stay. A different Event is refused while the box holds roster or scores.`
           : "No Event is loaded on this box yet. Download the event-day cartridge from the Composer's Event page, then load it here."}
       </p>
+      {!email && !needsCode && (
+        <p
+          role="note"
+          className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900"
+        >
+          This box loads its first cartridge with no setup code
+          (FIRST_LOAD=open): anyone who reaches this page can load one. That's
+          only meant for a box with no internet.
+        </p>
+      )}
       {problem && (
         <p className={`${ui.error} whitespace-pre-line`} role="alert">
           {problem}
