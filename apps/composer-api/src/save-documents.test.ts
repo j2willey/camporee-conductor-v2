@@ -74,6 +74,7 @@ async function readActivity(who = OWNER) {
   return res.json as unknown as {
     activity: typeof ACTIVITY & Record<string, unknown>;
     updatedAt: number;
+    role: string;
   };
 }
 
@@ -112,10 +113,11 @@ describe("reading for editing", () => {
     expect(updatedAt).toBe(clock - 60_000);
   });
 
-  it("gives one Activity document with its updatedAt, to a viewer", async () => {
-    const { activity, updatedAt } = await readActivity(VIEWER);
+  it("gives one Activity document with its updatedAt and the caller's role, to a viewer", async () => {
+    const { activity, updatedAt, role } = await readActivity(VIEWER);
     expect(activity).toEqual(ACTIVITY);
     expect(updatedAt).toBe(clock - 60_000);
+    expect(role).toBe("viewer");
   });
 
   it("is 404 for an Activity to a non-member, or for an id that isn't an Activity", async () => {
