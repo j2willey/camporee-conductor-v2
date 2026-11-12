@@ -24,6 +24,8 @@ export default defineConfig({
       `rm -f ${db} ${db}-wal ${db}-shm`,
       `mkdir -p ${resolve(db, "..")}`,
       `node ${api}/src/cli/seed-demo.ts smoke@example.com smoke-test ${fixture}`,
+      // The smoke user curates the library (#102 PR 3).
+      `node ${api}/src/cli/set-curator.ts smoke@example.com`,
       `node ${api}/src/main.ts`,
     ].join(" && "),
     env: {

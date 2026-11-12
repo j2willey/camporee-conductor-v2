@@ -69,3 +69,15 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
 - **Previews.** A Template previews as its Program Guide. An Activity previews as its guide (ADR-0028), numbered
   and labelled by a Template in its Organization that lists it; otherwise it's shown on its own, with no number,
   v1's default colors and no other Event's name, so a preview never shows a private Event.
+
+**Activities to and from the library (#102 PR 3, 2026-11-12).**
+
+- **Copy to library** (the issue's "Save to library"; the button says Copy, so it isn't taken for the editor's Save) forks an Activity into its own Organization as a saved, private Activity, with
+  `lineage.parentId`. The original stays in its Event. A curator then publishes the copy from the Library page.
+- **Add from library** forks any Activity the caller's catalog shows (a library one, or their Organization's own
+  saved one) into a Competition of the Event, last in it, with `lineage.parentId` and no `legacy`. It's an Event
+  change, with the Event's If-Match, like adding or importing an Activity.
+- **Tags** are normalized by one function, `normalizeTags` in `packages/schema`: trimmed, lowercased, without
+  duplicates or blanks, in their first order. A leading `#` stays (the catalog's tag filter ignores it). Every fork
+  (copy to library, add from library, import) normalizes, and so does the Activity editor when it saves. A save
+  through the API is still stored exactly as sent (CLAUDE.md rule 5).

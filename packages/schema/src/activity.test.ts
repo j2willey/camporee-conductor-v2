@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ActivitySchema, type Activity } from "./activity.ts";
+import { ActivitySchema, normalizeTags, type Activity } from "./activity.ts";
 import { issuesOf } from "./test-support.ts";
 
 const validActivity = (): Activity => ({
@@ -228,5 +228,21 @@ describe("ActivitySchema", () => {
     ).toContain(
       "scoring.fields.0.weight: Too small: expected number to be >=0",
     );
+  });
+});
+
+describe("normalizeTags (#102 PR 3)", () => {
+  it("trims, lowercases and drops duplicates and blanks, keeping the first order", () => {
+    expect(
+      normalizeTags([" Knots ", "#Lashings", "knots", "", "  ", "#lashings"]),
+    ).toEqual(["knots", "#lashings"]);
+  });
+
+  it("leaves already-normal tags alone, and an empty list empty", () => {
+    expect(normalizeTags(["#knots", "#pioneering"])).toEqual([
+      "#knots",
+      "#pioneering",
+    ]);
+    expect(normalizeTags([])).toEqual([]);
   });
 });

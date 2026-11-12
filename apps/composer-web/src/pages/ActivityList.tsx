@@ -242,6 +242,13 @@ export function ActivityList({
                     busy={busy}
                     onFile={(file) => importFile(competition.id, file)}
                   />
+                  <Link
+                    to={`/library?addTo=${eventId}&competition=${competition.id}`}
+                    className={`${ui.buttonQuiet} mt-3`}
+                    aria-label={`Add an Activity from the library to ${competition.label}`}
+                  >
+                    From the library…
+                  </Link>
                 </div>
               )}
             </section>

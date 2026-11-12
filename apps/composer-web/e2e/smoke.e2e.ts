@@ -832,3 +832,63 @@ test("an owner invites someone, who becomes a member when they sign in", async (
     page.getByRole("group", { name: "Pending invites" }),
   ).toHaveCount(0);
 });
+
+// #102 PR 3: an Activity copied to the library, published, and added to another Competition as a copy. It runs last
+// and puts the Event back as it was: the copy is removed, and the saved one is unpublished (it stays private).
+test("an owner copies an Activity to the library and adds it elsewhere", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", {
+      name: "Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("region", { name: "Patrol Games" })
+    .getByRole("link", { name: "Clown Car" })
+    .click();
+
+  await page.getByRole("button", { name: "Copy to library" }).click();
+  const copied = page.getByRole("status").filter({ hasText: "Copied" });
+  await expect(copied).toHaveText("Copied to your library.");
+  await copied.getByRole("link", { name: "library" }).click();
+  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  const row = page.getByRole("listitem").filter({ hasText: "Clown Car" });
+  await expect(row).toContainText("Private");
+
+  // The smoke user is a curator.
+  await page.getByRole("button", { name: "Publish Clown Car" }).click();
+  await expect(row).toContainText("Library");
+
+  // From the Event's Troop Challenges: the library, then Add.
+  await page.goBack();
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  await page
+    .getByRole("link", {
+      name: "Add an Activity from the library to Troop Challenges",
+    })
+    .click();
+  await expect(page.getByLabel("Adding an Activity to")).toHaveValue(/.+/);
+  await page
+    .getByRole("button", { name: "Add to Troop Challenges: Clown Car" })
+    .click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Clown Car");
+  await page.getByRole("link", { name: "← Back to the Event" }).click();
+  const troop = page.getByRole("region", { name: "Troop Challenges" });
+  await expect(troop.getByRole("link", { name: "Clown Car" })).toBeVisible();
+
+  // Put things back.
+  page.on("dialog", (dialog) => void dialog.accept());
+  await troop.getByRole("button", { name: "Remove Clown Car" }).click();
+  await expect(troop.getByRole("link", { name: "Clown Car" })).toHaveCount(0);
+  await page.getByRole("link", { name: "Library", exact: true }).click();
+  await page.getByRole("button", { name: "Unpublish Clown Car" }).click();
+  await expect(
+    page.getByRole("listitem").filter({ hasText: "Clown Car" }),
+  ).toContainText("Private");
+});

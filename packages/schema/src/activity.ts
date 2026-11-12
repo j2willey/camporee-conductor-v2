@@ -90,3 +90,13 @@ export const ActivitySchema = z
   });
 
 export type Activity = z.infer<typeof ActivitySchema>;
+
+/**
+ * An Activity's tags as stored after a fork or an editor save (ADR-0031 notes, #102 PR 3): trimmed, lowercased,
+ * without duplicates or blanks, in their first order. A leading `#` stays.
+ */
+export function normalizeTags(tags: readonly string[]): string[] {
+  return [
+    ...new Set(tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean)),
+  ];
+}
