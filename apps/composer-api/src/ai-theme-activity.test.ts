@@ -34,9 +34,20 @@ const bundle = readEventBundle(CIRCUS_2026);
 const CONTACT_EMAIL = "pat.director@example.com";
 const OFFICIAL_EMAIL = "official.one@example.com";
 const EVENT = {
-  ...(bundle.event as Record<string, unknown> & { id: string; theme: string }),
+  ...(bundle.event as Record<string, unknown> & {
+    id: string;
+    theme: string;
+    organizerName: string;
+  }),
   introduction: "Welcome to the greatest show in the woods.",
-  contacts: [{ role: "Director", name: "Pat Director", email: CONTACT_EMAIL }],
+  contacts: [
+    {
+      role: "Director",
+      name: "Pat Director",
+      email: CONTACT_EMAIL,
+      phone: "555-0100",
+    },
+  ],
 };
 const ACTIVITY = (bundle.activities as ActivityDoc[]).find(
   (a) => a.slug === "3-ring-circus",
@@ -192,14 +203,15 @@ describe("POST /api/activities/:activityId/ai/theme", () => {
     const sent = `${ai.requests[0]?.system}\n${ai.requests[0]?.prompt}`;
     expect(sent).toContain(EVENT.theme);
     expect(sent).toContain(EVENT.introduction);
-    expect(sent).toContain(ACTIVITY.content.story);
+    // The Activity goes as JSON, so its text is JSON-escaped.
+    expect(sent).toContain(JSON.stringify(ACTIVITY.content.story).slice(1, -1));
     expect(sent).toContain(ACTIVITY.scoring.fields[0]?.id ?? "?");
     expect(sent).toContain("Less scary");
     for (const secret of [
       CONTACT_EMAIL,
       "Pat Director",
       OFFICIAL_EMAIL,
-      String(EVENT["organizerName"]),
+      EVENT.organizerName,
     ]) {
       expect(sent).not.toContain(secret);
     }

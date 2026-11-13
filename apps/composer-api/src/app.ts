@@ -32,6 +32,7 @@ import {
   writeIntroductions,
 } from "./ai/brainstorm.ts";
 import { AiError, type AiProvider } from "./ai/provider.ts";
+import { themeActivity, themeContext } from "./ai/theme-activity.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { atLeast, documentRole, readRole, requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
@@ -139,6 +140,15 @@ const AiAsk = z.strictObject({
     .string()
     .max(500, "Keep the instruction under 500 characters.")
     .optional(),
+});
+
+/** Theming an Activity (#103 PR 3): the Event whose theme to use, and the optional instruction. */
+const ActivityThemeAsk = AiAsk.extend({ eventId: z.string() });
+
+/** An Activity proposal to accept (ADR-0030 item 3): the whole proposed Activity, and the feature that made it. */
+const ActivityProposal = z.strictObject({
+  proposal: z.unknown(),
+  feature: z.enum(["theme"]),
 });
 
 /** An Event proposal to accept (ADR-0030 item 3): the whole proposed Event, and the feature that made it. */
@@ -777,6 +787,54 @@ export function createApp({
         201,
       ),
     )
+
+    /**
+     * A themed rewrite of the Activity for an Event's theme (ADR-0030 notes, #103 PR 3; v1's `theme-game`): a proposal,
+     * not a save. For the Activity's editors, with an Event they can read that has a theme or an Introduction.
+     */
+    .post(
+      "/activities/:activityId/ai/theme",
+      jsonBody(ActivityThemeAsk),
+      async (c) => {
+        const provider = requireAi();
+        const userId = c.var.user.userId;
+        const { activity, role } = readActivity(
+          c.req.param("activityId"),
+          userId,
+        );
+        if (!atLeast(role, "editor")) {
+          throw new HTTPException(403, { message: "Your role can't do that." });
+        }
+        const { eventId, instruction } = c.req.valid("json");
+        const { event } = readEvent(eventId, userId);
+        if (!event.theme?.trim() && !event.introduction?.trim()) {
+          throw new HTTPException(400, {
+            message: "Give the Event a theme or an Introduction first.",
+          });
+        }
+        const proposal = await askAi(() =>
+          themeActivity(provider, themeContext(event), activity, instruction),
+        );
+        return c.json({ proposal });
+      },
+    )
+
+    /** Accepts an AI proposal for the Activity (ADR-0030 item 3), like the Event's: the diff, then a save, audited. */
+    .put("/activities/:activityId/ai", jsonBody(ActivityProposal), (c) => {
+      requireAi();
+      const { proposal, feature } = c.req.valid("json");
+      return c.json({
+        updatedAt: saveDocument(db, {
+          kind: "activity",
+          id: c.req.param("activityId"),
+          raw: proposal,
+          userId: c.var.user.userId,
+          ifMatch: c.req.header("if-match"),
+          now: now(),
+          ai: { feature },
+        }),
+      });
+    })
 
     .get("/activities/:activityId", (c) =>
       c.json(readActivity(c.req.param("activityId"), c.var.user.userId)),

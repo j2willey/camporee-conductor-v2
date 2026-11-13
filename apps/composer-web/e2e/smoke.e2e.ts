@@ -1079,3 +1079,38 @@ test("an owner takes a theme and an Introduction from the AI", async ({
     /travelling circus/,
   );
 });
+
+// #103 PR 3: theme one Activity with the canned fake provider: review the rewrite, discard, then accept.
+test("an owner themes an Activity with the AI", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", {
+      name: "Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("region", { name: "Patrol Games" })
+    .getByRole("link", { name: "Clown Car" })
+    .click();
+  const card = page.getByRole("region", { name: "Theme with AI" });
+  await card.getByRole("button", { name: "Theme this Activity" }).click();
+  const review = card.getByRole("region", { name: "Proposed change" });
+  await expect(review).toContainText("Big Top Clown Car");
+  await expect(review).toContainText("Under the Big Top:");
+  await review.getByRole("button", { name: "Discard" }).click();
+  await expect(review).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Clown Car");
+
+  await card.getByRole("button", { name: "Theme this Activity" }).click();
+  await review.getByRole("button", { name: "Accept" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Big Top Clown Car",
+  );
+  await expect(page.getByLabel("Title", { exact: true })).toHaveValue(
+    "Big Top Clown Car",
+  );
+});

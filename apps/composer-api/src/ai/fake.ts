@@ -22,7 +22,7 @@ export function fakeProvider(
 export function cannedProvider(): AiProvider {
   return {
     model: "fake",
-    complete({ schema }) {
+    complete({ schema, prompt }) {
       const properties = Object.keys(
         (schema?.["properties"] as Record<string, unknown> | undefined) ?? {},
       );
@@ -43,6 +43,9 @@ export function cannedProvider(): AiProvider {
           }),
         );
       }
+      if (properties.includes("fields")) {
+        return Promise.resolve(JSON.stringify(themedCanned(prompt)));
+      }
       if (properties.includes("action")) {
         return Promise.resolve(
           JSON.stringify({
@@ -55,5 +58,29 @@ export function cannedProvider(): AiProvider {
       }
       return Promise.resolve("OK");
     },
+  };
+}
+
+/** A themed Activity for the canned provider: the prompt's Activity JSON, with "Big Top" wording. */
+function themedCanned(prompt: string) {
+  const json = /The activity, as JSON:\n([\s\S]*?)\n\nRewrite/.exec(
+    prompt,
+  )?.[1];
+  const activity = JSON.parse(json ?? "{}") as {
+    title?: string;
+    content?: Record<string, unknown> & { story?: string };
+    fields?: { id: string; label: string; placeholder: string }[];
+  };
+  return {
+    title: `Big Top ${activity.title ?? "Activity"}`,
+    content: {
+      ...activity.content,
+      story: `Under the Big Top: ${activity.content?.story ?? ""}`,
+    },
+    fields: (activity.fields ?? []).map((f) => ({
+      id: f.id,
+      label: `Big Top ${f.label}`,
+      placeholder: f.placeholder,
+    })),
   };
 }

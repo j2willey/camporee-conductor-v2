@@ -5,7 +5,7 @@ import { activityChanges } from "./activity-changes.ts";
 /** What the review shows for an Activity proposal (#103 PR 3): each changed part, before and after. */
 
 const base: Activity = {
-  schemaVersion: 1,
+  schemaVersion: "4.0",
   id: "0196cfa2-4c00-7000-8000-000000000001",
   kind: "activity",
   slug: "clown-car",
