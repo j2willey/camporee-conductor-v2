@@ -1,8 +1,8 @@
 # Runbook: the on-site Collator box
 
 **Status: DRAFT.** Rehearsed in CI (`docs/runbook/rehearse-collator.sh`); the certificate and the phone test
-below are not yet run. Issue #40. ADR-0027 (box, network, HTTPS, recovery). The full event-day runbook is
-#45.
+below are not yet run. Issue #40. ADR-0027 (box, network, HTTPS, recovery). The day itself, in order (router,
+local DNS, check-in, the end-of-event export), is [event-day.md](event-day.md) (#45).
 
 The box is any amd64 Linux machine with Docker (ADR-0027 items 1, 2). It runs two containers from
 `deploy/collator/compose.yaml`: the **Collator** (the judge page, the Official view at `/official`, the
