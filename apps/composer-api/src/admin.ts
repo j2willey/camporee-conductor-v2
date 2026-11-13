@@ -1,7 +1,13 @@
-import { asc, desc, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { Db } from "./db/open.ts";
-import { auditLog, memberships, organizations, users } from "./db/schema.ts";
+import {
+  auditLog,
+  documents,
+  memberships,
+  organizations,
+  users,
+} from "./db/schema.ts";
 
 /** The admin pages' users list and flags (ADR-0032, #104 PR 1). Sysadmins only: the routes check. */
 
@@ -200,4 +206,125 @@ export function readProfile(db: Db, userId: string): Profile {
 export function saveProfile(db: Db, userId: string, profile: Profile): Profile {
   db.update(users).set(profile).where(eq(users.id, userId)).run();
   return readProfile(db, userId);
+}
+
+/** The admin stats (ADR-0032 notes, #104 PR 3). */
+export interface AdminStats {
+  users: number;
+  events: number;
+  /** Events created since the start of `now`'s calendar month, in UTC. */
+  eventsThisMonth: number;
+}
+
+export function adminStats(db: Db, now: Date): AdminStats {
+  const count = (query: { get(): { n: number } | undefined }) =>
+    query.get()?.n ?? 0;
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  );
+  const isEvent = eq(documents.kind, "event");
+  return {
+    users: count(db.select({ n: sql<number>`count(*)` }).from(users)),
+    events: count(
+      db
+        .select({ n: sql<number>`count(*)` })
+        .from(documents)
+        .where(isEvent),
+    ),
+    eventsThisMonth: count(
+      db
+        .select({ n: sql<number>`count(*)` })
+        .from(documents)
+        .where(and(isEvent, gte(documents.createdAt, monthStart))),
+    ),
+  };
+}
+
+/** One audit row as the audit view shows it (ADR-0032 notes). */
+export interface AuditEntry {
+  id: number;
+  at: number;
+  /** Null for a CLI action. */
+  userEmail: string | null;
+  organization: { id: string; slug: string; name: string } | null;
+  action: string;
+  documentKind: string | null;
+  documentId: string | null;
+  /** Null when there's no document, or it no longer exists. */
+  documentTitle: string | null;
+  detail: unknown;
+}
+
+export interface AuditFilter {
+  /** A user's email, exact, any case. */
+  user?: string | undefined;
+  action?: string | undefined;
+  /** Rows older than this id: the previous page's `next`. */
+  before?: number | undefined;
+}
+
+/**
+ * The audit log newest first, 50 at a time (ADR-0032 notes), with every action in the log for the filter's list.
+ * `next` is the `before` for the following page, or null on the last.
+ */
+export function listAudit(
+  db: Db,
+  { user, action, before }: AuditFilter,
+): { entries: AuditEntry[]; actions: string[]; next: number | null } {
+  const where = and(
+    user ? eq(users.email, user.trim().toLowerCase()) : undefined,
+    action ? eq(auditLog.action, action) : undefined,
+    before === undefined ? undefined : lt(auditLog.id, before),
+  );
+  const rows = db
+    .select({
+      id: auditLog.id,
+      at: auditLog.at,
+      userEmail: users.email,
+      organizationId: organizations.id,
+      organizationSlug: organizations.slug,
+      organizationName: organizations.name,
+      action: auditLog.action,
+      documentKind: auditLog.documentKind,
+      documentId: auditLog.documentId,
+      documentTitle: documents.title,
+      detail: auditLog.detail,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(users.id, auditLog.userId))
+    .leftJoin(organizations, eq(organizations.id, auditLog.organizationId))
+    .leftJoin(documents, eq(documents.id, auditLog.documentId))
+    .where(where)
+    .orderBy(desc(auditLog.id))
+    .limit(PAGE + 1)
+    .all();
+  const page = rows.slice(0, PAGE);
+  const actions = db
+    .selectDistinct({ action: auditLog.action })
+    .from(auditLog)
+    .orderBy(asc(auditLog.action))
+    .all()
+    .map((r) => r.action);
+  return {
+    entries: page.map((row) => ({
+      id: row.id,
+      at: row.at.getTime(),
+      userEmail: row.userEmail,
+      organization:
+        row.organizationId === null
+          ? null
+          : {
+              id: row.organizationId,
+              slug: row.organizationSlug ?? "",
+              name: row.organizationName ?? "",
+            },
+      action: row.action,
+      documentKind: row.documentKind,
+      documentId: row.documentId,
+      documentTitle: row.documentTitle,
+      detail: row.detail ?? null,
+    })),
+    actions,
+    next: rows.length > PAGE ? (page.at(-1)?.id ?? null) : null,
+  };
 }

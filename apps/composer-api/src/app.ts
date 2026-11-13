@@ -36,7 +36,9 @@ import { themeActivity, themeContext } from "./ai/theme-activity.ts";
 import { updateActivity } from "./ai/update-activity.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import {
+  adminStats,
   isSuspended,
+  listAudit,
   listUsers,
   readProfile,
   saveProfile,
@@ -206,6 +208,21 @@ const UserFlagsBody = z
     (flags) => Object.keys(flags).length > 0,
     "Change at least one flag.",
   );
+
+/** The audit view's filters (ADR-0032 notes): a user's email, an action, and `before` for the next page. */
+const adminAuditQuery = validator("query", (value) => {
+  const result = z
+    .object({
+      user: z.string().optional(),
+      action: z.string().optional(),
+      before: z.coerce.number().int().positive().optional(),
+    })
+    .safeParse(value);
+  if (!result.success) {
+    throw new HTTPException(400, { message: "Unknown filter." });
+  }
+  return result.data;
+});
 
 /** The users list's search (ADR-0032). */
 const adminUsersQuery = validator("query", (value) => {
@@ -540,6 +557,18 @@ export function createApp({
     .get("/admin/users", adminUsersQuery, (c) => {
       requireSysadmin(c.var.user.userId);
       return c.json(listUsers(db, c.req.valid("query").q ?? ""));
+    })
+
+    /** Users, Events and Events this month (ADR-0032 notes, #104 PR 3): sysadmins only. */
+    .get("/admin/stats", (c) => {
+      requireSysadmin(c.var.user.userId);
+      return c.json(adminStats(db, now()));
+    })
+
+    /** The audit log, newest first, by user and action (ADR-0032 notes, #104 PR 3): sysadmins only. */
+    .get("/admin/audit", adminAuditQuery, (c) => {
+      requireSysadmin(c.var.user.userId);
+      return c.json(listAudit(db, c.req.valid("query")));
     })
 
     /** Sets a user's curator, sysadmin and suspended flags (ADR-0032): sysadmins only, audited site-wide. */

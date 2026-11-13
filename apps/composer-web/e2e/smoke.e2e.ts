@@ -1241,3 +1241,38 @@ test("an owner sets their display name", async ({ page }) => {
     page.getByRole("link", { name: "smoke@example.com" }),
   ).toBeVisible();
 });
+
+// #104 PR 3: the stats and the audit log, from a user's row on the users list.
+test("a sysadmin sees the stats and filters the audit log", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Admin" }).click();
+  const stats = page.getByRole("definition");
+  await expect(page.getByText("Events this month")).toBeVisible();
+  await expect(stats).toHaveCount(3);
+  await expect(stats.first()).toHaveText(/^[1-9]\d*$/);
+
+  await page.getByLabel("Search").fill("smoke");
+  await page
+    .getByRole("link", { name: "Audit log for smoke@example.com" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Audit log" })).toBeVisible();
+  await expect(page.getByLabel("User's email")).toHaveValue(
+    "smoke@example.com",
+  );
+  const rows = page.getByRole("listitem");
+  await expect(rows.first()).toContainText("smoke@example.com");
+
+  // Pick the first action in the list: every row shown is that action.
+  const action = page.getByLabel("Action");
+  await action.selectOption({ index: 1 });
+  const picked = await action.inputValue();
+  await expect(page).toHaveURL(new RegExp(`action=${picked}`));
+  await expect(rows.first()).toContainText(picked);
+  for (const row of await rows.all()) {
+    await expect(row.locator(".font-mono").first()).toHaveText(picked);
+  }
+});
