@@ -43,3 +43,16 @@ command line.
   scale-back.
 - One more table rebuild (the audit log's `organization_id` loses NOT NULL): the runbook backup before the deploy, as
   for 0004.
+
+## Notes
+
+**Profile (#104 PR 2, 2026-11-12).** v1's `user_profiles` had a display name, a council, a district, a role and years
+in Scouting, edited through `PUT /api/me`; its UI showed only the display name. #104 asks for two:
+
+- **`display_name` and `organizer_name`** on `users` (v1's `display_name` and `council_name`), each optional, trimmed,
+  at most 100 characters; empty means none. Each user edits their own on `/me`; nobody else can.
+- **Where they show:** the display name in the header (else the email), in an Organization's members list, and in the
+  admin users list, which also shows the organizer name and searches both names as well as the email.
+- **They're personal data** (ADR-0031 rule 4): account fields only, never in a document, a cartridge or a prompt.
+- A new Event doesn't copy the organizer name from the profile. The Event's own `organizerName` stays the Organizer's
+  to type.
