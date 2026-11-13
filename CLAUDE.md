@@ -138,7 +138,8 @@ apps/collator-web/  Collator web app (React + Vite, Tailwind), served by the Col
                     accounts; works offline: outbox + service worker, #41) and the Official view at /official
 deploy/collator/    the on-site box: compose.yaml (collator + caddy), caddy/ (Caddyfile + TLS_MODE snippets),
                     compose.tls-files.yaml, env.example, issue-cert.sh (#40)
-docs/runbook/       runbooks: deploy.md (Composer droplet), collator.md (on-site box) and their rehearsal scripts
+docs/runbook/       runbooks (README.md): event-day.md (the day, in order), collator.md (on-site box), deploy.md
+                    (Composer droplet), and their rehearsal scripts
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```
