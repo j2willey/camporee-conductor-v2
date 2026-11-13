@@ -29,6 +29,8 @@ import {
   Text,
   useLeaveWarning,
 } from "./editing.tsx";
+import { useAiOn } from "./EventBrainstorm.tsx";
+import { ThemeActivity } from "./ThemeActivity.tsx";
 import { Loading, PageError } from "./ErrorMessage.tsx";
 import { ScoringCard, ScoringPreview } from "./ScoringEditor.tsx";
 
@@ -97,6 +99,7 @@ function Editor({
       );
 
   const inEvent = eventId !== "";
+  const aiOn = useAiOn();
   const eventRead = useQuery({
     queryKey: ["events", eventId],
     queryFn: () =>
@@ -177,6 +180,16 @@ function Editor({
           canEdit={canEdit}
         />
       </div>
+
+      {aiOn && canEdit && inEvent && (
+        <ThemeActivity
+          eventId={eventId}
+          activityId={activityId}
+          stored={stored}
+          updatedAt={read.updatedAt}
+          dirty={dirty}
+        />
+      )}
 
       <fieldset disabled={!canEdit} className="space-y-6">
         <Card title="Name and tags">

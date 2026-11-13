@@ -47,5 +47,12 @@ describe("cannedProvider (AI_ADAPTER=fake, development and test only)", () => {
       skill: expect.any(String),
     });
     expect(await testKey(ai)).toMatchObject({ ok: true, model: "fake" });
+    const { readEventBundle } = await import("../import/read-event-bundle.ts");
+    const { CIRCUS_2026 } = await import("../test-support.ts");
+    const { themeActivity } = await import("./theme-activity.ts");
+    const activity = readEventBundle(CIRCUS_2026)
+      .activities[0] as import("@camporee-conductor/schema").Activity;
+    const themed = await themeActivity(ai, "Theme: Circus", activity);
+    expect(themed.title).toBe(`Big Top ${activity.title}`);
   });
 });

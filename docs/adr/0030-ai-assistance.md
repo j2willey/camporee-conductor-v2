@@ -87,3 +87,20 @@ parity plan) brings the four features to v2.
   changes.
 - **`AI_ADAPTER=fake`** gives canned answers in each request's schema, so the buttons can be tried without a key and
   the e2e test can drive them. Like the dev sign-in, it's refused outside development and test.
+
+**Theme one Activity (#103 PR 3, 2026-11-12).** v1's `theme-game`.
+
+- **What it asks:** the Event's theme and Introduction (v1's "Camporee context"), the Activity's title and text, and
+  each scoring field's id, type, label and placeholder, plus the optional refine instruction. It needs a theme or an
+  Introduction first, as in v1. Never contacts, Officials, the organizer's name or the venue.
+- **What it answers is narrower than an Activity:** a title, the content sections (supplies included: v1 themed their
+  names), and a label and placeholder for each field id. The server builds the proposal by putting those onto the
+  stored Activity. A field id it doesn't know is ignored; a blank label keeps the old one. So ids, types, limits and
+  the field list can't drift. The proposal must pass `ActivitySchema` and the structural diff, or it's a 502, never
+  shown. Custom sections are kept as they are.
+- **It runs from the Activity's page in an Event or Template**, since the theme comes from there. On its own
+  (`/activities/:id`) there's no theme to use.
+- **Accepting** is `PUT /api/activities/:id/ai`, the same path as the Event's: the diff, then the save checks against
+  every Event and Template that lists the Activity, audited as `activity.update` with `{ ai: "theme" }`.
+- **The review** lists each changed part before and after: title, each content section, and each field's label and
+  placeholder.
