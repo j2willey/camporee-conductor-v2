@@ -15,6 +15,7 @@ import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { OfficialsPage } from "./pages/OfficialsPage.tsx";
 import { OrganizationPage } from "./pages/OrganizationPage.tsx";
 import { OrganizationsPage } from "./pages/OrganizationsPage.tsx";
+import { ProfilePage } from "./pages/ProfilePage.tsx";
 import { NotFound } from "./pages/ErrorMessage.tsx";
 import "./index.css";
 
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
       { path: "/", element: <OrganizationsPage /> },
       { path: "/organizations/:orgId", element: <OrganizationPage /> },
       { path: "/library", element: <LibraryPage /> },
+      { path: "/me", element: <ProfilePage /> },
       // Sysadmins only (ADR-0032); anyone else gets a whole-page Not found from the API's 404.
       { path: "/admin", element: <AdminPage /> },
       { path: "/events/:eventId", element: <EventPage /> },

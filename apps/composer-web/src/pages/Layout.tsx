@@ -35,7 +35,13 @@ export function Layout() {
           </nav>
           {session.status === "signed-in" && (
             <div className="flex items-center gap-3 text-sm">
-              <span className="text-stone-600">{session.email}</span>
+              <Link
+                to="/me"
+                className="text-stone-600 underline-offset-2 hover:underline"
+                title="Your profile"
+              >
+                {me.data?.displayName ?? session.email}
+              </Link>
               <button
                 type="button"
                 onClick={session.signOut}

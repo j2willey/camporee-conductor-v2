@@ -1,4 +1,4 @@
-import { asc, desc, eq, inArray, like, sql } from "drizzle-orm";
+import { asc, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { Db } from "./db/open.ts";
 import { auditLog, memberships, organizations, users } from "./db/schema.ts";
@@ -21,6 +21,8 @@ export interface AdminUser {
   email: string;
   createdAt: number;
   lastSeenAt: number | null;
+  displayName: string | null;
+  organizerName: string | null;
   curator: boolean;
   sysadmin: boolean;
   suspended: boolean;
@@ -37,13 +39,13 @@ export function listUsers(
   db: Db,
   q: string,
 ): { users: AdminUser[]; total: number } {
+  // The email, display name or organizer name contains q; LIKE ignores ASCII case, and % _ \ are escaped.
+  const pattern = `%${q.trim().replace(/[%_\\]/g, "\\$&")}%`;
   const where = q.trim()
-    ? like(
-        users.email,
-        `%${q
-          .trim()
-          .toLowerCase()
-          .replace(/[%_\\]/g, "\\$&")}%`,
+    ? or(
+        ...[users.email, users.displayName, users.organizerName].map(
+          (column) => sql`${column} LIKE ${pattern} ESCAPE '\\'`,
+        ),
       )
     : undefined;
   const rows = db
@@ -106,6 +108,8 @@ function toAdminUser(
     email: row.email,
     createdAt: row.createdAt.getTime(),
     lastSeenAt: row.lastSeenAt?.getTime() ?? null,
+    displayName: row.displayName,
+    organizerName: row.organizerName,
     curator: row.curator,
     sysadmin: row.sysadmin,
     suspended: row.suspended,
@@ -169,4 +173,31 @@ export function isSuspended(db: Db, userId: string): boolean {
       .where(eq(users.id, userId))
       .get()?.suspended ?? false
   );
+}
+
+/** A user's own profile (ADR-0032 notes, #104 PR 2): null for a name left empty. */
+export interface Profile {
+  displayName: string | null;
+  organizerName: string | null;
+}
+
+export function readProfile(db: Db, userId: string): Profile {
+  const row = db
+    .select({
+      displayName: users.displayName,
+      organizerName: users.organizerName,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .get();
+  return {
+    displayName: row?.displayName ?? null,
+    organizerName: row?.organizerName ?? null,
+  };
+}
+
+/** Saves the user's own profile; each name is already trimmed, and empty is null. */
+export function saveProfile(db: Db, userId: string, profile: Profile): Profile {
+  db.update(users).set(profile).where(eq(users.id, userId)).run();
+  return readProfile(db, userId);
 }

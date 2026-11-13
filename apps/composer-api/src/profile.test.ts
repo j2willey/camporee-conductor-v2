@@ -144,5 +144,11 @@ describe("where the names show", () => {
     ]);
     expect((await list("coyote")).map((u) => u.email)).toEqual([ANN]);
     expect((await list("bob")).map((u) => u.email)).toEqual([BOB]);
+    // % and _ are literal: "a_b" matches a_b, not axb.
+    await call("a_b@example.com", "GET", "/api/me");
+    await call("axb@example.com", "GET", "/api/me");
+    expect((await list("a_b")).map((u) => u.email)).toEqual([
+      "a_b@example.com",
+    ]);
   });
 });

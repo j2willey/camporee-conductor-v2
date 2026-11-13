@@ -45,6 +45,9 @@ export const users = sqliteTable("users", {
   suspended: integer("suspended", { mode: "boolean" }).notNull().default(false),
   /** The last request (ADR-0032 item 7); null before this column existed. */
   lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
+  /** The user's own profile (ADR-0032 notes, #104 PR 2): personal data, never in a document. Null for none. */
+  displayName: text("display_name"),
+  organizerName: text("organizer_name"),
 });
 
 /** Owns Events and, later, profiles and private Templates (ADR-0021). */

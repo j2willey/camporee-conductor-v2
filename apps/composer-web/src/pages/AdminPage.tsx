@@ -106,7 +106,7 @@ export function AdminPage() {
           type="search"
           className={ui.input}
           value={text}
-          placeholder="Email"
+          placeholder="Email or name"
           onChange={(e) => setText(e.target.value)}
         />
       </label>
@@ -122,6 +122,13 @@ export function AdminPage() {
                     <span className={`${ui.muted} font-normal`}> (you)</span>
                   )}
                 </h2>
+                {(user.displayName ?? user.organizerName) && (
+                  <p className="text-sm text-stone-700">
+                    {[user.displayName, user.organizerName]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                )}
                 <p className={ui.muted}>
                   Joined {when(user.createdAt)} · last seen{" "}
                   {when(user.lastSeenAt)}

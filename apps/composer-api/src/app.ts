@@ -35,7 +35,13 @@ import { AiError, type AiProvider } from "./ai/provider.ts";
 import { themeActivity, themeContext } from "./ai/theme-activity.ts";
 import { updateActivity } from "./ai/update-activity.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
-import { isSuspended, listUsers, updateUserFlags } from "./admin.ts";
+import {
+  isSuspended,
+  listUsers,
+  readProfile,
+  saveProfile,
+  updateUserFlags,
+} from "./admin.ts";
 import {
   atLeast,
   documentRole,
@@ -176,6 +182,19 @@ const EventProposal = z.strictObject({
 });
 
 /** The catalog's filters (#102 PR 2): `kind`, `q` (text) and `tag`, each optional; 400 for an unknown kind. */
+/** A profile name: trimmed, at most 100 characters; empty is null (ADR-0032 notes). */
+const ProfileName = z
+  .string()
+  .trim()
+  .max(100, "Keep names under 100 characters.")
+  .transform((name) => name || null);
+
+/** Your own profile (#104 PR 2). */
+const ProfileBody = z.strictObject({
+  displayName: ProfileName,
+  organizerName: ProfileName,
+});
+
 /** A change to a user's flags (ADR-0032): at least one of them. */
 const UserFlagsBody = z
   .strictObject({
@@ -502,12 +521,18 @@ export function createApp({
       return c.json({
         id: userId,
         email,
+        ...readProfile(db, userId),
         curator: isCurator(db, userId),
         sysadmin: isSysadmin(db, userId),
         ai: ai !== null,
         organizations: myOrganizations(userId),
       });
     })
+
+    /** Saves your own profile (ADR-0032 notes, #104 PR 2): a display name and an organizer name. */
+    .put("/me", jsonBody(ProfileBody), (c) =>
+      c.json(saveProfile(db, c.var.user.userId, c.req.valid("json"))),
+    )
 
     .get("/organizations", (c) => c.json(myOrganizations(c.var.user.userId)))
 
