@@ -52,6 +52,7 @@ export function saveToLibrary(
         title: copy.title,
         json: JSON.stringify(copy),
         updatedAt: now,
+        createdAt: now,
       })
       .run();
     audit(db, {

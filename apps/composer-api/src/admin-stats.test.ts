@@ -58,7 +58,7 @@ const at = (iso: string) => {
 };
 const createEvent = async (title: string) =>
   (await call(OWNER, "POST", `/api/organizations/${coyote}/events`, { title }))
-    .json["id"] as string;
+    .json["eventId"] as string;
 const stats = async (who = ADMIN) => call(who, "GET", "/api/admin/stats");
 const audit = async (query = "", who = ADMIN) => {
   const res = await call(who, "GET", `/api/admin/audit${query}`);
@@ -88,15 +88,19 @@ describe("GET /api/admin/stats", () => {
   it("counts users, Events, and Events created this month (UTC)", async () => {
     importEvent(db, coyote, bundle, new Date("2026-10-01T09:00:00Z"));
     const october = await createEvent("October Event");
-    await call(OWNER, "POST", `/api/events/${october}/save-as-template`, {
-      title: "A Template",
-      slug: "a-template",
-    });
     at("2026-10-31T23:59:59Z");
     await createEvent("Halloween Event");
 
     at("2026-11-01T00:00:00Z");
     await createEvent("November Event");
+    // A Template isn't an Event.
+    const template = await call(
+      OWNER,
+      "POST",
+      `/api/events/${october}/save-as-template`,
+      { title: "A Template", slug: "a-template" },
+    );
+    expect(template.status).toBe(201);
     at("2026-11-12T10:00:00Z");
     // Importing it again updates the Circus; it was still created in October.
     importEvent(db, coyote, bundle, new Date(clock));

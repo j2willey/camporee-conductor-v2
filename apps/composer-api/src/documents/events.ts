@@ -376,6 +376,7 @@ function insertChecked(
         title,
         json: JSON.stringify(doc),
         updatedAt: now,
+        createdAt: now,
       })
       .run();
     audit(db, {

@@ -5,6 +5,7 @@ import { createBrowserRouter, RouterProvider } from "react-router";
 import { AuthProvider } from "./auth.tsx";
 import { Layout } from "./pages/Layout.tsx";
 import { ActivityPage } from "./pages/ActivityPage.tsx";
+import { AdminAuditPage } from "./pages/AdminAuditPage.tsx";
 import { AdminPage } from "./pages/AdminPage.tsx";
 import { CommonFieldsPage } from "./pages/CommonFieldsPage.tsx";
 import { CompetitionsPage } from "./pages/CompetitionsPage.tsx";
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       { path: "/me", element: <ProfilePage /> },
       // Sysadmins only (ADR-0032); anyone else gets a whole-page Not found from the API's 404.
       { path: "/admin", element: <AdminPage /> },
+      { path: "/admin/audit", element: <AdminAuditPage /> },
       { path: "/events/:eventId", element: <EventPage /> },
       { path: "/events/:eventId/guides", element: <GuidesPage /> },
       { path: "/events/:eventId/details", element: <EventDetailsPage /> },

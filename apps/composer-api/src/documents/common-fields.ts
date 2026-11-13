@@ -122,6 +122,7 @@ export function createCommonFields(
         title: set.title,
         json: JSON.stringify(set),
         updatedAt: change.now,
+        createdAt: change.now,
       })
       .run();
     audit(db, {

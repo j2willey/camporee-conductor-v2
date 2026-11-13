@@ -97,6 +97,13 @@ export const documents = sqliteTable(
     updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
+    /**
+     * When the document was made (ADR-0032 notes, #104 PR 3), for the admin stats. Set on insert; an import that
+     * updates a document keeps it. Filled by migration 0007 for older documents.
+     */
+    createdAt: integer("created_at", { mode: "timestamp_ms" }).$defaultFn(
+      () => new Date(),
+    ),
   },
   (t) => [
     index("documents_organization_kind").on(t.organizationId, t.kind),

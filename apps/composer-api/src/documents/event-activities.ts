@@ -405,6 +405,7 @@ function insertActivity(
       title: activity.title,
       json: JSON.stringify(activity),
       updatedAt: change.now,
+      createdAt: change.now,
     })
     .run();
   audit(db, {

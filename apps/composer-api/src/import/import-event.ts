@@ -112,7 +112,8 @@ export function importEvent(
         updatedAt: now,
       };
       tx.insert(documents)
-        .values({ id: d.id, organizationId, ...values })
+        // A document imported again keeps its created date (ADR-0032 notes).
+        .values({ id: d.id, organizationId, createdAt: now, ...values })
         .onConflictDoUpdate({ target: documents.id, set: values })
         .run();
     }

@@ -45,8 +45,8 @@ const when = (ms: number | null) =>
   ms === null ? "never" : new Date(ms).toLocaleString();
 
 /**
- * The users list (ADR-0032, #104 PR 1; v1's sysadmin page): search by email, each user's Organizations, and their
- * curator, sysadmin and suspended flags. Sysadmins only: anyone else gets a whole-page Not found.
+ * The users list (ADR-0032, #104 PR 1; v1's sysadmin page): the stats (#104 PR 3), search by email or name, each
+ * user's Organizations, and their curator, sysadmin and suspended flags. Sysadmins only: anyone else gets a whole-page Not found.
  */
 export function AdminPage() {
   const [text, setText] = useState("");
@@ -83,12 +83,36 @@ export function AdminPage() {
     },
   });
 
+  const stats = useQuery({
+    queryKey: ["admin", "stats"],
+    queryFn: () => data(client.api.admin.stats.$get()),
+  });
+
   if (list.isPending) return <Loading />;
   if (list.isError) return <PageError error={list.error} />;
   const myId = me.data?.id;
 
   return (
     <div className="space-y-6">
+      {stats.data && (
+        <dl className="grid grid-cols-3 gap-3 sm:max-w-lg" aria-label="Stats">
+          {[
+            ["Users", stats.data.users],
+            ["Events", stats.data.events],
+            ["Events this month", stats.data.eventsThisMonth],
+          ].map(([label, n]) => (
+            <div key={label} className={ui.card}>
+              <dt className={ui.muted}>{label}</dt>
+              <dd className="text-2xl font-semibold tabular-nums">{n}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <p>
+        <Link to="/admin/audit" className={ui.link}>
+          Audit log
+        </Link>
+      </p>
       <div className="space-y-1">
         <h1 className={ui.h1}>Users</h1>
         <p className="text-stone-600">
@@ -131,7 +155,14 @@ export function AdminPage() {
                 )}
                 <p className={ui.muted}>
                   Joined {when(user.createdAt)} · last seen{" "}
-                  {when(user.lastSeenAt)}
+                  {when(user.lastSeenAt)} ·{" "}
+                  <Link
+                    to={`/admin/audit?user=${encodeURIComponent(user.email)}`}
+                    className={ui.link}
+                    aria-label={`Audit log for ${user.email}`}
+                  >
+                    audit log
+                  </Link>
                 </p>
               </div>
               <fieldset
