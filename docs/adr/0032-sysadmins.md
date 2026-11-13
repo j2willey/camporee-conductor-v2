@@ -56,3 +56,16 @@ in Scouting, edited through `PUT /api/me`; its UI showed only the display name. 
 - **They're personal data** (ADR-0031 rule 4): account fields only, never in a document, a cartridge or a prompt.
 - A new Event doesn't copy the organizer name from the profile. The Event's own `organizerName` stays the Organizer's
   to type.
+
+**Stats and the audit-log view (#104 PR 3, 2026-11-12).** v1's sysadmin page showed counts and a recent-activity list.
+
+- **Stats:** users, Events and Events created this month (the calendar month in UTC). Templates aren't Events and
+  aren't counted.
+- **`documents.created_at`**, so "this month" means created, not edited. It's set on every new document, and an
+  import that updates an existing document keeps its date. The migration fills it for existing documents from their
+  first audit row, else their `updated_at`. Event imports from the CLI weren't audited, so they get `updated_at`.
+- **The audit view** (`/admin/audit`) lists the audit log newest first, 50 at a time, filtered by a user's email
+  (exact, any case) and by action. Each row shows the time, the user's email (blank for a CLI action), the
+  Organization, the action, the document's title when it still exists, and the `detail`. The users list links each
+  user to their audit rows.
+- Both are sysadmin-only like the rest of `/api/admin/*` (item 4): 404 for anyone else.
