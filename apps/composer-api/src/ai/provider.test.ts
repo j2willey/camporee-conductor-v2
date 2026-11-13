@@ -46,6 +46,19 @@ describe("anthropicProvider", () => {
     });
   });
 
+  it("asks for JSON in a schema when the request has one (structured outputs)", async () => {
+    const { calls, create } = fakeCreate(answer('{"ok":true}'));
+    const schema = { type: "object", properties: { ok: { type: "boolean" } } };
+    await anthropicProvider({ apiKey: "k", model: "m", create }).complete({
+      system: "S",
+      prompt: "P",
+      schema,
+    });
+    expect(calls[0]).toMatchObject({
+      output_config: { format: { type: "json_schema", schema } },
+    });
+  });
+
   it("joins several text blocks", async () => {
     const { create } = fakeCreate({
       stop_reason: "end_turn",
