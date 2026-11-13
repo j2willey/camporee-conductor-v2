@@ -62,10 +62,18 @@ export function recordUser(db: Db, user: AuthUser, now: Date): void {
         id: user.userId,
         email: user.email,
         createdAt: previous?.createdAt ?? now,
-        // A curator stays one when their email comes back under a new id (#102).
-        ...(previous?.curator && { curator: true }),
+        lastSeenAt: now,
+        // Flags follow the email when it comes back under a new id (#102, ADR-0032).
+        ...(previous && {
+          curator: previous.curator,
+          sysadmin: previous.sysadmin,
+          suspended: previous.suspended,
+        }),
       })
-      .onConflictDoUpdate({ target: users.id, set: { email: user.email } })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: { email: user.email, lastSeenAt: now },
+      })
       .run();
     // Only a verified email gets here (the API refuses unverified ones first), so invites follow it (#35).
     redeemInvites(tx, {

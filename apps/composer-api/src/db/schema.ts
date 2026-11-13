@@ -39,6 +39,12 @@ export const users = sqliteTable("users", {
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   /** Publishes to and unpublishes from the library (ADR-0031 item 3). Set by a sysadmin (`set-curator`, #104). */
   curator: integer("curator", { mode: "boolean" }).notNull().default(false),
+  /** Manages users from the admin pages; acts as an owner of every Organization for the rollout (ADR-0032). */
+  sysadmin: integer("sysadmin", { mode: "boolean" }).notNull().default(false),
+  /** Gets 403 on every API call until unsuspended (ADR-0032 item 3). */
+  suspended: integer("suspended", { mode: "boolean" }).notNull().default(false),
+  /** The last request (ADR-0032 item 7); null before this column existed. */
+  lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
 });
 
 /** Owns Events and, later, profiles and private Templates (ADR-0021). */
@@ -131,9 +137,8 @@ export const auditLog = sqliteTable(
     at: integer("at", { mode: "timestamp_ms" }).notNull(),
     /** The auth provider's user id (ADR-0014); null for a CLI action. */
     userId: text("user_id"),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organizations.id),
+    /** Null for a site-wide change, such as a user's flags (ADR-0032 item 6). */
+    organizationId: text("organization_id").references(() => organizations.id),
     action: text("action").notNull(),
     documentKind: text("document_kind", { enum: DOCUMENT_KINDS }),
     documentId: text("document_id"),

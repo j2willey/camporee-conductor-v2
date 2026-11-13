@@ -26,6 +26,8 @@ export default defineConfig({
       `node ${api}/src/cli/seed-demo.ts smoke@example.com smoke-test ${fixture}`,
       // The smoke user curates the library (#102 PR 3).
       `node ${api}/src/cli/set-curator.ts smoke@example.com`,
+      // …and is a sysadmin (#104 PR 1).
+      `node ${api}/src/cli/set-sysadmin.ts smoke@example.com`,
       `node ${api}/src/main.ts`,
     ].join(" && "),
     env: {
