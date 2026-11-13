@@ -154,6 +154,7 @@ describe("AI settings (ADR-0030, #103)", () => {
 
   it("take the key, and AI_MODEL with Sonnet by default", () => {
     expect(loadConfig({ ...dev, ANTHROPIC_API_KEY: "sk-ant-x" }).ai).toEqual({
+      adapter: "anthropic",
       apiKey: "sk-ant-x",
       model: "claude-sonnet-5-5",
     });
@@ -162,17 +163,36 @@ describe("AI settings (ADR-0030, #103)", () => {
         ...dev,
         ANTHROPIC_API_KEY: "sk-ant-x",
         AI_MODEL: "claude-opus-5-5",
-      }).ai?.model,
-    ).toBe("claude-opus-5-5");
+      }).ai,
+    ).toMatchObject({ model: "claude-opus-5-5" });
   });
 
   it("are described in one startup line that never prints the key", () => {
     expect(describeAi(null)).toBe("ai: off (no ANTHROPIC_API_KEY)");
     const line = describeAi({
+      adapter: "anthropic",
       apiKey: "sk-ant-secret",
       model: "claude-sonnet-5-5",
     });
     expect(line).toBe("ai: claude-sonnet-5-5");
     expect(line).not.toContain("secret");
+  });
+
+  it("take the canned fake in development and test, for trying the buttons without a key", () => {
+    expect(loadConfig({ ...dev, AI_ADAPTER: "fake" }).ai).toEqual({
+      adapter: "fake",
+    });
+    expect(describeAi({ adapter: "fake" })).toBe(
+      "ai: fake (canned answers, development only)",
+    );
+  });
+
+  it("refuse the fake outside development and test, and an unknown adapter", () => {
+    expect(() =>
+      loadConfig({ ...clerk, NODE_ENV: "production", AI_ADAPTER: "fake" }),
+    ).toThrow(ConfigError);
+    expect(() => loadConfig({ ...dev, AI_ADAPTER: "magic" })).toThrow(
+      ConfigError,
+    );
   });
 });

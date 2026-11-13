@@ -26,9 +26,14 @@ import { Hono, type Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { validator } from "hono/validator";
 import { z } from "zod";
-import type { AiProvider } from "./ai/provider.ts";
+import {
+  eventBrief,
+  suggestThemes,
+  writeIntroductions,
+} from "./ai/brainstorm.ts";
+import { AiError, type AiProvider } from "./ai/provider.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
-import { documentRole, readRole, requireRole } from "./authz.ts";
+import { atLeast, documentRole, readRole, requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
@@ -127,6 +132,20 @@ const NewOfficials = z.strictObject({ officials: z.unknown() });
 const MemberRole = z.strictObject({ role: z.enum(ROLES) });
 
 const LibraryChange = z.strictObject({ id: z.string() });
+
+/** What an AI request may add: v1's "refine" instruction (ADR-0030 notes, #103 PR 2). */
+const AiAsk = z.strictObject({
+  instruction: z
+    .string()
+    .max(500, "Keep the instruction under 500 characters.")
+    .optional(),
+});
+
+/** An Event proposal to accept (ADR-0030 item 3): the whole proposed Event, and the feature that made it. */
+const EventProposal = z.strictObject({
+  proposal: z.unknown(),
+  feature: z.enum(["theme", "introduction"]),
+});
 
 /** The catalog's filters (#102 PR 2): `kind`, `q` (text) and `tag`, each optional; 400 for an unknown kind. */
 const catalogQuery = validator("query", (value): CatalogFilter => {
@@ -320,6 +339,33 @@ export function createApp({
       role,
       visibility: row.visibility,
     };
+  };
+
+  /** The AI provider, or 404: with no key there's no AI (ADR-0030 item 2). */
+  const requireAi = (): AiProvider => {
+    if (!ai) throw new HTTPException(404, { message: "Not found." });
+    return ai;
+  };
+
+  /** An Event or Template the caller edits, for asking the AI about it: a request costs money (ADR-0030 notes). */
+  const eventToAskAbout = (eventId: string, userId: string) => {
+    const read = readEvent(eventId, userId);
+    if (!atLeast(read.role, "editor")) {
+      throw new HTTPException(403, { message: "Your role can't do that." });
+    }
+    return read;
+  };
+
+  /** An AI failure (failed, declined, cut off or out of shape) as 502 with its reason, for the editor. */
+  const askAi = async <T>(run: () => Promise<T>): Promise<T> => {
+    try {
+      return await run();
+    } catch (error) {
+      if (error instanceof AiError) {
+        throw new HTTPException(502, { message: error.message });
+      }
+      throw error;
+    }
   };
 
   /** PUT a whole document with If-Match (ADR-0029); the answer is its new `updatedAt`. */
@@ -842,6 +888,67 @@ export function createApp({
      * The Event's cartridge (issue #8). `design` (default) for any viewer; `event-day`, which holds the
      * Officials' emails (ADR-0027 item 5), for editors and owners only.
      */
+    /** Theme ideas for the Event (ADR-0030 notes, #103 PR 2): editors and owners, when AI is on. */
+    .post("/events/:eventId/ai/themes", jsonBody(AiAsk), async (c) => {
+      const provider = requireAi();
+      const { event, activities } = eventToAskAbout(
+        c.req.param("eventId"),
+        c.var.user.userId,
+      );
+      const brief = eventBrief(
+        event,
+        activities.map((a) => a.title),
+      );
+      return c.json(
+        await askAi(() =>
+          suggestThemes(provider, brief, c.req.valid("json").instruction),
+        ),
+      );
+    })
+
+    /** v1's three Introduction options, from the Event's theme (ADR-0030 notes, #103 PR 2). */
+    .post("/events/:eventId/ai/introductions", jsonBody(AiAsk), async (c) => {
+      const provider = requireAi();
+      const { event, activities } = eventToAskAbout(
+        c.req.param("eventId"),
+        c.var.user.userId,
+      );
+      if (!event.theme?.trim()) {
+        throw new HTTPException(400, {
+          message: "Give the Event a theme first.",
+        });
+      }
+      const brief = eventBrief(
+        event,
+        activities.map((a) => a.title),
+      );
+      return c.json(
+        await askAi(() =>
+          writeIntroductions(provider, brief, c.req.valid("json").instruction),
+        ),
+      );
+    })
+
+    /**
+     * Accepts an AI proposal for the Event (ADR-0030 item 3): an ordinary save with If-Match, after the structural
+     * diff (item 4), audited with the feature that made it.
+     */
+    .put("/events/:eventId/ai", jsonBody(EventProposal), (c) => {
+      requireAi();
+      const { proposal, feature } = c.req.valid("json");
+      return c.json({
+        updatedAt: saveDocument(db, {
+          kind: "event",
+          id: c.req.param("eventId"),
+          raw: proposal,
+          userId: c.var.user.userId,
+          ifMatch: c.req.header("if-match"),
+          now: now(),
+          ai: { feature },
+        }),
+      });
+    })
+
     .get("/events/:eventId/cartridge", profileQuery, (c) => {
       const profile = { data: c.req.valid("query").profile };
       const found = readEventDocuments(db, c.req.param("eventId"));

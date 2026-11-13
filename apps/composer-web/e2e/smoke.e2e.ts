@@ -1021,3 +1021,61 @@ test("an owner edits a Template, publishes it, and opens a saved Activity", asyn
     page.getByRole("listitem").filter({ hasText: "Clown Car (saved)" }),
   ).toBeVisible();
 });
+
+// #103 PR 2: AI brainstorm, with the canned fake provider (AI_ADAPTER=fake). A pick is reviewed, then accepted.
+test("an owner takes a theme and an Introduction from the AI", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await page
+    .getByRole("link", {
+      name: "Coyote Creek District Camporee 2026",
+      exact: true,
+    })
+    .click();
+  await page.getByRole("link", { name: "Event details" }).click();
+  const ideas = page.getByRole("region", { name: "Ideas from AI" });
+  await expect(ideas).toBeVisible();
+
+  // Unsaved changes first: the AI waits.
+  await page.getByLabel("Year").fill("2031");
+  await expect(
+    ideas.getByRole("button", { name: "Suggest themes" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Discard changes" }).click();
+
+  await ideas.getByRole("button", { name: "Suggest themes" }).click();
+  await ideas
+    .getByRole("list", { name: "Theme ideas" })
+    .getByRole("button", { name: "Use Pirate Cove" })
+    .click();
+  const review = ideas.getByRole("region", { name: "Proposed change" });
+  await expect(review).toContainText("Pirate Cove");
+  await review.getByRole("button", { name: "Accept" }).click();
+  await expect(page.getByLabel("Theme", { exact: true })).toHaveValue(
+    "Pirate Cove",
+  );
+  await expect(page.getByRole("status").last()).toHaveText("All changes saved");
+
+  await ideas
+    .getByRole("button", { name: "Write Introduction options" })
+    .click();
+  await ideas
+    .getByRole("list", { name: "Introduction options" })
+    .getByRole("button", { name: "Use Lore" })
+    .click();
+  // Discard leaves things as they were.
+  await review.getByRole("button", { name: "Discard" }).click();
+  await expect(review).toHaveCount(0);
+  await ideas
+    .getByRole("button", { name: "Write Introduction options" })
+    .click();
+  await ideas.getByRole("button", { name: "Use Lore" }).click();
+  await review.getByRole("button", { name: "Accept" }).click();
+  await expect(page.getByLabel(/^Introduction/)).toHaveValue(
+    /travelling circus/,
+  );
+});

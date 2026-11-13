@@ -77,6 +77,7 @@ pnpm --filter @camporee-conductor/schema generate           # regenerate json-sc
 # ADR-0030: off without a key). Variables set on the command line win over the file.
 pnpm --filter @camporee-conductor/composer-api start                                         # Clerk sign-in
 NODE_ENV=development AUTH_ADAPTER=dev pnpm --filter @camporee-conductor/composer-api start   # dev sign-in: header `x-dev-user: <email>`; refused in production
+# add AI_ADAPTER=fake for canned AI answers without a key (development and test only; the e2e test uses it)
 pnpm --filter @camporee-conductor/composer-web dev                                           # web app on :5173, proxies to the API
 pnpm --filter @camporee-conductor/composer-api import-event <org-slug> packages/schema/fixtures/circus-2026
 pnpm --filter @camporee-conductor/composer-api import-v1 <org-slug> <cartridge.zip|dir> [--overlay events/<event>/overlay.json] [--strict]  # v1 cartridge → v2 (#46)

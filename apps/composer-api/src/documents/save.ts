@@ -11,6 +11,7 @@ import {
 } from "@camporee-conductor/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { proposalIssues } from "../ai/allowed-changes.ts";
 import { requireDocumentEditor } from "../authz.ts";
 import type { Db } from "../db/open.ts";
 import { auditLog, documents } from "../db/schema.ts";
@@ -38,6 +39,7 @@ export function saveDocument(
     userId,
     ifMatch,
     now,
+    ai,
   }: {
     kind: SavableKind;
     id: string;
@@ -45,10 +47,27 @@ export function saveDocument(
     userId: string;
     ifMatch: string | undefined;
     now: Date;
+    /** An AI proposal being accepted (ADR-0030 item 3): checked by the structural diff first, and audited as AI. */
+    ai?: { feature: string };
   },
 ): number {
   return db.transaction(() => {
     const opened = openForEdit(db, { kind, id, userId, ifMatch });
+    if (ai) {
+      const current = db
+        .select({ json: documents.json })
+        .from(documents)
+        .where(eq(documents.id, id))
+        .get();
+      const refused = proposalIssues(
+        kind === "activity" ? "activity" : "event",
+        JSON.parse(current?.json ?? "null"),
+        raw,
+      );
+      if (refused.length > 0) {
+        throw new HTTPException(422, { message: refused.join("\n") });
+      }
+    }
     // The Event routes save a Template too; a save never changes a document's kind.
     const stored = opened.kind;
     const doc = asRecord(raw);
@@ -76,6 +95,7 @@ export function saveDocument(
       userId,
       now,
       action: `${stored}.update`,
+      ...(ai && { detail: { ai: ai.feature } }),
     });
   });
 }

@@ -1,7 +1,7 @@
 import { serve, type ServerType } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { createAuth } from "./auth/index.ts";
-import { anthropicProvider } from "./ai/provider.ts";
+import { aiProviderFor } from "./ai/provider-for.ts";
 import { describeAi, describeAuth, type Config } from "./config.ts";
 import { openDb } from "./db/open.ts";
 
@@ -14,7 +14,7 @@ export function start(config: Config): ServerType {
     auth: createAuth(config.auth),
     authConfig: config.auth,
     webRoot: config.webRoot,
-    ...(config.ai && { ai: anthropicProvider(config.ai) }),
+    ai: aiProviderFor(config.ai),
   });
   return serve({ fetch: app.fetch, port: config.port }, (info) =>
     console.log(`composer-api listening on :${info.port}`),
