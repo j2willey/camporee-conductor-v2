@@ -8,7 +8,9 @@ import {
 import { ui } from "../ui.ts";
 import { moveItem, removeItem, replaceItem } from "../draft.ts";
 import { Area, Card, RowButtons, StringList, Text } from "./editing.tsx";
-import { EventEditorPage } from "./EventEditor.tsx";
+import { useParams } from "react-router";
+import { EventBrainstorm, useAiOn } from "./EventBrainstorm.tsx";
+import { EventEditorPage, type EventPane } from "./EventEditor.tsx";
 
 type Colors = Event["presentation"]["themeColors"];
 
@@ -40,9 +42,7 @@ export function EventDetailsPage() {
     <EventEditorPage
       heading={{ event: "Event details", template: "Template details" }}
     >
-      {({ draft, setDraft, isTemplate }) => (
-        <Details draft={draft} setDraft={setDraft} isTemplate={isTemplate} />
-      )}
+      {(pane) => <Details {...pane} />}
     </EventEditorPage>
   );
 }
@@ -51,11 +51,13 @@ function Details({
   draft,
   setDraft,
   isTemplate,
-}: {
-  draft: Event;
-  setDraft: (event: Event) => void;
-  isTemplate: boolean;
-}) {
+  canEdit,
+  stored,
+  updatedAt,
+  dirty,
+}: EventPane) {
+  const { eventId = "" } = useParams();
+  const aiOn = useAiOn();
   const colors = draft.presentation.themeColors;
   const setColors = (themeColors: Colors) =>
     setDraft({
@@ -65,6 +67,14 @@ function Details({
   const labels = draft.terminology.labels ?? {};
   return (
     <>
+      {aiOn && canEdit && (
+        <EventBrainstorm
+          eventId={eventId}
+          stored={stored}
+          updatedAt={updatedAt}
+          dirty={dirty}
+        />
+      )}
       <Card title="The Event">
         <Text
           label="Title"

@@ -8,6 +8,8 @@ import Anthropic from "@anthropic-ai/sdk";
 export interface AiRequest {
   system: string;
   prompt: string;
+  /** A JSON Schema the answer must follow (structured outputs); the answer is then that JSON, as text. */
+  schema?: Record<string, unknown>;
 }
 
 export interface AiProvider {
@@ -50,7 +52,7 @@ export function anthropicProvider({
     ((params) => new Anthropic({ apiKey }).beta.messages.create(params));
   return {
     model,
-    async complete({ system, prompt }) {
+    async complete({ system, prompt, schema }) {
       let message: Anthropic.Beta.BetaMessage;
       try {
         message = await send({
@@ -58,6 +60,9 @@ export function anthropicProvider({
           max_tokens: 16000,
           system,
           messages: [{ role: "user", content: prompt }],
+          ...(schema && {
+            output_config: { format: { type: "json_schema", schema } },
+          }),
           // A declined request is re-run on another model inside the same call, where the model allows it.
           ...(FALLBACK_MODELS.has(model) && {
             betas: ["server-side-fallback-2026-07-01"],

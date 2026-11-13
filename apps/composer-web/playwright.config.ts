@@ -31,6 +31,8 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
       AUTH_ADAPTER: "dev",
+      // Canned AI answers, so the AI buttons show and work without a key (ADR-0030 item 7).
+      AI_ADAPTER: "fake",
       DATABASE_PATH: db,
       WEB_ROOT: resolve(import.meta.dirname, "dist"),
       PORT: String(PORT),

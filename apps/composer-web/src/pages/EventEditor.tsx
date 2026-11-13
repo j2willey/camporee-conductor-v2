@@ -21,6 +21,10 @@ export interface EventPane {
   canEdit: boolean;
   /** A Template opens in the same editor (ADR-0031 item 6): it has no contacts. */
   isTemplate: boolean;
+  /** The Event as stored and its `updatedAt`, for a change saved on its own (an AI proposal, ADR-0030). */
+  stored: Event;
+  updatedAt: number;
+  dirty: boolean;
 }
 
 /**
@@ -134,7 +138,15 @@ function Editor({
         )}
       </div>
       <fieldset disabled={!canEdit} className="space-y-6">
-        {children({ draft, setDraft, canEdit, isTemplate })}
+        {children({
+          draft,
+          setDraft,
+          canEdit,
+          isTemplate,
+          stored,
+          updatedAt: read.updatedAt,
+          dirty,
+        })}
       </fieldset>
       {canEdit && (
         <SaveBar

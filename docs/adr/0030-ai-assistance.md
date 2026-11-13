@@ -85,3 +85,5 @@ parity plan) brings the four features to v2.
   request costs money.
 - The pick is accepted on its own, not mixed into unsaved edits: the AI buttons wait until the page has no unsaved
   changes.
+- **`AI_ADAPTER=fake`** gives canned answers in each request's schema, so the buttons can be tried without a key and
+  the e2e test can drive them. Like the dev sign-in, it's refused outside development and test.

@@ -27,7 +27,7 @@ function changed(doc: Json, path: string, value: unknown): Json {
     at = at[key] as Record<string, unknown>;
   }
   const last = keys.at(-1) ?? "";
-  if (value === undefined) delete at[last];
+  if (value === undefined) Reflect.deleteProperty(at, last);
   else at[last] = value;
   return copy;
 }
@@ -189,12 +189,12 @@ describe("an Activity proposal", () => {
     ["legacy", { v1Id: "x" }],
     ["scoring.fields.0.id", "renamed_field"],
     ["scoring.fields.0.type", "text"],
-    ["scoring.fields.0.kind", "metric"],
+    ["scoring.fields.0.kind", "not-the-same-kind"],
     ["scoring.fields.0.audience", "official"],
     ["scoring.fields.0.sortOrder", 999],
     ["scoring.fields.0.weight", 7],
     ["scoring.fields.0.required", true],
-    ["scoring.fields.0.primary", { direction: "lower-wins" }],
+    ["scoring.fields.0.primary", { direction: "sideways" }],
     ["scoring.fields.0.config.min", -5],
     ["scoring.fields.0.config.max", 500],
     ["scoring.fields.0.config.defaultValue", 3],

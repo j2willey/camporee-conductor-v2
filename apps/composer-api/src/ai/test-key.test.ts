@@ -31,3 +31,21 @@ describe("testKey", () => {
     });
   });
 });
+
+describe("cannedProvider (AI_ADAPTER=fake, development and test only)", () => {
+  it("answers each brainstorm in its schema", async () => {
+    const { cannedProvider } = await import("./fake.ts");
+    const { suggestThemes, writeIntroductions } =
+      await import("./brainstorm.ts");
+    const ai = cannedProvider();
+    expect((await suggestThemes(ai, "Event: X")).ideas.length).toBeGreaterThan(
+      0,
+    );
+    expect(await writeIntroductions(ai, "Event: X")).toMatchObject({
+      action: expect.any(String),
+      lore: expect.any(String),
+      skill: expect.any(String),
+    });
+    expect(await testKey(ai)).toMatchObject({ ok: true, model: "fake" });
+  });
+});
