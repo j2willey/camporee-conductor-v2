@@ -33,6 +33,7 @@ import {
 } from "./ai/brainstorm.ts";
 import { AiError, type AiProvider } from "./ai/provider.ts";
 import { themeActivity, themeContext } from "./ai/theme-activity.ts";
+import { updateActivity } from "./ai/update-activity.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
 import { atLeast, documentRole, readRole, requireRole } from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
@@ -148,13 +149,23 @@ const ActivityThemeAsk = AiAsk.extend({ eventId: z.string() });
 /** An Activity proposal to accept (ADR-0030 item 3): the whole proposed Activity, and the feature that made it. */
 const ActivityProposal = z.strictObject({
   proposal: z.unknown(),
-  feature: z.enum(["theme"]),
+  feature: z.enum(["theme", "update", "undo"]),
+});
+
+/** An AI update (#103 PR 4; v1's `update-game`): the instruction, and whether to send the current text. */
+const ActivityUpdateAsk = z.strictObject({
+  instruction: z
+    .string()
+    .trim()
+    .min(1, "Say what should change.")
+    .max(2000, "Keep the instruction under 2000 characters."),
+  includeContent: z.boolean().default(true),
 });
 
 /** An Event proposal to accept (ADR-0030 item 3): the whole proposed Event, and the feature that made it. */
 const EventProposal = z.strictObject({
   proposal: z.unknown(),
-  feature: z.enum(["theme", "introduction"]),
+  feature: z.enum(["theme", "introduction", "undo"]),
 });
 
 /** The catalog's filters (#102 PR 2): `kind`, `q` (text) and `tag`, each optional; 400 for an unknown kind. */
@@ -819,7 +830,34 @@ export function createApp({
       },
     )
 
-    /** Accepts an AI proposal for the Activity (ADR-0030 item 3), like the Event's: the diff, then a save, audited. */
+    /**
+     * An AI update of the Activity's title and text from the editor's instruction (ADR-0030 notes, #103 PR 4; v1's
+     * `update-game`): a proposal, not a save. For the Activity's editors; it needs no Event.
+     */
+    .post(
+      "/activities/:activityId/ai/update",
+      jsonBody(ActivityUpdateAsk),
+      async (c) => {
+        const provider = requireAi();
+        const { activity, role } = readActivity(
+          c.req.param("activityId"),
+          c.var.user.userId,
+        );
+        if (!atLeast(role, "editor")) {
+          throw new HTTPException(403, { message: "Your role can't do that." });
+        }
+        const { instruction, includeContent } = c.req.valid("json");
+        const proposal = await askAi(() =>
+          updateActivity(provider, activity, instruction, includeContent),
+        );
+        return c.json({ proposal });
+      },
+    )
+
+    /**
+     * Accepts an AI proposal for the Activity (ADR-0030 item 3), like the Event's: the diff, then a save, audited. An
+     * undo comes this way too, with the version from before the accept.
+     */
     .put("/activities/:activityId/ai", jsonBody(ActivityProposal), (c) => {
       requireAi();
       const { proposal, feature } = c.req.valid("json");

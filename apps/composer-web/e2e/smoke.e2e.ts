@@ -1114,3 +1114,37 @@ test("an owner themes an Activity with the AI", async ({ page }) => {
     "Big Top Clown Car",
   );
 });
+
+// #103 PR 4: an AI update with a prompt, on a saved Activity on its own (PR 3 of #102 saved it), then Undo.
+test("an owner updates an Activity with the AI, then undoes it", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Library", exact: true }).click();
+  await page.getByRole("button", { name: "Activities" }).click();
+  await page
+    .getByRole("listitem")
+    .filter({ hasText: "Clown Car (saved)" })
+    .getByRole("link", { name: /^Open / })
+    .click();
+  const story = page.getByLabel("Background (story)");
+  const before = await story.inputValue();
+
+  const card = page.getByRole("region", { name: "Update with AI" });
+  const ask = card.getByRole("button", { name: "Ask the AI" });
+  await expect(ask).toBeDisabled();
+  await card.getByLabel("What should change?").fill("They lost the keys");
+  await ask.click();
+  const review = card.getByRole("region", { name: "Proposed change" });
+  await expect(review).toContainText("Updated by AI");
+  await review.getByRole("button", { name: "Accept" }).click();
+  await expect(story).toHaveValue(/Updated by AI/);
+
+  await page.getByRole("button", { name: "Undo AI change" }).click();
+  await expect(story).toHaveValue(before);
+  await expect(
+    page.getByRole("button", { name: "Undo AI change" }),
+  ).toHaveCount(0);
+});

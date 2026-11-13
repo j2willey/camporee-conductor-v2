@@ -131,15 +131,7 @@ export function themedProposal(
     content: {
       ...activity.content,
       ...answer.content,
-      supplies: answer.content.supplies.map((s) => {
-        const group = blankToUndefined(s.group);
-        const quantity = blankToUndefined(s.quantity);
-        return {
-          ...(group && { group }),
-          item: s.item,
-          ...(quantity && { quantity }),
-        };
-      }),
+      supplies: suppliesFrom(answer.content.supplies),
     },
     scoring: {
       ...activity.scoring,
@@ -158,6 +150,33 @@ export function themedProposal(
       }),
     },
   };
+  return checkedProposal(activity, proposal);
+}
+
+/** Supplies as the AI answers them ("" for no group or quantity), as the schema wants them (left out). */
+export function suppliesFrom(
+  supplies: { group: string; item: string; quantity: string }[],
+): Activity["content"]["supplies"] {
+  return supplies.map((s) => {
+    const group = blankToUndefined(s.group);
+    const quantity = blankToUndefined(s.quantity);
+    return {
+      ...(group && { group }),
+      item: s.item,
+      ...(quantity && { quantity }),
+    };
+  });
+}
+
+/**
+ * `proposal`, if it's a valid Activity that changes only what AI may (ADR-0030 item 4); otherwise an AiError, so it's
+ * never shown. Returned exactly as built: the schema's parse would add defaults (a field's weight) the stored
+ * Activity may not spell out.
+ */
+export function checkedProposal(
+  activity: Activity,
+  proposal: Activity,
+): Activity {
   const valid = ActivitySchema.safeParse(proposal);
   if (
     !valid.success ||
@@ -165,6 +184,5 @@ export function themedProposal(
   ) {
     throw new AiError("The AI's answer didn't fit the Activity. Try again.");
   }
-  // Exactly as built: the schema's parse would add defaults (a field's weight) the stored Activity may not spell out.
   return proposal;
 }
