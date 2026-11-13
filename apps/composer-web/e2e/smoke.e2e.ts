@@ -1210,3 +1210,34 @@ test("a sysadmin sets a user's flags and suspends them", async ({
     page.getByLabel("Suspended: newcomer@example.com"),
   ).not.toBeChecked();
 });
+
+// #104 PR 2: your profile. The display name shows in the header and the members list.
+test("an owner sets their display name", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "smoke@example.com" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Your profile" }),
+  ).toBeVisible();
+  await page.getByLabel("Display name").fill("Smokey Bear");
+  await page.getByLabel("Organizer name").fill("Coyote Creek District");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByRole("status")).toHaveText("Saved.");
+  await expect(page.getByRole("link", { name: "Smokey Bear" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Composer" }).click();
+  await page.getByRole("link", { name: "Smoke Test" }).click();
+  await expect(page.getByRole("region", { name: "Members" })).toContainText(
+    "Smokey Bear (smoke@example.com)",
+  );
+
+  // Put things back: empty is none, and the header shows the email again.
+  await page.getByRole("link", { name: "Smokey Bear" }).click();
+  await page.getByLabel("Display name").fill("");
+  await page.getByLabel("Organizer name").fill("");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(
+    page.getByRole("link", { name: "smoke@example.com" }),
+  ).toBeVisible();
+});

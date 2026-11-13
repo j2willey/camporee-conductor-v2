@@ -401,7 +401,16 @@ function Members({ orgId, isOwner }: { orgId: string; isOwner: boolean }) {
               key={m.userId}
               className="flex flex-wrap items-center justify-between gap-2 px-4 py-2"
             >
-              <span>{m.email}</span>
+              <span>
+                {m.displayName ? (
+                  <>
+                    {m.displayName}{" "}
+                    <span className={ui.muted}>({m.email})</span>
+                  </>
+                ) : (
+                  m.email
+                )}
+              </span>
               {isOwner ? (
                 <span className="flex items-center gap-2">
                   <select

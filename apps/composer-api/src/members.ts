@@ -19,6 +19,8 @@ import {
 export interface Member {
   userId: string;
   email: string;
+  /** Their profile's display name (ADR-0032 notes), or null. */
+  displayName: string | null;
   role: Role;
 }
 
@@ -37,6 +39,7 @@ export function listMembers(
     .select({
       userId: memberships.userId,
       email: users.email,
+      displayName: users.displayName,
       role: memberships.role,
     })
     .from(memberships)
@@ -71,7 +74,11 @@ export function addMember(
   requireRole(db, change.organizationId, change.actorId, "owner");
   const email = change.email.toLowerCase();
   const user = db
-    .select({ id: users.id, email: users.email })
+    .select({
+      id: users.id,
+      email: users.email,
+      displayName: users.displayName,
+    })
     .from(users)
     .where(eq(users.email, email))
     .get();
@@ -98,7 +105,12 @@ export function addMember(
       ...(current && { was: current }),
     });
     return {
-      member: { userId: user.id, email: user.email, role: change.role },
+      member: {
+        userId: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        role: change.role,
+      },
       created: !current,
     };
   });
@@ -311,6 +323,7 @@ function requireMember(db: Db, organizationId: string, userId: string): Member {
     .select({
       userId: memberships.userId,
       email: users.email,
+      displayName: users.displayName,
       role: memberships.role,
     })
     .from(memberships)

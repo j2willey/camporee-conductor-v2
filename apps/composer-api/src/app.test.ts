@@ -98,6 +98,8 @@ describe("signing in", () => {
         email: "ann@example.com",
         curator: false,
         sysadmin: false,
+        displayName: null,
+        organizerName: null,
         ai: false,
         organizations: [],
       },
@@ -212,6 +214,8 @@ describe("an email that comes back under a new auth id (#32)", () => {
         sysadmin: true,
         suspended: false,
         lastSeenAt: expect.any(Date),
+        displayName: null,
+        organizerName: null,
       },
     ]);
     expect(membershipsOf("user_new")).toEqual([{ org, role: "owner" }]);
@@ -390,6 +394,7 @@ describe("members", () => {
       json: {
         userId: "dev|bob@example.com",
         email: "bob@example.com",
+        displayName: null,
         role: "editor",
       },
     });

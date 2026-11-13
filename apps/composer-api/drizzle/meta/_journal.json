@@ -43,6 +43,13 @@
       "when": 1794534492008,
       "tag": "0005_mushy_shiver_man",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794535481193,
+      "tag": "0006_fearless_psylocke",
+      "breakpoints": true
     }
   ]
 }
