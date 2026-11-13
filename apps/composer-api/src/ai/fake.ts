@@ -43,6 +43,24 @@ export function cannedProvider(): AiProvider {
           }),
         );
       }
+      if (properties.includes("story")) {
+        // An AI update (#103 PR 4): a new story and rules, the rest left as it is.
+        return Promise.resolve(
+          JSON.stringify({
+            title: null,
+            objective: null,
+            story: "Updated by AI: the clowns have lost their car keys.",
+            description: null,
+            rules: ["Find the keys before you drive."],
+            timeAndScoring: null,
+            notes: null,
+            staffing: null,
+            setup: null,
+            reset: null,
+            supplies: null,
+          }),
+        );
+      }
       if (properties.includes("fields")) {
         return Promise.resolve(JSON.stringify(themedCanned(prompt)));
       }

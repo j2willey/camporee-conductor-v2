@@ -31,6 +31,8 @@ import {
 } from "./editing.tsx";
 import { useAiOn } from "./EventBrainstorm.tsx";
 import { ThemeActivity } from "./ThemeActivity.tsx";
+import { UndoAiChange } from "./AiUndo.tsx";
+import { UpdateActivity } from "./UpdateActivity.tsx";
 import { Loading, PageError } from "./ErrorMessage.tsx";
 import { ScoringCard, ScoringPreview } from "./ScoringEditor.tsx";
 
@@ -181,14 +183,42 @@ function Editor({
         />
       </div>
 
-      {aiOn && canEdit && inEvent && (
-        <ThemeActivity
-          eventId={eventId}
-          activityId={activityId}
-          stored={stored}
-          updatedAt={read.updatedAt}
-          dirty={dirty}
-        />
+      {aiOn && canEdit && (
+        <>
+          <UndoAiChange<Activity>
+            documentId={activityId}
+            updatedAt={read.updatedAt}
+            dirty={dirty}
+            save={(previous, ifMatch) =>
+              data(
+                client.api.activities[":activityId"].ai.$put(
+                  {
+                    param: { activityId },
+                    json: { proposal: previous, feature: "undo" },
+                  },
+                  { headers: { "if-match": String(ifMatch) } },
+                ),
+              )
+            }
+            onUndone={reload}
+          />
+          {inEvent && (
+            <ThemeActivity
+              eventId={eventId}
+              activityId={activityId}
+              stored={stored}
+              updatedAt={read.updatedAt}
+              dirty={dirty}
+            />
+          )}
+          <UpdateActivity
+            activityId={activityId}
+            stored={stored}
+            updatedAt={read.updatedAt}
+            dirty={dirty}
+            eventId={eventId}
+          />
+        </>
       )}
 
       <fieldset disabled={!canEdit} className="space-y-6">

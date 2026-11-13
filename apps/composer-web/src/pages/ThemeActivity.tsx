@@ -6,6 +6,7 @@ import { client, data } from "../api.ts";
 import { ui } from "../ui.ts";
 import { Card } from "./editing.tsx";
 import { ErrorMessage } from "./ErrorMessage.tsx";
+import { useAiUndo } from "./AiUndo.tsx";
 import { ProposalReview } from "./ProposalReview.tsx";
 
 /**
@@ -26,6 +27,7 @@ export function ThemeActivity({
   dirty: boolean;
 }) {
   const queryClient = useQueryClient();
+  const { remember } = useAiUndo<Activity>(activityId);
   const [instruction, setInstruction] = useState("");
   const ask = useMutation({
     mutationFn: () =>
@@ -47,7 +49,8 @@ export function ThemeActivity({
           { headers: { "if-match": String(updatedAt) } },
         ),
       ),
-    onSuccess: () => {
+    onSuccess: ({ updatedAt: after }) => {
+      remember({ previous: stored, after });
       ask.reset();
       void queryClient.invalidateQueries({ queryKey: ["events", eventId] });
       void queryClient.invalidateQueries({ queryKey: ["library"] });

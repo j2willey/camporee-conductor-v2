@@ -104,3 +104,19 @@ parity plan) brings the four features to v2.
   every Event and Template that lists the Activity, audited as `activity.update` with `{ ai: "theme" }`.
 - **The review** lists each changed part before and after: title, each content section, and each field's label and
   placeholder.
+
+**AI update with a prompt, and undo (#103 PR 4, 2026-11-12).** v1's `update-game`.
+
+- **What it asks:** the editor's instruction (required), and the Activity's title and text unless the editor unticks
+  "send the current text" (v1's `includeContent`). v1 also let the editor pick a Gemini model; v2 has one model,
+  `AI_MODEL`.
+- **What it answers:** each of the title and the content sections, or `null` for one it isn't changing (v1 left
+  those keys out). Like theming, the server puts the answer onto the stored Activity, and the result must pass
+  `ActivitySchema` and the structural diff. It doesn't touch scoring fields; v1's update didn't either.
+- It works on an Activity on its own too (`/activities/:id`): it needs no Event theme.
+- **Accepting** is the same `PUT /api/activities/:id/ai`, audited `{ ai: "update" }`.
+- **Undo** (item 3) applies to every AI change: the Event's theme and Introduction, theming an Activity, and an
+  update. After an accept, the page offers Undo, which saves the version from before the accept through the same
+  route (`{ ai: "undo" }`, so the diff applies). It's offered only while nothing else has been saved since, as
+  v1's snapshot lasted until the next edit. If-Match makes sure of that on the server too. The undo version is kept
+  in the browser, for this page visit only.

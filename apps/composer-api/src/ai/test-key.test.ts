@@ -54,5 +54,8 @@ describe("cannedProvider (AI_ADAPTER=fake, development and test only)", () => {
       .activities[0] as import("@camporee-conductor/schema").Activity;
     const themed = await themeActivity(ai, "Theme: Circus", activity);
     expect(themed.title).toBe(`Big Top ${activity.title}`);
+    const { updateActivity } = await import("./update-activity.ts");
+    const updated = await updateActivity(ai, activity, "Lost keys", true);
+    expect(updated.content.story).toContain("Updated by AI");
   });
 });

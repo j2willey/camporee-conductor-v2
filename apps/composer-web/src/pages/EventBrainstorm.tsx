@@ -5,6 +5,7 @@ import { client, data } from "../api.ts";
 import { ui } from "../ui.ts";
 import { Card } from "./editing.tsx";
 import { ErrorMessage } from "./ErrorMessage.tsx";
+import { UndoAiChange, useAiUndo } from "./AiUndo.tsx";
 import { ProposalReview, type ProposedChange } from "./ProposalReview.tsx";
 
 type Feature = "theme" | "introduction";
@@ -41,6 +42,7 @@ export function EventBrainstorm({
   dirty: boolean;
 }) {
   const queryClient = useQueryClient();
+  const { remember } = useAiUndo<Event>(eventId);
   const [instruction, setInstruction] = useState("");
   const [asked, setAsked] = useState<Feature | null>(null);
   const [picked, setPicked] = useState<{
@@ -101,7 +103,8 @@ export function EventBrainstorm({
           { headers: { "if-match": String(updatedAt) } },
         ),
       ),
-    onSuccess: () => {
+    onSuccess: ({ updatedAt: after }) => {
+      remember({ previous: stored, after });
       setPicked(null);
       ask.reset();
       // A new updatedAt starts a fresh draft with the accepted change.
@@ -127,6 +130,25 @@ export function EventBrainstorm({
         AI proposes; you decide. Nothing changes until you accept a pick.
         {dirty && " Save or discard your changes first."}
       </p>
+      <UndoAiChange<Event>
+        documentId={eventId}
+        updatedAt={updatedAt}
+        dirty={dirty}
+        save={(previous, ifMatch) =>
+          data(
+            client.api.events[":eventId"].ai.$put(
+              {
+                param: { eventId },
+                json: { proposal: previous, feature: "undo" },
+              },
+              { headers: { "if-match": String(ifMatch) } },
+            ),
+          )
+        }
+        onUndone={() =>
+          queryClient.invalidateQueries({ queryKey: ["events", eventId] })
+        }
+      />
       <label className={ui.label}>
         Anything to steer it? (optional)
         <input
