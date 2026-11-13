@@ -1,7 +1,13 @@
 import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { Db } from "./db/open.ts";
-import { memberships, ROLES, users, type Role } from "./db/schema.ts";
+import {
+  memberships,
+  organizations,
+  ROLES,
+  users,
+  type Role,
+} from "./db/schema.ts";
 
 /** True when `role` is `min` or above (owner > editor > viewer). */
 export function atLeast(role: Role, min: Role): boolean {
@@ -19,21 +25,12 @@ export function requireRole(
   userId: string,
   min: Role,
 ): Role {
-  const membership = db
-    .select({ role: memberships.role })
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.organizationId, organizationId),
-        eq(memberships.userId, userId),
-      ),
-    )
-    .get();
-  if (!membership) throw new HTTPException(404, { message: "Not found." });
-  if (!atLeast(membership.role, min)) {
+  const role = roleIn(db, organizationId, userId);
+  if (!role) throw new HTTPException(404, { message: "Not found." });
+  if (!atLeast(role, min)) {
     throw new HTTPException(403, { message: "Your role can't do that." });
   }
-  return membership.role;
+  return role;
 }
 
 /**
@@ -46,17 +43,8 @@ export function readRole(
   userId: string,
   visibility: "private" | "library",
 ): Role {
-  const membership = db
-    .select({ role: memberships.role })
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.organizationId, organizationId),
-        eq(memberships.userId, userId),
-      ),
-    )
-    .get();
-  if (membership) return membership.role;
+  const role = roleIn(db, organizationId, userId);
+  if (role) return role;
   if (visibility === "library") return "viewer";
   throw new HTTPException(404, { message: "Not found." });
 }
@@ -84,24 +72,13 @@ export function documentRole(
   doc: { organizationId: string; visibility: "private" | "library" },
   userId: string,
 ): Role {
-  const membership = db
-    .select({ role: memberships.role })
-    .from(memberships)
-    .where(
-      and(
-        eq(memberships.organizationId, doc.organizationId),
-        eq(memberships.userId, userId),
-      ),
-    )
-    .get();
+  const role = roleIn(db, doc.organizationId, userId);
   if (doc.visibility === "private") {
-    if (!membership) throw new HTTPException(404, { message: "Not found." });
-    return membership.role;
+    if (!role) throw new HTTPException(404, { message: "Not found." });
+    return role;
   }
   if (!isCurator(db, userId)) return "viewer";
-  return membership && atLeast(membership.role, "editor")
-    ? membership.role
-    : "editor";
+  return role && atLeast(role, "editor") ? role : "editor";
 }
 
 /** `documentRole`, refused below `editor`: 403, with why for a library document. */
@@ -120,4 +97,45 @@ export function requireDocumentEditor(
     });
   }
   return role;
+}
+
+/** True when the user is a sysadmin (ADR-0032). */
+export function isSysadmin(db: Db, userId: string): boolean {
+  return (
+    db
+      .select({ sysadmin: users.sysadmin })
+      .from(users)
+      .where(eq(users.id, userId))
+      .get()?.sysadmin ?? false
+  );
+}
+
+/**
+ * The user's role in an Organization: their membership's, or `owner` for a sysadmin who isn't a member (ADR-0032
+ * item 2, for the rollout). Undefined for anyone else. Every access check starts here.
+ */
+function roleIn(
+  db: Db,
+  organizationId: string,
+  userId: string,
+): Role | undefined {
+  const membership = db
+    .select({ role: memberships.role })
+    .from(memberships)
+    .where(
+      and(
+        eq(memberships.organizationId, organizationId),
+        eq(memberships.userId, userId),
+      ),
+    )
+    .get();
+  if (membership) return membership.role;
+  if (!isSysadmin(db, userId)) return undefined;
+  // Only for an Organization that exists, so a missing one is still 404.
+  const exists = db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(eq(organizations.id, organizationId))
+    .get();
+  return exists ? "owner" : undefined;
 }

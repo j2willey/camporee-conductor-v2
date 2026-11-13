@@ -1148,3 +1148,65 @@ test("an owner updates an Activity with the AI, then undoes it", async ({
     page.getByRole("button", { name: "Undo AI change" }),
   ).toHaveCount(0);
 });
+
+// #104 PR 1: the admin users list (the smoke user is a sysadmin). The invite test signed newcomer@example.com in.
+test("a sysadmin sets a user's flags and suspends them", async ({
+  page,
+  browser,
+}) => {
+  const asNewcomer = async () => {
+    const context = await browser.newContext();
+    const them = await context.newPage();
+    await them.goto("/");
+    await them.getByLabel("Email").fill("newcomer@example.com");
+    await them.getByRole("button", { name: "Sign in" }).click();
+    return { context, them };
+  };
+
+  // Not a sysadmin: no Admin link, and the page is Not found.
+  const before = await asNewcomer();
+  await expect(
+    before.them.getByRole("heading", { name: "Your Organizations" }),
+  ).toBeVisible();
+  await expect(before.them.getByRole("link", { name: "Admin" })).toHaveCount(0);
+  await before.them.goto("/admin");
+  await expect(
+    before.them.getByRole("heading", { name: "Not found" }),
+  ).toBeVisible();
+  await before.context.close();
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("smoke@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("link", { name: "Admin" }).click();
+  await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+  await page.getByLabel("Search").fill("newcomer");
+  const curator = page.getByLabel("Curator: newcomer@example.com");
+  await expect(curator).not.toBeChecked();
+  // The box follows the saved flag, so click and wait.
+  await curator.click();
+  await expect(curator).toBeChecked();
+  // Your own sysadmin and suspended flags are locked.
+  await page.getByLabel("Search").fill("smoke");
+  await expect(page.getByLabel("Sysadmin: smoke@example.com")).toBeDisabled();
+
+  await page.getByLabel("Search").fill("newcomer");
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByLabel("Suspended: newcomer@example.com").click();
+  await expect(
+    page.getByLabel("Suspended: newcomer@example.com"),
+  ).toBeChecked();
+
+  const after = await asNewcomer();
+  await expect(
+    after.them.getByRole("heading", { name: "Account suspended" }),
+  ).toBeVisible();
+  await after.context.close();
+
+  // Put things back.
+  page.once("dialog", (dialog) => void dialog.accept());
+  await page.getByLabel("Suspended: newcomer@example.com").click();
+  await expect(
+    page.getByLabel("Suspended: newcomer@example.com"),
+  ).not.toBeChecked();
+});

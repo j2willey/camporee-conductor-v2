@@ -97,6 +97,7 @@ describe("signing in", () => {
         id: "dev|ann@example.com",
         email: "ann@example.com",
         curator: false,
+        sysadmin: false,
         ai: false,
         organizations: [],
       },
@@ -195,7 +196,7 @@ describe("an email that comes back under a new auth id (#32)", () => {
 
   it("relinks the stored user to the new id and keeps their memberships", async () => {
     const org = await createOrg("ann@example.com", "coyote-creek");
-    db.update(users).set({ curator: true }).run();
+    db.update(users).set({ curator: true, sysadmin: true }).run();
     const [before] = db.select().from(users).all();
 
     const res = await asId("user_new", "ann@example.com");
@@ -206,8 +207,11 @@ describe("an email that comes back under a new auth id (#32)", () => {
         id: "user_new",
         email: "ann@example.com",
         createdAt: before?.createdAt,
-        // The curator flag follows the email, like memberships (#102).
+        // The flags follow the email, like memberships (#102, ADR-0032).
         curator: true,
+        sysadmin: true,
+        suspended: false,
+        lastSeenAt: expect.any(Date),
       },
     ]);
     expect(membershipsOf("user_new")).toEqual([{ org, role: "owner" }]);

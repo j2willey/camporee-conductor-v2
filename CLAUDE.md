@@ -86,6 +86,7 @@ pnpm --filter @camporee-conductor/composer-api export-cartridge <org-slug> <even
 pnpm --filter @camporee-conductor/composer-api db:generate  # new migration after changing src/db/schema.ts
 pnpm --filter @camporee-conductor/composer-api seed-demo <email> <org-slug> packages/schema/fixtures/circus-2026  # owner + Org + Event
 pnpm --filter @camporee-conductor/composer-api set-curator <email> [--off]   # library curator (ADR-0031); user must have signed in
+pnpm --filter @camporee-conductor/composer-api set-sysadmin <email> [--off]  # the first sysadmin (ADR-0032); then the /admin page
 pnpm --filter @camporee-conductor/composer-api test-ai-key   # one live request with ANTHROPIC_API_KEY (ADR-0030); CI never calls the provider
 pnpm --filter @camporee-conductor/composer-web e2e   # Playwright smoke test: builds the app, serves it from the API on :3020
 

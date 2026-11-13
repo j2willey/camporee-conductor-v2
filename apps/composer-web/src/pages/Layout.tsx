@@ -1,10 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, Outlet } from "react-router";
+import { ApiError, client, data } from "../api.ts";
 import { useSession } from "../auth.tsx";
 import { ui } from "../ui.ts";
 import { Loading } from "./ErrorMessage.tsx";
 
 export function Layout() {
   const session = useSession();
+  // Who's signed in, for the Admin link and a suspended account (ADR-0032).
+  const me = useQuery({
+    queryKey: ["me"],
+    queryFn: () => data(client.api.me.$get()),
+    enabled: session.status === "signed-in",
+  });
+  const suspended = me.error instanceof ApiError && me.error.status === 403;
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900">
       <header className="border-b border-stone-200 bg-white">
@@ -16,6 +25,11 @@ export function Layout() {
             {session.status === "signed-in" && (
               <Link to="/library" className={`${ui.link} text-sm`}>
                 Library
+              </Link>
+            )}
+            {me.data?.sysadmin && (
+              <Link to="/admin" className={`${ui.link} text-sm`}>
+                Admin
               </Link>
             )}
           </nav>
@@ -36,7 +50,18 @@ export function Layout() {
       <main className="mx-auto max-w-3xl px-4 py-8">
         {session.status === "loading" && <Loading />}
         {session.status === "signed-out" && session.signInView}
-        {session.status === "signed-in" && <Outlet />}
+        {session.status === "signed-in" &&
+          (suspended ? (
+            <div className="space-y-2">
+              <h1 className={ui.h1}>Account suspended</h1>
+              <p role="alert" className="text-stone-600">
+                {me.error?.message} If you think this is a mistake, contact the
+                Composer's administrator.
+              </p>
+            </div>
+          ) : (
+            <Outlet />
+          ))}
       </main>
     </div>
   );

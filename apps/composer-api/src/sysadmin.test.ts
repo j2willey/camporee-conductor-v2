@@ -92,11 +92,12 @@ describe("GET /api/admin/users", () => {
   it("lists every user with their flags and Organizations, most recently seen first", async () => {
     clock += 60_000;
     await call(OTHER, "GET", "/api/me");
+    // Listing is a request too: the sysadmin is seen at the same time as Olga, and ties go by email.
     const res = await listUsers();
     expect(res.status).toBe(200);
     const list = res.json as unknown as { users: UserRow[]; total: number };
     expect(list.total).toBe(3);
-    expect(list.users.map((u) => u.email)).toEqual([OTHER, ADMIN, OWNER]);
+    expect(list.users.map((u) => u.email)).toEqual([ADMIN, OTHER, OWNER]);
     expect(list.users[0]?.lastSeenAt).toBe(clock);
     expect(list.users.find((u) => u.email === OWNER)).toMatchObject({
       curator: false,
@@ -218,6 +219,11 @@ describe("a sysadmin, for the rollout (ADR-0032 item 2)", () => {
     expect(
       (await call(ADMIN, "GET", `/api/organizations/${coyote}/members`)).status,
     ).toBe(200);
+    // An Organization that doesn't exist is still not found.
+    expect(
+      (await call(ADMIN, "GET", "/api/organizations/nope/members")).status,
+    ).toBe(404);
+    expect((await call(ADMIN, "GET", "/api/events/nope")).status).toBe(404);
     // Others still can't.
     expect((await call(OTHER, "GET", `/api/events/${EVENT.id}`)).status).toBe(
       404,

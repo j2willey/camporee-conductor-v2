@@ -35,7 +35,14 @@ import { AiError, type AiProvider } from "./ai/provider.ts";
 import { themeActivity, themeContext } from "./ai/theme-activity.ts";
 import { updateActivity } from "./ai/update-activity.ts";
 import type { AuthAdapter, AuthUser } from "./auth/index.ts";
-import { atLeast, documentRole, readRole, requireRole } from "./authz.ts";
+import { isSuspended, listUsers, updateUserFlags } from "./admin.ts";
+import {
+  atLeast,
+  documentRole,
+  isSysadmin,
+  readRole,
+  requireRole,
+} from "./authz.ts";
 import type { AuthConfig } from "./config.ts";
 import type { Db } from "./db/open.ts";
 import {
@@ -169,6 +176,27 @@ const EventProposal = z.strictObject({
 });
 
 /** The catalog's filters (#102 PR 2): `kind`, `q` (text) and `tag`, each optional; 400 for an unknown kind. */
+/** A change to a user's flags (ADR-0032): at least one of them. */
+const UserFlagsBody = z
+  .strictObject({
+    curator: z.boolean().optional(),
+    sysadmin: z.boolean().optional(),
+    suspended: z.boolean().optional(),
+  })
+  .refine(
+    (flags) => Object.keys(flags).length > 0,
+    "Change at least one flag.",
+  );
+
+/** The users list's search (ADR-0032). */
+const adminUsersQuery = validator("query", (value) => {
+  const result = z.object({ q: z.string().optional() }).safeParse(value);
+  if (!result.success) {
+    throw new HTTPException(400, { message: "Unknown search." });
+  }
+  return result.data;
+});
+
 const catalogQuery = validator("query", (value): CatalogFilter => {
   const result = z
     .object({
@@ -362,6 +390,13 @@ export function createApp({
     };
   };
 
+  /** The admin pages and their API are for sysadmins; anyone else gets 404 (ADR-0032 item 4). */
+  const requireSysadmin = (userId: string) => {
+    if (!isSysadmin(db, userId)) {
+      throw new HTTPException(404, { message: "Not found." });
+    }
+  };
+
   /** The AI provider, or 404: with no key there's no AI (ADR-0030 item 2). */
   const requireAi = (): AiProvider => {
     if (!ai) throw new HTTPException(404, { message: "Not found." });
@@ -453,8 +488,11 @@ export function createApp({
           message: "Verify your email address first.",
         });
       }
-      // Record the user on first sight, so an owner can add them by email.
-      recordUser(db, user, new Date());
+      // Record the user on first sight, so an owner can add them by email; and when they were last seen (ADR-0032).
+      recordUser(db, user, now());
+      if (isSuspended(db, user.userId)) {
+        throw new HTTPException(403, { message: "Your account is suspended." });
+      }
       c.set("user", user);
       await next();
     })
@@ -465,12 +503,32 @@ export function createApp({
         id: userId,
         email,
         curator: isCurator(db, userId),
+        sysadmin: isSysadmin(db, userId),
         ai: ai !== null,
         organizations: myOrganizations(userId),
       });
     })
 
     .get("/organizations", (c) => c.json(myOrganizations(c.var.user.userId)))
+
+    /** The users list (ADR-0032, #104 PR 1): sysadmins only; 404 for anyone else. */
+    .get("/admin/users", adminUsersQuery, (c) => {
+      requireSysadmin(c.var.user.userId);
+      return c.json(listUsers(db, c.req.valid("query").q ?? ""));
+    })
+
+    /** Sets a user's curator, sysadmin and suspended flags (ADR-0032): sysadmins only, audited site-wide. */
+    .patch("/admin/users/:userId", jsonBody(UserFlagsBody), (c) => {
+      requireSysadmin(c.var.user.userId);
+      return c.json(
+        updateUserFlags(db, {
+          userId: c.req.param("userId"),
+          flags: c.req.valid("json"),
+          by: c.var.user.userId,
+          now: now(),
+        }),
+      );
+    })
 
     /**
      * The catalog (ADR-0031, #102 PR 2): the library, plus the caller's Organizations' private Templates and
