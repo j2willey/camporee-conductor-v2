@@ -1,6 +1,6 @@
 ---
 created: 2026-11-11
-updated: 2026-11-12
+updated: 2026-11-13
 ---
 
 # ADR-0031 — The Curator: a library of Templates and Activities
@@ -42,7 +42,8 @@ needs the whole of v1's Curator. #102 (F in the parity plan) builds it.
    - Later changes to the source don't flow into copies.
 6. **One editor.** Library documents are edited in the Composer's own editor (ADR-0029). Curators can edit
    library documents; an Organization's editors can edit its private ones. There's no second Template editor
-   (v1's `curator.js` copied the game editor).
+   (v1's `curator.js` copied the game editor). **Confirmed by Jim, 2026-11-13, as built:** once a library document is published, only
+   curators edit it.
 7. **Template zip download** is a design cartridge of the Template (ADR-0012 format), after the rule 4 strip.
 8. **Assets by id once they exist** (CLAUDE.md rule 6). The asset store is #7, `later`: v1's image upload never
    worked (its client posts to a route v1's server doesn't have), so parity doesn't need it.
