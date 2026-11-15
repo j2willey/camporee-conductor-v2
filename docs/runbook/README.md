@@ -5,6 +5,8 @@
 - [collator.md](collator.md): the on-site Collator box in detail: certificate, configuration, starting, loading the
   cartridge, Officials, QR codes, backups, resets, phones that can't connect (#40).
 - [deploy.md](deploy.md): the Composer droplet (the cloud app).
+- [demo.md](demo.md): the public demo on the droplet (demo hub, Collator, Composer), behind the droplet's front door
+  ww-edge (#143).
 
 Scripts: `rehearse-collator.sh` and `drones-collator.sh` rehearse the box in CI; `rehearse.sh` rehearses the droplet
 deploy.

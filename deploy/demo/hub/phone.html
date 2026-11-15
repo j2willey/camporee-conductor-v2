@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Judge Phone Demo</title>
+    <link rel="stylesheet" href="demo.css" />
+    <script type="module">
+      // A phone doesn't need a phone frame: go straight to the real judge page.
+      import { urls } from "./demo.js";
+      if (matchMedia("(max-width: 860px)").matches)
+        location.replace(urls.collator);
+    </script>
+  </head>
+  <body>
+    <main class="phone-page">
+      <header class="phone-head">
+        <h1>Judge on a phone</h1>
+        <p>
+          Score a team on the left; the Officials see it on the right.
+          <a data-href="hub">← Back to the demo</a>
+        </p>
+      </header>
+
+      <section class="phone-side">
+        <p class="label">Judge's phone</p>
+        <div class="bezel">
+          <iframe data-src="collator" title="The judge page"></iframe>
+        </div>
+      </section>
+
+      <section class="officials">
+        <p class="label">Officials' view</p>
+        <p>
+          Sign in with <code data-text="official-email"></code
+          ><button class="copy" type="button" data-copy>Copy</button>
+        </p>
+        <iframe data-src="official" title="The Official view"></iframe>
+      </section>
+    </main>
+    <script type="module">
+      import { fill, copyButtons } from "./demo.js";
+      fill();
+      copyButtons();
+    </script>
+  </body>
+</html>

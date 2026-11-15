@@ -1,0 +1,56 @@
+# The public demo on the droplet (#143, ADR-0033): the Composer, a Collator loaded with Circus 2026, and the demo
+# hub, all behind the droplet's front door (ww-edge, a separate repo: Caddy routing by hostname on the shared `edge`
+# network). Nothing here publishes a port. See docs/runbook/demo.md. Run from this folder on the droplet:
+#   docker compose up -d
+# Images are built on Omarchy and shipped (docs/runbook/demo.md, step 2); TAG in .env picks them.
+name: v2-demo
+
+services:
+  composer:
+    container_name: composer-demo
+    image: composer-v2:${TAG:?set TAG in .env}
+    # Clerk keys (the development instance), optional AI settings. env.example lists them.
+    env_file: .env
+    init: true
+    mem_limit: 256m
+    restart: unless-stopped
+    volumes:
+      - composer-data:/data
+    networks: [edge]
+
+  collator:
+    container_name: collator-demo
+    image: collator-v2:${TAG:?set TAG in .env}
+    init: true
+    mem_limit: 256m
+    restart: unless-stopped
+    environment:
+      # The demo cartridge is loaded with the CLI (docs/runbook/demo.md), never from the browser: on the internet, a
+      # first load from the Official page must keep its setup code.
+      FIRST_LOAD: code
+    volumes:
+      - collator-data:/data
+      - ./cartridges:/cartridges:ro
+    networks: [edge]
+
+  hub:
+    container_name: demo-hub
+    image: caddy:2.11.4-alpine
+    command: ["caddy", "file-server", "--root", "/srv", "--listen", ":8080"]
+    mem_limit: 32m
+    restart: unless-stopped
+    volumes:
+      # The folder, so a git pull reaches the hub without a restart.
+      - ./hub:/srv:ro
+    networks: [edge]
+
+volumes:
+  # Today's v2 Composer data (compose project composer-v2): the demo keeps it.
+  composer-data:
+    external: true
+    name: composer-v2_data
+  collator-data:
+
+networks:
+  edge:
+    external: true

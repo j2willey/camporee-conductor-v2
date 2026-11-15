@@ -1,0 +1,228 @@
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --text: #1d2321;
+  --muted: #5b6662;
+  --line: #dcdfdb;
+  --accent: #1f6f5c;
+  --accent-text: #ffffff;
+  --code-bg: #eef1ee;
+  --bezel: #1b1f1e;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121615;
+    --surface: #1b211f;
+    --text: #e8ece9;
+    --muted: #9aa6a1;
+    --line: #2d3532;
+    --accent: #5cc3a5;
+    --accent-text: #0e1513;
+    --code-bg: #232b28;
+    --bezel: #050706;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font:
+    16px/1.5 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+a {
+  color: var(--accent);
+}
+code {
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.95em;
+  overflow-wrap: anywhere;
+}
+
+/* The hub */
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 40px 16px 56px;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.15;
+}
+.lede {
+  margin: 0 0 32px;
+  color: var(--muted);
+  max-width: 62ch;
+  font-size: 1.05rem;
+}
+.doors {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+}
+.door h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+.door p,
+.door ol {
+  margin: 0;
+  color: var(--muted);
+}
+.door ol {
+  padding-left: 1.2em;
+}
+.door .spacer {
+  flex: 1;
+}
+.button {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--accent);
+  color: var(--accent-text);
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+.button:focus-visible,
+.copy:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.copy {
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  cursor: pointer;
+}
+.note {
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* The phone page */
+.phone-page {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 24px;
+  align-items: start;
+  padding: 20px 16px;
+  min-height: 100vh;
+}
+.phone-head {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+.phone-head h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+.phone-head p {
+  margin: 0;
+  color: var(--muted);
+}
+.label {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.bezel {
+  width: 414px;
+  height: 868px;
+  max-height: calc(100vh - 110px);
+  padding: 12px;
+  border-radius: 48px;
+  background: var(--bezel);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 25%);
+}
+.bezel iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 38px;
+  background: #fff;
+}
+.officials {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: calc(100vh - 110px);
+  max-height: 880px;
+}
+.officials p {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+.officials iframe {
+  flex: 1;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* A narrow screen is a phone already: the judge page fills it and the Official view is a link. */
+@media (max-width: 860px) {
+  .phone-page {
+    display: block;
+    padding: 0;
+  }
+  .phone-head,
+  .officials,
+  .phone-side .label {
+    display: none;
+  }
+  .bezel {
+    width: 100%;
+    height: 100vh;
+    max-height: none;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .bezel iframe {
+    border-radius: 0;
+  }
+}
