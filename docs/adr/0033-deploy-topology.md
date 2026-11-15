@@ -5,7 +5,8 @@ updated: 2026-11-13
 
 # ADR-0033 — Deploy topology: v2 production and v2 demo on the droplet
 
-Date: 2026-11-13 · Status: **Proposed** (waiting on Jim). Extends ADR-0013 (SQLite on the droplet) and ADR-0014
+Date: 2026-11-13 · Amended 2026-11-15 (see **Amendment**, which wins where they differ) · Status: **Proposed**
+(waiting on Jim). Extends ADR-0013 (SQLite on the droplet) and ADR-0014
 (Clerk). Pulls #36 (Litestream) forward. Leads to #93 (v2 replaces v1 as the public demo).
 
 ## Context
@@ -102,8 +103,8 @@ env file (`chmod 600`), secrets and hostname. Both join v1's network, publish no
 - Then stop v1's `landing`, `composer`, `collator`, `demo-composer` and `demo-collator` with `docker compose stop`.
   Don't remove them: images and `/opt/camporee-conductor-data` are kept 30 days. **Rollback** = `docker compose start`
   plus the old Caddy blocks.
-- **Caddy is part of v1's Compose project**, so it keeps running. Moving it to its own `edge` Compose project is a
-  later chore, not part of this cutover. Until then, nobody runs `revive` without thinking.
+- ~~**Caddy is part of v1's Compose project**, so it keeps running. Moving it to its own `edge` Compose project is a
+  later chore, not part of this cutover.~~ Done first, on 2026-11-15: see the Amendment, item 3.
 - Remove the v1 nightly cron at the same time.
 
 ### 5. Capacity
@@ -120,6 +121,35 @@ Measured now: about 1.19 GiB available, with v1 (280 MiB) and v2 (50 MiB) runnin
 stop v1's two demo containers first, since they retire anyway. Each v2 container keeps its 256 MiB cap, so a runaway
 instance gets killed instead of starving the others. The numbers above are estimates until the deploy measures them.
 
+## Amendment (2026-11-15): Jim's decisions
+
+1. **Order of work:** (1) a shared front door for the droplet, with v1 behind it; (2) the **v2 demo replaces v1's demo**
+   (Jim wants it up for a LinkedIn post); (3) v2 **production**; (4) other apps (Elephant Exchange v2 next). This
+   reverses section 1's "production comes first".
+2. **No staging environment** while Jim is the only user: changes go straight to production. A local server and CI
+   (Playwright included) are the safety net. The demo runs the same images, so a new version goes to the demo first,
+   gets a quick check, then goes to production. The backup before every deploy stays (a migration can't be undone).
+   Revisit when someone else adopts the tool.
+3. **One droplet for several apps, behind one front door: `ww-edge`.** A separate private repo
+   (github.com/j2willey/ww-edge, "WilleyWranch edge"): Caddy on 80 and 443, routing by hostname, one site file per
+   app, and a shared Docker network `edge`. Apps join `edge` and publish no ports. v1's Caddy is stopped (kept for
+   rollback). The droplet pulls ww-edge with a read-only deploy key. The droplet grows by resizing, not by adding
+   servers per app. This replaces section 4's "Caddy is part of v1's Compose project".
+4. **A DigitalOcean Cloud Firewall** (`ww-edge-firewall`): inbound only 22, 80 and 443. Before it, v1's containers were
+   reachable directly over plain HTTP on ports 3000–3004.
+5. **Everything the droplet runs lives under `~/ww`.** `~/ws` is a symlink kept only for v1's bind mounts.
+6. **The demo** (#143, `deploy/demo/compose.yaml`, `docs/runbook/demo.md`) is the compose project `v2-demo`:
+   - `demo.` serves a static **demo hub** (three doors, like v1's) and a phone-frame page, from the container
+     `demo-hub`.
+   - `collator-demo.` is **a v2 Collator** loaded with Circus 2026 (open question 4: yes). Its Officials list has a
+     Director whose email never goes in the repo, and a **published demo Official**, `demo@camporeeconductor.com`,
+     with the plain Official role: a Director can load a different cartridge over the internet. Invented Groups and
+     Teams are seeded; scores come from visitors.
+   - `composer-demo.` and `v2.` serve today's v2 Composer, which becomes the demo with its data (section 1), still on
+     the **Clerk development instance** (section 3's sign-in question: keep it for now).
+   - **Deferred:** the nightly reset, the banner, demo AI access, a second Clerk application. A manual reset is in the
+     runbook.
+
 ## Consequences
 
 - Jim can start 2027 design on prod right after the invite-only PR, the Litestream PR and the deploy. The demo work
@@ -131,8 +161,9 @@ instance gets killed instead of starving the others. The numbers above are estim
 
 ## Open for Jim
 
-1. Hostnames: `app.` for prod and `demo.` for the demo after the cutover? What happens to the apex?
+1. Hostnames: `app.` for prod? (`demo.` is the demo hub: Amendment item 6.) What happens to the apex? (For now it
+   stays v1's landing page.)
 2. Backup storage: Backblaze B2 (about $0) or DO Spaces ($5 a month)?
-3. Demo reset: nightly, visitor Organizations deleted after 7 days?
-4. A v2 Collator demo in the cutover, yes or no?
+3. Demo reset: nightly, visitor Organizations deleted after 7 days? (Deferred: Amendment item 6.)
+4. ~~A v2 Collator demo in the cutover, yes or no?~~ Yes (Amendment item 6).
 5. Prod starts empty, and today's `v2.` instance becomes the demo: OK?
