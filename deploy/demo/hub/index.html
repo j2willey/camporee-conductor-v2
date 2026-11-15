@@ -8,22 +8,58 @@
       name="description"
       content="Try Camporee Conductor: design a station-based competition, score it on a phone, and run the results."
     />
+    <link rel="icon" type="image/png" href="logo.png" />
     <link rel="stylesheet" href="demo.css" />
   </head>
   <body>
-    <main class="page">
-      <p class="eyebrow">Live demo · v2</p>
-      <h1>Camporee Conductor</h1>
-      <p class="lede">
-        Design a station-based competition, score it on volunteers' phones, and
-        roll the scores up into standings, awards and the announcer's script.
-        This demo runs a real design: the 2026 Circus camporee, with 33
-        activities. It is shared and may be reset at any time, so please don't
-        enter real names or contacts.
-      </p>
+    <header class="topbar">
+      <a class="brand" href="https://camporeeconductor.com">
+        <img src="logo.png" alt="" width="40" height="40" />
+        <span>Camporee <em>Conductor</em></span>
+      </a>
+      <a class="topbar-link" href="https://camporeeconductor.com"
+        >← <span class="long">camporeeconductor.com</span
+        ><span class="short">Home</span></a
+      >
+    </header>
 
+    <section class="hero">
+      <div class="hero-inner">
+        <img
+          class="badge"
+          src="logo.png"
+          alt="Camporee Conductor"
+          width="120"
+          height="120"
+        />
+        <p class="eyebrow">Live demo · version 2</p>
+        <h1>One real camporee.<br /><span>Three ways in.</span></h1>
+        <p class="lede">
+          Design a station-based competition, score it on volunteers' phones,
+          and roll the scores up into standings, awards and the announcer's
+          script. This demo runs a real design: the 2026 Circus camporee, with
+          33 activities.
+        </p>
+        <aside class="rewrite">
+          <p class="pill">New and improved</p>
+          <p>
+            <strong>Rebuilt from the ground up in TypeScript.</strong> Version 2
+            is a complete rewrite, designed to be easier to maintain and extend:
+            one scoring engine behind every screen, a judge page that keeps
+            working offline, and event designs saved as portable documents.
+          </p>
+        </aside>
+        <p class="caution">
+          The demo is shared and may be reset at any time. Please don't enter
+          real names or contacts.
+        </p>
+      </div>
+    </section>
+
+    <main class="doors-section">
       <div class="doors">
         <section class="door">
+          <p class="step">1</p>
           <h2>Judge on a phone</h2>
           <p>
             The page a volunteer Judge uses at a station: pick an event and a
@@ -35,20 +71,22 @@
         </section>
 
         <section class="door">
+          <p class="step">2</p>
           <h2>Run the event</h2>
           <p>
             What the event's Officials see: every score as it arrives, conflicts
             to resolve, rankings to finalize, standings and awards.
           </p>
-          <p>
-            Sign in with <code data-text="official-email"></code
-            ><button class="copy" type="button" data-copy>Copy</button>
+          <p class="signin">
+            Sign in with <code data-text="official-email"></code>
+            <button class="copy" type="button" data-copy>Copy</button>
           </p>
           <div class="spacer"></div>
           <a class="button" data-href="official">Open the Official view →</a>
         </section>
 
         <section class="door">
+          <p class="step">3</p>
           <h2>Design an event</h2>
           <p>
             Where an event is built: stations, scoring sheets, awards, and a
