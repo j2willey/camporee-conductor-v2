@@ -1,28 +1,54 @@
+/* The demo hub and phone page, in the camporeeconductor.com brand: forest greens, gold, cream, serif headings. */
 :root {
-  --bg: #f6f5f1;
+  --green-dark: #1a3a2a;
+  --green-mid: #2d6a4f;
+  --green-light: #40916c;
+  --gold: #d4a017;
+  --gold-light: #f0c040;
+
+  /* The light part of the page (below the hero). */
+  --bg: #f8f4ec;
   --surface: #ffffff;
-  --text: #1d2321;
-  --muted: #5b6662;
-  --line: #dcdfdb;
-  --accent: #1f6f5c;
-  --accent-text: #ffffff;
-  --code-bg: #eef1ee;
-  --bezel: #1b1f1e;
+  --text: #1f2a24;
+  --muted: #56645b;
+  --line: #e2dccd;
+  --heading: #1a3a2a;
+  --link: #2d6a4f;
+  --code-bg: #eef3ee;
+  --step-bg: #e8f5ee;
+  --step-text: #2d6a4f;
+  --bezel: #12261c;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121615;
-    --surface: #1b211f;
-    --text: #e8ece9;
-    --muted: #9aa6a1;
-    --line: #2d3532;
-    --accent: #5cc3a5;
-    --accent-text: #0e1513;
-    --code-bg: #232b28;
-    --bezel: #050706;
+  :root:not([data-theme="light"]) {
+    --bg: #11221a;
+    --surface: #18301f;
+    --text: #e6efe9;
+    --muted: #a7b9ad;
+    --line: #2a4a37;
+    --heading: #f0c040;
+    --link: #f0c040;
+    --code-bg: #213a2b;
+    --step-bg: #2d6a4f;
+    --step-text: #f0c040;
+    --bezel: #050b08;
     color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #11221a;
+  --surface: #18301f;
+  --text: #e6efe9;
+  --muted: #a7b9ad;
+  --line: #2a4a37;
+  --heading: #f0c040;
+  --link: #f0c040;
+  --code-bg: #213a2b;
+  --step-bg: #2d6a4f;
+  --step-text: #f0c040;
+  --bezel: #050b08;
+  color-scheme: dark;
 }
 
 * {
@@ -33,52 +59,146 @@ body {
   background: var(--bg);
   color: var(--text);
   font:
-    16px/1.5 system-ui,
-    -apple-system,
+    16px/1.6 -apple-system,
+    BlinkMacSystemFont,
     "Segoe UI",
     Roboto,
     sans-serif;
 }
 a {
-  color: var(--accent);
+  color: var(--link);
 }
 code {
   background: var(--code-bg);
   border-radius: 4px;
   padding: 1px 6px;
-  font-size: 0.95em;
+  font-size: 0.92em;
   overflow-wrap: anywhere;
 }
+h1,
+h2 {
+  font-family: Georgia, "Times New Roman", serif;
+}
 
-/* The hub */
-.page {
+/* Top bar, as on camporeeconductor.com */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px max(16px, calc((100% - 1040px) / 2));
+  background: var(--green-dark);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 25%);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.brand img {
+  border-radius: 50%;
+}
+.brand em {
+  font-style: normal;
+  color: var(--gold-light);
+}
+.topbar-link {
+  color: var(--gold-light);
+  font-size: 0.92rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.topbar-link:hover {
+  text-decoration: underline;
+}
+.brand span {
+  white-space: nowrap;
+}
+.topbar-link .short {
+  display: none;
+}
+@media (max-width: 520px) {
+  .topbar-link .long {
+    display: none;
+  }
+  .topbar-link .short {
+    display: inline;
+  }
+}
+
+/* Hero */
+.hero {
+  position: relative;
+  color: #fff;
+  background: linear-gradient(
+    160deg,
+    var(--green-dark) 0%,
+    var(--green-mid) 60%,
+    var(--green-light) 100%
+  );
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.hero-inner {
+  position: relative;
   max-width: 1040px;
   margin: 0 auto;
-  padding: 40px 16px 56px;
+  padding: 48px 16px 56px;
+}
+.badge {
+  display: block;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 6px 16px rgb(0 0 0 / 40%));
 }
 .eyebrow {
   margin: 0;
-  color: var(--accent);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  color: var(--gold-light);
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 0.8rem;
 }
 h1 {
-  margin: 6px 0 8px;
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  margin: 12px 0 16px;
+  font-size: clamp(2rem, 5vw, 3.2rem);
   line-height: 1.15;
 }
+.hero h1 span {
+  color: var(--gold-light);
+}
 .lede {
-  margin: 0 0 32px;
-  color: var(--muted);
+  margin: 0 0 12px;
   max-width: 62ch;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
+  color: rgb(255 255 255 / 88%);
+}
+.caution {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--gold-light);
+  font-size: 0.95rem;
+}
+
+/* The three doors */
+.doors-section {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 40px 16px 56px;
 }
 .doors {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 .door {
   display: flex;
@@ -86,12 +206,26 @@ h1 {
   gap: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
   border-radius: 12px;
   padding: 22px;
+  box-shadow: 0 4px 18px rgb(26 58 42 / 8%);
+}
+.step {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--step-bg);
+  color: var(--step-text);
+  font-weight: 700;
 }
 .door h2 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.35rem;
+  color: var(--heading);
 }
 .door p,
 .door ol {
@@ -101,22 +235,36 @@ h1 {
 .door ol {
   padding-left: 1.2em;
 }
+.door strong {
+  color: var(--text);
+}
+.signin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
 .door .spacer {
   flex: 1;
 }
 .button {
   display: inline-block;
   align-self: flex-start;
-  background: var(--accent);
-  color: var(--accent-text);
+  background: var(--gold);
+  color: var(--green-dark);
   text-decoration: none;
-  font-weight: 600;
-  border-radius: 8px;
-  padding: 10px 16px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 11px 18px;
+}
+.button:hover {
+  background: var(--gold-light);
 }
 .button:focus-visible,
-.copy:focus-visible {
-  outline: 3px solid var(--accent);
+.copy:focus-visible,
+.brand:focus-visible,
+.topbar-link:focus-visible {
+  outline: 3px solid var(--gold-light);
   outline-offset: 2px;
 }
 .copy {
@@ -126,12 +274,11 @@ h1 {
   background: transparent;
   color: var(--text);
   border-radius: 6px;
-  padding: 2px 8px;
-  margin-left: 6px;
+  padding: 2px 10px;
   cursor: pointer;
 }
 .note {
-  margin-top: 32px;
+  margin: 28px 0 0;
   color: var(--muted);
   font-size: 0.92rem;
 }
@@ -142,19 +289,17 @@ h1 {
   grid-template-columns: auto 1fr;
   gap: 24px;
   align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 20px 16px;
-  min-height: 100vh;
 }
 .phone-head {
   grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 16px;
 }
 .phone-head h1 {
-  font-size: 1.4rem;
-  margin: 0;
+  font-size: 1.6rem;
+  margin: 0 0 4px;
+  color: var(--heading);
 }
 .phone-head p {
   margin: 0;
@@ -162,20 +307,20 @@ h1 {
 }
 .label {
   margin: 0 0 8px;
-  font-weight: 600;
-  color: var(--muted);
-  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--step-text);
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
 }
 .bezel {
   width: 414px;
   height: 868px;
-  max-height: calc(100vh - 110px);
+  max-height: calc(100vh - 180px);
   padding: 12px;
   border-radius: 48px;
   background: var(--bezel);
-  box-shadow: 0 20px 50px rgb(0 0 0 / 25%);
+  box-shadow: 0 20px 50px rgb(0 0 0 / 30%);
 }
 .bezel iframe {
   width: 100%;
@@ -188,27 +333,33 @@ h1 {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: calc(100vh - 110px);
+  height: calc(100vh - 180px);
   max-height: 880px;
 }
 .officials p {
   margin: 0 0 8px;
   color: var(--muted);
 }
+.officials .signin {
+  margin-bottom: 10px;
+}
 .officials iframe {
   flex: 1;
   width: 100%;
   border: 1px solid var(--line);
+  border-top: 4px solid var(--gold);
   border-radius: 12px;
   background: #fff;
 }
 
-/* A narrow screen is a phone already: the judge page fills it and the Official view is a link. */
+/* A narrow screen is a phone already: phone.html sends it straight to the judge page. These rules only cover the
+   moment before that redirect. */
 @media (max-width: 860px) {
   .phone-page {
     display: block;
     padding: 0;
   }
+  .phone-body .topbar,
   .phone-head,
   .officials,
   .phone-side .label {

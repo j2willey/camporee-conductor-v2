@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Judge Phone Demo</title>
+    <link rel="icon" type="image/png" href="logo.png" />
     <link rel="stylesheet" href="demo.css" />
     <script type="module">
       // A phone doesn't need a phone frame: go straight to the real judge page.
@@ -12,14 +13,19 @@
         location.replace(urls.collator);
     </script>
   </head>
-  <body>
+  <body class="phone-body">
+    <header class="topbar">
+      <a class="brand" data-href="hub">
+        <img src="logo.png" alt="" width="40" height="40" />
+        <span>Camporee <em>Conductor</em></span>
+      </a>
+      <a class="topbar-link" data-href="hub">← Back to the demo</a>
+    </header>
+
     <main class="phone-page">
       <header class="phone-head">
         <h1>Judge on a phone</h1>
-        <p>
-          Score a team on the left; the Officials see it on the right.
-          <a data-href="hub">← Back to the demo</a>
-        </p>
+        <p>Score a team on the left; the Officials see it on the right.</p>
       </header>
 
       <section class="phone-side">
@@ -31,9 +37,9 @@
 
       <section class="officials">
         <p class="label">Officials' view</p>
-        <p>
-          Sign in with <code data-text="official-email"></code
-          ><button class="copy" type="button" data-copy>Copy</button>
+        <p class="signin">
+          Sign in with <code data-text="official-email"></code>
+          <button class="copy" type="button" data-copy>Copy</button>
         </p>
         <iframe data-src="official" title="The Official view"></iframe>
       </section>
