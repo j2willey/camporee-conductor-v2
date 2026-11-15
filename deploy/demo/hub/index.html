@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Camporee Conductor Demo</title>
+    <meta
+      name="description"
+      content="Try Camporee Conductor: design a station-based competition, score it on a phone, and run the results."
+    />
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">Live demo · v2</p>
+      <h1>Camporee Conductor</h1>
+      <p class="lede">
+        Design a station-based competition, score it on volunteers' phones, and
+        roll the scores up into standings, awards and the announcer's script.
+        This demo runs a real design: the 2026 Circus camporee, with 33
+        activities. It is shared and may be reset at any time, so please don't
+        enter real names or contacts.
+      </p>
+
+      <div class="doors">
+        <section class="door">
+          <h2>Judge on a phone</h2>
+          <p>
+            The page a volunteer Judge uses at a station: pick an event and a
+            team, enter the score, send it. No account and no app install. It
+            keeps working when the signal drops and sends when it's back.
+          </p>
+          <div class="spacer"></div>
+          <a class="button" data-href="phone">Try the judge page →</a>
+        </section>
+
+        <section class="door">
+          <h2>Run the event</h2>
+          <p>
+            What the event's Officials see: every score as it arrives, conflicts
+            to resolve, rankings to finalize, standings and awards.
+          </p>
+          <p>
+            Sign in with <code data-text="official-email"></code
+            ><button class="copy" type="button" data-copy>Copy</button>
+          </p>
+          <div class="spacer"></div>
+          <a class="button" data-href="official">Open the Official view →</a>
+        </section>
+
+        <section class="door">
+          <h2>Design an event</h2>
+          <p>
+            Where an event is built: stations, scoring sheets, awards, and a
+            printable program guide.
+          </p>
+          <ol>
+            <li>
+              Sign in. The demo uses a test sign-in service, so you'll see a
+              "development mode" badge.
+            </li>
+            <li>Create an Organization.</li>
+            <li>
+              Open the Library and start a New Event from the
+              <strong>Circus 2026</strong> Template.
+            </li>
+          </ol>
+          <div class="spacer"></div>
+          <a class="button" data-href="composer">Open the designer →</a>
+        </section>
+      </div>
+
+      <p class="note">
+        On a computer, the judge page opens in a phone frame next to the
+        Official view, so you can watch a score arrive. On a phone, it opens
+        full screen.
+      </p>
+    </main>
+    <script type="module">
+      import { fill, copyButtons } from "./demo.js";
+      fill();
+      copyButtons();
+    </script>
+  </body>
+</html>

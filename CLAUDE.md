@@ -136,10 +136,13 @@ apps/collator/      Collator: the on-site event-day server (ADR-0027). Hono, SQL
                     backups to a folder; Dockerfile (built from the repo root) (#40)
 apps/collator-web/  Collator web app (React + Vite, Tailwind), served by the Collator: the judge page at / (no
                     accounts; works offline: outbox + service worker, #41) and the Official view at /official
+deploy/demo/        the public demo on the droplet (#143): compose.yaml (composer, collator, static hub on the `edge`
+                    network of the droplet's front door, ww-edge), hub/ (demo hub + phone frame), make-cartridge.ts,
+                    seed-roster.ts; runbook docs/runbook/demo.md
 deploy/collator/    the on-site box: compose.yaml (collator + caddy), caddy/ (Caddyfile + TLS_MODE snippets),
                     compose.tls-files.yaml, env.example, issue-cert.sh (#40)
 docs/runbook/       runbooks (README.md): event-day.md (the day, in order), collator.md (on-site box), deploy.md
-                    (Composer droplet), and their rehearsal scripts
+                    (Composer droplet), demo.md (the public demo), and their rehearsal scripts
 docs/adr/           architecture decision records (index: docs/adr/README.md)
 CONTEXT.md          domain glossary
 ```
