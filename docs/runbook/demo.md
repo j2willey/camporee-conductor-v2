@@ -16,15 +16,21 @@ reloading and checking sites. The droplet's DigitalOcean Cloud Firewall (`ww-edg
 
 ## 1. Before a deploy
 
-**1.1 [vps] Back up the Composer database** (migrations can't be undone). The demo uses the volume
-`composer-v2_data`:
+**1.1 [vps] Back up the Composer database** (migrations can't be undone), while it keeps running. The database is in
+WAL mode: most recent writes live in `composer.db-wal`, so **a plain copy of `composer.db` is not a backup** (on
+2026-11-15 one held 4 KB of a 2.3 MB database). Use SQLite's online backup through `better-sqlite3`, as deploy.md
+11.1 does, then check the copy:
 
 ```sh
 mkdir -p ~/ww/backups
-docker run --rm -v composer-v2_data:/data -v ~/ww/backups:/b alpine \
-  sh -c 'cp /data/composer.db /b/composer-demo-$(date +%F-%H%M).db'
-ls -l ~/ww/backups
+c=composer-demo                     # the first deploy (step 3): composer-v2, the container being replaced
+docker exec -w /repo/apps/composer-api $c node -e "require('better-sqlite3')('/data/composer.db',{readonly:true}).backup('/data/composer-backup.db').then(()=>console.log('backup ok'))"
+f=~/ww/backups/composer-demo-$(date +%F-%H%M).db && docker cp $c:/data/composer-backup.db $f
+docker exec -i -w /repo/apps/composer-api $c node -e "const db=require('better-sqlite3')(process.argv[1],{readonly:true}); console.log(db.pragma('integrity_check',{simple:true}), db.prepare('select count(*) c from users').get().c, 'users,', db.prepare('select count(*) c from documents').get().c, 'documents')" /data/composer-backup.db
+scp "conductor:ww/backups/$(basename $f)" ~/composer-v2-backups/   # [omarchy] a private copy off the droplet
 ```
+
+Expect `backup ok`, then `ok` with non-zero counts. Backups hold users' emails: never commit or share them.
 
 **1.2 [vps] Write down the running tag** (what you roll back to): `grep TAG ~/ww/camporee-conductor-v2/deploy/demo/.env`.
 
