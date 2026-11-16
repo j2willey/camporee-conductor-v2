@@ -172,6 +172,32 @@ test("not found replaces the whole page", async ({ page }) => {
   }
 });
 
+// #151: a new Organization needs only a name; its short name (slug) follows the name until edited.
+test("create an Organization by its name alone", async ({ page }) => {
+  await page.goto("/");
+  await page.getByLabel("Email").fill("neworg@example.com");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  const name = page.getByLabel("Name", { exact: true });
+  const shortName = page.getByLabel("Short name (used in links)");
+  await name.fill("Some District");
+  await expect(shortName).toHaveValue("some-district");
+
+  await shortName.fill("my-district");
+  await name.fill("My District");
+  await expect(shortName).toHaveValue("my-district");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("link", { name: "My District" })).toBeVisible();
+
+  // After Create the form is empty again, and the short name follows the name once more.
+  await expect(shortName).toHaveValue("");
+  await name.fill("Coyote Creek West");
+  await expect(shortName).toHaveValue("coyote-creek-west");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(
+    page.getByRole("link", { name: "Coyote Creek West" }),
+  ).toBeVisible();
+});
+
 // #6 PR 2b: an owner adds, duplicates, reorders, disables, moves and removes Activities. It runs last in this
 // file and leaves the Event as it found it, so the tests above always see Circus 2026 as imported.
 test("an owner edits the Activity list", async ({ page }) => {

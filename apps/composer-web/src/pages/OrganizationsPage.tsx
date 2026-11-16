@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { client, data } from "../api.ts";
+import { slugify } from "../competitions.ts";
 import { ui } from "../ui.ts";
 import { ErrorMessage, Loading, PageError } from "./ErrorMessage.tsx";
 
@@ -43,13 +44,15 @@ export function OrganizationsPage() {
 function CreateOrganization() {
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
+  // The short name follows the Name until the person edits it (#151); `null` means "not edited".
+  const [ownSlug, setOwnSlug] = useState<string | null>(null);
+  const slug = ownSlug ?? (name.trim() ? slugify(name) : "");
   const create = useMutation({
     mutationFn: () =>
       data(client.api.organizations.$post({ json: { name, slug } })),
     onSuccess: () => {
       setName("");
-      setSlug("");
+      setOwnSlug(null);
       return queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
@@ -71,21 +74,25 @@ function CreateOrganization() {
           />
         </label>
         <label className={ui.label}>
-          Slug
+          Short name (used in links)
           <input
             value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="coyote-creek"
+            onChange={(e) => setOwnSlug(e.target.value)}
+            placeholder="made from the name"
             pattern="[a-z0-9]+(-[a-z0-9]+)*"
             title="Lowercase letters, digits and single hyphens"
             required
-            className={ui.input}
+            className={`${ui.input} font-mono text-sm`}
           />
         </label>
         <button type="submit" disabled={create.isPending} className={ui.button}>
           Create
         </button>
       </div>
+      <p className="text-sm text-stone-600">
+        The short name is filled in from the name; change it if you like. It
+        must be unique, and it can't be changed later.
+      </p>
       {create.isError && <ErrorMessage error={create.error} />}
     </form>
   );
