@@ -45,6 +45,12 @@ services:
     environment:
       COLLATOR_HOSTNAME: ${COLLATOR_HOSTNAME:-judge.camporeeconductor.com}
       TLS_MODE: ${TLS_MODE:-internal}
+    # The access log goes to stdout (#68): Docker keeps it, rotated so a long event can't fill the disk.
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
     ports:
       - ${HTTPS_PORT:-443}:443
       - ${HTTP_PORT:-80}:80
