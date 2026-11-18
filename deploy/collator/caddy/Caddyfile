@@ -19,6 +19,18 @@
 
 {$COLLATOR_HOSTNAME:judge.camporeeconductor.com} {
 	import /etc/caddy/tls-{$TLS_MODE}.caddy
+	# Access log (#68), so `docker compose logs caddy` answers "did that phone reach the box?": one JSON line per
+	# request with time, client IP, method, URI, status and timing. Headers are dropped: the Official page sends
+	# its email in one (x-official-email). Caddy never logs request bodies, so no scores or Judges' details.
+	log {
+		output stdout
+		format filter {
+			request>headers delete
+			request>tls delete
+			resp_headers delete
+			wrap json
+		}
+	}
 	encode
 	reverse_proxy collator:3030
 }

@@ -6,7 +6,8 @@
 #   2. Build the Collator image and start deploy/collator/compose.yaml with TLS_MODE=internal.
 #   3. Load the Circus 2026 event-day cartridge (with its Officials list) into the running container.
 #   4. Over https://judge.camporeeconductor.com, trusting only Caddy's own root CA (taken from the caddy
-#      container; no -k): add a Group and a Team, submit a score, resend it (a repeat, not a duplicate).
+#      container; no -k): Caddy's access log shows a request without its headers (#68); add a Group and a
+#      Team, submit a score, resend it (a repeat, not a duplicate).
 #   5. The Official view for that Activity shows exactly one entry and one ranked row; an Official added with
 #      add-official in the container signs in (#42).
 #   6. The backup timer wrote a backup to the backup folder that opens and contains the score; backup-now
@@ -116,6 +117,20 @@ pass "HTTPS by hostname, verified against Caddy's root CA"
 curl -sS --max-time 10 --cacert "$work/root.crt" --resolve "$host:$https_port:127.0.0.1" \
   "https://$host:$https_port/" | grep -q "<title>Judge</title>" || fail "the judge page isn't served"
 pass "judge page served"
+# Caddy's access log (#68): the request just made shows up, and the Official email header doesn't.
+curl -sS --max-time 10 --cacert "$work/root.crt" --resolve "$host:$https_port:127.0.0.1" \
+  -H "x-official-email: $director" -o /dev/null "https://$host:$https_port/api/health?rehearsal-log-check"
+access=""
+for _ in $(seq 10); do
+  access=$(compose logs --no-color caddy 2>/dev/null | grep 'rehearsal-log-check' | tail -1)
+  [ -n "$access" ] && break
+  sleep 1
+done
+[ -n "$access" ] || fail "Caddy's access log doesn't show the request"
+echo "$access" | grep -q '"remote_ip":' || fail "the access log line has no client IP: $access"
+echo "$access" | grep -q '"status":200' || fail "the access log line has no status: $access"
+echo "$access" | grep -q "$director" && fail "the access log holds the Official's email: $access"
+pass "Caddy's access log shows the request (client IP, status) without headers"
 
 echo "== 3. load the Circus 2026 event-day cartridge"
 (cd "$repo" && node apps/collator-web/e2e/make-cartridge.ts "$work/cartridges/circus-event-day.zip")

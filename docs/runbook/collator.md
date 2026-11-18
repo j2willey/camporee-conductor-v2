@@ -197,7 +197,16 @@ everything the reset cleared, and phones resend what they scored after the reset
   Security → Local Network). Safari itself is expected not to need it: confirm on a real iPhone.
 - The Wi-Fi must let phones reach the box: **Client Device Isolation (AP isolation) off.**
 - An Android phone that's asleep doesn't answer ARP (`ip neigh` shows FAILED). Wake it before network tests.
-- Caddy on the box logs no requests, so its logs can't show whether a phone reached it.
+- **Did the phone reach the box?** Caddy logs every request (#68): one JSON line with the time, the client's IP,
+  method, URI and status (no headers, no bodies). Find the phone's IP (Settings → Wi-Fi → the network), have it
+  reload the judge page, and look for that IP, in `deploy/collator`:
+
+  ```sh
+  docker compose logs --since 5m caddy | grep '"remote_ip":"192.168.1.57"'
+  ```
+
+  Lines there: the phone reached the box, so look at the phone's browser, not the network. No lines: the request
+  never arrived (Wi-Fi, AP isolation, Nearby devices, DNS). Docker rotates the log at 5 × 10 MB.
 
 - The A record publishes the box's **private** IP in public DNS; that's expected. A router with DNS
   rebinding protection may refuse to answer it; then add a local DNS override for the name on the router.
