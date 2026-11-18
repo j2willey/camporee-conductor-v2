@@ -7,7 +7,8 @@
 #        deploy/collator/issue-cert.sh --renew    issue a fresh one even if the current one isn't near expiry
 #                                                 (certbot otherwise keeps it until its last 30 days): use this
 #                                                 in the weeks before the event so it lasts past the end + 7 days
-#        deploy/collator/issue-cert.sh --print    print the docker command it would run, and stop
+#        deploy/collator/issue-cert.sh --print    print the docker command it would run, and stop: for reading
+#                                                 only (run the script itself, which prepares CERTS_DIR first)
 #                                                 (--print --renew: the renewing command)
 #        deploy/collator/issue-cert.sh --check    only check the expiry of the certificate already in CERTS_DIR
 #        deploy/collator/issue-cert.sh --help
@@ -86,6 +87,26 @@ case "$(realpath "$ini")" in
   "$repo/"*) die "the token file is inside the repo; keep it in ~/.secrets" ;;
 esac
 
+# Everything already in CERTS_DIR must be this user's and writable: certbot runs as this user (below), so a folder
+# Docker made as root (running the --print command by hand skips the mkdir below) would fail it only after it had
+# asked Let's Encrypt for a certificate, and Let's Encrypt allows 5 per name per week (#56).
+if [ -e "$certs" ]; then
+  uid=$(id -u)
+  mapfile -t not_mine < <(find "$certs" \( ! -user "$uid" -o ! -writable \) -print 2>/dev/null | sort -r)
+  if [ "${#not_mine[@]}" -gt 0 ]; then
+    fix="sudo rmdir$(printf ' %q' "${not_mine[@]}")" # deepest first, so a parent is empty by its turn
+    for p in "${not_mine[@]}"; do
+      if [ ! -d "$p" ] || [ -n "$(find "$p" ! -type d -print -quit 2>/dev/null || echo unreadable)" ]; then
+        fix="sudo chown -R $uid:$(id -g) $(printf '%q' "$certs")"
+        break
+      fi
+    done
+    printf 'issue-cert: these are not yours to write (owner, path):\n' >&2
+    for p in "${not_mine[@]}"; do printf '  %s  %s\n' "$(stat -c %U "$p" 2>/dev/null || echo '?')" "$p" >&2; done
+    die "certbot runs as you and would fail after asking Let's Encrypt; fix it with:  $fix"
+  fi
+fi
+
 email_args=(--register-unsafely-without-email)
 [ -n "${CERTBOT_EMAIL:-}" ] && email_args=(--email "$CERTBOT_EMAIL")
 
@@ -100,6 +121,7 @@ cmd=(docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp
   "$renewal" -d "$host")
 
 if [ "$mode" = print ]; then
+  echo "# For reading only: run issue-cert.sh itself, which prepares CERTS_DIR first (#56)."
   printf '%q ' "${cmd[@]}"
   echo
   exit 0

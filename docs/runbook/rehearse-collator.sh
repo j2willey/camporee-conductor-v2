@@ -91,7 +91,7 @@ rc=0 && out=$(CERTS_DIR=$work/rootcerts CLOUDFLARE_INI=$work/fake.ini "$repo/dep
 docker run --rm -v "$work:/w" caddy:2.11.4-alpine rm -rf /w/rootcerts
 [ "$rc" != 0 ] || fail "issue-cert.sh accepted a root-owned CERTS_DIR"
 grep -q "sudo rmdir" <<<"$out" || fail "issue-cert.sh should say how to fix a root-owned CERTS_DIR, said: $out"
-cert --print | head -n 1 | grep -q "for reading only" || fail "issue-cert.sh --print should say it's for reading only"
+out=$(cert --print) && grep -q "^# For reading only" <<<"${out%%$'\n'*}" || fail "issue-cert.sh --print should say it's for reading only"
 pass "issue-cert.sh refuses a root-owned CERTS_DIR, and --print says it's for reading only"
 
 CERTS_DIR=$work/certs docker compose -p "$project" --env-file "$work/empty.env" \

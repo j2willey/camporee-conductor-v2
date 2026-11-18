@@ -18,7 +18,7 @@ event day. The token file stays in `~/.secrets` with mode 600; the script mounts
 certbot's container and never prints it. The certificate goes outside the repo.
 
 ```sh
-deploy/collator/issue-cert.sh --print   # optional: see the docker command it will run
+deploy/collator/issue-cert.sh --print   # optional: see the docker command it will run (to read; don't run it by hand)
 deploy/collator/issue-cert.sh           # issues it into ~/collator-certs, then prints the expiry
 ```
 
