@@ -7,6 +7,8 @@ import Database from "better-sqlite3";
 // doesn't duplicate the score; adding the same Patrol again is caught by the name warning.
 // #40 PR 3: an Official listed in the cartridge sees that score ranked; an unlisted email is refused.
 // #41 PR 2: scores saved with no Wi-Fi are kept on the phone, survive a reload, and arrive once each.
+// #94: a score kept through a reload goes when the Judge taps Send now, with the page's clock held so the
+// outbox's own retry timer can't send it first.
 // #41 PR 3: with no Wi-Fi the page still opens after a reload, a Patrol can be added and scored, and both
 // arrive when it's back; a changed event is announced.
 // #41 follow-up: out of range is normal. An offline save moves on at once and is never shown in red; the
@@ -249,26 +251,40 @@ test("scores saved with no Wi-Fi are kept on the phone and arrive once each when
   await context.setOffline(false);
   await expect(waitingToSend(page)).toHaveCount(0, { timeout: 10_000 });
   expect(count("score_entries")).toBe(before + 1);
+});
 
-  // The box can't be reached for scores, and the page is reloaded: the score is still on the phone.
-  await page.route("**/api/scores/*", (route) => route.abort());
-  await page.getByRole("button", { name: "Score another Patrol" }).click();
-  await scoreFlamingArrows(page);
-  await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
-  await page.reload();
-  await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
+test.describe("Send now, with the page's clock held", () => {
+  // The outbox keeps scores in the page's own storage, not the service worker's; and Playwright can't route the
+  // page's requests once the service worker controls it.
+  test.use({ serviceWorkers: "block" });
 
-  await page.unroute("**/api/scores/*");
-  // The outbox also retries on its own timer, so it may send before the click lands and the button goes (#85).
-  // That's fine; a click that fails while the score is still waiting is not.
-  await waitingToSend(page)
-    .getByRole("button", { name: "Send now" })
-    .click({ timeout: 5_000 })
-    .catch(async (e: unknown) => {
-      if ((await waitingToSend(page).count()) > 0) throw e;
-    });
-  await expect(waitingToSend(page)).toHaveCount(0);
-  expect(count("score_entries")).toBe(before + 2);
+  test("a score kept through a reload goes when the Judge taps Send now", async ({
+    page,
+  }) => {
+    // The page's clock, held by the test: the outbox's own retry timer (2s, doubling) never fires, so it can't
+    // send before the tap and leave Send now untested (#94).
+    const start = new Date("2027-05-15T09:00:00");
+    await page.clock.install({ time: start });
+    await page.clock.pauseAt(new Date(start.getTime() + 1_000));
+    await startJudging(page);
+    const before = count("score_entries");
+
+    // The box can't be reached for scores, and the page is reloaded: the score is still on the phone.
+    await page.route("**/api/scores/*", (route) => route.abort());
+    await scoreFlamingArrows(page);
+    await expect(page.getByText(/^Saved on this phone:/)).toBeVisible();
+    await page.reload();
+    await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
+
+    // The box is back, but nothing goes by itself: the timer is held.
+    await page.unroute("**/api/scores/*");
+    await expect(waitingToSend(page)).toHaveText(/1 score waiting to send/);
+    expect(count("score_entries")).toBe(before);
+
+    await waitingToSend(page).getByRole("button", { name: "Send now" }).click();
+    await expect(waitingToSend(page)).toHaveCount(0);
+    expect(count("score_entries")).toBe(before + 1);
+  });
 });
 
 test("out of range is normal: an offline save moves on at once, never in red, and arrives once when it's back", async ({
