@@ -84,6 +84,16 @@ rc=0 && CERT_MUST_LAST_UNTIL=2099-01-01 cert --check >/dev/null 2>&1 || rc=$?
 CERT_MUST_LAST_UNTIL=$(date -u +%F) cert --check >/dev/null || fail "issue-cert.sh --check with an earlier date"
 pass "issue-cert.sh refuses a missing or mode-644 token file, never prints it, and checks the expiry"
 
+# #56: a CERTS_DIR Docker made as root is refused before certbot runs, with the fix in the message. Docker creates a
+# missing mount source as root, which is what running the --print command by hand did on 2026-11-07.
+docker run --rm -v "$work/rootcerts/letsencrypt:/etc/letsencrypt" caddy:2.11.4-alpine true
+rc=0 && out=$(CERTS_DIR=$work/rootcerts CLOUDFLARE_INI=$work/fake.ini "$repo/deploy/collator/issue-cert.sh" --print 2>&1) || rc=$?
+docker run --rm -v "$work:/w" caddy:2.11.4-alpine rm -rf /w/rootcerts
+[ "$rc" != 0 ] || fail "issue-cert.sh accepted a root-owned CERTS_DIR"
+grep -q "sudo rmdir" <<<"$out" || fail "issue-cert.sh should say how to fix a root-owned CERTS_DIR, said: $out"
+out=$(cert --print) && grep -q "^# For reading only" <<<"${out%%$'\n'*}" || fail "issue-cert.sh --print should say it's for reading only"
+pass "issue-cert.sh refuses a root-owned CERTS_DIR, and --print says it's for reading only"
+
 CERTS_DIR=$work/certs docker compose -p "$project" --env-file "$work/empty.env" \
   -f "$repo/deploy/collator/compose.yaml" -f "$repo/deploy/collator/compose.tls-files.yaml" \
   run --rm --no-deps -T caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >"$work/validate.log" 2>&1 ||
