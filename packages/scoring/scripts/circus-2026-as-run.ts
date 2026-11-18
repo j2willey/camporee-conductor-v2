@@ -8,6 +8,7 @@
  * entry values here.
  */
 import { readdirSync, readFileSync } from "node:fs";
+import { v1ScoreValues } from "@camporee-conductor/cartridge";
 import {
   ActivitySchema,
   CommonFieldSetSchema,
@@ -110,11 +111,12 @@ export function loadCircus2026AsRun(): Circus2026AsRun {
     entries.push({
       activityId,
       entrantId,
-      // Some v1 field ids end in a space; the transcode trimmed them, so trim the payload keys too.
-      values: Object.fromEntries(
-        Object.entries(payload)
-          .filter(([k]) => !OVERRIDE_KEYS.has(k))
-          .map(([k, v]) => [k.trim(), v]),
+      // Some v1 field ids end in a space: normalized the way the transcode normalized the fields (#10).
+      values: v1ScoreValues(
+        Object.fromEntries(
+          Object.entries(payload).filter(([k]) => !OVERRIDE_KEYS.has(k)),
+        ),
+        `${s.game_id}/${entrantId}`,
       ),
     });
     const where = `${s.game_id}/${entrantId}`;
