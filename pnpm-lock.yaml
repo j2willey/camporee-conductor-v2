@@ -426,6 +426,10 @@ importers:
       '@camporee-conductor/schema':
         specifier: workspace:*
         version: link:../schema
+    devDependencies:
+      '@camporee-conductor/cartridge':
+        specifier: workspace:*
+        version: link:../cartridge
 
 packages:
 

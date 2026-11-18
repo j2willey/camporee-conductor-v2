@@ -14,6 +14,8 @@ import {
   type ScoringField,
 } from "@camporee-conductor/schema";
 import type { z } from "zod";
+import { V1ImportError } from "./errors.ts";
+import { v1FieldId } from "./field-id.ts";
 import { stableUuid7 } from "./stable-id.ts";
 import type { V1Camporee, V1Cartridge, V1Game, V1Input } from "./types.ts";
 
@@ -27,15 +29,7 @@ export interface V1ImportOptions {
   commonFieldSet: { slug: string; title: string };
 }
 
-/** The cartridge can't be imported; `issues` says why, one line per problem, naming the game. */
-export class V1ImportError extends Error {
-  override name = "V1ImportError";
-  readonly issues: string[];
-  constructor(issues: string[]) {
-    super(`v1 import refused:\n${issues.join("\n")}`);
-    this.issues = issues;
-  }
-}
+export { V1ImportError };
 
 /** Parses `value` with `schema`, or records each problem as "<name>: <path>: <message>". */
 function check<S extends z.ZodType>(
@@ -450,7 +444,7 @@ function toField(input: V1Input, index: number): ScoringField {
   }
   const field: ScoringField = {
     // v1's Composer generated some ids with a trailing space ("field_1778195167953 ").
-    id: input.id.trim(),
+    id: v1FieldId(input.id),
     label: input.label,
     type: input.type,
     kind: input.kind,

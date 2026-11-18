@@ -15,7 +15,10 @@ describe("v1FieldId (#10)", () => {
 describe("v1ScoreValues (#10)", () => {
   it("keys a v1 score payload by the same ids the transcode gave the fields", () => {
     expect(
-      v1ScoreValues({ "field_1778199810679 ": 8, patrol_flag: 4 }, "clown-car/t1"),
+      v1ScoreValues(
+        { "field_1778199810679 ": 8, patrol_flag: 4 },
+        "clown-car/t1",
+      ),
     ).toEqual({ field_1778199810679: 8, patrol_flag: 4 });
   });
 
